@@ -1,4 +1,5 @@
 import type { PaymentMethod } from '@/lib/store/types'
+import type { Dictionary } from '@/lib/i18n/types'
 import { inkFor } from '@/lib/ui/contrast'
 import { PAYMENT_TYPE_META, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 
@@ -30,8 +31,19 @@ export function cardNetworkIfKnown(m: PaymentMethod): string | null {
   return null
 }
 
-export function cardTypeLabel(m: PaymentMethod): string {
-  return m.type === 'credit_card' ? 'Credit' : m.type === 'prepaid_card' ? 'Prepaid' : m.type === 'debit_card' ? 'Debit' : PAYMENT_TYPE_META[m.type].label
+type KindCopy = Pick<Dictionary['accountsPage'], 'typeDebit' | 'typeCredit' | 'typePrepaid' | 'typeWallet' | 'typeBank' | 'typeCash'>
+
+/** The card type in one short localized word, as printed on a card face: Credit, Debit, Prepaid, Wallet. */
+export function cardKindLabel(type: PaymentMethod['type'], t: KindCopy): string {
+  switch (type) {
+    case 'credit_card': return t.typeCredit
+    case 'debit_card': return t.typeDebit
+    case 'prepaid_card': return t.typePrepaid
+    case 'wallet': return t.typeWallet
+    case 'bank_account': return t.typeBank
+    case 'cash': return t.typeCash
+    default: return PAYMENT_TYPE_META[type].label
+  }
 }
 
 export function accountColor(m: PaymentMethod): string {

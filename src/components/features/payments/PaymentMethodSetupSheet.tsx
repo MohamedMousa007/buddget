@@ -8,14 +8,17 @@ import { ArrowLeft, CreditCard, Lock, Trash2 } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { CurrencyField } from '@/components/ui/CurrencyField'
 import { ACCOUNT_CURRENCY_FIELD_CLASS, AccountAliasChips, AccountIdentifierField, type Identifier } from '@/components/features/payments/accountFormParts'
-import { accountTitle } from '@/components/features/accounts/accountDisplay'
+import { accountTitle, cardKindLabel } from '@/components/features/accounts/accountDisplay'
 import { AmountField } from '@/components/ui/AmountField'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { IconButton } from '@/components/ui/IconButton'
-import { ColorSwatchRow } from '@/components/ui/ColorSwatchRow'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Switch } from '@/components/ui/switch'
-import { cardGradient, TypeGlyph } from '@/components/features/payments/PaymentCardCarousel'
+import { TypeGlyph } from '@/components/features/payments/PaymentCardCarousel'
+import { CardFace, FACE_W } from '@/components/features/payments/CardFace'
+import { CardThemePicker } from '@/components/features/payments/CardThemePicker'
+import { CARD_THEMES, cardLook, nearestCardTheme, type CardStyle, type CardThemeKey } from '@/lib/payment/cardThemes'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { ProviderPickerSheet } from '@/components/features/payments/ProviderPickerSheet'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -29,7 +32,6 @@ import {
 import { cn } from '@/lib/utils'
 import type { PmPrefill } from '@/lib/store/useSettingsStore'
 import { mix, readable } from '@/lib/utils/color'
-import { cardFace } from '@/lib/ui/contrast'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import type { Currency, PaymentMethod, PaymentMethodType } from '@/lib/store/types'
 import { FieldButton } from '@/components/ui/FieldButton'
@@ -87,7 +89,8 @@ export function PaymentMethodSetupSheet({
   const [label, setLabel] = useState('')
   const [aliases, setAliases] = useState<string[]>([])
   const [curCode, setCurCode] = useState<Currency>(baseCurrency)
-  const [cardColor, setCardColor] = useState<string | null>(null)
+  const [cardStyle, setCardStyle] = useState<CardStyle>('bank')
+  const [cardTheme, setCardTheme] = useState<CardThemeKey | null>(null)
   const [isDefault, setIsDefault] = useState(false)
   const [providerSheetOpen, setProviderSheetOpen] = useState(false)
   // Credit-card debt terms (only when type === 'credit_card').
@@ -109,7 +112,9 @@ export function PaymentMethodSetupSheet({
         setBrandId(null); setProviderName(provider); setType(editing.type)
         setLast4(editing.last4 ?? ''); setLabel(savedLabel); setAliases(editing.last4Aliases ?? [])
         setIdMode(savedLabel ? 'label' : editing.last4 ? 'last4' : 'none')
-        setCurCode(editing.currency); setCardColor(editing.color ?? null); setIsDefault(editing.isDefault)
+        setCurCode(editing.currency); setIsDefault(editing.isDefault)
+        const look = cardLook(editing)
+        setCardStyle(look.style); setCardTheme(look.theme)
         // Load the linked credit-card debt's terms so they're editable here.
         const linked = useFinanceStore.getState().debts.find((d) => d.debtType === 'credit_card' && d.linkedPaymentMethodId === editing.id)
         setCcLimit(linked?.creditLimit != null ? String(linked.creditLimit) : '')
@@ -119,11 +124,13 @@ export function PaymentMethodSetupSheet({
         setCcLimit(''); setCcOutstanding(''); setCcStatementDay('')
         const parent = parentAccountId ? useFinanceStore.getState().paymentMethods.find((m) => m.id === parentAccountId) : undefined
         if (parent) {
-          // A card added under an account starts as that account's debit card: same bank, currency and colour.
+          // A card added under an account starts as that account's debit card: same bank, currency and theme.
           const parentBrandId = resolvePaymentBrandKey(accountTitle(parent))
           setBrandId(parentBrandId); setProviderName(accountTitle(parent))
           setType('debit_card'); setLast4(''); setLabel(''); setIdMode('none')
-          setCurCode(parent.currency); setCardColor(parent.color ?? null); setIsDefault(false)
+          setCurCode(parent.currency); setIsDefault(false)
+          const look = cardLook(parent)
+          setCardStyle(look.style); setCardTheme(look.theme)
         } else {
           // Resolve a detected bank/provider name to a catalogue brand so the SMS
           // prefill lands on the right type/colours. An explicit prefill type (the SMS said
@@ -141,7 +148,7 @@ export function PaymentMethodSetupSheet({
           // even offer it, and handleSave would persist a last4 anyway.
           setIdMode(prefill?.last4 && allowsLast4(pfType) ? 'last4' : 'none')
           const suggestedParent = prefill?.parentId ? useFinanceStore.getState().paymentMethods.find((m) => m.id === prefill.parentId) : undefined
-          setCurCode((prefill?.currency as Currency | undefined) ?? suggestedParent?.currency ?? baseCurrency); setCardColor(null); setIsDefault(false)
+          setCurCode((prefill?.currency as Currency | undefined) ?? suggestedParent?.currency ?? baseCurrency); setCardStyle('bank'); setCardTheme(null); setIsDefault(false)
         }
       }
       if (lockType) setType(lockType)
@@ -162,7 +169,7 @@ export function PaymentMethodSetupSheet({
     // prepaid card may be unnumbered, and only some wallets issue a card at all.
     const storedValue = t === 'prepaid_card' || t === 'wallet'
     setIdMode(allowsLast4(t) && !storedValue ? 'last4' : 'none')
-    setCardColor(null); setCurCode(cur); setProviderSheetOpen(false)
+    setCardTheme(null); setCurCode(cur); setProviderSheetOpen(false)
   }
   // Types the chosen provider can plausibly issue (a bank offers account + cards,
   // Tabby only BNPL). Custom providers keep the full list. The current type is always
@@ -182,7 +189,8 @@ export function PaymentMethodSetupSheet({
   }
 
   const brand = brandId && brandId !== '__custom' ? PAYMENT_BRANDS[brandId] : null
-  const effectiveColor = cardColor || (brand ? brand.colors[0] : null) || PAYMENT_TYPE_META[type].color
+  // No theme picked yet: the one nearest the provider's brand colour (or the type's colour).
+  const effectiveTheme: CardThemeKey = cardTheme ?? nearestCardTheme(brand ? brand.colors[0] : PAYMENT_TYPE_META[type].color)
   const reattribute = useReattribute()
   const hasProvider = providerName.trim().length > 0
   // The Debt tab locks the type; an existing bank account or wallet keeps its kind here (cards are the only thing this sheet can switch between).
@@ -197,7 +205,8 @@ export function PaymentMethodSetupSheet({
     const use4 = idMode !== 'none' && last4.length > 0 && isSavableTail(last4)
     const words = idMode === 'label' ? label.trim() : ''
     const name = composePaymentMethodName(provider, { last4: use4 ? last4 : undefined })
-    const payload = { name, type, currency: curCode, color: effectiveColor, isDefault, ...(use4 ? { last4 } : {}), ...(words ? { label: words } : {}) }
+    // `color` stays a real hex (avatars and tints read it): the theme's first stop.
+    const payload = { name, type, currency: curCode, color: CARD_THEMES[effectiveTheme].a, cardStyle, cardTheme: effectiveTheme, isDefault, ...(use4 ? { last4 } : {}), ...(words ? { label: words } : {}) }
     let pmId: string
     if (editing) {
       updatePaymentMethod(editing.id, { ...payload, last4: use4 ? last4 : undefined, last4Aliases: aliases.length > 0 ? aliases : undefined, label: words || undefined })
@@ -240,15 +249,13 @@ export function PaymentMethodSetupSheet({
   const fieldChipColor = brand ? brand.colors[0] : 'var(--color-brand-text-muted)'
   const fieldInitials = brand ? brand.short : providerInitials(providerName)
 
-  const previewTail = idMode === 'label' && label.trim()
-    ? label.trim()
-    : idMode !== 'none' && last4 ? `••  ${last4}` : idMode === 'last4' ? '••  ••••' : '——  ——'
-
   const previewProps = {
-    hasProvider, color: effectiveColor, type,
-    name: hasProvider ? providerName : t.paymentMethods.addTitle,
-    typeLabel: PAYMENT_TYPE_META[type].label,
-    tail: previewTail, curCode,
+    theme: effectiveTheme, style: cardStyle,
+    bank: hasProvider ? providerName : t.paymentMethods.addTitle,
+    kind: cardKindLabel(type, t.accountsPage),
+    last4: idMode !== 'none' && last4 ? last4 : undefined,
+    holder: idMode === 'label' ? label.trim() : undefined,
+    currency: curCode,
   }
 
   return (
@@ -376,12 +383,24 @@ export function PaymentMethodSetupSheet({
                 </div>
               )}
 
-              {/* Card colour */}
+              {/* Card style + theme */}
               <div>
-                <div className={`mx-0.5 mb-2.5 ${microClassName}`}>
-                  {t.paymentMethods.cardColour}
+                <div className={`mx-0.5 mb-2 ${microClassName}`}>
+                  {t.paymentMethods.cardStyle}
                 </div>
-                <ColorSwatchRow value={effectiveColor} onChange={setCardColor} />
+                <SegmentedControl
+                  ariaLabel={t.paymentMethods.cardStyle}
+                  value={cardStyle}
+                  onChange={setCardStyle}
+                  options={[{ value: 'metal', label: t.paymentMethods.styleMetal }, { value: 'bank', label: t.paymentMethods.styleBank }]}
+                />
+              </div>
+              <div>
+                <div className="mx-0.5 mb-2.5 flex items-baseline justify-between">
+                  <span className={microClassName}>{t.paymentMethods.cardTheme}</span>
+                  <span className="text-xs font-semibold text-[var(--color-brand-text-secondary)]">{t.paymentMethods.themeNames[effectiveTheme]}</span>
+                </div>
+                <CardThemePicker value={effectiveTheme} onChange={setCardTheme} names={t.paymentMethods.themeNames} ariaLabel={t.paymentMethods.cardTheme} />
               </div>
 
               {/* Set as default */}
@@ -434,84 +453,38 @@ export function PaymentMethodSetupSheet({
 }
 
 // ── Floating card preview (pinned above the sheet, static/elevated) ───────────
+const PREVIEW_W = 280
+
 function FloatingCardPreview({
-  open, z = '', inline = false, hasProvider, color, type, name, typeLabel, tail, curCode,
+  open, z = '', inline = false, ...face
 }: {
   open: boolean
   z?: string
   /** md+ renders the card in the dialog's flow instead of pinned above it. */
   inline?: boolean
-  hasProvider: boolean
-  color: string
-  type: PaymentMethodType
-  name: string
-  typeLabel: string
-  tail: string
-  curCode: string
+  theme: CardThemeKey
+  style: CardStyle
+  bank: string
+  kind: string
+  last4?: string
+  holder?: string
+  currency: string
 }) {
   if (typeof document === 'undefined') return null
 
-  // Always a live, coloured card (reflects colour/type/digits/currency immediately).
-  // Static 3D treatment — no motion after the one-time entrance.
-  const { ink } = cardFace(color)
-  const cardShadow = `0 36px 64px -16px ${mix('black', 72)}, 0 16px 32px -12px ${mix(color, 50)}, inset 0 1px 0 ${mix('white', 20)}`
-
+  // Always a live card (reflects style/theme/type/digits/currency immediately), with the theme's soft halo behind it.
   const preview = (
     <>
-    {/* halo — static coloured glow */}
     <div
       aria-hidden
       className="pointer-events-none absolute"
       style={{
         inset: -34, borderRadius: 46,
-        background: `radial-gradient(circle, ${mix(color, 72)}, transparent 68%)`,
+        background: `radial-gradient(circle, ${mix(CARD_THEMES[face.theme].a, 70)}, transparent 68%)`,
         filter: 'blur(36px)', zIndex: 0,
       }}
     />
-    {/* contact shadow — static ellipse beneath the card */}
-    <div
-      aria-hidden
-      className="pointer-events-none absolute"
-      style={{
-        left: '50%', bottom: -20, transform: 'translateX(-50%)',
-        width: 224, height: 30, background: mix('black', 55),
-        borderRadius: '50%', filter: 'blur(20px)', zIndex: 0,
-      }}
-    />
-    {/* card — static, subtle lift */}
-    <div
-      className="relative flex h-[176px] w-[280px] flex-col overflow-hidden rounded-[20px]"
-      style={{
-        padding: '19px 21px',
-        color: ink,
-        background: cardGradient(color),
-        boxShadow: cardShadow,
-        transform: 'translateY(-2px)',
-      }}
-    >
-      <div
-        className="pointer-events-none absolute inset-0 rounded-[20px]"
-        style={{ background: `radial-gradient(120% 90% at 85% 8%, ${mix('white', 16)}, transparent 60%)` }}
-      />
-      <div className="relative flex items-center justify-between">
-        <span className="flex h-8 w-[44px] shrink-0 items-center justify-center rounded-lg p-[7px]" style={{ background: mix(ink, 20) }}>
-          <TypeGlyph type={type} className="h-full w-full" />
-        </span>
-        <span className="text-[0.5625rem] font-semibold uppercase tracking-[0.14em]">{typeLabel}</span>
-      </div>
-      <div className="relative mt-auto text-start">
-        <div
-          className="truncate text-[23px] font-bold tracking-[-0.01em]"
-          style={{ opacity: hasProvider ? 1 : 0.7 }}
-        >
-          {name}
-        </div>
-        <div className="mt-3 flex items-end justify-between">
-          <span className="font-mono-numbers text-[0.9375rem] font-semibold tracking-[0.16em]">{tail}</span>
-          <span className="font-mono-numbers text-[0.8125rem] font-bold">{curCode}</span>
-        </div>
-      </div>
-    </div>
+    <CardFace {...face} scale={PREVIEW_W / FACE_W} />
     </>
   )
 

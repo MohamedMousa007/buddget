@@ -5,6 +5,7 @@ import type { SavingsFormsCopy } from './savingsFormsCopy'
 import type { SystemPagesCopy } from './systemPagesCopy'
 import type { InlineCopy } from './inlineCopy'
 import type { CatalogCopy } from './catalogCopy'
+import type { CardThemeKey } from '@/lib/payment/cardThemes'
 /** buddget i18n dictionary shape — every key in ar.ts must match en.ts exactly. */
 
 /** Tutorial tour copy. Top-level so copyKeys in the manifest stay short
@@ -2311,7 +2312,11 @@ export interface Dictionary {
     addTitle: string
     editTitle: string
     newMethod: string
-    cardColour: string
+    cardStyle: string
+    styleMetal: string
+    styleBank: string
+    cardTheme: string
+    themeNames: Record<CardThemeKey, string>
     popularOptions: string
     searchAll: string
     type: string

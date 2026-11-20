@@ -75,6 +75,10 @@ export interface PaymentMethod {
   type: PaymentMethodType
   currency: Currency
   color?: string
+  /** Card face finish; absent = 'bank'. See lib/payment/cardThemes. */
+  cardStyle?: 'metal' | 'bank'
+  /** One of the 16 card theme keys; absent or unknown = nearest theme to `color`. */
+  cardTheme?: string
   icon?: string
   last4?: string
   /** Other visible number tails bank messages use for this account (its account number, a linked card). `last4` stays the displayed one. */

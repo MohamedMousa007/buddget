@@ -334,6 +334,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
             onChange={setPaymentMethodId}
             paymentMethods={paymentMethods}
             label={t.expenseForm.paymentMethod}
+            variant="card"
           />
 
           {creditCardOutstandingHint ? (

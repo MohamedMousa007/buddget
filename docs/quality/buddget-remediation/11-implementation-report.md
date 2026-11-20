@@ -194,3 +194,19 @@ Buddgy chats now work like ChatGPT and Claude, inside the same pop-up.
 |---|---|---|
 | Strip logic and week number from join date | `rewardsState.ts` (`weekSinceJoin`, `streakStrip`), `RewardsView.tsx` | Unit tests written in `rewardsState.test.ts` for: joined this week, week 3, week 9 with a freeze, week 14 showing 3–14, a missed week, pre-join weeks hidden, and the week-boundary dates, a September sign-up clamped to the launch week. **Not yet run** (cloud runner). |
 | Dashed cells and caption | `HotStreakCard.tsx`, `membership.module.css`, `rewardsCopy.ts` | Render test in `membershipComponents.test.tsx`, **not yet run**. **Manual verification required**: look in en and ar, height. |
+
+## Step 9: card faces (owner-approved design "0 · Final cards in the app")
+
+- **Looks:** two styles, Metal (brushed, engraved type, steel chip, `•••• 4821`) and Bank-issued (printed guilloche lines, gold chip, contactless mark, `•••• •••• •••• 4821`), in 16 named themes. The stops and ink match the C4 palette board. The free colour picker is gone.
+- **Mini card:** exactly 88×56 with radius 7. Per the owner: the bank's short name is on the left, the localized card type on the right, and the chip and `••last4` are below. Used in the account card strip, the dashed add slot and the +N tile (both 56 tall), and the expense sheet's "Paid with" trigger (72px row, two-line name).
+- **Large face:** drawn at 340×214 with radius 13 and scaled: 252 in the carousel (wallet, picker, account detail, installment picker), 280 in the setup preview with the theme halo.
+- **Abbreviation (`bankAbbreviation`):** a catalogue match is abbreviated from its catalogue name ("National Bank of Egypt" gives NBE). A first word already in capitals of at most 4 letters is kept (CIB, NBE, QNB, HSBC). Otherwise each word gives its initial and a capitalised word gives itself: Banque Misr is BM, Emirates NBD is ENBD. Stop-words are skipped, and a single word is kept up to 4 letters, else its first 3. The maximum is 4; Arabic names keep their first word. A card under an account takes its parent's bank.
+- **Storage (migration 0341, applied):** two nullable columns, `payment_methods.card_style` ('metal' | 'bank') and `card_theme`. `color` stays a real hex, because avatars, tints and installed builds read it, and the app writes the theme's first stop into it.
+- **Older cards:** a card with no theme (or an unknown one) is drawn in the theme nearest its colour, style Bank-issued, so no card renders blank.
+
+| Item | Files | Status |
+|---|---|---|
+| Themes, contrast, nearest-theme mapping, abbreviation | `src/lib/payment/cardThemes.ts`, `cardThemes.test.ts` | **Automated verification (pending runner)**: all 16 themes ≥4.5:1 on both stops (lowest is copper at 4.96, checked by hand), old colours map, abbreviation table and max length. |
+| Mini card layout (abbreviation left, type right, ••last4, 88×56) | `CardFaceChip.tsx`, `CardStrip.tsx`, `AccountRow.tsx`, `accounts.render.test.ts` | **Automated verification (pending runner)**. **Manual verification required**: look in en and ar. |
+| Storage | `0341_payment_method_card_look.sql`, `database.types.ts`, `paymentMethodMapper.ts`, `types.ts` | Applied on live; both columns are nullable, `authenticated` can select and update them, `anon` cannot. `sync_pull` sends whole rows (`to_jsonb`), so the new columns sync. |
+| Large face, carousel, setup sheet (Metal \| Bank-issued + 16-theme picker), Paid with | `CardFace.tsx`, `CardThemePicker.tsx`, `PaymentCardCarousel.tsx`, `PaymentMethodSetupSheet.tsx`, `PaymentMethodPicker.tsx` (additive `variant="card"`), `ExpenseSheetForm.tsx`, i18n | **Manual verification required** (screenshot from the cloud runner). **Native verification required**: the faces in the iOS/Android WebView. |

@@ -3107,6 +3107,8 @@ export type Database = {
       }
       payment_methods: {
         Row: {
+          card_style: string | null
+          card_theme: string | null
           closed_at: string | null
           color: string
           created_at: string
@@ -3131,6 +3133,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          card_style?: string | null
+          card_theme?: string | null
           closed_at?: string | null
           color?: string
           created_at?: string
@@ -3155,6 +3159,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          card_style?: string | null
+          card_theme?: string | null
           closed_at?: string | null
           color?: string
           created_at?: string

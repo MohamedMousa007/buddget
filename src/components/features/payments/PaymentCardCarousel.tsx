@@ -2,28 +2,23 @@
 
 import { useT } from '@/lib/i18n'
 import { createElement, useRef, useState } from 'react'
-import { MoreVertical, Plus, Check } from 'lucide-react'
+import { MoreVertical, Plus } from 'lucide-react'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
-import { PAYMENT_TYPE_META, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
-import { shade, mix } from '@/lib/utils/color'
-import { cardFace } from '@/lib/ui/contrast'
+import { decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
+import { CARD_THEMES, cardBankName, cardLook } from '@/lib/payment/cardThemes'
+import { INK_DARK, INK_LIGHT } from '@/lib/ui/contrast'
 import type { PaymentMethod, PaymentMethodType } from '@/lib/store/types'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { IconButton } from '@/components/ui/IconButton'
-
-export { shade }
-
-// ── card gradient helper (shared with the setup preview) ───────────────────
-export function cardGradient(color: string): string {
-  const [light, mid, dark] = cardFace(color).stops
-  return `linear-gradient(140deg, ${shade(color, light)} 0%, ${mid === 1 ? color : shade(color, mid)} 48%, ${shade(color, dark)} 100%)`
-}
+import { cardKindLabel, cardNetworkIfKnown } from '@/components/features/accounts/accountDisplay'
+import { CardFace, FACE_W } from './CardFace'
 
 export function TypeGlyph({ type, className }: { type: PaymentMethodType; className?: string }) {
   return createElement(paymentTypeIcon(type), { className })
 }
 
 const CARD_W = 252
-const CARD_H = 158
+const CARD_H = 159
 const STEP = 132 // px between adjacent card centres
 const TAP_SLOP = 6 // movement under this many px counts as a tap, not a drag
 
@@ -54,6 +49,7 @@ export function PaymentCardCarousel({
   methods, active, onActiveChange, defaultLabel, hint, onCardSelect, onMenu, selectedId, onAddCard, addLabel,
 }: Props) {
   const t = useT()
+  const allMethods = useFinanceStore((s) => s.paymentMethods)
   const slotCount = methods.length + (onAddCard ? 1 : 0)
   const start = useRef<{ x: number; y: number } | null>(null)
   const didDrag = useRef(false)
@@ -143,11 +139,10 @@ export function PaymentCardCarousel({
         onPointerCancel={endDrag}
       >
         {methods.map((m, i) => {
-          const color = m.color ?? PAYMENT_TYPE_META[m.type].color
-          const { provider, tag } = decomposePaymentMethodName(m.name, m.last4)
-          const tail = m.label?.trim() || (m.last4 ? `•• ${m.last4}` : tag || '')
           const isSelected = selectedId != null && m.id === selectedId
-          const { ink } = cardFace(color)
+          const { style, theme } = cardLook(m)
+          const parent = m.parentId ? allMethods.find((p) => p.id === m.parentId) : undefined
+          const label = m.label?.trim()
           return (
             <div
               key={m.id}
@@ -155,59 +150,34 @@ export function PaymentCardCarousel({
               style={slotStyle(i)}
               onClick={() => tapSlot(i, () => onCardSelect?.(m))}
             >
-              <div
-                className="relative flex h-full w-full flex-col rounded-[20px] p-4 px-[18px] text-start"
-                style={{
-                  color: ink,
-                  background: cardGradient(color),
-                  boxShadow: `0 18px 40px -14px ${shade(color, 0.5)}, inset 0 1px 0 rgba(255,255,255,.16)`,
-                }}
+              <CardFace
+                theme={theme}
+                style={style}
+                bank={cardBankName(m, parent)}
+                kind={cardKindLabel(m.type, t.accountsPage)}
+                last4={m.last4}
+                holder={label || (onMenu || isSelected ? m.currency : undefined)}
+                currency={m.currency}
+                network={cardNetworkIfKnown(m)}
+                defaultLabel={m.isDefault && defaultLabel ? defaultLabel : undefined}
+                selected={!onMenu && isSelected}
+                reserveTopRight={!!onMenu}
+                scale={CARD_W / FACE_W}
               >
-                <div
-                  className="pointer-events-none absolute inset-0 rounded-[20px]"
-                  style={{ background: 'radial-gradient(120% 90% at 85% 8%, rgba(255,255,255,.16), transparent 60%)' }}
-                />
-                {m.isDefault && (
-                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                    <span className="font-sans text-[32px] font-extrabold uppercase tracking-[0.2em] opacity-15">
-                      {defaultLabel}
-                    </span>
-                  </div>
-                )}
-                <div className="relative flex items-start justify-between gap-2">
-                  <span className="flex h-8 w-[42px] shrink-0 items-center justify-center rounded-lg p-[7px]" style={{ background: mix(ink, 20) }}>
-                    <TypeGlyph type={m.type} className="h-full w-full" />
-                  </span>
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="truncate text-[0.5625rem] font-semibold uppercase tracking-[0.14em]">
-                      {PAYMENT_TYPE_META[m.type].label}
-                    </span>
-                    {onMenu ? (
-                      <IconButton
-                        size="sm"
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={(e) => { e.stopPropagation(); onMenu(m.id, e.currentTarget.getBoundingClientRect()) }}
-                        aria-label={t.a11y.manage}
-                        aria-haspopup="menu"
-                        className="-mr-1.5 -mt-0.5 text-inherit hover:bg-[color-mix(in_oklab,currentColor_15%,transparent)] hover:text-inherit"
-                      >
-                        <MoreVertical />
-                      </IconButton>
-                    ) : isSelected ? (
-                      <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-green)] text-[var(--color-brand-on-green)] shadow-[0_2px_6px_rgba(0,0,0,.25)]">
-                        <Check className="h-[14px] w-[14px]" strokeWidth={3} />
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="relative mt-auto text-start">
-                  <div className="truncate text-[21px] font-bold tracking-[-0.01em]">{provider}</div>
-                  <div className="mt-2.5 flex items-end justify-between">
-                    <span className="font-mono-numbers text-sm font-semibold tracking-[0.14em]">{tail}</span>
-                    <span className="font-mono-numbers text-xs font-bold">{m.currency}</span>
-                  </div>
-                </div>
-              </div>
+                {onMenu ? (
+                  <IconButton
+                    size="sm"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => { e.stopPropagation(); onMenu(m.id, e.currentTarget.getBoundingClientRect()) }}
+                    aria-label={t.a11y.manage}
+                    aria-haspopup="menu"
+                    className="absolute right-1 top-1 text-inherit hover:bg-[color-mix(in_oklab,currentColor_15%,transparent)] hover:text-inherit"
+                    style={{ color: CARD_THEMES[theme].ink === 'light' ? INK_LIGHT : INK_DARK }}
+                  >
+                    <MoreVertical />
+                  </IconButton>
+                ) : null}
+              </CardFace>
             </div>
           )
         })}
@@ -219,7 +189,7 @@ export function PaymentCardCarousel({
             style={slotStyle(methods.length)}
             onClick={() => tapSlot(methods.length, onAddCard)}
           >
-            <div className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-[20px] border border-dashed border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]">
+            <div className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-[10px] border border-dashed border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]">
               <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-brand-primary)]/12 text-[var(--color-brand-primary-ink)]">
                 <Plus className="h-6 w-6" />
               </span>
