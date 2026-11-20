@@ -321,7 +321,7 @@ const en: MembershipCopy = {
     manageHint: 'Change plan or cancel',
     restore: 'Restore purchases',
     restored: 'Checked. Your plan is up to date.',
-    restoreNothing: 'No purchase found for this store account.',
+    restoreNothing: 'Nothing to restore.',
     trial: {
       tryTitle: 'You have buddget Pro for 30 days',
       tries: ['Ask the Advisor a money question', 'Scan a receipt', 'Send Buddgy a voice message'],
@@ -570,7 +570,7 @@ const ar: MembershipCopy = {
     manageHint: 'تغيير الخطة أو الإلغاء',
     restore: 'استعادة المشتريات',
     restored: 'تم التحقق. خطتك محدّثة.',
-    restoreNothing: 'لا توجد عملية شراء لحساب المتجر هذا.',
+    restoreNothing: 'لا يوجد ما يُستعاد.',
     trial: {
       tryTitle: 'لديك buddget Pro لمدة 30 يوماً',
       tries: ['اسأل المستشار سؤالاً عن المال', 'امسح إيصالاً', 'أرسل لـ Buddgy رسالة صوتية'],

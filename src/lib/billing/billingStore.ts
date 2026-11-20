@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { apiFetchAuth } from '@/lib/apiBase'
 import type { EntitlementStatus } from '@/lib/entitlements/resolve'
 import type { HistoryItem, ProThisMonth, RewardsState } from '@/lib/loyalty/rewardsTypes'
+import { subscriptionView } from './subscriptionView'
 
 export interface UsageWindow { used: number; limit: number | null; resetAt: string | null; pct: number | null }
 export interface UsageState {
@@ -50,7 +51,8 @@ interface BillingStore {
 /** The one switch every billing surface reads: false until the server says true, so nothing shows by default. */
 export const billingOn = (me: BillingMe | null | undefined): boolean => me?.billingEnabled === true
 
-export const isPaidPlan = (me: BillingMe | null | undefined): boolean => !!me && me.planKey !== 'free'
+/** Pro that a store sold and the server recorded. A trial is not, and neither is a lapsed store row (`fromStore` stays true on it). */
+export const storeConfirmed = (me: BillingMe | null | undefined): boolean => !!me?.subscription?.fromStore && subscriptionView(me).proActive
 
 export const useBillingStore = create<BillingStore>((set, get) => ({
   me: null,
@@ -76,12 +78,18 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-/** After a purchase or restore the webhook grants access; the app only reflects it, so poll briefly until the plan shows. */
-export async function refreshUntilPaid(attempts = 6, delayMs = 2000): Promise<boolean> {
+/** After a purchase or restore the webhook grants access; the app only reflects it, so poll briefly until the store's Pro shows. */
+export async function refreshUntilStore(attempts = 6, delayMs = 2000): Promise<boolean> {
   for (let i = 0; i < attempts; i++) {
     const me = await useBillingStore.getState().refresh()
-    if (isPaidPlan(me)) return true
+    if (storeConfirmed(me)) return true
     if (i < attempts - 1) await sleep(delayMs)
   }
   return false
+}
+
+/** Asks the server to read this account from RevenueCat (for a webhook that never came), then reads the plan. User-triggered only. */
+export async function confirmWithStore(): Promise<boolean> {
+  await apiFetchAuth('/api/billing/sync', { method: 'POST' }).catch(() => undefined)
+  return storeConfirmed(await useBillingStore.getState().refresh())
 }

@@ -4,13 +4,15 @@ import { createElement } from 'react'
 import { en } from '@/lib/i18n/dictionaries/en'
 import { ar } from '@/lib/i18n/dictionaries/ar'
 
-const h = vi.hoisted(() => ({ fetch: vi.fn(), sdk: vi.fn(), trial: vi.fn() }))
+const h = vi.hoisted(() => ({ fetch: vi.fn(), sdk: vi.fn(), trial: vi.fn(), crash: vi.fn() }))
 vi.mock('@/lib/apiBase', () => ({ apiFetchAuth: h.fetch }))
 vi.mock('@/lib/billing/purchases', () => ({
   startPurchases: h.sdk, stopPurchases: h.sdk, loadPackages: h.sdk, purchasePackage: h.sdk, restorePurchases: h.sdk,
   openManageSubscription: h.sdk, purchasesAvailable: () => true,
+  retryPurchases: h.sdk, purchasesStatus: () => 'idle', onPurchasesChange: () => () => undefined,
 }))
 vi.mock('@/lib/billing/trialClaim', () => ({ claimTrial: h.trial }))
+vi.mock('@/lib/crash/init', () => ({ captureAppError: h.crash }))
 vi.mock('@/components/auth/AuthProvider', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }))
 
 import { BillingHost } from './BillingHost'
@@ -54,5 +56,14 @@ describe('while billingEnabled is true', () => {
     await startBillingSession('u9', true)
     expect(h.sdk).toHaveBeenCalledWith('u9')
     expect(h.trial).toHaveBeenCalledTimes(1)
+  })
+
+  it('BDG-019: a refused SDK configure is reported, not swallowed', async () => {
+    const refused = new Error('configure refused')
+    h.sdk.mockRejectedValue(refused)
+    h.trial.mockResolvedValue('already_claimed')
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    await startBillingSession('u10', true)
+    await vi.waitFor(() => expect(h.crash).toHaveBeenCalledWith(refused, 'billing.configure'))
   })
 })

@@ -89,6 +89,49 @@ describe('with a key on a device', () => {
   })
 })
 
+describe('BDG-019: SDK status, retry and package loading', () => {
+  it('reports starting then ready to listeners, and idle again after sign-out', async () => {
+    const m = await load({ ios: 'k' })
+    const seen: string[] = []
+    const off = m.onPurchasesChange(() => seen.push(m.purchasesStatus()))
+    await m.startPurchases('u1')
+    expect(seen).toEqual(['starting', 'ready'])
+    await m.stopPurchases()
+    expect(m.purchasesStatus()).toBe('idle')
+    off()
+  })
+
+  it('a refused configure is thrown and leaves the SDK failed; Retry configures again as the same user', async () => {
+    const m = await load({ ios: 'k' })
+    h.sdk.configure.mockRejectedValueOnce(new Error('no network'))
+    await expect(m.startPurchases('u1')).rejects.toThrow('no network')
+    expect(m.purchasesStatus()).toBe('failed')
+    expect(await m.loadPackages()).toEqual([])
+    expect(await m.retryPurchases()).toBe(true)
+    expect(h.sdk.configure).toHaveBeenLastCalledWith({ apiKey: 'k', appUserID: 'u1' })
+    expect(m.purchasesStatus()).toBe('ready')
+  })
+
+  it('retry with nobody signed in does nothing', async () => {
+    const m = await load({ ios: 'k' })
+    expect(await m.retryPurchases()).toBe(false)
+    expect(h.sdk.configure).not.toHaveBeenCalled()
+  })
+
+  it('an empty or failed offerings answer is asked again before giving up', async () => {
+    const m = await load({ ios: 'k' })
+    await m.startPurchases('u1')
+    const pkgs = [{ identifier: '$rc_annual' }]
+    h.sdk.getOfferings.mockResolvedValueOnce({ current: { availablePackages: [] } }).mockRejectedValueOnce(new Error('x')).mockResolvedValueOnce({ current: { availablePackages: pkgs } })
+    expect(await m.loadPackages(3, 0)).toBe(pkgs)
+    expect(h.sdk.getOfferings).toHaveBeenCalledTimes(3)
+    h.sdk.getOfferings.mockResolvedValue({ current: null })
+    expect(await m.loadPackages(2, 0)).toEqual([])
+    h.sdk.getOfferings.mockRejectedValue(new Error('store down'))
+    await expect(m.loadPackages(2, 0)).rejects.toThrow('store down')
+  })
+})
+
 describe('purchaseWithOffer (stay offers, iOS only)', () => {
   const pkg = { identifier: 'monthly', product: { identifier: 'pro_monthly', discounts: [{ identifier: 'stay30_2m' }] } } as never
   it('signs the discount on the product and buys the package with it', async () => {

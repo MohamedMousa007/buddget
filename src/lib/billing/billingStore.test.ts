@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const h = vi.hoisted(() => ({ fetch: vi.fn() }))
 vi.mock('@/lib/apiBase', () => ({ apiFetchAuth: h.fetch }))
 
-import { billingOn, isPaidPlan, refreshUntilPaid, useBillingStore, type BillingMe } from './billingStore'
+import { billingOn, refreshUntilStore, storeConfirmed, useBillingStore, type BillingMe } from './billingStore'
 import { buildPlanOptions } from './planOptions'
 
 const me = (over: Partial<BillingMe> = {}): BillingMe => ({ planKey: 'free', planName: 'Free', status: 'active', trialEndsAt: null, billingEnabled: false, sparks: null, ...over })
@@ -36,16 +36,18 @@ describe('the billing-off gate', () => {
   })
 })
 
-describe('refreshUntilPaid', () => {
-  it('retries until the webhook has granted the plan', async () => {
-    h.fetch.mockResolvedValueOnce(reply(me({ billingEnabled: true }))).mockResolvedValueOnce(reply(me({ billingEnabled: true, planKey: 'plus' })))
-    expect(await refreshUntilPaid(3, 0)).toBe(true)
+describe('refreshUntilStore', () => {
+  // BDG-019: this used to stop at any plan other than Free, so a trial looked paid before the store's webhook landed.
+  const fromStore = { fromStore: true, billingIssue: false, graceEndsAt: null, willRenew: true, renewsAt: '2099-01-01T00:00:00Z', productId: 'pro_monthly', memberSince: null }
+  it('retries until the webhook has granted the store plan', async () => {
+    h.fetch.mockResolvedValueOnce(reply(me({ billingEnabled: true, planKey: 'plus_trial', status: 'trialing' }))).mockResolvedValueOnce(reply(me({ billingEnabled: true, planKey: 'plus', subscription: fromStore })))
+    expect(await refreshUntilStore(3, 0)).toBe(true)
     expect(h.fetch).toHaveBeenCalledTimes(2)
   })
-  it('gives up after the attempts', async () => {
-    h.fetch.mockResolvedValue(reply(me({ billingEnabled: true })))
-    expect(await refreshUntilPaid(2, 0)).toBe(false)
-    expect(isPaidPlan(useBillingStore.getState().me)).toBe(false)
+  it('a trial is not enough, and it gives up after the attempts', async () => {
+    h.fetch.mockResolvedValue(reply(me({ billingEnabled: true, planKey: 'plus_trial', status: 'trialing', trialEndsAt: '2099-01-01T00:00:00Z' })))
+    expect(await refreshUntilStore(2, 0)).toBe(false)
+    expect(storeConfirmed(useBillingStore.getState().me)).toBe(false)
   })
 })
 
