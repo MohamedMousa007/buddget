@@ -17,8 +17,18 @@ Meaning: no existing test catches any of the 28 issues today. That is expected: 
 
 Runner notes kept for later jobs: the unit tests ran with app credentials removed, so none could reach live; the container's Chromium needs a path override (scratchpad wrapper config, no repo change); `NODE_USE_ENV_PROXY=1` is needed to reach Supabase; `POST /api/auth/welcome` answered 502 on the dev server 47 times without failing any journey (not investigated; possibly the dev server having no email key, see QA-10 notes); the runner wrote a git-ignored `.env.local` from the container's own environment.
 
-## Step 1 tests (job 2)
-Not run yet. Job text is in `11-implementation-report.md`.
+## Step 1 tests: runner job 2 (2026-11-20, commit `541020cd`)
+
+| Step | Result |
+|---|---|
+| `vitest` on `src/lib/server/ai/buddgy`, `src/app/api/buddgy` | 33 passed, 1 failed. All new stream cases in `gateway.test.ts` passed (21 of 21). The new route test passed. |
+| `npm run verify` | **failed**, 2 of 6,571; lint, types, migration check, audit and build OK |
+
+Both failures were in tests, not in the app:
+1. `route.test.ts:52`: the older content-length test saw the new test's call on a shared mock. Fixed in `b80e285b` (mocks cleared before each test).
+2. `sqlContracts.test.ts:35`: it pinned `ai_quota_settle_core` to its 0298 body, which 0337 changes on purpose. Fixed in `b80e285b`: it now checks that the function keeps no maintained counter and does not charge `error` or `aborted_empty`.
+
+Status: step 1 is **not yet Automated verification**; the rerun on `b80e285b` decides it.
 
 ## What stands in for a baseline today
 
