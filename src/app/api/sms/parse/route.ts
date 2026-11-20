@@ -1249,7 +1249,8 @@ export async function POST(request: Request) {
       message,
       templateId: matchedTemplateId,
       // resolveCurrency guarantees a supported code; the DB column is an enum.
-      currency: success && senderKey ? { value: parsed.currency as Database['public']['Enums']['currency_code'], confirmed: !currencyProvisional } : null,
+      // A held message does not make its sender known (S8A M-1): sms_sender_currency is what the new-sender hold reads.
+      currency: success && senderKey && !senderHeld && !capHeld && !aiCreditHeld ? { value: parsed.currency as Database['public']['Enums']['currency_code'], confirmed: !currencyProvisional } : null,
       isTransaction: success,
       parsedOk: success,
       kind: tx.kind ?? parsed.kind ?? null,
@@ -1266,7 +1267,7 @@ export async function POST(request: Request) {
   if (aiLearn) {
     const { key: learnKey, apiKey } = aiLearn
     // Booked means a row was posted or the message settled as the second leg of a pair; every hold is excluded.
-    const bookedNoHold = !addFailed && !senderHeld && !capHeld && !aiCreditHeld && !debtAwaitingUser && !salaryAwaitingUser
+    const bookedNoHold = !addFailed && !senderHeld && !capHeld && !aiCreditHeld && !debtAwaitingUser && !salaryAwaitingUser && !provisionalConfirm
       && (postedSomething || intentionalNoPost)
     if (bookedNoHold) {
       learnStatus = 'pending' // learnPattern overwrites with its real outcome

@@ -112,6 +112,19 @@ describe('POST /api/billing/revenuecat', () => {
     expect(h.rpc.mock.calls.every(([fn]) => fn === 'billing_note')).toBe(true)
   })
 
+  it('S8A B-1 a sandbox purchase applies by default; with REVENUECAT_IGNORE_SANDBOX=1 it is recorded and ignored', async () => {
+    await post({ ...purchase, id: 's1', environment: 'SANDBOX' })
+    expect(h.rpc.mock.calls[0]?.[0]).toBe('billing_apply')
+    process.env.REVENUECAT_IGNORE_SANDBOX = '1'
+    try {
+      h.rpc.mockReset().mockResolvedValue({ data: null, error: null })
+      expect(await (await post({ ...purchase, id: 's2', environment: 'SANDBOX' })).json()).toEqual({ ok: true, outcome: 'ignored' })
+      expect(h.rpc.mock.calls.map(([fn]) => fn)).toEqual(['billing_note'])
+    } finally {
+      delete process.env.REVENUECAT_IGNORE_SANDBOX
+    }
+  })
+
   it('answers 500 on a database failure so RevenueCat retries, but 200 for a user that does not exist', async () => {
     h.rpc.mockResolvedValue({ data: null, error: { message: 'down', code: '57P01' } })
     expect((await post(purchase)).status).toBe(500)

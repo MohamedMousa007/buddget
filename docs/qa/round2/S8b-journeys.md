@@ -102,3 +102,27 @@ Not run: voice entry and receipt scan (no web entry in Quick add, so the mocked-
 ## 5. Notes for the next round
 - The long sequential Playwright run on `next dev` degrades; run specs in groups of about 6 and keep workers at 1.
 - The `user` fixture must be requested by every round2 test (a missing one gave a false "signed out" in 5 early failures; fixed).
+
+## 6. Close-out: sync, sign-in and SMS pairing fixes (branch `claude/ecstatic-shamir-e2f695`)
+
+Verified by the cloud qa-runner (job 18 on fb961c4: verify, unit tests, adversarial.live 12/12, R13 on a cold server, R16, R17 green; R14 green after the Net worth poll in a6471aa). Migrations 0331 and 0334 are applied live.
+
+| Item | Fix | Test |
+|---|---|---|
+| D-1 | Sign-up shows "Sending your code took too long. Wait a few seconds and try again." for `hook_timeout`. The hook's 5 s budget is fixed by Supabase (not a dashboard setting); the hook itself was sped up in 4c9fd292 (parent session). | `authErrors.test.ts` |
+| D-2 / SYNC-P0 | Sign-out wipes only when the server acknowledged every edit; otherwise it asks first ("Sign out anyway" / "Stay signed in"), before any teardown. An offline or failed flush counts as unsent. | `signOutFlush.test.ts`, `financeSync.test.ts`, `signOutOrdering.test.ts`, R13 |
+| D-3 | Two phones of the same user settle an own transfer only with both the shared reference and the same counterparty name. Owner decision 2026-11-19: "approve". Credit-first pairing was confirmed working live (run-e2e E08). | `ownTransferDecision.test.ts`, `ipnTransfer.test.ts`, run-e2e E06 to E08 |
+| D-4 | A failed flush keeps retrying (2, 6, 15, 30, then every 60 s) while online. | `flushBaseline.test.ts`, R16 |
+| D-5 | 0331 holds a client delete time at the server's now; 0334 lets an Undo revive within the 3 s edit tolerance. | `reviveTombstone.test.ts`, adversarial.live D-5, R04a to R04c |
+| D-6 | Password sign-in times out after 20 s with a retry; a late abandoned success is signed out unless a newer attempt passed the device check. No timeout on the device check (it signed users out on a slow first load). | `signInTimeout.test.ts`, R13 cold start |
+| D-8 | Fixed by D-2's order: the wipe follows the sign-in screen at once. | R13 |
+| D-9 | 0331: a client write to a deleted row that does not revive it is skipped (no content on tombstones, no re-stamped delete time). | adversarial.live D-9 (2 cases) |
+| S7a | The failure pill says "N changes not saved yet, retrying". | R16 |
+| S8d bottleneck 6 / R17 | No writes on reload: the fingerprint is written when the page hides, and an update is sent only when the server row would change (reshaped rows, re-read stamps). | `reshapeNoWrite.test.ts`, `financeSync.test.ts`, R17 |
+| S-1 (S8a) | After a pull the baseline is the delivered copy plus the pulled rows, never the live store, so an edit made mid-pull is sent. | `financeSync.test.ts`, adversarial.live S-1 |
+| S-3, S-4, S-5 (S8a) | Undo restores (pocket withdrawal, schedule, activation, receipt) carry fresh edit times. | `undoFreshStamps.test.ts` |
+| S-6 (S8a) | A moved income date moves the exact time. Deferred: the Buddgy income path, which never sets it. | `updateExpenseDate.test.ts` |
+| S-7 (S8a) | The app-seeded vault is held in the primary account. Partial: a user with no bank account at seed time still gets none. | `seedMonthlySavingsVault.test.ts` |
+| Offline sheet crash (job 7) | A lazy sheet whose chunk cannot load stays closed and loads on reconnect instead of crashing. | `offlineSafeSheet.test.ts` |
+
+There were no `test.fail` markers to flip: R13 was a plain test whose check missed the dialog (fixed), and the other cases were added as new tests (R16, R17, adversarial.live D-5, D-9 and S-1). The SMS e2e setup now uses a fresh `qa-e2e-sms-*` user.
