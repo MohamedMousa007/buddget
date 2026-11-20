@@ -141,3 +141,13 @@ The brief asks for approval before migrations, reward-rule changes, security cha
 4. Phase 2: chat items as one group (009, 012, 010, 015, 014, 018), billing 020 after 1.4, then 017, 003.
 5. Phase 3 after mockups and rulings.
 6. One native build, then the device checklist in `10-native-test-requirements.md`.
+
+## Owner rulings, 2026-11-20 (design review of the ideas canvas https://claude.ai/artifact/1PzqdLcZDnhLhvL6hCv696)
+- **Streak (BDG-007):** keep today's 12-week strip and card, but week 1 is the week the user joined. The strip fills left to right from week 1 with no empty past weeks. Past 12 weeks it shows the latest 12. The streak ideas S1–S8 were not chosen. Build only after the final mockup is approved.
+- **Rewards tab:** the member card stays as it is. The hero ideas H1–H6 were not chosen.
+- **Card faces, every card everywhere** (`cardGradient`, `CardFaceChip`, `PaymentCardCarousel`, `CardStrip`, setup preview, payment picker, Buddgy):
+  - Two styles, "metal and matte" and "bank-issued realism". The minimal style is dropped.
+  - 16 named themes inspired by real card colours replace the free colour picker.
+  - The mini card shows the bank or provider name, the card type and ••last4, on its theme.
+  - A final mockup of the exact in-app look is being drawn for approval.
+  - This is a shared component change, so it needs regression coverage on contrast per theme and on the fields shown.
