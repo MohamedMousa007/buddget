@@ -85,3 +85,46 @@ test('D2 pocket created from an account you already have keeps net worth [QA-013
   expect(await qnbBalance(page)).toBe(5000)
   expect(await netWorthFlow(page)).toBe(5000)
 })
+
+test('D3 money leaving a pocket held in an account moves the account [S-2]', async ({ page }) => {
+  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 5000 })
+  await localWait(page, (s) => s.paymentMethods.find((m: any) => m.name === 'QNB Alahli' && m.openingBalance === 5000))
+  await newPocket(page, { kind: /^QNB Alahli/, amount: 500 })
+  const pocket = await localWait(page, (s) => s.savingsAccounts.find((a: any) => a.heldInPaymentMethodId))
+  expect(await netWorthFlow(page)).toBe(5000)
+
+  const withdraw = async (purpose: string, amount: number, cta: RegExp) => {
+    await goto(page, '/wealth')
+    await page.getByRole('button', { name: 'Withdraw' }).first().click()
+    const d = page.getByRole('dialog').filter({ has: page.getByRole('textbox', { name: 'Amount' }) }).last()
+    const from = d.getByRole('radio', { name: new RegExp(pocket.name) })
+    if (await from.count()) await from.click()
+    await d.getByRole('textbox', { name: 'Amount' }).fill(String(amount))
+    await d.getByRole('radio').filter({ hasText: purpose }).click()
+    return { d, cta }
+  }
+
+  await test.step('Spending 200: net worth and the account drop by 200, free stays', async () => {
+    const { d, cta } = await withdraw('Spending', 200, /Spend 200 from/)
+    await blur(page)
+    await d.getByRole('button', { name: cta }).click()
+    await expect(d).toBeHidden()
+    expect(await qnbBalance(page)).toBe(4800)
+    expect(await netWorthFlow(page)).toBe(4800)
+    await localWait(page, (s) => s.savingsAccounts.find((a: any) => a.id === pocket.id && a.currentBalance === 300))
+  })
+
+  await test.step('Pay a debt 100 from the pocket: net worth unchanged, the account drops by 100', async () => {
+    await addBorrow(page, { person: 'Ahmed', what: 'QA D loan', amount: 1000 })
+    const before = await netWorthFlow(page)
+    const accountBefore = await qnbBalance(page)
+    const { d } = await withdraw('Pay a debt', 100, /Pay 100 from/)
+    await d.getByRole('button', { name: 'Pick a debt' }).click()
+    await d.getByRole('radio', { name: /QA D loan/ }).click()
+    await blur(page)
+    await d.getByRole('button', { name: /Pay 100 from/ }).click()
+    await expect(d).toBeHidden()
+    expect(await qnbBalance(page)).toBe(accountBefore - 100)
+    expect(await netWorthFlow(page)).toBe(before)
+  })
+})
