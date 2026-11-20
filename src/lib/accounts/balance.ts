@@ -35,6 +35,7 @@ export interface AccountBalance {
 
 const THREE_DECIMALS = new Set(['KWD', 'BHD', 'OMR', 'JOD'])
 const unit = (currency: string) => (THREE_DECIMALS.has(currency) ? 1000 : 100)
+export const minorUnit = unit
 const RECEIVED = new Set(['confirmed', 'late', 'partial'])
 
 /** Instant of a ledger row: its exact time, else noon of its day (rows that predate `occurredAt`). */

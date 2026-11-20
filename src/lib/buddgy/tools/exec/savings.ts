@@ -466,9 +466,12 @@ const delete_savings_account: WriteImpl = {
     const hit = pocketOf(fin(), again.proposal.args.pocket)
     if ('error' in hit) return { ok: false, error: 'That pocket no longer exists.' }
     const id = hit.item.id
-    const { savingsAccounts, savingsTransactions, recurringSavingsDeposits, goals, incomeEvents, incomeSources } = fin()
+    const { savingsAccounts, savingsTransactions, recurringSavingsDeposits, goals, incomeEvents, incomeSources, accountAdjustments } = fin()
     const wasDefault = fin().profile.defaultCarryPocketId === id
     fin().deleteSavingsAccount(id)
+    // Balance-freezing adjustments the delete wrote for a held pocket: undo brings its rows (and their legs) back, so they go.
+    const knownAdj = new Set(accountAdjustments.map((a) => a.id))
+    const frozen = new Set(fin().accountAdjustments.filter((a) => !knownAdj.has(a.id)).map((a) => a.id))
     const { goals: afterGoals, incomeEvents: incomeEventsAfter, incomeSources: incomeSourcesAfter } = fin()
     const eventKeys = changedKeys(incomeEvents, incomeEventsAfter)
     const sourceKeys = changedKeys(incomeSources, incomeSourcesAfter)
@@ -483,6 +486,7 @@ const delete_savings_account: WriteImpl = {
               : g,
           )
           return {
+            ...(frozen.size ? { accountAdjustments: st.accountAdjustments.filter((a) => !frozen.has(a.id)) } : {}),
             savingsAccounts: restoreRows(st.savingsAccounts, savingsAccounts, new Set([id])),
             savingsTransactions: restoreRows(st.savingsTransactions, savingsTransactions, new Set(savingsTransactions.filter((t) => t.accountId === id).map((t) => t.id))),
             recurringSavingsDeposits: restoreRows(st.recurringSavingsDeposits, recurringSavingsDeposits, new Set(recurringSavingsDeposits.filter((r) => r.accountId === id).map((r) => r.id))),
