@@ -35,14 +35,7 @@ export function TermsPlansSections() {
         <p>
           <strong className={strong}>Refunds.</strong> Apple and Google take the payment and decide
           refunds under their own rules; you can ask for one in your store account. If a purchase is
-          refunded or a subscription ends, Pro access ends with it. Changed your mind within 30 days of
-          buying the yearly plan? On Android, tell us at{' '}
-          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-primary-ink)] hover:underline">
-            support@buddget.app
-          </a>{' '}
-          and we refund you. On iPhone, Apple handles refunds: we show you how to ask, and if Apple
-          says no we add 3 months to your plan. This applies to the yearly plan only, once per
-          subscription. Nothing here limits rights you have under the consumer law where you live.
+          refunded or a subscription ends, Pro access ends with it. Nothing here limits rights you have under the consumer law where you live.
         </p>
       </LegalSection>
 

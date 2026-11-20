@@ -1,5 +1,5 @@
 import { LegalSection } from '@/components/legal/LegalSection'
-import { Strong, SupportMail } from '@/components/legal/LegalInline'
+import { Strong } from '@/components/legal/LegalInline'
 
 /** Arabic of sections 7A–7C: Pro and the free trial, Sparks, Rewards and invites (numbered 7أ–7ج so the existing references stay valid). */
 export function TermsPlansSectionsAr() {
@@ -27,10 +27,7 @@ export function TermsPlansSectionsAr() {
         </p>
         <p>
           <Strong>الاسترداد.</Strong> يتولى Apple وGoogle استلام الدفع ويقرران عمليات الاسترداد وفق قواعدهما، ويمكنك طلبه من
-          حسابك في المتجر. وإذا استُرد مبلغ شراء أو انتهى اشتراك فينتهي معه الوصول إلى Pro. هل غيّرت رأيك خلال 30 يومًا من
-          شراء الخطة السنوية؟ على أندرويد، راسلنا على <SupportMail /> ونردّ لك المبلغ. وعلى iPhone يتولى Apple
-          الاسترداد: نوضّح لك كيف تطلبه، وإذا رفض Apple فنضيف 3 أشهر إلى خطتك. ينطبق هذا على الخطة السنوية فقط، مرة واحدة
-          لكل اشتراك. ولا يقيّد ما سبق حقوقك بموجب قانون المستهلك في بلد إقامتك.
+          حسابك في المتجر. وإذا استُرد مبلغ شراء أو انتهى اشتراك فينتهي معه الوصول إلى Pro. ولا يقيّد ما سبق حقوقك بموجب قانون المستهلك في بلد إقامتك.
         </p>
       </LegalSection>
 

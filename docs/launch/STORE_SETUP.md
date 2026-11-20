@@ -83,7 +83,7 @@ Prepared content only. Nothing was entered in App Store Connect, Play Console or
 
 Why changed (S5a business review): bank-SMS apps already exist in Egypt and the UAE, so no "only app that" wording; "Free. No ads." is gone (billing is on); the measured-accuracy claim is **held**: `docs/launch/S8f-bank-accuracy.md` shows no Egyptian bank at "supported" (NBE and CIB partial, the rest not enough data), so S5c gate 1 is not met. Until the per-bank table is published, the copy names no accuracy figure and no "supported" bank list. When gate 1 passes, add one line: "Reads texts from <banks in the published table>".
 
-**Council decision (2026-11-20, four voices, unanimous): option (a).** No accuracy figure and no bank names in any listing, ad or in-app SMS screen until the per-bank table is published. Not naming NBE or CIB either: a bank name reads as a promise, and 58% and 39% of their booked rows have no account. The "97% / 94% get a row" figure is not accuracy and is never quoted. Describe the mechanism instead (optional, the messages you allow, you check what is logged). The faster route to a real claim is fixing account attachment on NBE and CIB rows and labelling about 20 messages per bank; metadata can be edited after launch with no new build.
+**Owner decision (2026-11-20), over a 3-0 council vote for option (a):** the listing keeps an accuracy claim, in words only. Use "reads your bank texts accurately and keeps getting better". No percentage and no bank names until the per-bank table is published: `S8f-bank-accuracy.md` measures no figure ("booked correctly" is unmeasured), so any number would be one we cannot back. Never quote the "97% / 94% get a row" figure; it is not accuracy. Metadata can be edited after launch with no new build.
 
 Egypt first. UAE and Saudi listings stay plain until their bank tables exist.
 
@@ -101,6 +101,7 @@ Egypt first. UAE and Saudi listings stay plain until their bank tables exist.
   buddget tracks your spending, bills, debts, goals and installments in one place, in Egyptian pounds and other currencies. No bank login, ever.
 
   Private by design
+  - Accurate bank-text reading that keeps getting better.
   - Reading bank texts is optional and off until you turn it on. The app works fully without it.
   - On Android only incoming texts are seen, never your inbox. On iPhone, a Shortcut you create sends them.
   - Only business-sender and transaction-like messages leave your phone; the raw text is deleted within weeks.
@@ -133,6 +134,7 @@ Egypt first. UAE and Saudi listings stay plain until their bank tables exist.
   يتابع buddget مصروفاتك وفواتيرك وديونك وأهدافك وأقساطك في مكان واحد، بالجنيه المصري وعملات أخرى. بلا تسجيل دخول إلى البنك، أبدًا.
 
   خصوصية من الأساس
+  - قراءة دقيقة لرسائل البنك تتحسن باستمرار.
   - قراءة رسائل البنك اختيارية ومعطّلة حتى تفعّلها. والتطبيق يعمل كاملًا بدونها.
   - على أندرويد يرى التطبيق الرسائل الواردة فقط، لا صندوق الوارد. وعلى iPhone يرسلها اختصار تنشئه أنت.
   - لا يغادر هاتفك إلا رسائل الجهات التجارية والرسائل الشبيهة بالمعاملات، ويُحذف نصها الخام خلال أسابيع.
@@ -150,7 +152,7 @@ Egypt first. UAE and Saudi listings stay plain until their bank tables exist.
 
   30 يومًا من Pro علينا. كل حساب جديد يبدأ بكل ميزات Pro لمدة 30 يومًا بلا بطاقة. وبعدها تنتقل تلقائيًا إلى المجاني؛ لا يُخصم شيء ولا يُحذف شيء.
 
-Paywall copy (separate task, same rules): normal price and the founding end date, no crossed-out price, the yearly amount as the main annual price, no founding price, no "guarantee"; refund wording is the Terms 7A text.
+Paywall copy (separate task, same rules): normal price and the founding end date, no crossed-out price, the yearly amount as the main annual price, no founding price, no "guarantee", no refund promise.
 
 ### Store fields that must match the build
 
@@ -237,6 +239,6 @@ From the Play Console memory, `STORE_SETUP.md` above and `docs/MASTER_PLAN_LAUNC
 
 - Vercel: `NEXT_PUBLIC_REVENUECAT_IOS_KEY` (and the Android key), `REVENUECAT_WEBHOOK_AUTH`, `REVENUECAT_WEBHOOK_HMAC_SECRET`, `TRIAL_CLAIM_KEY_SECRET` (QA-59, until set the trial key falls back to plain SHA-256), `SMS_REQUIRE_DEVICE_HEADER=1`.
 - **14 days' notice before paid features go on sale:** the Terms promised it and the new Terms 7A repeats it. Send the in-app notice and email at least 14 days before Pro is promoted (S5c V-6).
-- Owner reads the new Terms 7A refund sentence ("if Apple says no we add 3 months", annual only, by support) and confirms support will really do it; it is the council wording from S5c P-7 but no code builds it.
+- Terms 7A refund text says only that Apple and Google decide refunds; no refund or extension promise of our own.
 - Egypt: a lawyer's read of the trial, refund and Sparks wording is still recommended (S5c section 11); a new Consumer Protection Law is expected to replace the e-commerce law.
 - Supabase: Send Email hook (done 2026-11-19), OTP length 6.
