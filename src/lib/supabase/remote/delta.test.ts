@@ -206,3 +206,38 @@ describe('QA-19: an undelivered profile or settings edit survives a pull', () =>
     expect(applyDelta(delivered, noDelta({ settings: serverSettings }), delivered).settings).toMatchObject({ hideAmounts: 'from-server' })
   })
 })
+
+describe('a pocket balance is not taken from the server while this device holds unsent ledger rows for it', () => {
+  const pocket = (over: object) => ({ id: 'p', name: 'Trip', createdAt: '2026-10-10T10:00:00.000Z', currentBalance: 500, ...over })
+  const tx = (id: string, type: string, amount: number) => ({ id, accountId: 'p', type, amount, currency: 'EGP', date: '2026-10-10' })
+  const snap = (accounts: object[], txs: object[]): Snapshot => ({ ...emptySnapshot(), savingsAccounts: accounts, savingsTransactions: txs } as unknown as Snapshot)
+  const serverPocket = (over: object) => noDelta({ savingsAccounts: { upserts: [pocket({ updatedAt: '2026-10-10T10:00:05+00:00', ...over })] as never, deletedIds: [] } })
+
+  it('a new pocket keeps its opening amount when the server copy was read before the opening deposit landed', () => {
+    // The server stores a new pocket at 0 and the deposit row raises it (0227): between the two writes its copy reads 0.
+    const local = snap([pocket({})], [tx('t1', 'deposit', 500)])
+    const out = applyDelta(local, serverPocket({ currentBalance: 0 }), emptySnapshot())
+    expect(out.savingsAccounts[0]).toMatchObject({ currentBalance: 500, updatedAt: '2026-10-10T10:00:05+00:00' })
+  })
+
+  it('an unsent withdrawal is not undone by a server copy that has not seen it', () => {
+    const opening = tx('t1', 'deposit', 500)
+    const delivered = snap([pocket({ updatedAt: '2026-10-10T09:00:00+00:00' })], [opening])
+    const local = snap([pocket({ currentBalance: 300, updatedAt: '2026-10-10T10:00:00.000Z' })], [opening, tx('t2', 'withdrawal', 200)])
+    const out = applyDelta(local, serverPocket({ name: 'Trip 2' }), delivered)
+    expect(out.savingsAccounts[0]).toMatchObject({ currentBalance: 300, name: 'Trip 2' })
+  })
+
+  it('takes the server balance when every ledger row was delivered, and when there is no baseline to tell', () => {
+    const opening = tx('t1', 'deposit', 500)
+    const local = snap([pocket({})], [opening])
+    expect(applyDelta(local, serverPocket({ currentBalance: 650 }), snap([pocket({})], [opening])).savingsAccounts[0].currentBalance).toBe(650)
+    expect(applyDelta(local, serverPocket({ currentBalance: 650 })).savingsAccounts[0].currentBalance).toBe(650)
+  })
+
+  it('a ledger edit that moves no money does not hold the balance', () => {
+    const delivered = snap([pocket({})], [tx('t1', 'deposit', 500)])
+    const local = snap([pocket({})], [{ ...tx('t1', 'deposit', 500), notes: 'renamed' }])
+    expect(applyDelta(local, serverPocket({ currentBalance: 650 }), delivered).savingsAccounts[0].currentBalance).toBe(650)
+  })
+})
