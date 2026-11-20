@@ -365,7 +365,8 @@ test.describe('two devices', () => {
       await signIn(B, user.email)
       await goto(B, '/flow')
       await expect(B.locator('main')).toContainText('QA R14 from A', { timeout: 30_000 })
-      expect(await tile(B, 'Net worth')).toBe(2900)
+      // The list can show A's expense a moment before the Net worth tile recomputes: poll the tile.
+      await expect.poll(() => tile(B, 'Net worth'), { timeout: 15_000 }).toBe(2900)
 
       // B goes offline, adds an expense and deletes A's.
       await ctxB.setOffline(true)
@@ -400,7 +401,8 @@ test.describe('two devices', () => {
       await expect.poll(async () => { sa = await ids(page); sb = await ids(B); return JSON.stringify([sa, sb]) }, { timeout: 40_000 }).toBe(JSON.stringify([want, want]))
       test.info().annotations.push({ type: 'evidence', description: `converged: A=${sa.join(',')} B=${sb.join(',')} server=${want.join(',')}` })
       await goto(page, '/flow'); await goto(B, '/flow')
-      expect(await tile(B, 'Net worth')).toBe(await tile(page, 'Net worth'))
+      const nwA = await tile(page, 'Net worth')
+      await expect.poll(() => tile(B, 'Net worth'), { timeout: 15_000 }).toBe(nwA)
     } finally { await ctxB.close() }
   })
 
