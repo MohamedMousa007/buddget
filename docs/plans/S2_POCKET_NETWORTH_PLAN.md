@@ -64,9 +64,10 @@ In the savings loop of `computeBalances` (`src/lib/accounts/balance.ts`), for a 
 | 2 | the pocket has no holder | none (unchanged) |
 | 3 | `t.transferGroupId` is set | find the other leg of the group and its pocket's holder `H2`. `H2 === H`: none. Otherwise: withdrawal `H −amount`, deposit `H +amount`. A missing other leg counts as a different holder |
 | 4 | `t.isCashFlow === false` | none (opening, declared money, correction: the earmark changed, the money did not move) |
-| 5 | deposit | none (unchanged: an earmark of money already in H) |
-| 6 | withdrawal with a paired income event (`incomeEvents` row whose id is `incomeEventIdForTx(t.id)`) that has **no** `paymentMethodId` | none: released inside H |
-| 7 | any other withdrawal (spend, logged spend, debt, invest, income sent to another account) | `H −amount` |
+| 5 | `t.source === 'carry'` | none: the month-carry sweep moves the leftover label, not money. The server writes these rows with the primary account as `paymentMethodId` (`carryAdjust.ts:80-85`, case 1); this row only covers a carry row written with no account, which would otherwise fall to case 8 and charge the holder for overspend its expenses already charged |
+| 6 | deposit | none (unchanged: an earmark of money already in H) |
+| 7 | withdrawal with a paired income event (`incomeEvents` row whose id is `incomeEventIdForTx(t.id)`) that has **no** `paymentMethodId` | none: released inside H |
+| 8 | any other withdrawal (spend, logged spend, debt, invest, income sent to another account) | `H −amount` |
 
 `apply()` already ignores an untracked account and rows at or before the account's opening anchor, and an excluded account is computed but not totalled, so those cases need no extra code (they get tests).
 
@@ -123,6 +124,7 @@ Failing tests first (hand-built rows are fine here, this is the pure function), 
 - debt-funded and invest withdrawals: holder −x;
 - income with a paired event without an account: holder unchanged; with account L: holder −x and L +x (the event's own credit, counted once);
 - correction (`isCashFlow:false`, no group) and the opening deposit: no leg;
+- a `source:'carry'` withdrawal with no account: no leg; with the primary account as `paymentMethodId`: today's transfer legs, unchanged;
 - move held → standalone: holder −x; standalone → held: holder +x; same holder: none; two holders: −x and +x; orphan leg: treated as crossing;
 - holder untracked: no balance entry and nothing thrown; withdrawal dated before the holder's opening anchor: no leg;
 - existing tests still pass (deposit with `paymentMethodId`, the held figure).
@@ -134,14 +136,16 @@ Failing tests first, **driven through the real store actions** (memory: test the
 Conflict note: the sync branch `claude/ecstatic-shamir-e2f695` edits `restoreDebtPayment` (lines 981-1003, the S-3 stamps), `updateIncomeEvent` and two undo setters in the same file. This slice edits lines 1827-1947 only; do not touch those hunks.
 
 ### Slice C — deleting a held pocket (Sonnet). After B (same file).
-Files: new `src/lib/accounts/pocketCloseAdjustments.ts` (+ test), `src/lib/store/useFinanceStore.ts` (`deleteSavingsAccount` only), `src/lib/savings/pocketUndo.ts` (+ test).
-Change: pure helper `pocketCloseAdjustments(before, after, pocketName, nowIso)` that runs `computeBalances` on both states (convert with `tryConvertCurrency` and the state's rates) and returns one adjustment per tracked account whose balance differs by at least one minor unit. `deleteSavingsAccount` calls it only when the pocket has `heldInPaymentMethodId`, inside the same `set`, and appends the rows to `accountAdjustments`. `deletePocketWithUndo` records the adjustment ids the delete added and removes them in the Undo.
+Files: new `src/lib/accounts/pocketCloseAdjustments.ts` (+ test), `src/lib/store/useFinanceStore.ts` (`deleteSavingsAccount` only), `src/lib/savings/pocketUndo.ts` (+ test), `src/lib/buddgy/tools/exec/savings.ts` (the undo of `delete_savings_account`, near line 471).
+Change: pure helper `pocketCloseAdjustments(before, after, pocketName, nowIso)` that runs `computeBalances` on both states (convert with `tryConvertCurrency` and the state's rates) and returns one adjustment per tracked account whose balance differs by at least one minor unit. `deleteSavingsAccount` calls it only when the pocket has `heldInPaymentMethodId`, inside the same `set`, and appends the rows to `accountAdjustments`. Both undo paths (`deletePocketWithUndo`, and Buddgy's own undo, which restores the rows itself) record the adjustment ids the delete added and remove them when the rows come back. Both also give the restored pocket and its transactions a fresh `updatedAt`, so the server does not keep them deleted while the freeze is gone.
+Dependency, written down: the server only revives a deleted row for a newer edit once the sync branch's rules (migrations 0331 and 0334) are live. Until that branch lands, an Undo of a held-pocket delete can still lose its rows on the next pull, and with them the legs. The sync branch must merge before the native build that ships this slice.
 Failing tests first: spend from Trip, delete Trip → H balance and net worth are the same before and after the delete; Undo → balances equal the state before the delete and no adjustment is left; deleting a held pocket with no crossing rows writes no adjustment; deleting a standalone pocket writes none.
 
 ### Slice D — sheet default and hint (Sonnet). Independent of A-C (different files); can run in parallel with them.
-Files: `src/lib/savings/legChoices.ts` (+ test), `src/components/features/savings-v3/useLegAccount.ts`, `src/components/features/savings-v3/WithdrawSheetV3.tsx`, `src/lib/i18n/dictionaries/en.ts`, `ar.ts`, `src/lib/i18n/types.ts`.
-Change: for a pocket with a holder, the "To account" row starts on a "Stays in <holder name>" choice that sends `toAccountId: null` (the store already reads `null` as "deliberately none"); the eligible accounts stay selectable. Under "Spend", when the pocket has a holder, show one muted line: en "Already recorded on <account>? Choose Back to income so it is not counted twice.", plus the Arabic line. Read `docs/DESIGN_SYSTEM.md` first; reuse the row and text primitives already in the sheet, tokens only, no new component. If the existing account row cannot show a "stays" choice without reshaping it, stop and report instead of changing the component.
-Failing tests first: `defaultLegAccountId` returns `undefined` for a held pocket even when another tracked account exists; unchanged for a standalone pocket. The sync branch also edits the dictionaries: add keys inside the `wealthSheets.money` block only.
+Files: `src/components/features/savings-v3/WithdrawSheetV3.tsx`, new `src/lib/savings/withdrawDestination.ts` (+ test), `src/lib/i18n/dictionaries/en.ts`, `ar.ts`, `src/lib/i18n/types.ts`.
+Scope guard: `defaultLegAccountId` and `useLegAccount` also feed the **deposit** sheets (`GoalAddMoneySheet.tsx:20`, `AddSavingsSheetV3.tsx:52`). Do **not** change them: the council decided the withdrawal default only, and a deposit from the primary account must stay a real transfer.
+Change: a pure helper `incomeDestination(pocket, pickedAccountId)` returning `null` (stays in the holder) for a held pocket until the user picks an account, and the picked or default leg account otherwise. In the withdraw sheet only, for a pocket with a holder, the "To account" row starts on a "Stays in <holder name>" choice and passes `toAccountId: null` (the store already reads `null` as "deliberately none"); the eligible accounts stay selectable. Under "Spend", when the pocket has a holder, show one muted line: en "Already recorded on <account>? Choose Back to income so it is not counted twice.", plus the Arabic line. Read `docs/DESIGN_SYSTEM.md` first; reuse the row and text primitives already in the sheet, tokens only, no new component. If the existing account row cannot show a "stays" choice without reshaping it, stop and report instead of changing the component.
+Failing tests first: `incomeDestination` returns `null` for a held pocket with no pick, the picked account once picked, and the usual default for a standalone pocket; `defaultLegAccountId` is unchanged for a held pocket (the deposit default still names the primary account). The sync branch also edits the dictionaries: add keys inside the `wealthSheets.money` block only.
 
 ### Slice E — journey test and records (Sonnet). After A-D.
 Files: `e2e/journeys/specs/d-pockets.spec.ts`, `e2e/README.md`, `CLAUDE_CONTEXT.md` (one paragraph: the rule of section 2 and the fixed-holder invariant).
@@ -187,6 +191,8 @@ Checked against the code, each a place where the design could have double counte
 - Excluded holder: the pocket is counted on its own and the holder is not totalled, so the extra leg changes nothing in net worth.
 - Deleting the paired income event alone turns an income withdrawal into "money left", the same result a standalone pocket gives today.
 - Rule order matters: transfer legs have `isCashFlow:false`, so case 3 must come before case 4.
+- Month-carry rows: the server stamps the primary account on them, so they keep today's transfer legs (or none when the pocket is held in that account); case 5 stops an account-less carry row from being read as a spend.
+- The deposit sheets share the leg-default helper with the withdraw sheet; slice D leaves that helper alone.
 
 Known limits, accepted:
 
@@ -198,7 +204,6 @@ Known limits, accepted:
 ## 9. Out of scope, listed as follow-ups
 
 - A standalone pocket deleted after deposits from an account: its account legs vanish with its rows, so the account gets the money back. Existing behaviour, the same class as slice C; needs an owner decision on what deleting a funded pocket means.
-- `pocketUndo` restores rows with their old edit times (S-3 class). It belongs to the sync branch's undo work.
 - "Pay an existing expense from a pocket" (linking): the real fix for the SMS overlap.
 - A deposit declared into a held pocket (`mode: 'declare'`, money from outside) does not raise the holder's balance.
 
