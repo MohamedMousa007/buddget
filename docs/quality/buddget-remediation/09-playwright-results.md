@@ -83,3 +83,10 @@ Step 3 (BDG-011 slice 2) is now **Automated verification**; Retry on a phone sta
 ## Runner job 9 (2026-11-20, commit `4bd0c2a3`)
 
 The targeted run passed: Buddgy, hooks, ai-chat and membership, 866 of 866. `npm run verify` had 1 failure, at `noStyledRawButtons.test.ts:144`: the new chat list's two row buttons had no `data-raw-button-ok` reason. Lint, types, migration check, audit and build passed. The markers were added in `b8516a9b`, and the rerun goes with the next job.
+
+## Runner job 10 (2026-11-20, commit `ac0fdb8f`)
+
+- **Targeted run:** 988 of 988 passed across payment, accounts, payments, rewards, membership, ai-chat, buddgy and hooks.
+- **`npm run verify`:** 1 failure, at `a11yFixes.test.tsx:188` (A11-8). Eight `text-[Npx]` font sizes in the new card faces don't follow the iOS text size. Converted to rem in `1749eeb1`; at the default size they look the same. Lint, types, migration check (306), audit and build passed.
+- **Screenshots:** 12 taken (6 English, 6 Arabic): Accounts strip, wallet carousel, add-card sheet top and themes, expense sheet, Rewards streak. They went to the owner for the visual check.
+- **Synthetic users:** 0 left on live.
