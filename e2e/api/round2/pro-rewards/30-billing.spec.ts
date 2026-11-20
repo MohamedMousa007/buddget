@@ -79,10 +79,11 @@ test.describe('RevenueCat webhook', () => {
     expect((await svc(`user_entitlements?user_id=eq.${u.id}&select=status`)).json[0].status).toBe('active')
   })
 
-  test('H8 S8A B-1 (fixed) a SANDBOX purchase (TestFlight, App Review, license tester) never gives Pro in production', async () => {
-    test.skip(process.env.REVENUECAT_ACCEPT_SANDBOX === '1', 'this server accepts sandbox events on purpose')
+  test('H8 S8A B-1 with REVENUECAT_IGNORE_SANDBOX=1 a SANDBOX purchase is answered ignored and gives no Pro', async () => {
+    test.skip(process.env.REVENUECAT_IGNORE_SANDBOX !== '1', 'the server accepts sandbox events (default, for App Review); run with the switch set on server and runner')
     const u = await user('h8')
-    await rcPost(ev(u, { environment: 'SANDBOX' }))
+    const r = await rcPost(ev(u, { environment: 'SANDBOX' }))
+    expect(r.json.outcome, mask(r.text)).toBe('ignored')
     const ent = (await svc(`user_entitlements?user_id=eq.${u.id}&select=plan_key`)).json[0]
     expect(ent?.plan_key ?? 'free').not.toBe('plus')
   })

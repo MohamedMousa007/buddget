@@ -73,6 +73,12 @@ describe('renderEmail', () => {
 })
 
 describe('verifySignedWebhook', () => {
+  it('S8A X-10 refuses a secret with no real key, so an empty HMAC key never verifies a forged signature', () => {
+    const now = 1_800_000_000
+    const ts = String(now)
+    const sig = 'v1,' + createHmac('sha256', Buffer.alloc(0)).update(`m1.${ts}.{}`).digest('base64')
+    expect(verifySignedWebhook({ id: 'm1', timestamp: ts, signature: sig }, '{}', 'v1,whsec_', now)).toBe(false)
+  })
   const secret = `whsec_${Buffer.from('shh').toString('base64')}`
   const sign = (id: string, ts: string, body: string) => `v1,${createHmac('sha256', Buffer.from('shh')).update(`${id}.${ts}.${body}`).digest('base64')}`
   const now = 1_800_000_000

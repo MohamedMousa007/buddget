@@ -42,7 +42,7 @@ export interface RcEvent {
   countryCode?: string | null
   /** The store offer applied to this transaction (`offer_code`, else `discount_identifier`); null when none. */
   offerId?: string | null
-  /** A store sandbox event (TestFlight, App Review, Play license testers): free, so it never grants anything in production. */
+  /** A store sandbox event (TestFlight, App Review, Play license testers). Free, so the route can refuse it (S8A B-1). */
   sandbox?: boolean
 }
 
@@ -159,7 +159,7 @@ function entitlementOf(ev: RcEvent, over: Partial<EntitlementWrite>): Entitlemen
  * The effect of one event, or 'ignore'. `transferSource` is the entitlement the transferring user held (the route reads it);
  * a TRANSFER event itself carries no period or product.
  */
-export function planEffects(ev: RcEvent, transferSource: EntitlementWrite | null = null, packIds: ReadonlySet<string> = new Set(), acceptSandbox = false): BillingEffect | 'ignore' {
+export function planEffects(ev: RcEvent, transferSource: EntitlementWrite | null = null, packIds: ReadonlySet<string> = new Set(), acceptSandbox = true): BillingEffect | 'ignore' {
   if (ev.sandbox && !acceptSandbox) return 'ignore'
   if (ev.type === 'TRANSFER') {
     const to = ev.transferredTo.find((id) => UUID.test(id))

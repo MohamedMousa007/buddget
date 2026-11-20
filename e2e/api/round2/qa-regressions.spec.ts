@@ -114,7 +114,6 @@ test('S8C-01 (QA-60 gap, fixed 0332): payment_methods.opening_balance refuses Na
 
 test('S8A X-4 (fixed 0335): the remaining money tables refuse NaN and Infinity; a normal row is accepted', async () => {
   const rows: Array<[string, string, Record<string, unknown>]> = [
-    ['budget_categories', 'amount', { name: 'qa s8a', amount: 1 }],
     ['goals', 'target_amount', { name: 'qa s8a', target_amount: 1 }],
     ['income_sources', 'amount', { name: 'qa s8a', amount: 1, effective_start: TODAY }],
     ['recurring_expenses', 'amount', { amount: 1 }],

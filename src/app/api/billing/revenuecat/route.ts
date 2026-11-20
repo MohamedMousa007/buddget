@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   }
 
   const { data: packs } = await service.from('spark_products').select('product_id').eq('active', true)
-  const effect = planEffects(ev, source, new Set((packs ?? []).map((p) => p.product_id)), process.env.REVENUECAT_ACCEPT_SANDBOX === '1')
+  const effect = planEffects(ev, source, new Set((packs ?? []).map((p) => p.product_id)), process.env.REVENUECAT_IGNORE_SANDBOX !== '1')
   if (effect === 'ignore') {
     const { error } = await service.rpc('billing_note', { p_user: (UUID.test(ev.appUserId) ? ev.appUserId : null) as string, p_event_id: ev.id, p_type: ev.type, p_event_ms: ev.eventMs })
     if (error) console.warn('[billing] note failed', ev.id, ev.type, error.message)

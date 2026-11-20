@@ -142,10 +142,10 @@ describe('S8A B-1 sandbox events', () => {
     expect(parseEvent({ event: { ...base, environment: 'PRODUCTION' } })?.sandbox).toBe(false)
     expect(parseEvent({ event: base })?.sandbox).toBe(false)
   })
-  it('a sandbox purchase or pack is ignored unless sandbox is accepted', () => {
-    expect(planEffects(ev({ sandbox: true }))).toBe('ignore')
-    expect(planEffects(ev({ sandbox: true, productId: 'sparks_650' }), null, new Set(['sparks_650']))).toBe('ignore')
-    expect(planEffects(ev({ sandbox: true }), null, new Set(), true)).not.toBe('ignore')
+  it('a sandbox purchase or pack is ignored when sandbox is refused; accepted by default (App Review buys in the sandbox)', () => {
+    expect(planEffects(ev({ sandbox: true }), null, new Set(), false)).toBe('ignore')
+    expect(planEffects(ev({ sandbox: true, productId: 'sparks_650' }), null, new Set(['sparks_650']), false)).toBe('ignore')
+    expect(planEffects(ev({ sandbox: true }))).not.toBe('ignore')
   })
 })
 

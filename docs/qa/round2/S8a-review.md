@@ -1,6 +1,6 @@
 # S8a: cross-module adversarial review of the QA fixes
 
-Date 2026-11-20. Reviewed on `eed68a89` (equal to `origin/main` at the start). Read-only: no app code changed. The only edits are two new `test.fail` cases in `e2e/api/round2/pro-rewards/30-billing.spec.ts` (H8, X6), their line in `e2e/README.md`, and this note.
+Date 2026-11-20. Reviewed on `eed68a89` (equal to `origin/main` at the start). The review was read-only. After it, the owner asked S8a to fix what it found; the fixes, their tests and their status are in section 0.
 
 Scope:
 - QA round 1, commits `a065400e` to `e3fefe97`, migrations 0318 to 0329.
@@ -32,19 +32,27 @@ Migrations 0335 and 0336 are applied live. Neither adds a column or changes a si
 | S-1 | P1 | Deferred to the sync branch | Sync engine (`SupabaseFinanceSync.ts`, `flushBaseline.ts`) | to write there: `e2e/sync/` |
 | S-3, S-4, S-5 | P1, P2 | Deferred to the sync branch | Undo restores and the 0319/0334 edit-time rules | that branch |
 | S-2 | P1 | Deferred, needs its own design pass | A pocket withdrawal has four uses (income, spend, debt, pocket transfer), each with a different account leg; a one-line `apply(holder, -amount)` would break income withdrawals and pocket-to-pocket transfers | `src/lib/accounts/__tests__/balance.test.ts` |
-| B-1 | P1 | **Fixed** | `revenuecat.ts`: `parseEvent` reads `environment`; `planEffects` ignores sandbox events unless the route passes `REVENUECAT_ACCEPT_SANDBOX=1` | `revenuecat.test.ts`, `route.test.ts`, e2e H8 |
+| B-1 | P2 (was P1) | **Switch added, default unchanged; owner decision** | `parseEvent` reads `environment`; with `REVENUECAT_IGNORE_SANDBOX=1` the route ignores sandbox events. The default still applies them, because App Review buys in the sandbox on every release (after launch too) and the app unlocks Pro only from the server (`refreshUntilPaid` polls `/me`), so ignoring them would fail review. Only TestFlight testers and reviewers can make sandbox purchases, hence P2. Options for the owner: leave it as it is; ignore only Sparks packs and invite upgrades for sandbox; or allow-list the review accounts | `revenuecat.test.ts`, `route.test.ts`, e2e H8 (runs only with the switch set) |
 | B-17 | P1 | **Fixed (0336, live)** | `trial_claim` refuses an account that already has a claim row; unique index `trial_claims_user_uidx` (0 duplicates before) | e2e X6 |
-| M-1 | P1 | **Fixed** | `parse/route.ts`: no sender currency is recorded for a held message, so a held credit never makes its sender known | `parse/route.test.ts` |
-| M-2 | P1 | **Fixed** | `maskForModel.ts` `maskForParse`: phone-like numbers keep their last four | `maskForModel.test.ts` |
+| M-1 | P1 | **Fixed** | `parse/route.ts`: no sender currency is recorded for a held message, so a held credit never makes its sender known. No cleanup needed: live has 0 rows held as `ai_credit_new_sender`, `sender_mismatch` or `sms_account_cap` | `parse/route.test.ts` |
+| M-2 | P1 | **Fixed** | `maskForModel.ts` `maskForParse`: phone-like numbers keep their last four. This narrows QA-36 ("mask identifiers"): the model now sees four digits of a phone, the same as it already did for account numbers | `maskForModel.test.ts` |
 | X-4 | P2 | **Fixed (0335, live)** | +-1e16 CHECK on 25 money columns, added NOT VALID then validated (0 offending rows; max about 1.2e6) | e2e `qa-regressions.spec.ts` S8A X-4 |
 | M-4 | P2 | **Fixed** | The learn gate excludes `provisionalConfirm` again (QA-39 dropped it by accident; the old gate went through `preAck`) | `parse/route.test.ts` |
 | B-12 | P3 | **Fixed** | UNCANCELLATION or REFUND_REVERSED with no expiry is ignored | `revenuecat.test.ts` |
+| X-3 | P2 | **Fixed** | `clientIp.ts` `rateBucketIp`: check-email limits key IPv6 on its /64 (IPv4 and IPv4-mapped unchanged) | `clientIp.test.ts` |
+| X-10 | P3 | **Fixed** | `webhook.ts`: a signing key under 16 bytes never verifies | `email.test.ts` |
+| B-15 | P3 | **Fixed** | Trial route answers 503, not `unverified`, when the Auth lookup fails | `entitlements/trial/route.test.ts` |
 | B-2 | P2 | Deferred, owner decision | Folding `+tag` for every domain reverses the tested S5c rule ("tags name different mailboxes"). With B-17 fixed, a tag only buys a new, empty account | — |
 | S-8 | P2 | Deferred, owner decision | Counting a no-rate entry 1:1 is a tested design ("never drops the row"); dropping it changes balances | — |
-| X-1, X-2, X-3, B-3 to B-7, M-3, M-5, M-6, S-6, S-7 | P2 | Deferred | Each needs a test that changes shared live state (session gate GUC, daily cap, plans), a design choice, or a rewrite of an applied migration (M-6) | — |
+| X-1 | P2 | Deferred | A test needs the `app.session_gate` setting changed on the shared live database | — |
+| X-2 | P2 | Deferred | A cache on the session check changes how fast a revoked session is refused (S8C-02, an owner rule) | — |
+| B-3, B-4, B-5, B-6, B-7 | P2 | Deferred | Design choices: cap per network, server-stamped activation time, lock ordering between redeem and claim, TRANSFER ordering and the 23505 answer | — |
+| M-3, M-5 | P2 | Deferred | Design choices: what counts as a known sender on iOS; a dated FX rate | — |
+| M-6 | P2 | Deferred | Means rewriting an applied migration; harmless unless 0321 is re-run | — |
+| S-6, S-7 | P2 | Deferred | Store and vault writers that sit next to the sync branch's undo work | — |
 | P3 list (section 3) | P3 | Deferred | Hygiene, except B-12 above | — |
 
-Owner action from B-1: while testers still buy through TestFlight sandbox, set `REVENUECAT_ACCEPT_SANDBOX=1` on Vercel production, and remove it at launch. Without it, a sandbox purchase on production now grants nothing.
+Owner decision from B-1: nothing changes until `REVENUECAT_IGNORE_SANDBOX=1` is set. Do not set it on production without a review-account plan (see the B-1 row).
 
 ## 1. Fix before launch (P1, plus the open P0 that sits on the sync branch)
 
@@ -182,23 +190,19 @@ For the owner, in dashboards:
 
 ## 7. Test cases added, and runs to ask the cloud qa-runner for
 
-Added, as `test.fail` with the finding id:
-- `e2e/api/round2/pro-rewards/30-billing.spec.ts`: **H8** (B-1, a sandbox purchase gives no Pro) and **X6** (B-17, no second trial after an email change).
+Added for the fixes (section 0):
+- Unit tests in `src/lib/billing/revenuecat.test.ts`, `src/app/api/billing/revenuecat/route.test.ts`, `src/app/api/sms/parse/route.test.ts`, `src/lib/sms/__tests__/maskForModel.test.ts`, `src/lib/server/clientIp.test.ts`, `src/lib/server/email/email.test.ts` and `src/app/api/entitlements/trial/route.test.ts`.
+- e2e `S8A X-4` in `e2e/api/round2/qa-regressions.spec.ts`. Each table first proves that a normal row is accepted (`budget_categories` is left out: it needs a plan).
+- X6 is a plain test (fixed). H8 checks that the answer is `ignored` and runs only when `REVENUECAT_IGNORE_SANDBOX=1` is set on both the server and the runner.
 
-Added for the fixes (section 0): unit tests in `src/lib/billing/revenuecat.test.ts`, `src/app/api/billing/revenuecat/route.test.ts`, `src/app/api/sms/parse/route.test.ts` and `src/lib/sms/__tests__/maskForModel.test.ts`; e2e `S8A X-4` in `e2e/api/round2/qa-regressions.spec.ts`. H8 and X6 are now plain passing tests (fixed).
-
-Runs to ask for (branch `claude/s8a-qa-fix-review-2159fb`), superseding the list below:
+Runs to ask for (branch `claude/s8a-qa-fix-review-2159fb`):
 - A. `npm run verify` (lint, types, tests in Cairo with coverage and New York, migrations, audit, build).
 - B. `npx playwright test -c e2e/api/round2/pro-rewards/playwright.config.ts --reporter=line --trace off`, the whole file set, so X1 to X5 confirm 0336 broke nothing. Then `node e2e/api/round2/pro-rewards/teardown.mjs`; 0 synthetic users left.
 - C. `npx playwright test -c e2e/api/round2/playwright.config.ts qa-regressions --reporter=line --trace off` (QA-60, S8C-01, S8A X-4), then `node e2e/api/round2/teardown.mjs`.
 
-Earlier list (before the fixes):
-1. `QA_SHOW_OPEN_BUGS=1 npx playwright test -c e2e/api/round2/pro-rewards/playwright.config.ts --reporter=line --trace off -g "H8|X6"`. With the switch set, the `test.fail` marks are off, so the report shows which line failed: it should be the final `expect`, not setup (a daily-cap hit on the first claim, or the sign-in after the email change). Then run once without the switch (both should report as expected failures), run `node e2e/api/round2/pro-rewards/teardown.mjs`, and check that 0 synthetic users are left.
-2. Cases still to write in the fix sessions (no existing case covers them):
-   - S-1: `e2e/sync/`, an edit made during a pull is on the server after the next flush.
-   - S-2: `src/lib/accounts/balance.test.ts`, paying from a held pocket lowers net worth.
-   - M-1: `e2e/sms/`, a second AI-read credit from the same new sender is still held.
-   - M-4: the parse route unit test, a provisional-currency row is not learned.
+Cases still to write in the fix sessions:
+- S-1: `e2e/sync/`, an edit made during a pull is on the server after the next flush.
+- S-2: `src/lib/accounts/__tests__/balance.test.ts`, paying from a held pocket lowers net worth.
 
 ## 8. Checked and found correct (one line each)
 
