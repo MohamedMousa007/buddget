@@ -6,52 +6,66 @@ import { isPlus, type EntitlementWrite, type RcEvent } from './revenuecat'
  */
 export const SYNC_EVENT_TYPE = 'SYNC_PURCHASE'
 
-interface RcSubscription {
-  expires_date?: string | null
-  purchase_date?: string | null
+// ponytail: fallback for a subscription whose entitlements do not list its product. RevenueCat product id -> store id, iOS app
+// app5008c2628f (list-products, 2026-11-20). Add the Play products here when they are created.
+const STORE_ID_OF: Readonly<Record<string, string>> = { prodc5ccfbb979: 'pro_monthly', prod0ad078c15f: 'pro_annual' }
+
+/** The fields read from a REST v2 Subscription (`GET /v2/projects/{project}/customers/{customer}/subscriptions`). Times are ms. */
+interface RcV2Subscription {
+  product_id?: string | null
   store?: string | null
-  is_sandbox?: boolean
-  unsubscribe_detected_at?: string | null
-  billing_issues_detected_at?: string | null
-  grace_period_expires_date?: string | null
-  refunded_at?: string | null
-  price?: { amount?: number | null; currency?: string | null } | null
+  environment?: string | null
+  gives_access?: boolean
+  status?: string | null
+  auto_renewal_status?: string | null
+  current_period_starts_at?: number | null
+  current_period_ends_at?: number | null
+  ends_at?: number | null
+  country?: string | null
+  entitlements?: { items?: Array<{ products?: { items?: Array<{ id?: string; store_identifier?: string }> } }> } | null
 }
 
-const ms = (v: unknown): number | null => {
-  const t = typeof v === 'string' ? Date.parse(v) : NaN
-  return Number.isFinite(t) ? t : null
+const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null)
+
+/** The store's product id (`pro_monthly`): from the entitlement's product list, else the catalogue map above. */
+function storeProductId(sub: RcV2Subscription): string | null {
+  if (!sub.product_id) return null
+  for (const ent of sub.entitlements?.items ?? []) {
+    const found = ent.products?.items?.find((p) => p.id === sub.product_id)?.store_identifier
+    if (found) return found
+  }
+  return STORE_ID_OF[sub.product_id] ?? null
 }
 
 export interface SyncedPurchase {
-  /** A purchase event for `planEffects`, stamped at the purchase time with an id that repeats for the same period and state. */
+  /** A purchase event for `planEffects`, stamped at the period start with an id that repeats for the same period and state. */
   ev: RcEvent
-  /** What the subscriber shows beyond a purchase: a cancelled renewal or a billing problem. */
+  /** What the subscription shows beyond a purchase: a renewal turned off or a billing problem. */
   patch: Partial<EntitlementWrite>
 }
 
 /**
- * The live Pro subscription in a `GET /v1/subscribers/{id}` body, or null when there is none. Only a store subscription that
- * has not expired and was not refunded counts: this path grants what a missed webhook should have, it never takes access away
- * (an expiry or refund keeps coming from the webhook), so a trial is never ended by it.
+ * The live Pro subscription in a v2 subscriptions list, or null when there is none. Live is RevenueCat's own `gives_access` on an
+ * App Store or Play subscription: this path grants what a missed webhook should have and never takes access away (an expiry or a
+ * refund keeps coming from the webhook), so a trial is never ended by it.
  */
-export function syncedPurchase(body: unknown, userId: string, nowMs: number): SyncedPurchase | null {
-  const root = body as { request_date_ms?: number; subscriber?: { subscriptions?: Record<string, RcSubscription> } } | null
-  const now = typeof root?.request_date_ms === 'number' ? root.request_date_ms : nowMs
-  let best: { productId: string; sub: RcSubscription; purchasedMs: number; expirationMs: number } | null = null
-  for (const [productId, sub] of Object.entries(root?.subscriber?.subscriptions ?? {})) {
-    const purchasedMs = ms(sub?.purchase_date)
-    const expirationMs = ms(sub?.expires_date)
-    if (!isPlus(productId) || purchasedMs === null || expirationMs === null || expirationMs <= now || sub.refunded_at) continue
-    if (sub.store !== 'app_store' && sub.store !== 'play_store') continue
-    if (!best || expirationMs > best.expirationMs) best = { productId, sub, purchasedMs, expirationMs }
+export function syncedPurchase(body: unknown, userId: string): SyncedPurchase | null {
+  const items = (body as { items?: RcV2Subscription[] } | null)?.items
+  let best: { productId: string; sub: RcV2Subscription; purchasedMs: number; expirationMs: number } | null = null
+  for (const sub of Array.isArray(items) ? items : []) {
+    if (!sub || sub.gives_access !== true || (sub.store !== 'app_store' && sub.store !== 'play_store')) continue
+    const productId = storeProductId(sub)
+    const purchasedMs = num(sub.current_period_starts_at)
+    const expirationMs = num(sub.current_period_ends_at)
+    if (!isPlus(productId) || purchasedMs === null || expirationMs === null) continue
+    if (!best || expirationMs > best.expirationMs) best = { productId: productId!, sub, purchasedMs, expirationMs }
   }
   if (!best) return null
   const { productId, sub, purchasedMs, expirationMs } = best
-  const amount = typeof sub.price?.amount === 'number' && Number.isFinite(sub.price.amount) ? sub.price.amount : null
-  const issue = sub.billing_issues_detected_at != null
-  const unsubscribed = ms(sub.unsubscribe_detected_at)
-  const state = issue ? 'issue' : unsubscribed !== null ? 'canceled' : 'active'
+  const issue = sub.status === 'in_billing_retry' || sub.status === 'in_grace_period'
+  const canceled = sub.auto_renewal_status === 'will_not_renew'
+  const state = issue ? 'issue' : canceled ? 'canceled' : 'active'
+  const graceMs = sub.status === 'in_grace_period' ? (num(sub.ends_at) ?? expirationMs) : null
   const ev: RcEvent = {
     type: 'INITIAL_PURCHASE',
     id: `sync:${userId}:${productId}:${purchasedMs}:${state}`,
@@ -61,18 +75,21 @@ export function syncedPurchase(body: unknown, userId: string, nowMs: number): Sy
     store: sub.store as 'app_store' | 'play_store',
     purchasedMs,
     expirationMs,
-    graceMs: ms(sub.grace_period_expires_date),
+    graceMs,
     cancelReason: null,
+    // store_subscription_identifier is the latest transaction, not the original one; the webhook fills store_original_txn.
     originalTxn: null,
     transferredFrom: [],
     transferredTo: [],
     transactionId: null,
-    priceMicros: amount === null ? null : Math.round(amount * 1_000_000),
-    currency: sub.price?.currency ?? null,
-    sandbox: sub.is_sandbox === true,
+    // No store price on a v2 subscription (only USD revenue); the webhook brings the real price.
+    priceMicros: null,
+    currency: null,
+    countryCode: typeof sub.country === 'string' && sub.country.length === 2 ? sub.country : null,
+    sandbox: sub.environment === 'sandbox',
   }
   const patch: Partial<EntitlementWrite> = issue
-    ? { status: 'past_due', grace_ends_at: ev.graceMs === null ? null : new Date(ev.graceMs).toISOString() }
-    : unsubscribed !== null ? { status: 'canceled', will_renew: false, canceled_at: new Date(unsubscribed).toISOString() } : {}
+    ? { status: 'past_due', grace_ends_at: graceMs === null ? null : new Date(graceMs).toISOString() }
+    : canceled ? { status: 'canceled', will_renew: false } : {}
   return { ev, patch }
 }
