@@ -26,6 +26,8 @@ export const test = base.extend<{ shim: void; user: QaUser; keepUser: boolean; o
     info.annotations.push({ type: 'qa-user', description: `${email} ${id}` })
     await signIn(page, email)
     await use({ email, id })
+    // Close the page first: a still-open page keeps flushing while the user's rows cascade away (FK errors, deadlocks in the log).
+    await page.close().catch(() => undefined)
     if (!keepUser && !process.env.QA_KEEP_USERS) await deleteUser(email).catch(() => undefined)
   },
 })
