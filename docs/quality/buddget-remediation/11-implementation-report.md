@@ -220,3 +220,71 @@ Buddgy chats now work like ChatGPT and Claude, inside the same pop-up.
 | Mini card layout (abbreviation left, type right, ••last4, 88×56) | `CardFaceChip.tsx`, `CardStrip.tsx`, `AccountRow.tsx`, `accounts.render.test.ts` | **Automated verification** (runner jobs 10–11). **Manual verification required**: look in en and ar. |
 | Storage | `0341_payment_method_card_look.sql`, `database.types.ts`, `paymentMethodMapper.ts`, `types.ts` | Applied on live; both columns are nullable, `authenticated` can select and update them, `anon` cannot. `sync_pull` sends whole rows (`to_jsonb`), so the new columns sync. |
 | Large face, carousel, setup sheet (Metal \| Bank-issued + 16-theme picker), Paid with | `CardFace.tsx`, `CardThemePicker.tsx`, `PaymentCardCarousel.tsx`, `PaymentMethodSetupSheet.tsx`, `PaymentMethodPicker.tsx` (additive `variant="card"`), `ExpenseSheetForm.tsx`, i18n | **Manual verification required** (screenshot from the cloud runner). **Native verification required**: the faces in the iOS/Android WebView. |
+
+## Step 11: Buddgy action cards (owner-approved canvas "Every Buddgy action" and "Card components")
+
+- **Contract (`src/lib/buddgy/tools/proposal.ts`):** all of these are optional, so every existing proposal still builds.
+  - `PreviewModel` gains `pattern` (`record | batch | create | change | move | remove | status | go`).
+  - Record and move: `amount`, `currency` and `what`. Move also has `from` / `to`, each `{ name, color?, now?, after? }`.
+  - `methodRef`: the method the pay-with strip rings.
+  - Create: `entity`, plus `card` (enough of a method to draw its face).
+  - `missing` and `guessed`: field keys.
+  - Batch: `items[]`, each `{ key, proposal }`.
+  - `PreviewRow` gains `key`, so a body that draws an arg its own way can skip that row.
+- **Pattern derivation (`tools/pattern.ts`):** `patternOf` uses the tool's own `pattern`, else `derivePattern(name)`.
+  - The rule is a name table first, then prefixes (`delete_` / `forget_` / `cancel_` / `clear_` give remove, `add_` gives create), then tone, else change.
+  - Risk does not decide it: `activate_budget_plan` is `strong` but is a status card, and `cancel_subscription` is `approve` but is a remove card.
+  - `remember` is a create card (it is not in the spec table).
+  - `add_income` sets its own pattern: create for a recurring source, record for money received once.
+  - All 51 write and nav tools map.
+- **Tools enriched:**
+  - `add_expense`: record fields, row keys, `missing: ['method']` when no method was named and more than one exists (the default stays as the ringed guess; risk and what apply writes are unchanged), and `guessed: ['category']`.
+  - `add_income`.
+  - `transfer_between_pockets` and `withdraw_from_savings`: from/to with balances now and after.
+  - `add_payment_method` and `add_credit_card`: a card face.
+  - Every other tool renders through derivation, with the facts its rows already carry.
+- **Batch (`tools/batch.ts`):**
+  - Two or more `add_expense` proposals in one reply group into one card in `finishWithProposals`. This runs before the auto pass, so rows never auto-apply one by one, and it covers both the local quick add and model turns.
+  - The batch is not a tool, so the model never sees it.
+  - Removing a row rebuilds the card, so the count, the total and the saved chat agree.
+  - Apply writes the rows in order. The store has no transaction, so a failing row takes back the rows already written, and Try again cannot double them.
+  - One Undo takes back every row.
+  - The model's history notes name the rows.
+- **Hook (`useBuddgyChat`):**
+  - apply dispatches the batch.
+  - `reviseProposal` takes an optional `rowKey`.
+  - New `removeBatchRow`.
+  - New `retryProposal`, for Try again on "Couldn't apply".
+- **UI (`src/components/features/ai-chat/cards/`):**
+  - The shell is `BuddgyActionCard`. `AfterState` covers Done + Undo, Undone, Skipped, Out of date, and Couldn't apply + Try again, with the same statuses and copy keys.
+  - `EditFields` is the old edit form, moved here.
+  - `QuestionField` asks a missing field with the control that fits it.
+  - There are eight bodies, plus `RecordPickers`.
+  - Pickers:
+    - `PayWith`: `CardFaceChip` 88×56 mini cards plus Cash, the guess ringed, and Other opening `SelectPaymentMethodSheet`.
+    - `CategoryPick`: `CategoryGlyph` chips, top 5 by use, then More.
+    - `DatePick`: Today, Yesterday, and Pick a date opening `UnifiedDatePicker`.
+    - `AccountPick`: `SelectableCard` and `BrandMark`.
+  - Sheets mount only when opened.
+  - Reused: `Button`, `IconButton`, `OptionChip`, `SelectableCard`, `Badge`, `FactsTable`, `AmountField`, `Input`, `ProgressRing`, `BrandMark`, `CardFaceChip`, `CardFace` (create preview at 0.6 scale).
+- **Copy:** `src/lib/i18n/buddgyCardCopy.ts` (en and ar). CTA verbs include "Add expense", "Add 3 expenses" (counting down to "Nothing to add"), "Move EGP 2,000.00", "Add card", "Pause", "Yes, cancel it" and "Keep it". Where nothing more specific fits, the label falls back to the chat's `approveRisk`.
+- **Differences from the mockups:**
+  - **Record lines:** Paid with is also a line that opens its strip; it starts open only when the method is missing. The mockup shows the strip open, with no line.
+  - **Pay-with tiles:** 96×84. The mini card is 88×56 per the approved code, where the mockup tile holds a 70×44 face. The strip caps at 6 tiles plus Other.
+  - **"Paid with?" is not a blocker:** the card applies with the ringed guess, as today. The mockup's "Needed to add it" is shown, but the primary button stays enabled.
+  - **Create preview:** the card face, or a `BrandMark` with the first row's name, or a 0% `ProgressRing` for a goal. There is no `AccountRow` preview for a new account: `AccountRow` needs a balance view the proposal does not have.
+  - **Create questions:** no tool emits `missing` for a create field yet. The mockup's questions ("Which account pays it off?", the SMS toggle, "How will you pay it back?") have no tool argument behind them. No model-facing params were added; `QuestionField` is ready for when they exist.
+  - **Remove and status:** the item is drawn as facts rows, not a `BrandMark` row (proposals carry no brand colour). There is no "undo for 10 seconds" note; Undo stays on the Done line where the tool returns one.
+  - **Move:** the `via` line ("InstaPay · counts toward…") is not shown. The goal note stays in the effect line.
+  - **Change:** the meta month in the head is not shown.
+  - **Go:** a nav card shows only when moving needs a yes (BDG-015, unchanged). Plain navigation still acts with no card.
+  - **E2E journey:** `g-buddgy` now accepts "Add expense" as the approve label.
+
+| Item | Files | Status |
+|---|---|---|
+| Pattern derivation for every write tool | `tools/pattern.ts`, `__tests__/pattern.test.ts` | **Automated verification (pending runner)**: every write and nav tool in `TOOLS` gets its expected pattern, risk does not decide it, unknown tools fall back, saved proposals derive. |
+| Record, move and create fields on tools | `exec/expenses.ts`, `income.ts`, `savings.ts`, `payments.ts`, `debts.ts`, `__tests__/batch.test.ts`, `income.test.ts`, `savings.test.ts` | **Automated verification (pending runner)** |
+| Batch: grouping, remove a row (count, total, CTA), apply all, undo all, roll back on failure, stale on restore | `tools/batch.ts`, `useBuddgyChat.ts`, `__tests__/batch.test.ts` | **Automated verification (pending runner)** for the pure functions. The hook wiring (apply, revise by row, remove, Try again) has no automated test. |
+| Picker revises the proposal (method answers `missing`, category, date, a batch row keeps its key) | `__tests__/batch.test.ts` | **Automated verification (pending runner)** through `reviseProposalArgs` and `replaceBatchItem`. Taps are not covered (node render tests only). |
+| Shell, eight bodies, after states | `cards/**`, `ProposalCard.tsx`, `cards/actionCards.render.test.tsx` | **Automated verification (pending runner)**: one static render per pattern, plus each after state. **Manual verification required**: the look against the mockups in en and ar, light and dark, picker taps, the Other sheet, Pick a date. |
+| Pay-with strip, sheets over the chat | `pickers/PayWith.tsx`, `DatePick.tsx` | **Native verification required**: the sheet stacking above the chat panel, and the horizontal strip scroll in the iOS and Android WebView. |
