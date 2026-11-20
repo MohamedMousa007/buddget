@@ -37,6 +37,8 @@ describe('POST /api/buddgy/turn, spend line', () => {
     expect(res.status).toBe(200)
     const frames = (await res.text()).split('\n\n').filter(Boolean).map((l) => JSON.parse(l.slice(5)))
     expect(frames[0]).toMatchObject({ t: 'meta', chatId: 'c1', soft: false })
+    // BDG-010: an answer turn runs at the minimal thinking level, so it is labelled Quick.
+    expect(frames[0]).toMatchObject({ mode: 'quick' })
     expect(frames.at(-1)).toMatchObject({ t: 'done' })
     expect(h.settle).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ status: 'ok' }))
   })

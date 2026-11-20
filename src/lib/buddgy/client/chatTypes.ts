@@ -53,6 +53,8 @@ export interface BuddgyItem {
   local?: boolean
   /** `free`: it used the plan's free monthly Advisor answer. `locked`: the Advisor is in Pro, so the fast model answered. */
   advisor?: 'free' | 'locked'
+  /** How the server made this reply (BDG-010): `thinking` only when it really ran above the minimal thinking level. */
+  mode?: 'quick' | 'thinking'
   /** The chat passed its soft budget: suggest a fresh one. */
   longChat?: boolean
 }
@@ -69,4 +71,5 @@ export interface TurnOutcome {
   truncated: boolean
   intent: BuddgyIntent
   advisor?: 'free' | 'locked'
+  mode?: 'quick' | 'thinking'
 }

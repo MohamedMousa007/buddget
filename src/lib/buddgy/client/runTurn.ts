@@ -145,6 +145,7 @@ export async function runTurn(args: RunTurnArgs): Promise<TurnOutcome> {
   let soft = false
   let truncated = false
   let advisor: 'free' | 'locked' | undefined
+  let mode: 'quick' | 'thinking' | undefined
   // The plan sets the hop cap (Free 2, Pro 3); the server tells us on the first frame and refuses a hop past it.
   let hopLimit: number = TURN_LIMITS.maxHops
   let text = ''
@@ -188,6 +189,7 @@ export async function runTurn(args: RunTurnArgs): Promise<TurnOutcome> {
             soft ||= ev.soft
             if (typeof ev.maxHops === 'number') hopLimit = Math.max(0, Math.min(hopLimit, ev.maxHops))
             if (ev.advisor) advisor = ev.advisor
+            if (ev.mode) mode = ev.mode
           } else if (ev.t === 'text') {
             text += ev.d
             args.onText(text)
@@ -232,5 +234,5 @@ export async function runTurn(args: RunTurnArgs): Promise<TurnOutcome> {
     truncated = true
   }
 
-  return { text: text.trim(), proposals, reads, chatId, rolled, soft, truncated, intent: args.intent, ...(advisor ? { advisor } : {}) }
+  return { text: text.trim(), proposals, reads, chatId, rolled, soft, truncated, intent: args.intent, ...(advisor ? { advisor } : {}), ...(mode ? { mode } : {}) }
 }

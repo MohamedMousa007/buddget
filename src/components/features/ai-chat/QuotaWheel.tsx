@@ -13,11 +13,15 @@ import { ProgressRing } from '@/components/ui/ProgressRing'
 import { Scrim } from '@/components/ui/Scrim'
 import { billingOn, useBillingStore } from '@/lib/billing/billingStore'
 import { navigate } from '@/lib/navigation/navigate'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { usageViewNotice } from '@/lib/usage/usageNotices'
+import { useUsageStore } from '@/lib/usage/usageStore'
+import { useNoticeState } from '@/lib/usage/useNoticeState'
 
 const arcFor = (pct: number) => (pct >= 90 ? 'var(--color-brand-red)' : pct >= 70 ? 'var(--color-brand-amber)' : 'var(--color-brand-green)')
 
 /** Claude-style usage wheel beside the send button: the tightest limit as a ring, every limit on tap. */
-/** While selling is on, the wheel reads the same state as the Usage page: the tighter of the session and the week; tapping it opens Usage. */
+/** While selling is on, the wheel reads the same state as the Usage page: the tighter of the session and the week; tapping it opens the usage sheet over the chat (BDG-009). */
 export function QuotaWheel({ refreshKey }: { refreshKey: string }) {
   const usage = useBillingStore((s) => (billingOn(s.me) ? s.me?.usage : null))
   if (usage) return <UsageWheel pct={Math.max(usage.session.pct ?? 0, usage.week.pct ?? 0)} />
@@ -26,9 +30,16 @@ export function QuotaWheel({ refreshKey }: { refreshKey: string }) {
 
 function UsageWheel({ pct }: { pct: number }) {
   const copy = useBuddgyChatCopy().usage
+  const state = useNoticeState()
+  // A sheet on top keeps the chat, its draft and any reply still streaming. Without the state (offline at boot) the page opens with the chat closed.
+  const open = () => {
+    if (state) return useUsageStore.getState().setSheet(usageViewNotice(state))
+    useSettingsStore.getState().setActiveModal(null)
+    navigate('/settings/pro/usage')
+  }
   return (
     <div className="relative shrink-0">
-      <IconButton variant="ghost" size="md" aria-label={copy.aria(pct)} onClick={() => navigate('/settings/pro/usage')}>
+      <IconButton variant="ghost" size="md" aria-label={copy.aria(pct)} onClick={open}>
         <ProgressRing pct={pct} size={26} stroke={3} arc={arcFor(pct)} />
       </IconButton>
     </div>

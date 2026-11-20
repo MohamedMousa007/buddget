@@ -239,7 +239,7 @@ export function useBuddgyChat() {
         // The Advisor answered (Pro, trial, or the free one): the trial's day-3 nudge for it is no longer needed.
         if (out.intent === 'advice' && out.advisor !== 'locked') useUsageStore.getState().setSignal('advisorUsed', true)
         if (out.reads.length > 0) taintedRef.current = true
-        patchBuddgy(replyId, (it) => ({ ...it, text: out.text, reads: out.reads, status: 'done', truncated: out.truncated, advisor: out.advisor, longChat: out.soft }))
+        patchBuddgy(replyId, (it) => ({ ...it, text: out.text, reads: out.reads, status: 'done', truncated: out.truncated, advisor: out.advisor, mode: out.mode, longChat: out.soft }))
         finishWithProposals(replyId, out.proposals)
         setBeat({ mood: out.proposals.length > 0 ? 'awake' : 'happy', at: Date.now() })
       } catch (e) {
