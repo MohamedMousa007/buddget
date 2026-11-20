@@ -309,7 +309,8 @@ Buddgy chats now work like ChatGPT and Claude, inside the same pop-up.
 - **Hand-over:** `requestBudgetStudio(handover?: FlowState)` sets `budgetStudioHandover`, which is not persisted.
   - The takeover passes it to `StudioPage` as `handover`. The studio starts on that state with `opener: 'done'` and `buildNow` true.
   - The studio writes the profile answers once on arrival, because the chat never does. It then runs its normal build: entities, engine, `/api/budget/ai` charged as `budget`, and a draft plan. After that it opens review.
-  - The chat marks the plan `handed`, so a second tap can never build twice.
+  - The chat marks the plan `handed`, so a second tap can never build twice. A handed plan shows only "Opened in the builder"; its preview is not recomputed, because the builder's new records would be counted twice.
+  - The studio's first save replaces any unfinished builder draft that has no intent, the same as starting the builder fresh.
 - **Copy:** `src/lib/i18n/buddgyPlanCopy.ts` (en, ar). Question wording comes from the builder's own copy.
 
 **Differences from the mockups**
@@ -317,6 +318,7 @@ Buddgy chats now work like ChatGPT and Claude, inside the same pop-up.
 - The progress count comes from the screens still pending, so it changes as answers unlock or close questions. The choice card says "A few quick questions", not "About 8".
 - The ready card splits by the plan's three chapters (Must pay, Everyday, Saving), not Needs, Wants and Saving. Its numbers come from the engine before the AI refinement, so review can differ slightly.
 - The card shows the engine's own line names. There is no sentence like "EGP 2,000 a month toward the car".
+- "Nothing is saved until you review it in the builder" is true of the chat, which writes nothing. In the builder, the build writes the profile answers and creates the income, debt, goal and savings records before review, as it does today. **The owner may want this line reworded.**
 - The cost line keeps the approved text, "not your chat usage". Per the plan's cost facts, a budget build draws from the same AI credits under its own feature tag. **The owner may want this line reworded.**
 - The progress strip sits under the chat header, and the composer placeholder becomes "Or type your answer". The header keeps its chat title.
 
@@ -328,4 +330,4 @@ Buddgy chats now work like ChatGPT and Claude, inside the same pop-up.
 | Hand-over state the builder reads, not persisted, one-shot | `useSettingsStore.ts`, `useBudgetTakeover.ts`, `StudioPage.tsx`, `chatPlan.test.ts` | **Automated verification (pending runner)** for the store contract. **Manual verification required**: landing on the building screen, then review, from the chat. |
 | No turn, network or AI build during the questions | `chatPlan.test.ts` (`runTurn`, `apiFetchAuth`, `refineDraft` mocked and asserted untouched), `routesToPlan` | **Automated verification (pending runner)** at the routing and flow level. The routing inside `useBuddgyChat.send` is not covered: there is no hook harness. |
 | Choice card, progress strip, question, paused, ready and handed cards | `ai-chat/plan/*`, `ProposalCard.tsx`, `plan.render.test.tsx`, `pattern.test.ts` | **Automated verification (pending runner)**: static renders. **Manual verification required**: the look against the mockups in en and ar, light and dark, and the keyboard over the composer. |
-| Journey: answer in chat, land on review with the same numbers | none | **Blocked**: no Playwright case written yet. It needs the cloud runner and a seeded user. |
+| Journey: answer in chat, land on review with the same numbers | none | Not written. A Playwright case in `e2e/journeys` is still to do; it needs the model to call `start_budget_setup`, or a seeded chat. |

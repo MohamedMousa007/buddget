@@ -52,7 +52,6 @@ describe('a typed answer is read with no model call, per control', () => {
     expect(en('debtKinds', 'Credit card and student loan')).toEqual(['card', 'student'])
     expect(en('debtKinds', 'credit card, buy now pay later')).toEqual(['card', 'bnpl'])
     expect(en('debtKinds', 'credit card and a boat')).toBeUndefined()
-    // "loan" names two kinds, so it is asked again rather than guessed.
-    expect(en('debtKinds', 'loan')).toBeUndefined()
+    expect(en('debtKinds', 'loan')).toEqual(['loan'])
   })
 })

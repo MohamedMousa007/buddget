@@ -26,6 +26,20 @@ export interface PlanReadyCardProps {
 /** The plan the builder's engine makes from the answers, with nothing saved; review and saving happen in the builder. */
 export function PlanReadyCard({ plan, handed, onReview, onChange }: PlanReadyCardProps) {
   const copy = useBuddgyPlanCopy().ready
+  // Once handed over, the builder has made its records: a preview from the store now would count them twice.
+  if (handed) {
+    return (
+      <p role="status" dir="auto" className="flex min-h-14 w-full items-center gap-2.5 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-3 text-[0.84375rem] text-[var(--color-brand-text-secondary)]">
+        <Check aria-hidden className="size-4 shrink-0 text-[var(--color-brand-green)]" />
+        {copy.handed}
+      </p>
+    )
+  }
+  return <ReadySummary plan={plan} onReview={onReview} onChange={onChange} />
+}
+
+function ReadySummary({ plan, onReview, onChange }: Omit<PlanReadyCardProps, 'handed'>) {
+  const copy = useBuddgyPlanCopy().ready
   const base = useFinanceStore((s) => s.settings.baseCurrency)
   const sum = useMemo(() => summarize(chatPreview(useFinanceStore.getState(), plan)), [plan])
   const money = (n: number) => formatCurrency(n, base, false)
@@ -66,17 +80,8 @@ export function PlanReadyCard({ plan, handed, onReview, onChange }: PlanReadyCar
           ) : null}
         </div>
         <div className="flex flex-col gap-1 border-t border-[var(--color-brand-border)] p-3.5">
-          {handed ? (
-            <p role="status" dir="auto" className="flex min-h-11 items-center gap-2 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
-              <Check aria-hidden className="size-4 text-[var(--color-brand-green)]" />
-              {copy.handed}
-            </p>
-          ) : (
-            <>
-              <Button size="cta-block" onClick={onReview}>{copy.review}</Button>
-              <Button variant="ghost" size="touch" onClick={onChange}>{copy.change}</Button>
-            </>
-          )}
+          <Button size="cta-block" onClick={onReview}>{copy.review}</Button>
+          <Button variant="ghost" size="touch" onClick={onChange}>{copy.change}</Button>
         </div>
       </section>
       <p dir="auto" className="px-1 text-xs text-[var(--color-brand-text-muted)]">{copy.note}</p>
