@@ -1,6 +1,6 @@
 # Issue register
 
-Source: owner brief of 2026-11-20 (28 issues, workstreams A to H). Status of every row: **investigating**, nothing changed in product code.
+Source: owner brief of 2026-11-20 (28 issues, workstreams A to H). Status of every row: **investigated, fix proposed, waiting for the owner**; nothing changed in product code.
 
 Test tier follows `CLAUDE.md` "What to test: by risk, not everything":
 - **UI** = UI-only: before-and-after mockup, owner approves, build, screenshot, owner tests. No new automated test.

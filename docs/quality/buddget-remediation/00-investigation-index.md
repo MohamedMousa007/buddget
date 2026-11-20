@@ -25,10 +25,10 @@ Lead: Claude Fable 5.2 (the brief names Opus). Eight read-only investigators (Op
 ## A. Summary
 
 **Most serious**
-1. **Buddgy was silent for 8 days.** 8 to 16 November: every quick-tier call failed (26 calls, 5 users) on one model. Gone since the model changed. Nothing alerted anyone.
+1. **Buddgy's quick tier was silent for about four weeks.** The provider retired the model; it answered 404 from 19 October until the fix on 16 November (commit `880058ab` says so; the last 14 days of live rows show 26 failed calls from 5 users, all on that model, and 25 of 25 succeeding since). Cause confirmed. Nothing alerted anyone.
 2. **Buddgy can charge for nothing** on seven code paths, charges each tool step separately, and charges Retry again. Live rows show no failed call charged in the last 14 days, so this is a confirmed risk, not yet an observed loss.
-3. **"This chat is getting long" is a cost meter.** Reachable in 2 to 4 turns, and the same flag cuts Buddgy's memory to 2 items.
-4. **No purchase can complete today.** No store event has reached the database in 30 days; store setup is unfinished. The app also shows "Welcome to Pro" without a verified purchase.
+3. **"This chat is getting long" is a cost meter.** Reachable in 2 to 4 turns by the numbers, and the same flag cuts Buddgy's memory to 2 items. In the last 30 days only one chat of 37 actually crossed the line, at 7 turns; usage is low.
+4. **No purchase has ever completed.** The database holds no billing event at all, and all 50 entitlement rows are the default kind; store setup is unfinished. (One store-sourced row appeared briefly during this work and was gone minutes later, which fits a QA suite's synthetic user.) The app also shows "Welcome to Pro" without a verified purchase.
 5. **SMS setup shows a claim as fact.** "Automation active" appears without any SMS; 2 of 7 collecting iPhones have never delivered one.
 6. **Theme:** System is saved as dark, the client's fallback is dark, and settings sync as one whole row.
 7. **Sync on main can still leave two devices different** (R14), and the live database is ahead of main.
@@ -49,9 +49,9 @@ Root causes: `03`. Plan and order: `05`. Council: `06`. Audit: `07`.
 The audit rejected two items and changed eleven. The biggest change: the Buddgy charging fix was split so the first slice runs on the server and protects builds already installed.
 
 ## G. Test coverage
-- Cases specified: about 34 (22 unit, 4 API or SQL, 8 journeys) across 19 issues. 9 issues are owner review.
-- Cases written: 0. Run: 0. Passing: n/a.
-- Blocked: baseline (no reachable runner); end-to-end billing (store setup).
+- Cases specified: about 34 (22 unit, 4 API or SQL, 8 journeys) across 19 issues. 8 issues are owner review only, 1 is owner review plus a unit test.
+- Cases written: 0. Run: 0. Passing: n/a. The brief asked for an executable suite and a baseline before approval; that part is **not done** (reasons in `08`).
+- Blocked: baseline (the QA runner is not among the sessions this one can list or message, checked twice); end-to-end billing (store setup).
 - Device-only checks: 10 rows across 6 issues.
 - Screenshots and traces: none yet.
 
