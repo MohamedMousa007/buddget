@@ -57,3 +57,7 @@ This file gets, per issue: the case, the failing run before the fix (with the ru
 | `10-screens` journey | 12 of 12 passed; 0 synthetic users left |
 
 The failure was an older test, `usageNotices.test.ts:170`, that expected a blocked sheet in the chat to stay hidden once shown. That is the behaviour BDG-012 changed on purpose. Fixed in the next commit: the old check now runs on the Flow screen, where once a session still holds, and a new line checks the chat shows it again.
+
+## Runner job 4 (2026-11-20, commit `3f57e6ac`)
+
+`npm run verify` passed: lint 0 errors, types OK, 6,579 passed and 0 failed in both Africa/Cairo and America/New_York (181 skipped), coverage above the floor (lines 83.07%), migration check OK, audit OK, production build OK. No journeys ran, so no synthetic users were made. Steps 1 and 2 are now **Automated verification** for their rules; the visible sheet and label stay **Manual verification required**.
