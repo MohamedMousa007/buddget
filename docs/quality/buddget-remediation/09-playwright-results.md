@@ -108,3 +108,11 @@ The same two failures as job 12, both already fixed in `44952132` and `926da68d`
 - `g-buddgy.spec.ts:26`
 
 Everything else passed: 1,395 other targeted tests (including budget-in-chat), lint, types, migration check, audit and build. 0 `qa-e2e-job13-*` users left. Runner notes: the container's Playwright browser is build 1243 while the repo wants 1255, and the journey names its users from the test title.
+
+## Runner job 14 (2026-11-21, commit `58a0b538`)
+
+- **Targeted run:** 1,398 of 1,398 passed (buddgy, budget, ai-chat, budget UI, hooks).
+- **`npm run verify`:** passed. 6,777 passed and 0 failed in Cairo and New York, coverage above the floor; lint, types, migration check, audit and build OK.
+- **Journey `g-buddgy`:** 1 of 1 passed. Approve wrote the expense locally and on the server, Undo removed it and Net worth returned, and Close worked. 0 synthetic users left.
+
+The action cards (step 11), budget in chat (step 12) and the press gate are now **Automated verification**. Their look and device behaviour stay with the owner.
