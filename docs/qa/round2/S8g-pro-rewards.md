@@ -270,3 +270,35 @@ Seen in the sweep, not filed:
 - Journeys: `npx playwright test -c e2e/journeys/specs/round2/pro-rewards/playwright.config.ts` (`--project=desktop` for the `@desktop` ones).
 - Sweep: `node e2e/ui/pro-rewards-sweep.mjs`
 - Leftovers: `node e2e/api/round2/pro-rewards/teardown.mjs` (`--check` only counts).
+
+## 6. Close-out (fix pass, 2026-11-20)
+
+Fixed in migrations `0332_s8g_rewards_billing_fixes.sql` and `0333_trial_cap_real_users_network_review.sql` (both applied live) and the server routes. Every fix flips its `test.fail` spec or adds one. Cloud runner job 8 on 2295189b: verify green (6553 tests), API and journeys green, 0 synthetic users left.
+
+| Item | Fix | Test |
+|---|---|---|
+| S8G-13 | `referral_evaluate` and `rewards_touch` lock rows with `for update skip locked` and re-check `pending` in the update; bulk runs use a try-lock | F8b |
+| S8G-02 | `handle_new_user` creates the Silver loyalty row; existing accounts backfilled | M0, J1 |
+| S8G-03 | `trial_claim` answers `already_claimed` for a store plan (current or lapsed) or any Pro billing event | X5, x5b, x5c, J9 |
+| S8G-04 | `stay_offer_claim` records the claim; the webhook spends the offer only for a purchase within an hour of it | O1, O3 |
+| S8G-05/06 | Invite anti-abuse (design: `docs/launch/INVITE_ANTI_ABUSE.md`): redeem only through `POST /api/referrals/redeem`; one invite per mailbox (keyed hash); a web friend earns nothing until they sign in on a native device (30 days, then expired); one reward per device; rate limits per user and per IP; disposable and unverified emails refused; network signals hold for manual review (inviter's own network, or the third friend from one network in 30 days) | F4b, F7, F13, F15, F16, F17 |
+| S8G-08 | Founder bar and period close are set-based and bounded (BRIN on `updated_at`, active users of the last 3 days) | loyalty specs |
+| S8G-09 | `parseEvent` refuses out-of-range timestamps and prices (400, not a retried 500) | revenuecat.test.ts |
+| S8G-10 | anon EXECUTE revoked (it came through PUBLIC) | G3 |
+| S8G-11 | `GET /api/billing/stay-offer` answers `eligible:false` when selling is off | OFF4 |
+| S8G-14 | Parallel redeems answer `already_redeemed`, not 409 | F4b |
+| S8C-01, 03, 04 | CHECK constraints on money and dates (NaN, far-off years) | S8C-01, 03, 04 |
+| S8C-02 | App routes refuse a revoked or signed-out session (`session_is_live`, fails open on error) | S8C-02 |
+| S8C-05 | Support submit answers 401 for a deleted account | S8C-05 |
+| S8C-07 | Notifications cron prefetches in bulk; the query count no longer grows with users | route.test.ts |
+| S8C-08 | The API report redacts UUIDs | lib.mjs |
+| Runner find | The trial daily cap counts only live, non-`.test` accounts (QA runs had used all 200 slots) | X1 to X5, J2 |
+
+**Owner decision, 2026-11-19, quoted: "approve".** The stricter session rule: a revoked or signed-out session is refused on every app route. This replaces the QA-53 allowance for a deleted account's unexpired token.
+
+Left, and why:
+- **Closed by the owner:** S8G-01 and S8C-06.
+- **UI session:** S8G-07 (fixed on main, J8) and S8G-12.
+- **`select('*')` reads:** kept where they are bounded by user.
+- **Device ids:** the client chooses them, so the native gate raises the cost of abuse but cannot prove a device.
+- **Native apps:** shipped iOS and Android builds still call the dropped `referral_redeem(text,text)`, so invite redeem fails on them until they are rebuilt; the app keeps the code and retries.
