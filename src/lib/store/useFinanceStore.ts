@@ -1841,16 +1841,17 @@ export const useFinanceStore = create<FinanceStore>()(
           if (toAmt === null || toAmt <= 0) return state
           const gid = generateId()
           const today = localTodayISO()
+          const occurredAt = new Date().toISOString()
           // Both legs are non-cash-flow: money moved between pockets, so neither net worth
           // nor left-to-spend changes.
           const outTx: SavingsTransaction = {
             id: generateId(), accountId: fromId, type: 'withdrawal', amount: raw,
-            currency: from.currency, date: today, notes, source: 'transfer',
+            currency: from.currency, date: today, occurredAt, notes, source: 'transfer',
             transferGroupId: gid, isCashFlow: false,
           }
           const inTx: SavingsTransaction = {
             id: generateId(), accountId: toId, type: 'deposit', amount: toAmt,
-            currency: to.currency, date: today, notes, source: 'transfer',
+            currency: to.currency, date: today, occurredAt, notes, source: 'transfer',
             transferGroupId: gid, isCashFlow: false,
           }
           const nextState: FinanceStore = {
@@ -1884,6 +1885,7 @@ export const useFinanceStore = create<FinanceStore>()(
               ? raw
               : tryConvertWithGold(raw, cIn, acc.currency, state.exchangeRates, state.settings.baseCurrency, goldQuoteOf(state))
           if (amt === null || amt <= 0 || acc.currentBalance + balanceEpsilon(acc.currency) < amt) return state
+          const nowIso = new Date().toISOString()
           const tx: SavingsTransaction = {
             id: opts?.txId ?? generateId(),
             accountId,
@@ -1891,13 +1893,13 @@ export const useFinanceStore = create<FinanceStore>()(
             amount: amt,
             currency: acc.currency,
             date: localTodayISO(),
+            occurredAt: nowIso,
             notes,
           }
           // Only 'income' returns the money to this month's spendable income. A transfer,
           // debt payment or spend must NOT create an income event — that would inflate the
           // income KPI and (for a transfer) loop the money back into savings. F4.
           const isInvestment = acc.category === 'investment'
-          const nowIso = new Date().toISOString()
           // Income events are money: a gold withdrawal is booked at today's gram price in base, never as grams.
           const eventCurrency = acc.currency === 'XAU' ? state.settings.baseCurrency : acc.currency
           const eventAmt =
