@@ -1,5 +1,7 @@
 import { applyMethodExclusion, isMethodExcluded } from '@/lib/spending/exclusion'
 import { removePaymentMethod } from '@/lib/accounts/removePaymentMethod'
+import { pocketCloseAdjustments } from '@/lib/accounts/pocketCloseAdjustments'
+import type { LedgerInput } from '@/lib/accounts/balance'
 import { create } from 'zustand'
 import { cycleKeyOf, prevKey, recordActivation } from '@/lib/budget/activations'
 import { selectActivePlan } from '@/lib/budget/activePlan'
@@ -1736,6 +1738,7 @@ export const useFinanceStore = create<FinanceStore>()(
 
       deleteSavingsAccount: (id) =>
         set((state) => {
+          const closing = state.savingsAccounts.find((a) => a.id === id)
           const nextState: FinanceStore = {
             ...state,
             savingsAccounts: state.savingsAccounts.filter((a) => a.id !== id),
@@ -1747,6 +1750,15 @@ export const useFinanceStore = create<FinanceStore>()(
               linkedSavingsAccountIds: g.linkedSavingsAccountIds.filter((x) => x !== id),
             })),
           }
+          // A held pocket's exits are account legs derived from its rows: freeze them before the rows go.
+          const ledgerOf = (s: FinanceStore): LedgerInput => ({
+            paymentMethods: s.paymentMethods, expenses: s.expenses, incomeEvents: s.incomeEvents, debtPayments: s.debtPayments, debts: s.debts,
+            savingsTransactions: s.savingsTransactions, savingsAccounts: s.savingsAccounts, adjustments: s.accountAdjustments,
+            convert: (a, from, to) => tryConvertCurrency(a, from, to, s.exchangeRates),
+          })
+          const freeze = closing?.heldInPaymentMethodId
+            ? pocketCloseAdjustments(ledgerOf(state), ledgerOf(nextState), closing.name, new Date().toISOString(), generateId)
+            : []
           return {
             savingsAccounts: nextState.savingsAccounts,
             savingsTransactions: nextState.savingsTransactions,
@@ -1754,6 +1766,7 @@ export const useFinanceStore = create<FinanceStore>()(
             incomeEvents: nextState.incomeEvents,
             incomeSources: nextState.incomeSources,
             goals: reconcileGoalsForState(nextState),
+            ...(freeze.length ? { accountAdjustments: [...state.accountAdjustments, ...freeze] } : {}),
             ...(state.profile.defaultCarryPocketId === id
               ? { profile: { ...state.profile, defaultCarryPocketId: null } }
               : {}),
@@ -1854,16 +1867,17 @@ export const useFinanceStore = create<FinanceStore>()(
           if (toAmt === null || toAmt <= 0) return state
           const gid = generateId()
           const today = localTodayISO()
+          const occurredAt = new Date().toISOString()
           // Both legs are non-cash-flow: money moved between pockets, so neither net worth
           // nor left-to-spend changes.
           const outTx: SavingsTransaction = {
             id: generateId(), accountId: fromId, type: 'withdrawal', amount: raw,
-            currency: from.currency, date: today, notes, source: 'transfer',
+            currency: from.currency, date: today, occurredAt, notes, source: 'transfer',
             transferGroupId: gid, isCashFlow: false,
           }
           const inTx: SavingsTransaction = {
             id: generateId(), accountId: toId, type: 'deposit', amount: toAmt,
-            currency: to.currency, date: today, notes, source: 'transfer',
+            currency: to.currency, date: today, occurredAt, notes, source: 'transfer',
             transferGroupId: gid, isCashFlow: false,
           }
           const nextState: FinanceStore = {
@@ -1897,6 +1911,7 @@ export const useFinanceStore = create<FinanceStore>()(
               ? raw
               : tryConvertWithGold(raw, cIn, acc.currency, state.exchangeRates, state.settings.baseCurrency, goldQuoteOf(state))
           if (amt === null || amt <= 0 || acc.currentBalance + balanceEpsilon(acc.currency) < amt) return state
+          const nowIso = new Date().toISOString()
           const tx: SavingsTransaction = {
             id: opts?.txId ?? generateId(),
             accountId,
@@ -1904,13 +1919,13 @@ export const useFinanceStore = create<FinanceStore>()(
             amount: amt,
             currency: acc.currency,
             date: localTodayISO(),
+            occurredAt: nowIso,
             notes,
           }
           // Only 'income' returns the money to this month's spendable income. A transfer,
           // debt payment or spend must NOT create an income event — that would inflate the
           // income KPI and (for a transfer) loop the money back into savings. F4.
           const isInvestment = acc.category === 'investment'
-          const nowIso = new Date().toISOString()
           // Income events are money: a gold withdrawal is booked at today's gram price in base, never as grams.
           const eventCurrency = acc.currency === 'XAU' ? state.settings.baseCurrency : acc.currency
           const eventAmt =

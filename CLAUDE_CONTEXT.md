@@ -149,6 +149,10 @@ Seven blocks (bills, subscriptions, debts, everyday, safety, goals, grow) in thr
 - **AI limit**: `/api/budget/ai` is capped at 15 calls per user per hour through the shared `api_rate_hit` RPC (all instances).
 - **Not built yet**: per-line rollover, Studio "What I know" drawer.
 
+## Pocket exits and held accounts (S-2)
+
+A pocket held in a tracked account (`heldInPaymentMethodId`) is an earmark inside that account. `computeBalances` (`src/lib/accounts/balance.ts`) moves the holder exactly when money crosses its boundary, first matching rule wins: explicit `paymentMethodId` (old transfer legs); standalone pocket none; pocket-to-pocket move (`transferGroupId`) only across different holders; `isCashFlow:false` none; `source:'carry'` none; deposit none; withdrawal with a paired income event and no account none (released inside the holder); any other withdrawal (spend, debt, invest, income sent to another account) is holder minus amount. Read-side only: no migration, no purpose column, every writer (sheet, Buddgy, AI) is covered and delete/undo reverse the leg. Withdrawals and moves carry `occurredAt`. Invariant: a pocket's holder is set at creation and never changed (a past leg is derived from the current holder); a future "change holder" feature must freeze balances first. Deleting a held pocket writes one `manual_update` account adjustment per changed account (`pocketCloseAdjustments`), removed again by Undo. The withdraw sheet defaults "Back to income" for a held pocket to staying in the holder (`incomeDestination`). Plan: `docs/plans/S2_POCKET_NETWORTH_PLAN.md`.
+
 ## Buddgy AI (gateway + tools)
 
 Brain on the server, hands on the device. Full guide: `docs/buddgy/INTERNAL_GUIDE.md`.

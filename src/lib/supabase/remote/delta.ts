@@ -7,6 +7,7 @@ import { deepEqual, diffLists } from './diff'
 import { mergeList } from './merge'
 import { noteServerTime, serverInstant } from './serverClock'
 import type { Snapshot } from './snapshot'
+import { holdUnsentBalances } from './unsentLedger'
 import { memoryFromRow } from './mappers/buddgyMemoryMapper'
 import { accountAdjustmentFromRow } from './mappers/accountAdjustmentMapper'
 import { activationFromRow } from './mappers/budgetActivationMapper'
@@ -215,7 +216,7 @@ export function applyDelta(local: Snapshot, d: MappedDelta, delivered?: Snapshot
     debts: applyList(local.debts, d.debts, delivered?.debts),
     debtPayments: applyList(local.debtPayments, d.debtPayments, delivered?.debtPayments),
     recurringDebtPayments: applyList(local.recurringDebtPayments, d.recurringDebtPayments, delivered?.recurringDebtPayments),
-    savingsAccounts: applyList(local.savingsAccounts, d.savingsAccounts, delivered?.savingsAccounts),
+    savingsAccounts: holdUnsentBalances(applyList(local.savingsAccounts, d.savingsAccounts, delivered?.savingsAccounts), local, delivered?.savingsTransactions),
     investmentHoldings: applyList(local.investmentHoldings, d.investmentHoldings, delivered?.investmentHoldings),
     savingsTransactions: applyList(local.savingsTransactions as WithId[], d.savingsTransactions as ListDelta<WithId>, delivered?.savingsTransactions as WithId[] | undefined) as Snapshot['savingsTransactions'],
     recurringSavingsDeposits: applyList(local.recurringSavingsDeposits, d.recurringSavingsDeposits, delivered?.recurringSavingsDeposits),

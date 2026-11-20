@@ -17,13 +17,18 @@ export function deletePocketWithUndo(id: string): () => void {
   const wasCarryDefault = before.profile.defaultCarryPocketId === id
 
   before.deleteSavingsAccount(id)
+  // Balance-freezing adjustments the delete wrote for a held pocket; Undo brings the rows (and their legs) back, so they go.
+  const known = new Set(before.accountAdjustments.map((a) => a.id))
+  const frozen = new Set(useFinanceStore.getState().accountAdjustments.filter((a) => !known.has(a.id)).map((a) => a.id))
 
   return () => {
     useFinanceStore.setState((s) => {
+      // A fresh edit time so the server revives the rows instead of keeping them deleted.
+      const now = new Date().toISOString()
       const next = {
         ...s,
-        savingsAccounts: [...s.savingsAccounts, account],
-        savingsTransactions: [...s.savingsTransactions, ...transactions],
+        savingsAccounts: [...s.savingsAccounts, { ...account, updatedAt: now }],
+        savingsTransactions: [...s.savingsTransactions, ...transactions.map((t) => ({ ...t, updatedAt: now }))],
         recurringSavingsDeposits: [...s.recurringSavingsDeposits, ...recurring],
         goals: s.goals.map((g) =>
           goalLinks.has(g.id) && !g.linkedSavingsAccountIds.includes(id)
@@ -35,6 +40,7 @@ export function deletePocketWithUndo(id: string): () => void {
         savingsAccounts: next.savingsAccounts,
         savingsTransactions: next.savingsTransactions,
         recurringSavingsDeposits: next.recurringSavingsDeposits,
+        ...(frozen.size ? { accountAdjustments: s.accountAdjustments.filter((a) => !frozen.has(a.id)) } : {}),
         goals: reconcileGoalsForState(next),
         ...(wasCarryDefault ? { profile: { ...s.profile, defaultCarryPocketId: id } } : {}),
       }
