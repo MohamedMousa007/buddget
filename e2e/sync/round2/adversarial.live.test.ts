@@ -139,4 +139,16 @@ describe('round 2 sync (live)', () => {
     await flushDiff(A.client, A.userId, s1, { ...s1, expenses: [] })
     expect((await count(A.client, e.id))[0]?.deleted_at).toBe(first)
   })
+  it('S-1: an edit made while a pull is in flight is on the server after the next flush', async () => {
+    const A = await liveClient(EMAIL)
+    const e = expense(); const s1: Snapshot = { ...emptySnapshot(), expenses: [e] }
+    await flushDiff(A.client, A.userId, emptySnapshot(), s1)
+    const delta = (await pullDelta(A.client, null))!
+    // The device added `mid` while that pull was answering; the baseline is the delivered copy plus the pulled rows.
+    const mid = expense({ description: 'QA r2 mid-pull' })
+    const baseline = applyDelta(s1, delta, s1)
+    const store = { ...applyDelta({ ...s1, expenses: [...s1.expenses, mid] }, delta, s1) }
+    expect((await flushDiff(A.client, A.userId, baseline, store)).errors).toEqual([])
+    expect(await count(A.client, mid.id)).toHaveLength(1)
+  })
 })
