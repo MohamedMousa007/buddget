@@ -166,8 +166,12 @@ describe('visibleNotices and priority', () => {
     expect(visibleNotices(banner, mem({ snoozed: { 'usage:session80': new Date(NOW - 1000).toISOString() } }), NOW)).toHaveLength(1)
     const once = usageNotices(st({ plan: 'expired' }), { screen: 'flow' })
     expect(visibleNotices(once, mem({ settled: ['usage:expired'] }), NOW)).toEqual([])
-    const sheet = usageNotices(st(), { screen: 'chat', event: { type: 'limit', layer: 'session' } })
-    expect(visibleNotices(sheet, mem({ shownThisSession: new Set(['usage:session_block']) }), NOW)).toEqual([])
+    // Outside the chat a shown sheet waits for the next session; in the chat it shows on every blocked turn (BDG-012).
+    const shown = mem({ shownThisSession: new Set(['usage:session_block']) })
+    const sheet = usageNotices(st(), { screen: 'flow', event: { type: 'limit', layer: 'session' } })
+    expect(visibleNotices(sheet, shown, NOW)).toEqual([])
+    const inChat = usageNotices(st(), { screen: 'chat', event: { type: 'limit', layer: 'session' } })
+    expect(visibleNotices(inChat, shown, NOW).map((n) => n.key)).toEqual(['session_block'])
   })
   it('blocked sorts before warnings before information', () => {
     const all = usageNotices(st({ session: { pct: 90, resetAt: null }, resetsUnseen: ['week'] }), { screen: 'chat', event: { type: 'limit', layer: 'session' } })

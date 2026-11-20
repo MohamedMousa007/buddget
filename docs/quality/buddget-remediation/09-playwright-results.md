@@ -47,3 +47,13 @@ Evidence that each defect exists now, without a test run:
 
 ## After approval
 This file gets, per issue: the case, the failing run before the fix (with the runner's output line), the passing run after, and the regression suite result.
+
+## Runner job 3 (2026-11-20, commit `b80e285b`)
+
+| Step | Result |
+|---|---|
+| `vitest` on the Buddgy, usage, chat copy and SQL contract tests | 76 passed, 1 failed. Every new case passed: stream settle (21 of 21), route meta and label (2 of 2), SQL contract for 0337 (5 of 5), reset formatter (3 of 3), chat limit copy (4 of 4), new notice rules. |
+| `npm run verify` | failed, 1 of 6,579; lint, types, migration check, audit, build OK; New York the same |
+| `10-screens` journey | 12 of 12 passed; 0 synthetic users left |
+
+The failure was an older test, `usageNotices.test.ts:170`, that expected a blocked sheet in the chat to stay hidden once shown. That is the behaviour BDG-012 changed on purpose. Fixed in the next commit: the old check now runs on the Flow screen, where once a session still holds, and a new line checks the chat shows it again.
