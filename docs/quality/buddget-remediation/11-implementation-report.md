@@ -64,8 +64,8 @@ Migration `0338_ai_one_charge_per_turn.sql` is applied on live. The server alrea
 | Item | Files | Status |
 |---|---|---|
 | SQL: `ai_turns` table, `turn_id` on reservations and events, reserve and settle rules | `supabase/migrations/0338_ai_one_charge_per_turn.sql`, `database.types.ts` | Proven on live in a rolled-back transaction (6 cases below), then applied. Each function has one signature and `service_role` only. `EXPLAIN` of both new queries uses the new indexes. Advisors report nothing new. |
-| Route: turn id to reserve; tool step and "seen" to settle | `route.ts`, `turn.ts`, `quota.ts`, `validate.ts`, `protocol.ts` | Tests written, **not yet run** (job 5) |
-| Phone: one turn id per message, reused by Retry | `useBuddgyChat.ts`, `runTurn.ts`, `chatTypes.ts` | Tests written, **not yet run** (job 5). Retry on a device: **Native verification required**. |
+| Route: turn id to reserve; tool step and "seen" to settle | `route.ts`, `turn.ts`, `quota.ts`, `validate.ts`, `protocol.ts` | **Automated verification** (runner job 5) |
+| Phone: one turn id per message, reused by Retry | `useBuddgyChat.ts`, `runTurn.ts`, `chatTypes.ts` | **Automated verification** (runner job 5). Retry on a device: **Native verification required**. |
 
 ## Tests for step 3
 
@@ -82,7 +82,7 @@ Migration `0338_ai_one_charge_per_turn.sql` is applied on live. The server alrea
 | Retry that fails with nothing shown | The next Retry is still free; after it shows, the next attempt is paid |
 | Open turn followed by a new message | Charged |
 
-**Unit tests: pending runner (job 5).**
+**Unit tests: passed (runner job 5).** Route check `e2e/api/buddgy-turns.mjs`: 9 of 9 against the real route and live PostgREST.
 - `quota.test.ts`:
   - turn id and tool-step facts are sent only for a turn
   - every RPC parameter name exists in the latest SQL signature (guards against the silent fallback to v1)

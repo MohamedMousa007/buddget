@@ -61,3 +61,13 @@ The failure was an older test, `usageNotices.test.ts:170`, that expected a block
 ## Runner job 4 (2026-11-20, commit `3f57e6ac`)
 
 `npm run verify` passed: lint 0 errors, types OK, 6,579 passed and 0 failed in both Africa/Cairo and America/New_York (181 skipped), coverage above the floor (lines 83.07%), migration check OK, audit OK, production build OK. No journeys ran, so no synthetic users were made. Steps 1 and 2 are now **Automated verification** for their rules; the visible sheet and label stay **Manual verification required**.
+
+## Runner job 5 (2026-11-20, commit `d358fbd9`)
+
+| Step | Result |
+|---|---|
+| `vitest` on the AI quota, Buddgy route, chat client and SQL contract tests | 114 passed, 0 failed, 19 files |
+| `npm run verify` | passed: lint 0 errors, types OK, 6,589 passed and 0 failed in Cairo and New York, coverage above the floor, migration check OK (304), audit OK, build OK |
+| `node e2e/api/buddgy-turns.mjs` (real route, live PostgREST) | 9 of 9: turn id logged, answered turn charged, Retry free (units 0, exempt), re-run used up once shown, no turn id billed per request, 0 unsettled reservations, 0 synthetic users left |
+
+Step 3 (BDG-011 slice 2) is now **Automated verification**; Retry on a phone stays **Native verification required**.
