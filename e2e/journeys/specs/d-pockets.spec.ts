@@ -80,7 +80,7 @@ test('D2 pocket created from an account you already have keeps net worth [QA-013
   await localWait(page, (s) => s.paymentMethods.find((m: any) => m.name === 'QNB Alahli' && m.openingBalance === 5000))
   expect(await netWorthFlow(page)).toBe(5000)
   await newPocket(page, { kind: /^QNB Alahli/, amount: 500 })
-  const pocket = await localWait(page, (s) => s.savingsAccounts.find((a: any) => a.linkedPaymentMethodId || a.heldInPaymentMethodId))
+  const pocket = await localWait(page, (s) => s.savingsAccounts.find((a: any) => (a.linkedPaymentMethodId || a.heldInPaymentMethodId) && a.currentBalance === 500))
   await serverRows('savings_accounts', user.id, `id=eq.${pocket.id}`, (r) => r.length === 1)
   test.info().annotations.push({ type: 'evidence', description: `pocket ${pocket.id} linkedPaymentMethodId=${pocket.linkedPaymentMethodId} heldIn=${pocket.heldInPaymentMethodId ?? 'none'} balance=${pocket.currentBalance}` })
   expect(await qnbBalance(page)).toBe(5000)
@@ -91,7 +91,7 @@ test('D3 money leaving a pocket held in an account moves the account [S-2]', asy
   await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 5000 })
   await localWait(page, (s) => s.paymentMethods.find((m: any) => m.name === 'QNB Alahli' && m.openingBalance === 5000))
   await newPocket(page, { kind: /^QNB Alahli/, amount: 500 })
-  const pocket = await localWait(page, (s) => s.savingsAccounts.find((a: any) => a.heldInPaymentMethodId))
+  const pocket = await localWait(page, (s) => s.savingsAccounts.find((a: any) => a.heldInPaymentMethodId && a.currentBalance === 500))
   expect(await netWorthFlow(page)).toBe(5000)
 
   const withdraw = async (purpose: string, amount: number, cta: RegExp) => {
