@@ -15,7 +15,7 @@ import { isNative } from '@/lib/native/isNative'
 import { MIN_PASSWORD_LEN } from '@/components/features/auth-modal/authModalTokens'
 import { markSessionEphemeral } from '@/hooks/useEphemeralSessionGuard'
 import { expectSignOut } from '@/lib/auth/intentionalSignOut'
-import { SIGNIN_TIMEOUT_MS, withTimeout } from '@/lib/auth/signInTimeout'
+import { SIGNIN_TIMEOUT_MS, fetchWithRetry, withTimeout } from '@/lib/auth/signInTimeout'
 import { AUTH_EVENTS, track } from '@/lib/analytics/events'
 import { changePassword } from '@/lib/auth/changePassword'
 import { useAuthSecurityCopy } from '@/lib/i18n/authSecurityCopy'
@@ -348,8 +348,9 @@ export function useAuthModal() {
     let required: boolean | null = null
     try {
       // No timeout here: the session already exists, and an aborted check fails closed (sign-out), which on a slow first
-      // load threw users back to the sign-in screen right after signing in (runner jobs 7, 9, 13).
-      const deviceRes = await apiFetchAuth('/api/auth/device/check', { method: 'POST' })
+      // load threw users back to the sign-in screen right after signing in (runner jobs 7, 9, 13). A transient failure (cold
+      // server, 5xx, 401 before the cookie lands) is retried before failing closed (job 24); the server gate guards data meanwhile.
+      const deviceRes = await fetchWithRetry(() => apiFetchAuth('/api/auth/device/check', { method: 'POST' }))
       if (deviceRes.ok) {
         const body = (await deviceRes.json()) as { required?: boolean; deviceSecret?: string }
         required = body.required === true
