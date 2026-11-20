@@ -51,19 +51,21 @@ try {
         const tag = `${vw}/${loc}/${theme}/${r}`
         try {
           await p.goto(`${BASE}/${r}`, { waitUntil: 'domcontentloaded', timeout: 90000 })
-          await p.waitForFunction((l) => document.documentElement.lang.startsWith(l) && document.documentElement.dir === (l === 'ar' ? 'rtl' : 'ltr'), loc, { timeout: 30000 })
+          await p.waitForFunction((l) => document.documentElement.dataset.locale === l, loc, { timeout: 30000 }) // the app keeps dir=ltr in every language; data-locale is the switch
           await p.waitForFunction(() => (document.querySelector('main')?.innerText.trim().length ?? 0) > 20 && !document.querySelector('main .animate-pulse'), null, { timeout: 60000 }).catch(() => undefined)
           await p.waitForTimeout(2500)
+          if (await p.getByRole('button', { name: 'Sign me in' }).isVisible().catch(() => false)) throw new Error('signed out on ' + tag)
           await p.addStyleTag({ content: 'nextjs-portal{display:none!important}' })
           const facts = await p.evaluate(() => ({ dir: document.documentElement.dir, dark: document.documentElement.classList.contains('dark'), url: location.pathname, hscroll: document.documentElement.scrollWidth > innerWidth + 1 }))
           await p.addScriptTag({ content: axeSrc })
           const axe = await p.evaluate(async () => (await window.axe.run(document, { resultTypes: ['violations'], exclude: [['nextjs-portal']] })).violations.map((v) => ({ id: v.id, impact: v.impact, n: v.nodes.length, ex: v.nodes.slice(0, 2).map((x) => x.target.join(' ').slice(0, 90)) })))
           const tap = await p.evaluate(async () => {
             const frame = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
-            const els = [...document.querySelectorAll('main button,main a[href],main [role=button],main [role=switch],main [role=tab],main input:not([type=hidden])')].filter((e) => { const r = e.getBoundingClientRect(), s = getComputedStyle(e); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && !e.closest('[aria-hidden=true]') && !e.disabled })
+            const els = [...document.querySelectorAll('main button,main a[href],main [role=button],main [role=switch],main [role=tab],main input:not([type=hidden])')].filter((e) => { if ((e.matches('[role=switch],input') && e.closest('label')) || e.parentElement?.closest('a[href]')) return false // expected: a switch inside a full-row label (the row is the target); a link nested in a card link (founder chip)
+              const r = e.getBoundingClientRect(), s = getComputedStyle(e); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && !e.closest('[aria-hidden=true]') && !e.disabled })
             const bad = []
             for (const e of els) {
-              e.scrollIntoView({ block: 'center', inline: 'center' }); await frame()
+              e.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' }); await frame() // main has scroll-behavior:smooth: an animated scroll is still moving when measured
               const r = e.getBoundingClientRect(); if (r.top < 0 || r.bottom > innerHeight || r.left < 0 || r.right > innerWidth) continue // not fully on screen: skip, never measure an off-screen box
               const cx = r.x + r.width / 2, cy = r.y + r.height / 2, dx = 21, dy = 21
               let miss = 0; const tgt = new Set()
@@ -75,7 +77,7 @@ try {
           const flagged = axe.some((v) => v.impact === 'critical' || v.impact === 'serious') || facts.hscroll || facts.url !== '/' + r
           if (flagged && process.env.SHOTS) await p.screenshot({ path: `e2e/ui/out/prs-${tag.replace(/\//g, '_')}.png`, fullPage: true })
           out.push({ tag, ...facts, axe, tap })
-        } catch (e) { out.push({ tag, error: String(e).slice(0, 160) }) }
+        } catch (e) { if (String(e).includes('signed out on')) throw e; out.push({ tag, error: String(e).slice(0, 160) }) }
       }
     }
     await ctx.close()
