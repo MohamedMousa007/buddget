@@ -17,7 +17,8 @@ const snip = (s: string) => {
 
 function outcomeNote(item: Extract<ChatItem, { role: 'buddgy' }>): string {
   const notes = item.proposals.map((p) => {
-    const what = p.proposal.preview.title
+    const { title, items } = p.proposal.preview
+    const what = items?.length ? `${title}: ${items.map((r) => r.proposal.preview.what ?? r.proposal.preview.title).join(', ')}` : title
     if (p.status === 'applied') return `done: ${what}`
     if (p.status === 'dismissed') return `declined: ${what}`
     if (p.status === 'pending') return `awaiting approval: ${what}`

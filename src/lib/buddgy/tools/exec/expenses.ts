@@ -115,6 +115,7 @@ function buildAddExpense(args: Record<string, unknown>, ctx: ToolContext, claimS
   const category = requestedCategory ?? 'Other'
   const method = resolveMethod(s, args.method)
   if ('error' in method) return method.error
+  const methodUnsaid = args.method === undefined || args.method === null || args.method === ''
 
   const recent = s.expenses.find(
     (e) => e.amount === amount && e.date === date && e.description.toLowerCase() === description.toLowerCase() && Date.now() - Date.parse(e.createdAt) < DUPLICATE_WINDOW_MS,
@@ -146,14 +147,22 @@ function buildAddExpense(args: Record<string, unknown>, ctx: ToolContext, claimS
         tone: 'add',
         title: L.addExpense,
         rows: [
-          { label: L.description, value: description },
-          { label: L.amount, value: money(amount, currency) },
-          { label: L.category, value: categoryLabelFor(ctx.locale, category) },
-          ...(methodName ? [{ label: L.method, value: methodName }] : []),
-          { label: L.date, value: date },
+          { key: 'description', label: L.description, value: description },
+          { key: 'amount', label: L.amount, value: money(amount, currency) },
+          { key: 'category', label: L.category, value: categoryLabelFor(ctx.locale, category) },
+          ...(methodName ? [{ key: 'method', label: L.method, value: methodName }] : []),
+          { key: 'date', label: L.date, value: date },
         ],
         fields: previewFields(s, ctx, { description, amount, currency, category, date, paymentMethodId: method.id }),
         ...(duplicate ? { effect: L.duplicateWarning } : {}),
+        pattern: 'record',
+        amount,
+        currency,
+        what: description,
+        ...(method.id ? { methodRef: refOf(method.id) } : {}),
+        // An unnamed method is the usual one: a guess worth asking about only when there is more than one to pick from.
+        ...(methodUnsaid && s.paymentMethods.length > 1 ? { missing: ['method'] } : {}),
+        ...(requestedCategory === null ? { guessed: ['category'] } : {}),
       },
     }),
   )

@@ -15,6 +15,7 @@ import { resetNavConsent } from '@/lib/buddgy/tools/navConsent'
 import { classifyIntent } from '@/lib/buddgy/local/classifyIntent'
 import { PROPOSAL_TTL_MS, type Proposal } from '@/lib/buddgy/tools/proposal'
 import { TOOLS } from '@/lib/buddgy/tools/exec'
+import { applyBatch, groupBatches, isBatch, removeBatchItem, replaceBatchItem } from '@/lib/buddgy/tools/batch'
 import { reviseProposalArgs } from '@/lib/buddgy/tools/revise'
 import { buddgyChatCopy } from '@/lib/i18n/buddgyChatCopy'
 import { useLocale, useT } from '@/lib/i18n'
@@ -190,8 +191,8 @@ export function useBuddgyChat() {
         decide(itemId, proposalId, 'stale', copy.statuses.stale)
         return
       }
-      const write = TOOLS.get(state.proposal.tool)?.write
-      const result = write?.apply(state.proposal, { now: new Date(), locale, revising: true })
+      const ctx = { now: new Date(), locale, revising: true }
+      const result = isBatch(state.proposal) ? applyBatch(state.proposal, ctx) : TOOLS.get(state.proposal.tool)?.write?.apply(state.proposal, ctx)
       if (!result?.ok) {
         decide(itemId, proposalId, 'failed', result?.error)
         return
@@ -205,26 +206,48 @@ export function useBuddgyChat() {
 
   const dismissProposal = useCallback((itemId: string, proposalId: string) => decide(itemId, proposalId, 'dismissed'), [decide])
 
+  /** "Try again" on a card that could not apply: back to pending, then the same re-checked apply. */
+  const retryProposal = useCallback(
+    (itemId: string, proposalId: string) => {
+      if (findProposal(itemId, proposalId)?.status !== 'failed') return
+      decide(itemId, proposalId, 'pending')
+      applyProposal(itemId, proposalId)
+    },
+    [applyProposal, decide],
+  )
+
+  /** `rowKey` revises one row of a batch card; the rest of the batch stays as it is. */
   const reviseProposal = useCallback(
-    (itemId: string, proposalId: string, patch: Record<string, string>) => {
+    (itemId: string, proposalId: string, patch: Record<string, string>, rowKey?: string) => {
       const state = findProposal(itemId, proposalId)
       if (!state) return
-      const result = reviseProposalArgs(state.proposal, patch, { now: new Date(), locale })
+      const target = rowKey ? state.proposal.preview.items?.find((r) => r.key === rowKey)?.proposal : state.proposal
+      if (!target) return
+      const result = reviseProposalArgs(target, patch, { now: new Date(), locale })
       if (!result?.ok) {
         setProposalState(itemId, proposalId, (s) => ({ ...s, message: result?.error }))
         return
       }
-      setProposalState(itemId, proposalId, () => ({ proposal: result.proposal, status: 'pending' }))
+      const next = rowKey ? replaceBatchItem(state.proposal, rowKey, result.proposal, locale) : result.proposal
+      setProposalState(itemId, proposalId, () => ({ proposal: next, status: 'pending' }))
     },
+    [locale, setProposalState],
+  )
+
+  const removeBatchRow = useCallback(
+    (itemId: string, proposalId: string, rowKey: string) =>
+      setProposalState(itemId, proposalId, (s) => (s.status === 'pending' && isBatch(s.proposal) ? { ...s, proposal: removeBatchItem(s.proposal, rowKey, locale) } : s)),
     [locale, setProposalState],
   )
 
   const finishWithProposals = useCallback(
     (itemId: string, proposals: Proposal[]) => {
-      patchBuddgy(itemId, (it) => ({ ...it, proposals: proposals.map((proposal) => ({ proposal, status: 'pending' as const })) }))
-      for (const p of proposals) if (p.risk === 'auto') applyProposal(itemId, p.id)
+      // Grouped before the auto pass: rows of a batch are added together, on one tap, never one by one.
+      const cards = groupBatches(proposals, locale)
+      patchBuddgy(itemId, (it) => ({ ...it, proposals: cards.map((proposal) => ({ proposal, status: 'pending' as const })) }))
+      for (const p of cards) if (p.risk === 'auto') applyProposal(itemId, p.id)
     },
-    [applyProposal, patchBuddgy],
+    [applyProposal, locale, patchBuddgy],
   )
 
   const send = useCallback(
@@ -363,7 +386,9 @@ export function useBuddgyChat() {
     deleteChat,
     applyProposal,
     dismissProposal,
+    retryProposal,
     reviseProposal,
+    removeBatchRow,
     undoApplied,
     bottomRef,
   }

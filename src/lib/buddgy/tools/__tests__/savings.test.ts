@@ -317,6 +317,10 @@ describe('transfer_between_pockets', () => {
     const p = tr.propose({ from: 'CIB', to: 'Cash', amount: 300 }, ctx)
     expect(p.ok && p.proposal.preview.effect).toMatch(/do not change/)
     if (!p.ok) return
+    // The move card: both ends with their balance now and after.
+    expect(p.proposal.preview).toMatchObject({ amount: 300, from: { name: 'CIB' }, to: { name: 'Cash' } })
+    expect(p.proposal.preview.from?.after).toMatch(/700/)
+    expect(p.proposal.preview.to?.after).toMatch(/500/)
     const applied = tr.apply(p.proposal, ctx)
     expect(applied.ok).toBe(true)
     expect([bal(A1), bal(A2)]).toEqual([700, 500])

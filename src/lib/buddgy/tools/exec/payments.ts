@@ -100,6 +100,7 @@ const add_payment_method: WriteImpl = {
           domain: 'payments',
           tone: 'add',
           title: L.addMethod,
+          card: { name: provider, type, currency, ...(last4 ? { last4 } : {}), ...(color ? { color } : {}) },
           rows: [
             { label: L.name, value: name },
             { label: L.type, value: L.types[type] },

@@ -152,6 +152,15 @@ describe('add_income', () => {
     expect(p.ok).toBe(true)
   })
 
+  it('a recurring source is a create card; money received once is a record card with its amount', () => {
+    useFinanceStore.setState({ incomeSources: [] })
+    const add = write('add_income')
+    const source = add.propose({ name: 'Job', amount: 15000, frequency: 'monthly', paydayDays: [1] }, ctx)
+    expect(source.ok && source.proposal.preview).toMatchObject({ pattern: 'create', entity: 'income' })
+    const once = add.propose({ name: 'Bonus', amount: 2000, frequency: 'one_time', type: 'bonus', date: '2026-10-18' }, ctx)
+    expect(once.ok && once.proposal.preview).toMatchObject({ pattern: 'record', amount: 2000, currency: 'EGP', what: 'Bonus' })
+  })
+
   it('records one-time money as a confirmed event and undoes it', () => {
     const add = write('add_income')
     const p = add.propose({ name: 'Bonus', amount: 2500, frequency: 'one_time', type: 'bonus', date: '2026-10-18', method: 'cib card' }, ctx)

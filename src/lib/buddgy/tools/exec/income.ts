@@ -171,6 +171,8 @@ const add_income: WriteImpl = {
             domain: 'income',
             tone: 'add',
             title: L.addRecurring,
+            pattern: 'create',
+            entity: 'income',
             rows,
             fields,
             ...(parsed.derived ? { effect: L.derivedDays } : duplicate ? { effect: L.duplicateWarning } : {}),
@@ -192,7 +194,7 @@ const add_income: WriteImpl = {
         args: { ...common, date },
         risk: 'approve',
         summary: `Pending approval: add ${name} ${money(amount, currency)} received ${date}.`,
-        preview: { domain: 'income', tone: 'add', title: L.addOneTime, rows, fields, ...(duplicate ? { effect: L.duplicateWarning } : {}) },
+        preview: { domain: 'income', tone: 'add', title: L.addOneTime, pattern: 'record', amount, currency, what: name, rows, fields, ...(duplicate ? { effect: L.duplicateWarning } : {}) },
       }),
     )
   },

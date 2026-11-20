@@ -487,6 +487,7 @@ const add_credit_card: WriteImpl = {
           domain: 'debts',
           tone: 'add',
           title: L.addCard,
+          card: { name: a.name, type: 'credit_card', currency: a.currency, ...(a.last4 ? { last4: a.last4 } : {}) },
           rows: [
             { label: L.name, value: fullName },
             { label: L.outstanding, value: money(a.outstanding, a.currency) },

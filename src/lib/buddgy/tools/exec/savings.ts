@@ -300,6 +300,10 @@ const withdraw_from_savings: WriteImpl = {
           domain: 'savings',
           tone: 'change',
           title: L.withdraw,
+          amount,
+          currency,
+          from: { name: pocket.name, now: money(pocket.currentBalance, pocket.currency), after: money(Math.max(0, pocket.currentBalance - landed), pocket.currency) },
+          to: { name: L.purposes[purpose] },
           rows: [
             { label: L.pocket, value: pocket.name },
             { label: L.amount, value: money(amount, currency) },
@@ -355,6 +359,10 @@ const transfer_between_pockets: WriteImpl = {
           domain: 'savings',
           tone: 'change',
           title: L.transfer,
+          amount,
+          currency: a.currency,
+          from: { name: a.name, now: money(a.currentBalance, a.currency), after: money(r2(a.currentBalance - amount), a.currency) },
+          to: { name: b.name, now: money(b.currentBalance, b.currency), after: money(r2(b.currentBalance + arrives), b.currency) },
           rows: [
             { label: L.from, value: a.name, before: money(a.currentBalance, a.currency) },
             { label: L.to, value: b.name, before: money(b.currentBalance, b.currency) },
