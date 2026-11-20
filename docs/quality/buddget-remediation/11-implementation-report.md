@@ -127,3 +127,20 @@ While dragged, the orb follows the finger on both axes, kept inside the screen. 
 |---|---|---|
 | Snap side, dead zone, screen limits | `panelGeometry.ts` (`snapSide`, `dragLeft`), `AIChatBubble.tsx` | **Automated verification** (runner job 6) |
 | How the drag feels | | **Native verification required** (drag sideways on a phone, release near the middle, release past it) |
+
+## Step 6: BDG-015, Buddgy asks before moving you, per place, and gets out of the way (2026-11-20)
+
+Before this change, one approved "Open a screen" card gave Buddgy a yes for every screen and flow for the rest of the app session. "Set up a budget" could then open the Budget Builder silently, behind the still-open chat.
+
+- **The yes is per chat and per place:** tool plus target, so "Open Debts" never covers "Goals" or the Budget Builder. New chat and sign-out forget them all.
+- **The budget setup always asks.** It's a flow, so it shows a card titled "Open the Budget Builder" with the target "Budget Builder", every time, even with an earlier yes.
+- **The chat closes first.** Opening a screen, a setting or the budget setup closes the chat before navigating, so nothing opens behind it. The conversation stays and reopens from the orb.
+- **The model offers, the app asks:** the system prompt now says this.
+- **Not done yet:**
+  - "Build it here", the second choice on the budget card, comes with plan item 2.1.
+  - Explicit "open X" requests running at once without a card is left out. A yes per place covers repeats; add the lexicon rule if the extra tap bothers people.
+
+| Item | Files | Status |
+|---|---|---|
+| A yes per place, flows always ask | `navConsent.ts`, `exec/navigation.ts`, `runTurn.ts`, `useBuddgyChat.ts`, `copy.ts`, `prompt.ts` | Unit tests written, **not yet run**: a new case in `runTurn.test.ts`; consent calls updated in `runTurn.test.ts` and `injectionGolden.test.ts` |
+| The chat closes before a page opens | `exec/navigation.ts` | **Manual verification required** (ask "open my debts", approve; the chat closes and Debts shows) |

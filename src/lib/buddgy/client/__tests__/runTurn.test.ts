@@ -178,13 +178,29 @@ describe('BAI-7 / BAI-10 read taint', () => {
 
   it('navigation with a prefill does not auto-run after a read, even with consent', async () => {
     const { grantNavConsent, resetNavConsent } = await import('@/lib/buddgy/tools/navConsent')
-    grantNavConsent()
+    grantNavConsent('open_sheet:add_expense')
     try {
       const call = [{ name: 'open_sheet', args: { sheet: 'add_expense', amount: 99 } }]
       const afterRead = executeCalls(call, { now: new Date(), locale: 'en', afterRead: true })
       expect(afterRead.proposals).toHaveLength(1)
       const direct = executeCalls(call, { now: new Date(), locale: 'en' })
       expect(direct.proposals).toHaveLength(0)
+    } finally {
+      resetNavConsent()
+    }
+  })
+
+  // BDG-015: a yes to move the user is per place and never covers starting a flow.
+  it('a yes for one place does not open another, and the budget setup always asks', async () => {
+    const { grantNavConsent, resetNavConsent } = await import('@/lib/buddgy/tools/navConsent')
+    grantNavConsent('open_screen:debts')
+    try {
+      const ctx = { now: new Date(), locale: 'en' as const }
+      expect(executeCalls([{ name: 'open_screen', args: { screen: 'debts' } }], ctx).proposals).toHaveLength(0)
+      expect(executeCalls([{ name: 'open_screen', args: { screen: 'goals' } }], ctx).proposals).toHaveLength(1)
+      const flow = executeCalls([{ name: 'start_budget_setup', args: {} }], ctx)
+      expect(flow.proposals).toHaveLength(1)
+      expect(flow.proposals[0].preview.rows[0].value).toBe('Budget Builder')
     } finally {
       resetNavConsent()
     }

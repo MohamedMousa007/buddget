@@ -18,7 +18,8 @@ import { buildContext } from '@/lib/buddgy/client/context'
 import { readLabel } from '@/lib/buddgy/client/readLabels'
 import { readTurnEvents, StreamIdleError } from '@/lib/buddgy/client/sse'
 import { TOOLS } from '@/lib/buddgy/tools/exec'
-import { hasNavConsent } from '@/lib/buddgy/tools/navConsent'
+import { hasNavConsent, navKey } from '@/lib/buddgy/tools/navConsent'
+import { FLOW_TOOLS } from '@/lib/buddgy/tools/exec/navigation'
 import type { Proposal } from '@/lib/buddgy/tools/proposal'
 import type { ToolContext } from '@/lib/buddgy/tools/types'
 
@@ -114,7 +115,7 @@ export function executeCalls(calls: WireToolCall[], ctx: ToolContext, limit = MA
         results.push({ name: call.name, response: clampResult(hide ? redactBalances(raw, true) : raw, limit) })
         reads.push({ tool: call.name, label: readLabel(call.name, ctx.locale) })
         needsModel = true
-      } else if (entry.nav && ((hasNavConsent() && !ctx.afterRead) || !entry.write)) {
+      } else if (entry.nav && !FLOW_TOOLS.has(call.name) && ((hasNavConsent(navKey(call.name, call.args)) && !ctx.afterRead) || !entry.write)) {
         const r = entry.nav(call.args, ctx)
         results.push({ name: call.name, response: r })
         if (!r.ok) needsModel = true

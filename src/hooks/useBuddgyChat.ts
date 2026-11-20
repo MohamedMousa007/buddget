@@ -9,6 +9,7 @@ import type { BuddgyBeat, BuddgyItem, ChatError, ChatItem, ProposalState, Propos
 import { compressHistory } from '@/lib/buddgy/client/history'
 import { runLocal } from '@/lib/buddgy/client/localTurn'
 import { runTurn, TurnFailure } from '@/lib/buddgy/client/runTurn'
+import { resetNavConsent } from '@/lib/buddgy/tools/navConsent'
 import { classifyIntent } from '@/lib/buddgy/local/classifyIntent'
 import { PROPOSAL_TTL_MS, type Proposal } from '@/lib/buddgy/tools/proposal'
 import { TOOLS } from '@/lib/buddgy/tools/exec'
@@ -73,6 +74,8 @@ export function useBuddgyChat() {
 
   const newChat = useCallback(() => {
     abortRef.current?.abort()
+    // BDG-015: a yes to move the user belongs to one chat.
+    resetNavConsent()
     commit([])
     chatIdRef.current = null
     softRef.current = false

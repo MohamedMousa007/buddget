@@ -36,7 +36,7 @@ beforeEach(() => {
   apiFetchAuth.mockReset()
   resetAutoSlots()
   resetSameTurnMemory()
-  grantNavConsent()
+  grantNavConsent('open_sheet:add_expense')
   useFinanceStore.setState({
     paymentMethods: [{ id: 'aaaaaaaa-0000-0000-0000-000000000001', name: 'Cash', type: 'cash', currency: 'EGP', isDefault: true } as never],
     expenses: [], incomeSources: [SALARY], incomeEvents: [], budgetPlans: [], activeBudgetPlanId: null, exchangeRates: {},
