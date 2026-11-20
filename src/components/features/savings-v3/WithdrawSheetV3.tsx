@@ -1,5 +1,6 @@
 'use client'
 
+import { defaultWithdrawSource } from '@/lib/savings/withdrawSource'
 import { balanceEpsilon } from '@/lib/savings/balanceMath'
 import { useMemo, useState } from 'react'
 import { ShoppingCart, CreditCard, Gem, TrendingUp, ArrowRight, Coins, Bitcoin, LineChart } from 'lucide-react'
@@ -82,7 +83,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
   const submitOnce = useSubmitOnce(open)
 
   const [amount, setAmount] = useState('')
-  const [fromId, setFromId] = useState<string | null>(defaultAccountId ?? pockets[0]?.account.id ?? null)
+  const [fromId, setFromId] = useState<string | null>(() => defaultWithdrawSource(pockets, defaultAccountId))
   const [currency, setCurrency] = useState<Currency>(
     () => pockets.find((p) => p.account.id === fromId)?.account.currency ?? baseCurrency,
   )

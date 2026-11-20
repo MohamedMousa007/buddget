@@ -59,7 +59,8 @@ test('D savings pocket allocate > withdraw > balances > net worth', async ({ pag
     await page.getByRole('button', { name: 'Withdraw' }).first().click()
     const d = page.getByRole('dialog').filter({ has: page.getByRole('textbox', { name: 'Amount' }) }).last()
     const from = d.getByRole('radio', { name: /QA Pocket/ })
-    if (await from.count()) await from.click()
+    await from.click()
+    await expect(from).toBeChecked()
     await d.getByRole('textbox', { name: 'Amount' }).fill('300')
     // 'Income: back into this month' is the purpose that returns money to an account (AccountLegRow 'to account').
     await d.getByRole('radio').filter({ hasText: 'Back into this month' }).click()
@@ -97,8 +98,10 @@ test('D3 money leaving a pocket held in an account moves the account [S-2]', asy
     await goto(page, '/wealth')
     await page.getByRole('button', { name: 'Withdraw' }).first().click()
     const d = page.getByRole('dialog').filter({ has: page.getByRole('textbox', { name: 'Amount' }) }).last()
-    const from = d.getByRole('radio', { name: new RegExp(pocket.name) })
-    if (await from.count()) await from.click()
+    // The app-seeded Monthly Savings vault is listed too: pick the test's pocket and check the pick took.
+    const from = d.getByRole('radio', { name: new RegExp(pocket.name) }).filter({ hasNotText: 'Monthly Savings' }).first()
+    await from.click()
+    await expect(from).toBeChecked()
     await d.getByRole('textbox', { name: 'Amount' }).fill(String(amount))
     await d.getByRole('radio').filter({ hasText: purpose }).click()
     return { d, cta }
