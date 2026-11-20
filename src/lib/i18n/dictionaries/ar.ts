@@ -2970,7 +2970,7 @@ export const ar: Dictionary = {
     iosStatusNotSetUp: 'لم يُضبط على هذا الآيفون بعد',
     iosStatusNotConfirmed: 'لم يتأكد بعد · في انتظار أول رسالة بنك من هذا الآيفون',
     iosStatusRunSeen: 'عمل الـ Shortcut · في انتظار أول رسالة بنك',
-    iosStatusQuiet: (days: number) => `لا رسائل بنك من هذا الآيفون منذ ${days} يوم. إن بدا ذلك خطأ، راجع الأتمتة في Shortcuts.`,
+    iosStatusQuiet: (days: number) => `لا رسائل بنك من هذا الآيفون منذ ${arCount(days, 'day')}. إن بدا ذلك خطأ، راجع الأتمتة في Shortcuts.`,
     iosStepKeywordsTitle: 'اختر كلمتك المفتاحية',
     iosStepKeywordsDesc: 'عملتك تظهر في كل رسالة بنكية — الداخل والخارج معاً. أتمتة واحدة لكل عملة تلتقط الرواتب والتحويلات والمشتريات كلها.',
     iosKeywordsYourCurrencies: 'عملاتك',

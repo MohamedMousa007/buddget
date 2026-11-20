@@ -16,8 +16,8 @@ export interface SmsDeviceFacts {
   firstSmsAt: string | null
   lastSmsAt: string | null
   /**
-   * Newest account SMS that carries no device id: a phone still on a token issued before tokens were device-bound.
-   * Used only while this phone has no SMS of its own, so such a phone keeps the account-level reading.
+   * Newest account SMS that carries no device id: a phone still on a token issued before tokens were device-bound keeps
+   * the account-level reading. Read only when `needsLegacyReading`, shown only after a run here, never counted as verified.
    */
   legacyLastSmsAt: string | null
 }
@@ -46,6 +46,15 @@ export interface SmsNativeFacts {
   lastRunAt?: string | null
 }
 
+/**
+ * The account-level fallback applies only to a phone with no SMS of its own and no token bound to it; a phone with a
+ * bound token has its SMS attributed to it, so silence there is its own. Unknown (read failed) means no fallback.
+ * ponytail: another phone on an old token can still feed this reading; the ceiling ends once old tokens are retired.
+ */
+export function needsLegacyReading(own: { firstAt: string | null; lastAt: string | null; boundToken: boolean } | null): boolean {
+  return Boolean(own && !own.firstAt && !own.lastAt && !own.boundToken)
+}
+
 /** iPhone only: a claim or a run on this phone. Also what lets the app arm capture at start-up. */
 export function iosSetUpHere(status: SmsNativeFacts | null | undefined): boolean {
   return Boolean(status?.setupCompleted || status?.lastRunAt)
@@ -60,13 +69,13 @@ export function deriveSmsSetupState(
   const claimed = Boolean(native?.setupCompleted)
   const runSeen = Boolean(native?.lastRunAt)
   const own = server.lastSmsAt ?? server.firstSmsAt
-  const lastSmsAt = own ?? server.legacyLastSmsAt
+  const lastSmsAt = own ?? (runSeen ? server.legacyLastSmsAt : null)
   const quietDays = lastSmsAt ? Math.max(0, Math.floor((now - Date.parse(lastSmsAt)) / 86_400_000)) : 0
   return {
     preference,
     claimed,
     runSeen,
-    verified: Boolean(server.firstSmsAt ?? lastSmsAt),
+    verified: Boolean(own),
     health: !lastSmsAt ? 'none' : quietDays >= QUIET_AFTER_DAYS ? 'quiet' : 'receiving',
     lastSmsAt,
     quietDays,

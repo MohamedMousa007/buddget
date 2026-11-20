@@ -33,10 +33,15 @@ export async function GET(request: Request) {
   const service = createServiceRoleClient()
   const { data: rows } = await service.from('user_devices').select('*').eq('user_id', c.userId).is('revoked_at', null).order('last_seen_at', { ascending: false })
   const me = rows?.find((d) => d.device_id === c.deviceId)
+  // A phone that has delivered nothing yet: does it hold a token bound to it? Without one its SMS arrive with no device id
+  // (a token from before tokens were device-bound), so the app may show the account-level reading instead (BDG-008).
+  const boundToken = me && !me.first_sms_at && !me.last_sms_at
+    ? Boolean((await service.from('sms_ingest_tokens').select('id').eq('user_id', c.userId).eq('device_id', me.device_id).eq('is_active', true).limit(1).maybeSingle()).data)
+    : true
   return NextResponse.json({
     thisDeviceId: c.deviceId,
     // This phone's own SMS facts whatever its role (BDG-008): `lastSmsAt` below is blanked for a phone that does not collect.
-    thisDeviceSms: me ? { firstAt: me.first_sms_at, lastAt: me.last_sms_at } : null,
+    thisDeviceSms: me ? { firstAt: me.first_sms_at, lastAt: me.last_sms_at, boundToken } : null,
     devices: (rows ?? []).map((d) => ({
       deviceId: d.device_id, name: d.name ?? d.model ?? d.platform, platform: d.platform, appVersion: d.app_version, lastSeenAt: d.last_seen_at,
       collectsSms: d.collects_sms, isMain: d.is_main, notify: d.notify, pushPermission: d.push_permission, lastSmsAt: d.collects_sms ? d.last_sms_at : null,

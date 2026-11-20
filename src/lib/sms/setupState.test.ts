@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { NO_DEVICE_FACTS, QUIET_AFTER_DAYS, deriveSmsSetupState, iosSetUpHere } from './setupState'
+import { NO_DEVICE_FACTS, QUIET_AFTER_DAYS, deriveSmsSetupState, iosSetUpHere, needsLegacyReading } from './setupState'
 
 const NOW = Date.parse('2026-11-20T12:00:00Z')
 const ago = (h: number) => new Date(NOW - h * 3_600_000).toISOString()
@@ -53,13 +53,31 @@ describe('deriveSmsSetupState (BDG-008)', () => {
     expect(s).toMatchObject({ verified: true, health: 'quiet', quietDays: 9 })
   })
 
-  it('old token with no device id keeps the account-level reading', () => {
+  it('old token with no device id keeps the account-level reading once a run was seen here, but is not verified', () => {
+    const s = derive({ setupCompleted: true, lastRunAt: ago(3) }, { firstSmsAt: null, lastSmsAt: null, legacyLastSmsAt: ago(3) })
+    expect(s).toMatchObject({ verified: false, health: 'receiving', lastSmsAt: ago(3) })
+  })
+
+  it('without a run here the legacy reading is not shown (a phone that never delivered stays "waiting")', () => {
     const s = derive({ setupCompleted: true }, { firstSmsAt: null, lastSmsAt: null, legacyLastSmsAt: ago(3) })
-    expect(s).toMatchObject({ verified: true, health: 'receiving', lastSmsAt: ago(3) })
+    expect(s).toMatchObject({ verified: false, health: 'none', lastSmsAt: null })
   })
 
   it('this phone\'s own reading wins over the legacy one', () => {
     const s = derive({ setupCompleted: true }, { firstSmsAt: ago(24 * 20), lastSmsAt: ago(24 * 10), legacyLastSmsAt: ago(1) })
     expect(s).toMatchObject({ health: 'quiet', lastSmsAt: ago(24 * 10) })
+  })
+})
+
+describe('needsLegacyReading (BDG-008: which phones may read device-less SMS)', () => {
+  it('only a phone with no SMS of its own and no token bound to it', () => {
+    expect(needsLegacyReading({ firstAt: null, lastAt: null, boundToken: false })).toBe(true)
+  })
+  it('never for a phone holding a bound token: its silence is its own', () => {
+    expect(needsLegacyReading({ firstAt: null, lastAt: null, boundToken: true })).toBe(false)
+  })
+  it('never once the phone has its own SMS, or when its record could not be read', () => {
+    expect(needsLegacyReading({ firstAt: ago(5), lastAt: ago(1), boundToken: false })).toBe(false)
+    expect(needsLegacyReading(null)).toBe(false)
   })
 })

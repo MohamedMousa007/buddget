@@ -18,7 +18,7 @@ import { createClient } from '@/lib/supabase/client'
 import { apiFetchAuth } from '@/lib/apiBase'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 import { fetchThisDeviceSms, setDeviceCollectsSms } from '@/lib/devices/client'
-import { NO_DEVICE_FACTS, deriveSmsSetupState, iosSetUpHere, type SmsDeviceFacts } from '@/lib/sms/setupState'
+import { NO_DEVICE_FACTS, deriveSmsSetupState, iosSetUpHere, needsLegacyReading, type SmsDeviceFacts } from '@/lib/sms/setupState'
 import { saveSmsToken, setSmsEnabled, setIosSetupCompleted, getSmsBridgeStatus, SMS_QUEUE_CHANGED_EVENT, type SmsBridgeStatus } from '@/lib/native/smsTracker'
 
 export interface TokenInfo {
@@ -131,20 +131,19 @@ export function useSmsTracking({ withDeviceSms = false }: { withDeviceSms?: bool
   const refreshDeviceSms = useCallback(async () => {
     if (!withDeviceSms || !isNative() || !isIOS()) return
     const own = await fetchThisDeviceSms()
-    const firstSmsAt = own?.firstAt ?? null
-    const lastSmsAt = own?.lastAt ?? null
-    const uid = firstSmsAt || lastSmsAt ? null : await currentUserId()
-    setDeviceSms({ firstSmsAt, lastSmsAt, legacyLastSmsAt: uid ? await fetchLegacyLastSms(uid) : null })
+    const uid = needsLegacyReading(own) ? await currentUserId() : null
+    setDeviceSms({ firstSmsAt: own?.firstAt ?? null, lastSmsAt: own?.lastAt ?? null, legacyLastSmsAt: uid ? await fetchLegacyLastSms(uid) : null })
   }, [withDeviceSms, currentUserId])
 
   useEffect(() => {
     void refreshDeviceSms()
     const onVisible = () => { if (document.visibilityState === 'visible') void refreshDeviceSms() }
     document.addEventListener('visibilitychange', onVisible)
-    window.addEventListener(SMS_QUEUE_CHANGED_EVENT, refreshDeviceSms)
+    const onQueue = () => { void refreshDeviceSms() }
+    window.addEventListener(SMS_QUEUE_CHANGED_EVENT, onQueue)
     return () => {
       document.removeEventListener('visibilitychange', onVisible)
-      window.removeEventListener(SMS_QUEUE_CHANGED_EVENT, refreshDeviceSms)
+      window.removeEventListener(SMS_QUEUE_CHANGED_EVENT, onQueue)
     }
   }, [refreshDeviceSms])
 
