@@ -123,6 +123,8 @@ describe('OFS-6 tombstone time', () => {
     const e = expenseAt('e1', 1, Date.now() - 1000)
     await flushDiff(s.client as never, 'u', emptySnapshot(), withExpenses(e))
     noteServerTime(new Date(Date.now() + 3 * H).toISOString())
+    // The server really is 3 h ahead: its own clock moves too (0331 holds a delete time at the server's now).
+    clock.now = Date.now() + 3 * H
     await flushDiff(s.client as never, 'u', withExpenses(e), withExpenses())
     const at = Date.parse(s.rows.get('e1')?.deleted_at as string)
     expect(Math.abs(at - (Date.now() + 3 * H))).toBeLessThan(5_000)

@@ -347,7 +347,9 @@ export function useAuthModal() {
     // session is ended (local scope), so the account's other devices stay signed in.
     let required: boolean | null = null
     try {
-      const deviceRes = await apiFetchAuth('/api/auth/device/check', { method: 'POST', signal: AbortSignal.timeout(SIGNIN_TIMEOUT_MS) })
+      // No timeout here: the session already exists, and an aborted check fails closed (sign-out), which on a slow first
+      // load threw users back to the sign-in screen right after signing in (runner jobs 7, 9, 13).
+      const deviceRes = await apiFetchAuth('/api/auth/device/check', { method: 'POST' })
       if (deviceRes.ok) {
         const body = (await deviceRes.json()) as { required?: boolean; deviceSecret?: string }
         required = body.required === true

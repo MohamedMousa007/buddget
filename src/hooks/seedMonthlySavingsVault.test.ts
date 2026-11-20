@@ -9,7 +9,7 @@ describe('S-7: the vault the app seeds is held in the primary account, as the cr
     useFinanceStore.setState((s) => ({
       profile: { ...s.profile, id: userId, defaultCarryPocketId: undefined },
       savingsAccounts: [],
-      paymentMethods: [{ id: 'bank1', name: 'Bank', type: 'bank_account', currency: 'EGP', isDefault: false, openingBalance: 100, createdAt: '2026-01-01T00:00:00.000Z' }] as never,
+      paymentMethods: [{ id: 'bank1', name: 'Bank', type: 'bank_account', currency: 'EGP', isDefault: false, openingBalance: 100, openingAt: '2026-01-01', createdAt: '2026-01-01T00:00:00.000Z' }] as never,
     }))
     markPulled(userId)
     expect(seedMonthlySavingsVault()).toBe(true)

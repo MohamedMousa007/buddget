@@ -392,10 +392,13 @@ test.describe('two devices', () => {
       test.info().annotations.push({ type: 'evidence', description: `server after reconnect: ${evidence}` })
       expect(live.filter((e: any) => e.description === 'QA R14 from B')).toHaveLength(1)
       // Both devices must now agree on the same set of live expenses and the same net worth.
-      const sa = (await localState(page)).expenses.filter((e: any) => !e.deletedAt).map((e: any) => e.id).sort()
-      const sb = (await localState(B)).expenses.filter((e: any) => !e.deletedAt).map((e: any) => e.id).sort()
-      expect(sb).toEqual(sa)
-      expect(sa).toEqual(live.map((e: any) => e.id).sort())
+      // Both devices must converge on the server's live set. A reload's reconcile (flush, then pull) can take longer than
+      // a fixed wait on the dev server, so poll; a device that never converges within the window is a real defect.
+      const want = live.map((e: any) => e.id).sort()
+      const ids = async (p: typeof page) => (await localState(p)).expenses.filter((e: any) => !e.deletedAt).map((e: any) => e.id).sort()
+      let sa: string[] = []; let sb: string[] = []
+      await expect.poll(async () => { sa = await ids(page); sb = await ids(B); return JSON.stringify([sa, sb]) }, { timeout: 40_000 }).toBe(JSON.stringify([want, want]))
+      test.info().annotations.push({ type: 'evidence', description: `converged: A=${sa.join(',')} B=${sb.join(',')} server=${want.join(',')}` })
       await goto(page, '/flow'); await goto(B, '/flow')
       expect(await tile(B, 'Net worth')).toBe(await tile(page, 'Net worth'))
     } finally { await ctxB.close() }
