@@ -13,72 +13,9 @@ import { AIChatMessageList } from '@/components/features/ai-chat/AIChatMessageLi
 import { AIChatComposer } from '@/components/features/ai-chat/AIChatComposer'
 import { useChatVoice } from '@/hooks/useChatVoice'
 import { NoticeBanners } from '@/components/features/usage/NoticeHost'
-import type { BuddgyOrbPosition } from '@/lib/store/useSettingsStore'
 import { useDismissable } from '@/hooks/useDismissable'
 import { useDialogFocus } from '@/hooks/useDialogFocus'
-import { ORB_SIZE, EDGE_INSET as ORB_INSET } from '@/components/ai/AIChatBubble'
-
-const DESKTOP_BP = 1024
-const PANEL_W = 400
-const PANEL_H = 600
-const EDGE_GAP = 12 // gap from the viewport / safe-area edge
-const FAB_CLEAR = 96 // desktop: keep the bottom-right QuickAdd FAB uncovered
-const NAV_CLEAR = 76 // mobile: keep the bottom tab bar uncovered
-const HEADER_CLEAR = 52 // mobile: keep the fixed top header uncovered
-
-/** Panel geometry, anchored to the orb and clamped inside the safe area. */
-interface PanelGeometry {
-  side: 'left' | 'right'
-  top: number
-  width: number
-  height: number
-  /** Horizontal inset from the orb's edge (incl. safe-area). */
-  sideInset: number
-  /** Transform-origin at the orb's centre, so the panel grows out of Buddgy. */
-  originX: number
-  originY: number
-}
-
-/** Resolved safe-area insets in px (mirrored from CSS env via custom props). */
-function safeAreaInsets(): { top: number; bottom: number; left: number; right: number } {
-  if (typeof window === 'undefined') return { top: 0, bottom: 0, left: 0, right: 0 }
-  const cs = getComputedStyle(document.documentElement)
-  const px = (v: string) => parseFloat(cs.getPropertyValue(v)) || 0
-  return {
-    top: px('--sai-top'),
-    bottom: px('--sai-bottom'),
-    left: px('--sai-left'),
-    right: px('--sai-right'),
-  }
-}
-
-function computePanel(orb: BuddgyOrbPosition): PanelGeometry | null {
-  if (typeof window === 'undefined') return null
-  const vw = window.innerWidth
-  const vh = window.innerHeight
-  const ins = safeAreaInsets()
-  const desktop = vw >= DESKTOP_BP
-
-  const width = desktop
-    ? PANEL_W
-    : Math.min(PANEL_W, vw - ins.left - ins.right - EDGE_GAP * 2)
-  const availH = vh - ins.top - ins.bottom - EDGE_GAP * 2
-  const height = Math.min(desktop ? PANEL_H : Math.round(vh * 0.82), PANEL_H, availH)
-
-  // The bottom nav (mobile) / floating FAB (desktop, right side only) must stay clear.
-  const bottomClear = desktop ? (orb.side === 'right' ? FAB_CLEAR : EDGE_GAP) : NAV_CLEAR
-  const topClear = desktop ? EDGE_GAP : HEADER_CLEAR + EDGE_GAP
-
-  const orbCenter = orb.top + ORB_SIZE / 2
-  const minTop = ins.top + topClear
-  const maxTop = Math.max(minTop, vh - ins.bottom - height - bottomClear)
-  const top = Math.max(minTop, Math.min(maxTop, orbCenter - height / 2))
-  const originY = orbCenter - top
-  const sideInset = (orb.side === 'left' ? ins.left : ins.right) + EDGE_GAP
-  const originX = ORB_INSET + ORB_SIZE / 2 - sideInset
-
-  return { side: orb.side, top, width, height, sideInset, originX, originY }
-}
+import { computePanel, readViewport, safeAreaInsets, type PanelGeometry } from '@/components/features/ai-chat/panelGeometry'
 
 /**
  * Buddgy assistant panel. Opens anchored to the draggable Buddgy orb's
@@ -94,13 +31,31 @@ export function AIChat() {
   const copy = useBuddgyChatCopy()
   const chatVoice = useChatVoice((text) => void send(text, { voice: true }))
   const orb = useSettingsStore((s) => s.buddgyOrb)
-  const [panel, setPanel] = useState<PanelGeometry | null>(() => computePanel(orb))
+  const [panel, setPanel] = useState<PanelGeometry | null>(() => {
+    const view = readViewport()
+    return view && computePanel(orb, view, safeAreaInsets())
+  })
 
+  // BDG-014: iOS fires no window resize for the keyboard; the visual viewport and focus changes say when it comes and goes.
   useEffect(() => {
-    const recompute = () => setPanel(computePanel(orb))
+    const recompute = () => {
+      const view = readViewport()
+      if (view) setPanel(computePanel(orb, view, safeAreaInsets()))
+    }
     recompute()
+    const vv = window.visualViewport
     window.addEventListener('resize', recompute)
-    return () => window.removeEventListener('resize', recompute)
+    vv?.addEventListener('resize', recompute)
+    vv?.addEventListener('scroll', recompute)
+    document.addEventListener('focusin', recompute)
+    document.addEventListener('focusout', recompute)
+    return () => {
+      window.removeEventListener('resize', recompute)
+      vv?.removeEventListener('resize', recompute)
+      vv?.removeEventListener('scroll', recompute)
+      document.removeEventListener('focusin', recompute)
+      document.removeEventListener('focusout', recompute)
+    }
   }, [orb])
 
   useScrollLock(isOpen)

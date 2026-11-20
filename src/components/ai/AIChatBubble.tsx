@@ -15,14 +15,13 @@ import { IconButton } from '@/components/ui/IconButton'
 import { useBuddgyMood, buddgyStatusText } from '@/lib/ai/useBuddgyMood'
 import { useBuddgyLife } from '@/hooks/useBuddgyLife'
 import { NUDGE_RULES, type BuddgyNudge } from '@/lib/ai/buddgyIdeas'
+import { ORB_INSET as EDGE_INSET, ORB_SIZE, readViewport } from '@/components/features/ai-chat/panelGeometry'
 
 interface AIChatBubbleProps {
   /** Opens the chat; with a prompt, sends it straight away (a tapped tip). */
   onOpen: (prompt?: string) => void
 }
 
-export const ORB_SIZE = 56
-export const EDGE_INSET = 8
 const TALK_MS = 1600
 const clampTop = (top: number) => Math.max(70, Math.min(window.innerHeight - 150, top))
 
@@ -79,6 +78,8 @@ export function AIChatBubble({ onOpen }: AIChatBubbleProps) {
   // Keep the orb on-screen after a stored position meets a smaller viewport.
   useEffect(() => {
     const fit = () => {
+      // BDG-014: the keyboard shrinks the window on Android; saving then would move the orb up for good.
+      if (readViewport()?.keyboard) return
       const { side, top } = useSettingsStore.getState().buddgyOrb
       const next = clampTop(top)
       if (next !== top) setBuddgyOrb({ side, top: next })

@@ -94,3 +94,22 @@ Migration `0338_ai_one_charge_per_turn.sql` is applied on live. The server alrea
 - `gateway.test.ts`: the outcome carries the text length and the tool names
 - `runTurn.test.ts`: the same turn id goes on every hop, and none is sent when absent
 - `sqlContracts.test.ts`: pins the 0338 rules
+
+## Step 4: BDG-014, the keyboard no longer covers the Buddgy chat (2026-11-20)
+
+The chat panel used to be placed from the full window height and moved only on a window resize. iOS sends no resize when the keyboard opens, so the keyboard covered the message box.
+
+- **Pure helper:** the panel's position and size now come from `panelGeometry.ts`, which reads the visible part of the screen (the visual viewport). The panel moves when that area changes, when iOS pans it, and when a text field gains or loses focus.
+- **With the keyboard up:** the panel takes the whole visible height above the keyboard and stops leaving room for the tab bar, the header and the home indicator.
+- **Detecting the keyboard:**
+  - iOS: the visible area is more than 120px shorter than the window.
+  - Android: the whole window shrinks there, so a focused text field is the sign.
+- **The orb:** it no longer saves a new position while the keyboard is up. On Android a single keyboard open used to move the orb up for good.
+
+No Keyboard plugin, no change to native config.
+
+| Item | Files | Status |
+|---|---|---|
+| Geometry and keyboard rule | `src/components/features/ai-chat/panelGeometry.ts` (new), `AIChat.tsx` | Unit test written, **not yet run**. Five cases: no keyboard is unchanged, the panel sits above the iOS keyboard, it follows a panned view, Android stops reserving the tab bar, desktop is untouched. |
+| Orb keeps its place | `src/components/ai/AIChatBubble.tsx` | **Native verification required** (Android: open the keyboard in chat, close it, the orb stays put) |
+| How it looks on a phone | | **Native verification required** (iPhone and Android: tap the composer, the header and composer both stay in view) |
