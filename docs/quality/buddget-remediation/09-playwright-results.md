@@ -1,14 +1,24 @@
 # Test results
 
-## Baseline: status as of 2026-11-20
+## Baseline: runner job 1 (2026-11-20, commit `665108ca`, today's code before any fix)
 
-**No test was run in this phase.** Nothing below is "tested".
+Runner: cloud session "qa-runner: remediation program". Africa/Cairo, workers 1, no retries.
 
-| Item | State | Why |
-|---|---|---|
-| New cases from `08-playwright-test-plan.md` | not written | written test-first at the start of each approved fix |
-| Baseline run | **Blocked** | tests run only on the cloud QA runner; the existing runner ("qa-runner: round 2 fix branches gate + live suites") is not among the sessions this one can list or message (checked with the session list and the agent list), and it still holds jobs 18 to 21 |
-| Runner jobs 18 to 21 (sync, S8a, UI sweep, S-2) | result unknown | the runner cannot message back; results exist only in its own chat |
+| Step | Result |
+|---|---|
+| `npm run verify` | **passed**: 6,568 tests passed, 181 skipped, 0 failed, same in Cairo and New York; lint 0 errors; types, migration check, audit and build OK; coverage above the floor |
+| `vitest` on `src/lib/buddgy`, `src/lib/billing`, `src/lib/supabase/remote`, `useSetupProgress` | 988 passed, 0 failed |
+| `g-buddgy` journey | 1 of 1 passed |
+| `d-pockets` journeys D and D2 | 2 of 2 passed |
+| `round2/pro-rewards/10-screens` | 12 of 12 passed (J1 to J9 at phone size; J2, J4, J5 again at desktop) |
+| Synthetic users left on live | 0 |
+
+Meaning: no existing test catches any of the 28 issues today. That is expected: the new cases in `08` are the ones written to fail first.
+
+Runner notes kept for later jobs: the unit tests ran with app credentials removed, so none could reach live; the container's Chromium needs a path override (scratchpad wrapper config, no repo change); `NODE_USE_ENV_PROXY=1` is needed to reach Supabase; `POST /api/auth/welcome` answered 502 on the dev server 47 times without failing any journey (not investigated; possibly the dev server having no email key, see QA-10 notes); the runner wrote a git-ignored `.env.local` from the container's own environment.
+
+## Step 1 tests (job 2)
+Not run yet. Job text is in `11-implementation-report.md`.
 
 ## What stands in for a baseline today
 
