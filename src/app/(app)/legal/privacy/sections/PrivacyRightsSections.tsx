@@ -42,6 +42,13 @@ export function PrivacyRightsSections() {
           delete your account. Subject to Google&apos;s API data retention policies.
         </p>
         <p>
+          <strong className="text-[var(--color-brand-text-primary)]">Trial and invite records:</strong> After you delete your account we
+          keep a one-way keyed hash of your email address so a free trial or an invite cannot be
+          claimed again with the same mailbox; it cannot be turned back into your address. The coarse
+          network key used for invite checks is deleted after 90 days. Purchase records may be kept
+          for as long as tax and accounting law requires.
+        </p>
+        <p>
           To request deletion, use Delete Account in Profile/Settings or contact{' '}
           <a href="mailto:support@buddget.app" className="text-[var(--color-brand-primary-ink)] underline underline-offset-2 hover:no-underline">
             support@buddget.app

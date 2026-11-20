@@ -72,7 +72,9 @@ export function PrivacyDataSections() {
           and contain no personal details are kept so parsing keeps working. No raw message is ever
           kept longer than 60 days. SMS data is encrypted in transit and at rest, is used only to
           provide this feature and improve its accuracy, is never sold, and is never used for
-          advertising.
+          advertising. When our learned patterns cannot read a message, its text is sent to Google
+          Gemini to extract the amount, merchant and date; when we learn a new pattern, the model sees
+          only a masked version.
         </p>
         <p>
           <strong className="text-[var(--color-brand-text-primary)]">AI query data:</strong>{' '}
@@ -93,6 +95,23 @@ export function PrivacyDataSections() {
           <strong className="text-[var(--color-brand-text-primary)]">Usage data:</strong> App usage
           patterns, device type, operating system, browser information, and IP addresses collected
           automatically through Supabase infrastructure for security and service reliability purposes.
+        </p>
+        <p>
+          <strong className="text-[var(--color-brand-text-primary)]">Purchase and plan data:</strong> Your plan (Free, trial or Pro), the
+          store you bought through, product and renewal dates, your Sparks balance and purchase history,
+          loyalty points, tier and streak, and the invites you send or accept. Payments are taken by
+          Apple or Google; we never see or store your card or payment details. We receive purchase
+          records (order, product, price, dates, refund status) from RevenueCat.
+        </p>
+        <p>
+          <strong className="text-[var(--color-brand-text-primary)]">Device and invite data:</strong> An identifier the app generates for
+          your device (it is not the advertising ID), device model, platform, app version, whether
+          notifications are allowed and the state of SMS tracking. We use these to keep your devices in
+          sync, deliver notifications and detect abuse of the free trial and of invites. For that we
+          also keep a one-way keyed hash of your email address (so a trial or an invite can be claimed
+          only once per mailbox) and, for invites, a coarse network key (the first part of the network
+          address, keyed so it cannot be read back). We do not collect your advertising identifier and
+          we do not track you across other companies&apos; apps or websites.
         </p>
       </LegalSection>
 
@@ -232,6 +251,34 @@ export function PrivacyDataSections() {
               Sign in with Google / Sign in with Apple:
             </strong>{' '}
             Authentication only. We receive your email and name. We do not receive your password.
+          </li>
+          <li>
+            <strong className="text-[var(--color-brand-text-primary)]">RevenueCat (RevenueCat, Inc.):</strong>{' '}
+            Manages subscriptions and Sparks purchases. Receives an identifier for your account and the purchase records from the App Store or Google Play (product, price, dates, refund status). It does not receive your card details.{' '}
+            <a
+              href="https://www.revenuecat.com/privacy"
+              className="text-[var(--color-brand-primary-ink)] hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Privacy Policy
+            </a>
+          </li>
+          <li>
+            <strong className="text-[var(--color-brand-text-primary)]">Apple App Store and Google Play:</strong>{' '}
+            Take payment for Pro and Sparks, and decide refunds. They handle your payment details under their own terms; we only receive the purchase records described above.
+          </li>
+          <li>
+            <strong className="text-[var(--color-brand-text-primary)]">Vercel (Vercel Inc.):</strong>{' '}
+            Hosts our web app and servers, in Frankfurt, Germany. Requests pass through it, so it processes the same data as the app sends us, on our behalf.{' '}
+            <a
+              href="https://vercel.com/legal/privacy-policy"
+              className="text-[var(--color-brand-primary-ink)] hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Privacy Policy
+            </a>
           </li>
         </ul>
         <p>

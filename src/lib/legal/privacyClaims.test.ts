@@ -37,4 +37,30 @@ describe('SLG-6 / SLG-7 / SLG-12: the privacy policy matches the deployment and 
     expect(ar).toContain('رسائل الجهات التجارية')
     expect(ar).not.toMatch(/رسائل إشعارات البنك|رسائل البنك النصية/)
   })
+
+  it('S9: names RevenueCat, the stores and Vercel, the trial and invite hash, and says there is no advertising ID, EN and AR', () => {
+    const en = read('PrivacyDataSections.tsx')
+    const ar = read('ar/PrivacyDataSections.tsx')
+    for (const name of ['RevenueCat', 'Vercel', 'Apple App Store and Google Play']) expect(en).toContain(name)
+    for (const name of ['RevenueCat', 'Vercel', 'Apple App Store وGoogle Play']) expect(ar).toContain(name)
+    expect(en).toMatch(/We do not collect your advertising identifier/)
+    expect(ar).toContain('لا نجمع معرّف الإعلانات')
+    expect(read('PrivacyRightsSections.tsx')).toMatch(/Trial and invite records/)
+    expect(read('ar/PrivacyRightsSections.tsx')).toContain('سجلات التجربة والدعوات')
+  })
+
+  it('S9: the Terms no longer say the service is free of charge and carry Pro, trial-once, refunds, Sparks and invites, EN and AR', () => {
+    const t = 'src/app/(app)/legal/terms/sections'
+    const intro = readFileSync(`${t}/TermsIntroSections.tsx`, 'utf8')
+    const introAr = readFileSync(`${t}/ar/TermsIntroSections.tsx`, 'utf8')
+    expect(intro).not.toMatch(/provided free of charge/)
+    expect(introAr).not.toContain('الخدمة مقدَّمة مجانًا')
+    const plans = readFileSync(`${t}/TermsPlansSections.tsx`, 'utf8')
+    const plansAr = readFileSync(`${t}/ar/TermsPlansSections.tsx`, 'utf8')
+    for (const t1 of ['30-day trial, once', 'Refunds.', '4 a month and 12 a year', 'no cash value']) expect(plans).toContain(t1)
+    expect(plans).not.toMatch(/guarantee/i)
+    for (const t2 of ['مرة واحدة', 'الاسترداد', '12 في السنة', 'لا قيمة نقدية']) expect(plansAr).toContain(t2)
+    expect(readFileSync(`${t}/TermsUsageSections.tsx`, 'utf8')).not.toMatch(/bank notification SMS/)
+    expect(readFileSync(`${t}/ar/TermsUsageSections.tsx`, 'utf8')).not.toContain('رسائل إشعارات البنك')
+  })
 })

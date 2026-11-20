@@ -47,8 +47,9 @@ export function TermsIntroSections() {
           <li>Downloadable financial reports</li>
         </ul>
         <p>
-          The Service is provided free of charge. We reserve the right to introduce optional paid
-          features in the future with at least 14 days&apos; prior notice.
+          The core of the Service is free. Some features belong to the paid plan buddget Pro, and
+          extra AI capacity is sold as optional Sparks packs; both are described in section 7A. We will
+          give at least 14 days&apos; notice before moving a feature that is free today into the paid plan.
         </p>
       </LegalSection>
 

@@ -1,11 +1,13 @@
 import { LegalDocLink } from '@/components/legal/LegalDocLink'
 import { TermsIntroSections } from './sections/TermsIntroSections'
 import { TermsUsageSections } from './sections/TermsUsageSections'
+import { TermsPlansSections } from './sections/TermsPlansSections'
 import { TermsLiabilitySections } from './sections/TermsLiabilitySections'
 import { TermsLegalSections } from './sections/TermsLegalSections'
 import { LegalLocale } from '@/components/legal/LegalLocale'
 import { TermsIntroSectionsAr } from './sections/ar/TermsIntroSections'
 import { TermsUsageSectionsAr } from './sections/ar/TermsUsageSections'
+import { TermsPlansSectionsAr } from './sections/ar/TermsPlansSections'
 import { TermsLiabilitySectionsAr } from './sections/ar/TermsLiabilitySections'
 import { TermsLegalSectionsAr } from './sections/ar/TermsLegalSections'
 
@@ -22,7 +24,7 @@ export function TermsDocument() {
             </p>
             <h1 className="text-3xl font-bold font-heading tracking-tight">Terms of Service</h1>
             <p className="text-sm text-[var(--color-brand-text-muted)]">
-              Effective date: May 24, 2026 &nbsp;·&nbsp; Last updated: November 5, 2026
+              Effective date: May 24, 2026 &nbsp;·&nbsp; Last updated: November 20, 2026
             </p>
             <p className="text-sm text-[var(--color-brand-text-secondary)] max-w-xl">
               Please read these Terms carefully before using buddget. Also see our{' '}
@@ -36,6 +38,7 @@ export function TermsDocument() {
           {/* Section groups */}
           <TermsIntroSections />
           <TermsUsageSections />
+          <TermsPlansSections />
           <TermsLiabilitySections />
           <TermsLegalSections />
         </div>
@@ -46,7 +49,7 @@ export function TermsDocument() {
             <p className="text-xs font-medium text-[var(--color-brand-primary-ink)]">قانوني</p>
             <h1 className="text-3xl font-bold font-heading tracking-tight">شروط الخدمة</h1>
             <p className="text-sm text-[var(--color-brand-text-muted)]">
-              تاريخ السريان: 24 مايو 2026 &nbsp;·&nbsp; آخر تحديث: 5 نوفمبر 2026
+              تاريخ السريان: 24 مايو 2026 &nbsp;·&nbsp; آخر تحديث: 20 نوفمبر 2026
             </p>
             <p className="text-sm text-[var(--color-brand-text-secondary)] max-w-xl">
               يُرجى قراءة هذه الشروط بعناية قبل استخدام «بادجت». اطّلع أيضًا على{' '}
@@ -58,6 +61,7 @@ export function TermsDocument() {
           </div>
           <TermsIntroSectionsAr />
           <TermsUsageSectionsAr />
+          <TermsPlansSectionsAr />
           <TermsLiabilitySectionsAr />
           <TermsLegalSectionsAr />
         </>
