@@ -29,9 +29,16 @@ export function stripWeeks(weeks: RewardsState['streak']['weeks']): StreakWeek[]
   return weeks.map((w, i) => (i === weeks.length - 1 ? (w.state === 'kept' ? 'current' : w.state === 'frozen' ? 'frozen' : 'pending') : LOOK[w.state]))
 }
 
-/** This week's number counted from the week the user joined (week 1), on the server's week grid. Both dates are YYYY-MM-DD. */
+/** The day loyalty went live (Pro, Rewards and Invites shipped with migrations 0306-0314, applied on live 2026-11-17). No week before it is ever drawn. */
+export const LOYALTY_START = '2026-11-17'
+
+/**
+ * This week's number on the server's week grid, counted from week 1: the week the user joined, or the week loyalty launched
+ * for anyone who joined earlier. Both dates are YYYY-MM-DD.
+ */
 export function weekSinceJoin(thisWeekStart: string, joinedOn: string): number {
-  const days = Math.round((Date.parse(thisWeekStart) - Date.parse(joinedOn)) / 86_400_000)
+  const start = joinedOn > LOYALTY_START ? joinedOn : LOYALTY_START
+  const days = Math.round((Date.parse(thisWeekStart) - Date.parse(start)) / 86_400_000)
   return Math.max(1, Math.floor((days + 6) / 7) + 1)
 }
 

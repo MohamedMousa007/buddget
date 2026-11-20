@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { RewardsState, TierKey } from '@/lib/loyalty/rewardsTypes'
 import { rewardsCopy } from '@/lib/i18n/rewardsCopy'
 import type { BillingMe } from '@/lib/billing/billingStore'
-import { cardProgress, cardTier, shopRowState, streakPoints, streakStrip, stripCounts, stripWeeks, weekSinceJoin } from './rewardsState'
+import { cardProgress, cardTier, shopRowState, streakPoints, streakStrip, stripCounts, stripWeeks, weekSinceJoin, LOYALTY_START } from './rewardsState'
 import { memberMarks } from './useMemberMarks'
 
 const tier = (key: TierKey, minPoints: number, requiresPro = false, requiresFounder = false) => ({ key, name: key, minPoints, requiresPro, requiresFounder, sparksGift: 0, perks: [] })
@@ -63,13 +63,23 @@ describe('the strip counted from the week the user joined', () => {
   const numbers = (s: ReturnType<typeof streakStrip>) => s.cells.map((c) => c.n)
   const en = rewardsCopy.en.rewards.streak
 
-  it('week number from the join date, on the server week grid', () => {
+  it('joined after launch: week number from the join date, on the server week grid', () => {
+    expect(weekSinceJoin('2027-01-04', '2027-01-04')).toBe(1)
+    expect(weekSinceJoin('2027-01-04', '2027-01-07')).toBe(1)
+    expect(weekSinceJoin('2027-01-04', '2027-01-03')).toBe(2)
+    expect(weekSinceJoin('2027-01-04', '2026-12-28')).toBe(2)
+    expect(weekSinceJoin('2027-01-04', '2026-12-27')).toBe(3)
+    expect(weekSinceJoin('2027-02-22', '2026-11-23')).toBe(14)
+  })
+  it('joined before loyalty launched: week 1 is the launch week, never an earlier one', () => {
+    expect(LOYALTY_START).toBe('2026-11-17')
+    expect(weekSinceJoin('2026-11-16', '2026-09-10')).toBe(1)
+    expect(weekSinceJoin('2026-11-30', '2026-09-10')).toBe(3)
     expect(weekSinceJoin('2026-11-16', '2026-11-16')).toBe(1)
-    expect(weekSinceJoin('2026-11-16', '2026-11-19')).toBe(1)
-    expect(weekSinceJoin('2026-11-16', '2026-11-15')).toBe(2)
-    expect(weekSinceJoin('2026-11-16', '2026-11-09')).toBe(2)
-    expect(weekSinceJoin('2026-11-16', '2026-11-08')).toBe(3)
-    expect(weekSinceJoin('2026-11-16', '2026-08-17')).toBe(14)
+    const s = streakStrip(server('before', 'open', 'open'), weekSinceJoin('2026-11-16', '2026-09-10'))
+    expect(s.cells.map((c) => c.week)).toEqual(['pending', ...Array(11).fill('future')])
+    expect(s.cells.filter((c) => c.week === 'missed')).toHaveLength(0)
+    expect(en.range(s.from, s.to)).toBe('Week 1 · since you joined')
   })
   it('joined this week: week 1 ringed, the other 11 dashed, nothing padded before it', () => {
     const s = streakStrip(server('open', 'open'), 1)
