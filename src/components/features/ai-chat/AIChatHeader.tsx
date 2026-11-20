@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { SquarePen, X } from 'lucide-react'
+import { MessagesSquare, SquarePen, X } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { BuddgyIcon, type BuddgyMood } from '@/components/ai/BuddgyIcon'
 import { useBuddgyMood } from '@/lib/ai/useBuddgyMood'
@@ -18,6 +18,8 @@ export interface AIChatHeaderProps {
   isLoading: boolean
   /** The reply is being written out right now. */
   streaming: boolean
+  /** Opens the list of saved chats (BDG-013); without it the header has no chats button. */
+  onShowChats?: () => void
 }
 
 const TALK_MS = 1100
@@ -54,7 +56,7 @@ function useBeatMood(beat: BuddgyBeat | null, isLoading: boolean, streaming: boo
 }
 
 /** Title row for the AI assistant sheet — a live Buddgy avatar + title. */
-export function AIChatHeader({ onClose, onNewChat, canReset, beat, isLoading, streaming }: AIChatHeaderProps) {
+export function AIChatHeader({ onClose, onNewChat, canReset, beat, isLoading, streaming, onShowChats }: AIChatHeaderProps) {
   const t = useT()
   const copy = useBuddgyChatCopy()
   const surface = useBuddgyMood()
@@ -84,6 +86,11 @@ export function AIChatHeader({ onClose, onNewChat, canReset, beat, isLoading, st
           {isLoading && !streaming ? t.buddgy.thinking : t.ai.headerSubtitle}
         </p>
       </div>
+      {onShowChats ? (
+        <IconButton onClick={onShowChats} aria-label={copy.list.open} variant="tinted" size="sm" shape="round">
+          <MessagesSquare className="h-4 w-4" strokeWidth={2.2} />
+        </IconButton>
+      ) : null}
       {canReset ? (
         <IconButton onClick={onNewChat} aria-label={copy.newChat} variant="tinted" size="sm" shape="round">
           <SquarePen className="h-4 w-4" strokeWidth={2.2} />

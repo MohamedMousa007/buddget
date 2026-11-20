@@ -7,6 +7,8 @@ import { useActionToast } from '@/components/ui/ActionToast'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import type { BuddgyBeat, BuddgyItem, ChatError, ChatItem, ProposalState, ProposalStatus, UserItem } from '@/lib/buddgy/client/chatTypes'
 import { compressHistory } from '@/lib/buddgy/client/history'
+import { forSaving, isStreaming, restoreItems, titleOf } from '@/lib/buddgy/client/savedChats'
+import { useBuddgyChats } from '@/lib/store/useBuddgyChats'
 import { runLocal } from '@/lib/buddgy/client/localTurn'
 import { runTurn, TurnFailure } from '@/lib/buddgy/client/runTurn'
 import { resetNavConsent } from '@/lib/buddgy/tools/navConsent'
@@ -19,9 +21,6 @@ import { useLocale, useT } from '@/lib/i18n'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useUsageStore } from '@/lib/usage/usageStore'
-
-/** A chat left alone this long starts fresh: the next question is almost never about the last one. */
-const IDLE_RESET_MS = 30 * 60 * 1000
 
 const newId = () => crypto.randomUUID()
 
@@ -53,12 +52,31 @@ export function useBuddgyChat() {
   const busyRef = useRef(false)
   /** Identifies the turn in flight, so a finished or cancelled turn never clears a newer one. */
   const turnSeqRef = useRef(0)
-  const lastActivityRef = useRef(Date.now())
+  /** This chat's id on the phone (BDG-013: chats are kept and reopened like ChatGPT and Claude); null until the first save. */
+  const activeIdRef = useRef<string | null>(null)
+  const createdAtRef = useRef(0)
+  const chats = useBuddgyChats((s) => s.chats)
+  const activeId = useBuddgyChats((s) => s.activeId)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   const commit = useCallback((next: ChatItem[]) => {
     itemsRef.current = next
     setItems(next)
+    // Saved once a reply has landed, never per streamed token.
+    if (next.length === 0 || isStreaming(next)) return
+    if (!activeIdRef.current) {
+      activeIdRef.current = newId()
+      createdAtRef.current = Date.now()
+    }
+    useBuddgyChats.getState().save({
+      id: activeIdRef.current,
+      serverChatId: chatIdRef.current,
+      title: titleOf(next),
+      createdAt: createdAtRef.current,
+      updatedAt: Date.now(),
+      items: forSaving(next),
+      tainted: taintedRef.current,
+    })
   }, [])
 
   const patchBuddgy = useCallback(
@@ -76,6 +94,8 @@ export function useBuddgyChat() {
     abortRef.current?.abort()
     // BDG-015: a yes to move the user belongs to one chat.
     resetNavConsent()
+    activeIdRef.current = null
+    useBuddgyChats.getState().setActive(null)
     commit([])
     chatIdRef.current = null
     softRef.current = false
@@ -87,9 +107,46 @@ export function useBuddgyChat() {
     setBeat(null)
   }, [commit])
 
+  /** Opens a saved chat: it continues on the same server chat; a change left waiting is now out of date. */
+  const openChat = useCallback(
+    (id: string) => {
+      const chat = useBuddgyChats.getState().chats.find((c) => c.id === id)
+      if (!chat) return
+      newChat()
+      activeIdRef.current = chat.id
+      createdAtRef.current = chat.createdAt
+      chatIdRef.current = chat.serverChatId
+      taintedRef.current = chat.tainted
+      // Shown, not re-saved: looking at a chat must not move it to the top of the list.
+      const restored = restoreItems(chat.items)
+      itemsRef.current = restored
+      setItems(restored)
+      useBuddgyChats.getState().setActive(chat.id)
+    },
+    [newChat],
+  )
+
+  const deleteChat = useCallback(
+    (id: string) => {
+      const wasActive = activeIdRef.current === id
+      useBuddgyChats.getState().remove(id)
+      if (wasActive) newChat()
+    },
+    [newChat],
+  )
+
+  // The saved chats belong to whoever is signed in; on sign-in the last chat is reopened.
+  const userId = user?.id ?? null
   useEffect(() => {
-    if (!user && supabaseConfigured) newChat()
-  }, [user, supabaseConfigured, newChat])
+    if (!userId && supabaseConfigured) {
+      newChat()
+      return
+    }
+    const store = useBuddgyChats.getState()
+    store.claim(userId)
+    const last = store.activeId
+    if (last && last !== activeIdRef.current) openChat(last)
+  }, [userId, supabaseConfigured, newChat, openChat])
 
   const guardSignedIn = useCallback(() => {
     if (!supabaseConfigured || user) return true
@@ -176,14 +233,6 @@ export function useBuddgyChat() {
       if (!text || busyRef.current) return
       if (!guardSignedIn()) return
       if (override === undefined) setInput('')
-
-      if (Date.now() - lastActivityRef.current > IDLE_RESET_MS) {
-        commit([])
-        chatIdRef.current = null
-        softRef.current = false
-        taintedRef.current = false
-      }
-      lastActivityRef.current = Date.now()
 
       const turnId = opts?.turnId ?? crypto.randomUUID()
       const userItem: ChatItem = { id: newId(), role: 'user', text, turnId, ...(opts?.voice ? { voice: true } : {}) }
@@ -308,6 +357,10 @@ export function useBuddgyChat() {
     retry,
     keepGoing,
     newChat,
+    chats,
+    activeId,
+    openChat,
+    deleteChat,
     applyProposal,
     dismissProposal,
     reviseProposal,

@@ -3,6 +3,7 @@ import { clearSyncCursors } from '@/lib/supabase/remote/cursor'
 import { useFinanceStore, cancelPendingFinancePersist } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { clearPendingAiJobs } from '@/lib/store/usePendingAiJobs'
+import { clearBuddgyChats } from '@/lib/store/useBuddgyChats'
 import { resetHydrationGuard } from '@/hooks/remote/hydrateGuard'
 import { SPLASH_DONE_KEY } from '@/lib/auth/splashLatch'
 import { resetNavConsent } from '@/lib/buddgy/tools/navConsent'
@@ -89,6 +90,12 @@ export function clearBudgetData(): void {
     clearPendingAiJobs()
   } catch (e) {
     console.error('[clearBudgetData] pending AI jobs reset failed', e)
+  }
+  // Buddgy chats are kept on this phone only; the next account must never see them (BDG-013).
+  try {
+    clearBuddgyChats()
+  } catch (e) {
+    console.error('[clearBudgetData] Buddgy chats reset failed', e)
   }
 
   // Clear the per-userId hydrate dedup guard so the next sign-in hydrates

@@ -11,6 +11,9 @@ import { AIChatHeader } from '@/components/features/ai-chat/AIChatHeader'
 import { AIChatEmptyState } from '@/components/features/ai-chat/AIChatEmptyState'
 import { AIChatMessageList } from '@/components/features/ai-chat/AIChatMessageList'
 import { AIChatComposer } from '@/components/features/ai-chat/AIChatComposer'
+import { AIChatList } from '@/components/features/ai-chat/AIChatList'
+import { navigate } from '@/lib/navigation/navigate'
+import { SETTING_BY_ID } from '@/lib/settings/registry'
 import { useChatVoice } from '@/hooks/useChatVoice'
 import { NoticeBanners } from '@/components/features/usage/NoticeHost'
 import { useDismissable } from '@/hooks/useDismissable'
@@ -26,7 +29,7 @@ import { computePanel, readViewport, safeAreaInsets, type PanelGeometry } from '
 export function AIChat() {
   const {
     isOpen, close, items, input, setInput, busy, step, beat, online, bottomRef, newChat, send, stop, retry, keepGoing,
-    applyProposal, dismissProposal, reviseProposal, undoApplied,
+    applyProposal, dismissProposal, reviseProposal, undoApplied, chats, activeId, openChat, deleteChat,
   } = useBuddgyChat()
   const copy = useBuddgyChatCopy()
   const chatVoice = useChatVoice((text) => void send(text, { voice: true }))
@@ -57,6 +60,15 @@ export function AIChat() {
       document.removeEventListener('focusout', recompute)
     }
   }, [orb])
+
+  /** The chat list replaces the conversation inside the same pop-up (BDG-013). */
+  const [showList, setShowList] = useState(false)
+  // Closing the chat, however it closes, brings it back on the conversation next time.
+  const [wasOpen, setWasOpen] = useState(isOpen)
+  if (wasOpen !== isOpen) {
+    setWasOpen(isOpen)
+    if (!isOpen) setShowList(false)
+  }
 
   useScrollLock(isOpen)
   // Android back / Escape close the chat instead of the whole screen.
@@ -95,8 +107,20 @@ export function AIChat() {
             transition={{ type: 'spring', stiffness: 380, damping: 32, opacity: { duration: 0.14 } }}
             className="fixed z-50 flex flex-col overflow-hidden outline-none bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.7)]"
           >
-            <AIChatHeader onClose={close} onNewChat={newChat} canReset={items.length > 0} beat={beat} isLoading={busy} streaming={busy && items.at(-1)?.role === 'buddgy' && (items.at(-1)?.text ?? '') !== ''} />
+            <AIChatHeader onClose={close} onNewChat={newChat} canReset={items.length > 0} beat={beat} isLoading={busy} streaming={busy && items.at(-1)?.role === 'buddgy' && (items.at(-1)?.text ?? '') !== ''} onShowChats={() => setShowList(true)} />
 
+            {showList ? (
+              <AIChatList
+                chats={chats}
+                activeId={activeId}
+                onOpen={(id) => { openChat(id); setShowList(false) }}
+                onNew={() => { newChat(); setShowList(false) }}
+                onDelete={deleteChat}
+                onBack={() => setShowList(false)}
+                onMemory={() => { close(); navigate(SETTING_BY_ID.memories.route) }}
+              />
+            ) : (
+            <>
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {items.length === 0 ? (
                 <AIChatEmptyState onPickSuggestion={(prompt) => void send(prompt)} />
@@ -134,6 +158,8 @@ export function AIChat() {
               usageKey={`${busy}:${items.length === 0}`}
               mic={{ state: chatVoice.state, error: chatVoice.error, onStart: () => void chatVoice.start(), onStop: () => void chatVoice.stop() }}
             />
+            </>
+            )}
           </motion.div>
         </>
       )}

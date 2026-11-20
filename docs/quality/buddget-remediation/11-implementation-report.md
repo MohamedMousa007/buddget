@@ -159,3 +159,22 @@ All four flipping cards (Guest pass, Pro member, Letterpress tier, Founder) shar
 |---|---|---|
 | One face at a time, switching at 90 degrees | `flipPhysics.ts`, `FlipCardRig.tsx`, `cards.module.css` | Unit test written, **not yet run** (`membershipComponents.test.tsx`) |
 | The back on an iPhone | | **Native verification required** (flip the invite, Pro, rewards and founder cards; the back shows only back text) |
+
+## Step 8: Claude-style chats (BDG-013, owner ruling; spec `claude-style-chats.md`)
+
+Buddgy chats now work like ChatGPT and Claude, inside the same pop-up.
+
+- **Chats are kept.** The current chat and up to 50 earlier ones are kept on this phone. Opening Buddgy shows the last chat and continues it, even after the app was closed. The 30-minute reset is gone from the phone.
+- **The chat list:** a new button in the header opens it. It has New chat, search, groups (Today / Yesterday / Previous 7 days / Older), open, delete with a confirm, and a Memory row that opens the existing Memories setting.
+- **Delete removes the chat and its context.** The context exists only in the saved transcript on this phone.
+- **After a restart:** a waiting change becomes Out of date and can't be applied twice, and a reply cut off mid-stream becomes a failed reply with Retry. Opening a chat doesn't move it up the list.
+- **Privacy:** saved on the phone only. Wiped on sign-out and when another account signs in. Never synced.
+- **Writes:** only once a reply has landed, never per streamed token.
+- **Server (migration 0340, applied):** `ai_idle_minutes` is 30 days on every plan, so a reopened chat continues on the same server chat. A chat still rolls at its turn or spend cap, carrying the recap.
+- **Usage:** what the model gets is unchanged, the last few turns plus a recap. Installed builds keep resetting on the phone after 30 minutes and are unaffected.
+
+| Item | Files | Status |
+|---|---|---|
+| Server: chats continue | `supabase/migrations/0340_ai_chats_continue.sql` | Proven on live in a rolled-back transaction (a chat idle 2 hours continued: same chat, `new_chat` false), then applied. All 3 plans show 43200. |
+| Saved chats, restore, caps, groups, search, account wipe | `savedChats.ts`, `useBuddgyChats.ts`, `useBuddgyChat.ts`, `clearBudgetData.ts` | Unit tests written, **not yet run** (`savedChats.test.ts`) |
+| Chat list in the pop-up | `AIChatList.tsx`, `AIChat.tsx`, `AIChatHeader.tsx` (optional `onShowChats`, default unchanged), `buddgyChatCopy.ts` | **Manual verification required** (list, search, open, delete, Memory, reopen after closing the app) |

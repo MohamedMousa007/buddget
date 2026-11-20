@@ -39,6 +39,23 @@ export interface BuddgyChatCopy {
   mode: { quick: string; thinking: string }
   quickAddLead: string
   quickAddDone: string
+  /** The chat list inside the pop-up (BDG-013). */
+  list: {
+    open: string
+    title: string
+    back: string
+    search: string
+    groups: Record<'today' | 'yesterday' | 'week' | 'older', string>
+    untitled: string
+    empty: string
+    noMatch: string
+    remove: (title: string) => string
+    deleteTitle: string
+    deleteBody: (title: string) => string
+    deleteConfirm: string
+    memory: string
+    memoryHint: string
+  }
   usage: {
     title: string
     aria: (pct: number) => string
@@ -110,6 +127,22 @@ const en: BuddgyChatCopy = {
   mode: { quick: 'Quick', thinking: 'Thinking' },
   quickAddLead: 'Got it. Here is what I will add:',
   quickAddDone: 'Got it.',
+  list: {
+    open: 'Your chats',
+    title: 'Chats',
+    back: 'Back to the chat',
+    search: 'Search chats',
+    groups: { today: 'Today', yesterday: 'Yesterday', week: 'Previous 7 days', older: 'Older' },
+    untitled: 'New chat',
+    empty: 'Your chats with Buddgy will show here.',
+    noMatch: 'No chats match.',
+    remove: (title) => `Delete ${title}`,
+    deleteTitle: 'Delete this chat?',
+    deleteBody: (title) => `“${title}” and everything Buddgy kept from it will be deleted. What Buddgy remembers about you stays in Memory, and anything you already added stays too.`,
+    deleteConfirm: 'Delete chat',
+    memory: 'Memory',
+    memoryHint: 'What Buddgy remembers about you',
+  },
   usage: {
     title: 'Your Buddgy usage',
     aria: (pct) => `Buddgy usage, ${pct}% used`,
@@ -158,6 +191,22 @@ const ar: BuddgyChatCopy = {
   mode: { quick: 'سريع', thinking: 'تفكير' },
   quickAddLead: 'تمام. ده اللي هضيفه:',
   quickAddDone: 'تمام.',
+  list: {
+    open: 'محادثاتك',
+    title: 'المحادثات',
+    back: 'الرجوع إلى المحادثة',
+    search: 'ابحث في المحادثات',
+    groups: { today: 'اليوم', yesterday: 'أمس', week: 'آخر ٧ أيام', older: 'أقدم' },
+    untitled: 'محادثة جديدة',
+    empty: 'ستظهر محادثاتك مع بادجي هنا.',
+    noMatch: 'لا توجد محادثات مطابقة.',
+    remove: (title) => `حذف ${title}`,
+    deleteTitle: 'حذف هذه المحادثة؟',
+    deleteBody: (title) => `ستُحذف «${title}» وكل ما احتفظ به بادجي منها. ما يتذكره بادجي عنك يبقى في الذاكرة، وما أضفته بالفعل يبقى أيضًا.`,
+    deleteConfirm: 'حذف المحادثة',
+    memory: 'الذاكرة',
+    memoryHint: 'ما يتذكره بادجي عنك',
+  },
   usage: {
     title: 'استخدامك لبادجي',
     aria: (pct) => `استخدام بادجي، ${pct}٪ مستخدم`,
