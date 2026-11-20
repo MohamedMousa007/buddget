@@ -79,8 +79,8 @@ describe('verifySignedWebhook', () => {
     const sig = 'v1,' + createHmac('sha256', Buffer.alloc(0)).update(`m1.${ts}.{}`).digest('base64')
     expect(verifySignedWebhook({ id: 'm1', timestamp: ts, signature: sig }, '{}', 'v1,whsec_', now)).toBe(false)
   })
-  const secret = `whsec_${Buffer.from('shh').toString('base64')}`
-  const sign = (id: string, ts: string, body: string) => `v1,${createHmac('sha256', Buffer.from('shh')).update(`${id}.${ts}.${body}`).digest('base64')}`
+  const secret = `whsec_${Buffer.from('test-webhook-signing-key-32bytes').toString('base64')}`
+  const sign = (id: string, ts: string, body: string) => `v1,${createHmac('sha256', Buffer.from('test-webhook-signing-key-32bytes')).update(`${id}.${ts}.${body}`).digest('base64')}`
   const now = 1_800_000_000
   it('accepts a good signature and rejects tampering, stale timestamps and missing headers', () => {
     const ts = String(now)
