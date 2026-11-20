@@ -68,6 +68,7 @@ export function AIChatList({ chats, activeId, onOpen, onNew, onDelete, onBack, o
                     <li key={c.id} className={`flex items-center rounded-xl ${c.id === activeId ? 'bg-[var(--color-brand-elevated)]' : ''}`}>
                       <button
                         type="button"
+                        data-raw-button-ok="a full-width list row that opens a chat; Button would centre and pad it"
                         onClick={() => onOpen(c.id)}
                         aria-current={c.id === activeId ? 'true' : undefined}
                         className="min-h-12 min-w-0 flex-1 truncate px-3 text-start text-sm text-[var(--color-brand-text-primary)]"
@@ -88,6 +89,7 @@ export function AIChatList({ chats, activeId, onOpen, onNew, onDelete, onBack, o
 
       <button
         type="button"
+        data-raw-button-ok="a two-line settings row with a chevron, the same shape as the settings list rows"
         onClick={onMemory}
         className="mx-4 mb-3 flex min-h-14 items-center gap-3 border-t border-[var(--color-brand-border)] px-1 text-start"
       >
