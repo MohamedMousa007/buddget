@@ -203,6 +203,16 @@ Buddgy chats now work like ChatGPT and Claude, inside the same pop-up.
 - **Abbreviation (`bankAbbreviation`):** a catalogue match is abbreviated from its catalogue name ("National Bank of Egypt" gives NBE). A first word already in capitals of at most 4 letters is kept (CIB, NBE, QNB, HSBC). Otherwise each word gives its initial and a capitalised word gives itself: Banque Misr is BM, Emirates NBD is ENBD. Stop-words are skipped, and a single word is kept up to 4 letters, else its first 3. The maximum is 4; Arabic names keep their first word. A card under an account takes its parent's bank.
 - **Storage (migration 0341, applied):** two nullable columns, `payment_methods.card_style` ('metal' | 'bank') and `card_theme`. `color` stays a real hex, because avatars, tints and installed builds read it, and the app writes the theme's first stop into it.
 - **Older cards:** a card with no theme (or an unknown one) is drawn in the theme nearest its colour, style Bank-issued, so no card renders blank.
+- **Editing keeps the colour:** editing a method keeps its saved `color` until the user picks a theme, so an account's avatar does not shift colour after a label edit.
+- **Differences from the mockup:**
+  - The expense sheet has no "Recent" cards row (no recency data exists today).
+  - The network box shows only when the card's name states a network (VISA, MASTERCARD), never the literal "NETWORK".
+  - The bottom-left line is the card's label (or the currency when the top-right holds ⋯ or the check), not a cardholder name.
+  - The ⋯ button is unscaled at 32px with a 44px tap area.
+  - The Paid with row keeps the FieldButton border and prints `•• 4821`.
+  - Income and debt pickers keep the old trigger (the card trigger is the additive `variant="card"`).
+  - Style and theme controls also show when editing a bank account or wallet in this sheet.
+  - A 4-letter abbreviation beside PREPAID or a long Arabic type truncates the type on the mini card.
 
 | Item | Files | Status |
 |---|---|---|

@@ -91,6 +91,7 @@ export function PaymentMethodSetupSheet({
   const [curCode, setCurCode] = useState<Currency>(baseCurrency)
   const [cardStyle, setCardStyle] = useState<CardStyle>('bank')
   const [cardTheme, setCardTheme] = useState<CardThemeKey | null>(null)
+  const [themePicked, setThemePicked] = useState(false)
   const [isDefault, setIsDefault] = useState(false)
   const [providerSheetOpen, setProviderSheetOpen] = useState(false)
   // Credit-card debt terms (only when type === 'credit_card').
@@ -104,7 +105,7 @@ export function PaymentMethodSetupSheet({
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- initialise form when the sheet opens */
     if (open && !prevOpen.current) {
-      setProviderSheetOpen(false)
+      setProviderSheetOpen(false); setThemePicked(false)
       if (editing) {
         const { provider, tag: decTag } = decomposePaymentMethodName(editing.name, editing.last4)
         // A label an older version folded into the name ("CIB · Salary") is shown as the label it always was.
@@ -205,8 +206,9 @@ export function PaymentMethodSetupSheet({
     const use4 = idMode !== 'none' && last4.length > 0 && isSavableTail(last4)
     const words = idMode === 'label' ? label.trim() : ''
     const name = composePaymentMethodName(provider, { last4: use4 ? last4 : undefined })
-    // `color` stays a real hex (avatars and tints read it): the theme's first stop.
-    const payload = { name, type, currency: curCode, color: CARD_THEMES[effectiveTheme].a, cardStyle, cardTheme: effectiveTheme, isDefault, ...(use4 ? { last4 } : {}), ...(words ? { label: words } : {}) }
+    // `color` stays a real hex (avatars and tints read it): the theme's first stop, or an edited method's own colour until a theme is picked.
+    const color = editing?.color && !themePicked ? editing.color : CARD_THEMES[effectiveTheme].a
+    const payload = { name, type, currency: curCode, color, cardStyle, cardTheme: effectiveTheme, isDefault, ...(use4 ? { last4 } : {}), ...(words ? { label: words } : {}) }
     let pmId: string
     if (editing) {
       updatePaymentMethod(editing.id, { ...payload, last4: use4 ? last4 : undefined, last4Aliases: aliases.length > 0 ? aliases : undefined, label: words || undefined })
@@ -400,7 +402,7 @@ export function PaymentMethodSetupSheet({
                   <span className={microClassName}>{t.paymentMethods.cardTheme}</span>
                   <span className="text-xs font-semibold text-[var(--color-brand-text-secondary)]">{t.paymentMethods.themeNames[effectiveTheme]}</span>
                 </div>
-                <CardThemePicker value={effectiveTheme} onChange={setCardTheme} names={t.paymentMethods.themeNames} ariaLabel={t.paymentMethods.cardTheme} />
+                <CardThemePicker value={effectiveTheme} onChange={(k) => { setCardTheme(k); setThemePicked(true) }} names={t.paymentMethods.themeNames} ariaLabel={t.paymentMethods.cardTheme} />
               </div>
 
               {/* Set as default */}
