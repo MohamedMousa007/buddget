@@ -305,24 +305,48 @@ test('R17 S8d-6: a reload with no edit sends no writes', async ({ page, user }) 
     writes.push(`  -> ${res.status()} ${new URL(res.url()).pathname.split('/').pop()} ${(await res.text().catch(() => '')).slice(0, 300)}`)
   })
   const boot: string[] = []
+  await page.context().addInitScript((uid) => {
+    (window as any).__qaBoot = { fp: localStorage.getItem(`buddget:flushed:${uid}`), store: localStorage.getItem('buddget-storage') }
+  }, user.id)
   for (let i = 0; i < 2; i++) {
     // What the next boot diffs against: the stored fingerprint and the persisted rows (synthetic user, no personal data).
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    // Read what the app booted on: copied by an init script before any app code ran.
     boot.push(await page.evaluate((uid) => {
-      const raw = localStorage.getItem(`buddget:flushed:${uid}`)
+      const b = (window as any).__qaBoot ?? {}
+      const raw = b.fp as string | null
       const fp = raw ? JSON.parse(raw) : null
-      const st = JSON.parse(localStorage.getItem('buddget-storage') ?? '{}').state ?? {}
+      const st = JSON.parse(b.store ?? '{}').state ?? {}
+      // Same hash as src/components/sync/flushedFingerprint.ts: which cached rows the next boot will see as unsent.
+      const stable = (value: unknown): string => {
+        if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`
+        if (value && typeof value === 'object') { const o = value as Record<string, unknown>; return `{${Object.keys(o).sort().filter((k) => o[k] !== undefined).map((k) => `${JSON.stringify(k)}:${stable(o[k])}`).join(',')}}` }
+        return JSON.stringify(value) ?? 'null'
+      }
+      const hash = (value: unknown) => {
+        const t = stable(value); let h1 = 0x811c9dc5; let h2 = 0x9747b28c
+        for (let i = 0; i < t.length; i++) { const c = t.charCodeAt(i); h1 = Math.imul(h1 ^ c, 0x01000193); h2 = Math.imul(h2 ^ c, 0x5bd1e995); h2 ^= h2 >>> 15 }
+        return `${t.length.toString(36)}.${(h1 >>> 0).toString(36)}.${(h2 >>> 0).toString(36)}`
+      }
+      const mismatch: string[] = []
+      for (const [k, v] of Object.entries(fp?.singles ?? {})) if (v !== hash(st[k])) mismatch.push(`single ${k}`)
+      for (const [k, rowsByHash] of Object.entries(fp?.lists ?? {})) for (const r of (st[k] ?? []) as any[]) {
+        const known = (rowsByHash as Record<string, string>)[r.id]
+        if (known === undefined) mismatch.push(`${k} ${r.id} not in fingerprint`)
+        else if (known !== hash(r)) mismatch.push(`${k} ${r.id} hash differs`)
+      }
       return JSON.stringify({
+        mismatch,
         fp: fp && { v: fp.v, singles: Object.keys(fp.singles ?? {}), lists: Object.fromEntries(Object.entries(fp.lists ?? {}).map(([k, v]) => [k, Object.keys(v as object)])) },
         cache: { profileId: st.profile?.id, paymentMethods: (st.paymentMethods ?? []).map((m: any) => m.id), expenses: (st.expenses ?? []).map((e: any) => e.id) },
         store: { profile: st.profile, settings: st.settings, paymentMethods: st.paymentMethods, expenses: st.expenses },
       }).slice(0, 6000)
     }, user.id))
-    await page.reload({ waitUntil: 'domcontentloaded' })
     await expect(page.locator('main')).toContainText('QA R17 seed', { timeout: 30_000 })
     await page.waitForTimeout(8000)
   }
   test.info().annotations.push({ type: 'evidence', description: `writes on reload: ${JSON.stringify(writes)}` })
-  test.info().annotations.push({ type: 'evidence', description: `state before each reload: ${JSON.stringify(boot)}` })
+  test.info().annotations.push({ type: 'evidence', description: `state each boot started from: ${JSON.stringify(boot)}` })
   expect(writes, 'writes on a reload without an edit').toEqual([])
 })
 
