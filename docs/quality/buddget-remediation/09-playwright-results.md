@@ -100,3 +100,11 @@ The targeted run passed: Buddgy, hooks, ai-chat and membership, 866 of 866. `npm
 - **Unit:** 919 passed, 1 failed, at `actionCards.render.test.tsx:62`. Cause: the test's `getInitialState` spy never took effect under zustand v5, so the render read an empty store. Fixed in `44952132`. The same fix went into `plan.render.test.tsx`.
 - **Journey `g-buddgy`:** failed 2 of 2. Cause, found by reading the code: BDG-014's focus listener re-laid out the chat panel between mousedown and mouseup on Send, so the click missed. Fixed in `926da68d` with a press gate: layout changes from focus wait until the press ends. Not yet reproduced or rerun.
 - **Other gates:** lint, types, migration check, audit and build passed. 0 synthetic users left.
+
+## Cloud job 13 (2026-11-21, commit `47a42278`, parallel runner)
+
+The same two failures as job 12, both already fixed in `44952132` and `926da68d`:
+- `actionCards.render.test.tsx:62`
+- `g-buddgy.spec.ts:26`
+
+Everything else passed: 1,395 other targeted tests (including budget-in-chat), lint, types, migration check, audit and build. 0 `qa-e2e-job13-*` users left. Runner notes: the container's Playwright browser is build 1243 while the repo wants 1255, and the journey names its users from the test title.
