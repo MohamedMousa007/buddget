@@ -112,6 +112,7 @@ test('D3 money leaving a pocket held in an account moves the account [S-2]', asy
     expect(await qnbBalance(page)).toBe(4800)
     expect(await netWorthFlow(page)).toBe(4800)
     await localWait(page, (s) => s.savingsAccounts.find((a: any) => a.id === pocket.id && a.currentBalance === 300))
+    await serverRows('savings_accounts', user.id, `id=eq.${pocket.id}`, (r: any[]) => Number(r[0]?.current_balance) === 300)
   })
 
   await test.step('Pay a debt 100 from the pocket: net worth unchanged, the account drops by 100', async () => {

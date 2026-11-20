@@ -26,7 +26,7 @@ export const test = base.extend<{ shim: void; user: QaUser; keepUser: boolean; o
     info.annotations.push({ type: 'qa-user', description: `${email} ${id}` })
     await signIn(page, email)
     await use({ email, id })
-    if (!keepUser && !process.env.QA_KEEP_USERS) await deleteUser(email).catch(() => undefined)
+    if (!keepUser && !process.env.QA_KEEP_USERS) await deleteUser(email).catch((e) => { throw new Error(`synthetic user ${email} (${id}) was not deleted, remove it by hand: ${e}`) })
   },
 })
 export { expect }
