@@ -26,6 +26,8 @@ export interface TurnRequest {
   chatId?: string
   /** True for a tool-loop continuation inside one user turn. */
   hop?: boolean
+  /** Made on the phone for one user message; every hop and a Retry of it send the same id, so it is charged once (BDG-011). */
+  turnId?: string
   messages: WireMessage[]
   /** Compact snapshot of "now" built on the device. */
   context: string

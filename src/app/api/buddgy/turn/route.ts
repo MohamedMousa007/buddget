@@ -66,6 +66,7 @@ export async function POST(req: Request) {
     feature: turn.hop ? 'chat_hop' : 'chat',
     chatId: turn.chatId ?? null,
     advisorFree: advisor.mode === 'free',
+    turnId: turn.turnId,
     estUnits: estimateUnits(JSON.stringify(contents).length + SYSTEM_PROMPT.length, cfg.maxOutputTokens),
   })
   if (!quota.allowed) return quotaDeniedResponse(quota)
@@ -113,7 +114,19 @@ export async function POST(req: Request) {
       // status's call (0337): `aborted` (text reached the user) is, `aborted_empty` is not.
       const cut = outcome.status === 'aborted' || outcome.status === 'aborted_empty'
       const usage = outcome.usage.promptTokens === 0 && cut ? { ...outcome.usage, promptTokens: estInputTokens } : outcome.usage
-      await settleAiQuota(quota, { model: usedModel, tier: cfg.tier, latencyMs: Date.now() - started, usage, status: outcome.status })
+      // One user message is charged as one turn (0338). A tool step is a call that asks the phone for data while hops
+      // are left (the phone answers and calls again); text, a proposal or a navigation is what the user sees.
+      const kinds = outcome.calls.map((name) => SPEC_BY_NAME.get(name)?.kind)
+      const provisional = outcome.status === 'ok' && kinds.some((k) => k === 'read' || k === undefined) && hopsDone(turn.messages) < maxHops
+      const visible = outcome.textChars > 0 || kinds.some((k) => k === 'write' || k === 'nav')
+      await settleAiQuota(quota, {
+        model: usedModel,
+        tier: cfg.tier,
+        latencyMs: Date.now() - started,
+        usage,
+        status: outcome.status,
+        ...(turn.turnId ? { provisional, visible } : {}),
+      })
       console.info(`[buddgy] user=${auth.userId} tier=${cfg.tier} units=${computeUnits(usage)} finish=${outcome.finish}`)
     },
   )

@@ -91,12 +91,16 @@ describe('turnEventStream', () => {
     expect(events.map((e) => e.t)).toEqual(['meta', 'text', 'text', 'done'])
     expect(events.filter((e) => e.t === 'text').map((e) => (e as { d: string }).d).join('')).toBe('Hello there')
     expect(outcome).toMatchObject({ status: 'ok', usage: { promptTokens: 100, cachedTokens: 40, outputTokens: 15 } })
+    // The route reads a tool step from these (0338).
+    expect(outcome.textChars).toBeGreaterThan(0)
+    expect(outcome.calls).toEqual([])
   })
 
   it('emits calls with the raw parts, signatures intact', async () => {
-    const { events } = await collect([
+    const { events, outcome } = await collect([
       { candidates: [{ content: { parts: [{ text: 'Checking. ' }, { functionCall: { name: 'get_summary', args: {} }, thoughtSignature: 'abc' }] }, finishReason: 'STOP' }] },
     ])
+    expect(outcome).toMatchObject({ status: 'ok', calls: ['get_summary'], textChars: 'Checking. '.length })
     const calls = events.find((e) => e.t === 'calls') as Extract<TurnEvent, { t: 'calls' }>
     expect(calls.calls).toEqual([{ name: 'get_summary', args: {} }])
     expect(calls.parts).toEqual([{ text: 'Checking. ' }, { functionCall: { name: 'get_summary', args: {} }, thoughtSignature: 'abc' }])

@@ -658,9 +658,11 @@ export type Database = {
           est_units: number
           expires_at: string
           feature: string
+          free_rerun: boolean
           id: string
           settled: boolean
           sparks: number
+          turn_id: string | null
           use_sparks: boolean
           user_id: string
         }
@@ -671,9 +673,11 @@ export type Database = {
           est_units?: number
           expires_at: string
           feature: string
+          free_rerun?: boolean
           id?: string
           settled?: boolean
           sparks?: number
+          turn_id?: string | null
           use_sparks?: boolean
           user_id: string
         }
@@ -684,9 +688,11 @@ export type Database = {
           est_units?: number
           expires_at?: string
           feature?: string
+          free_rerun?: boolean
           id?: string
           settled?: boolean
           sparks?: number
+          turn_id?: string | null
           use_sparks?: boolean
           user_id?: string
         }
@@ -757,6 +763,7 @@ export type Database = {
           out_tokens: number
           status: string
           tier: string | null
+          turn_id: string | null
           units: number
           user_id: string
         }
@@ -774,6 +781,7 @@ export type Database = {
           out_tokens?: number
           status?: string
           tier?: string | null
+          turn_id?: string | null
           units?: number
           user_id: string
         }
@@ -791,6 +799,7 @@ export type Database = {
           out_tokens?: number
           status?: string
           tier?: string | null
+          turn_id?: string | null
           units?: number
           user_id?: string
         }
@@ -803,6 +812,45 @@ export type Database = {
             referencedColumns: ["chat_id"]
           },
         ]
+      }
+      ai_turns: {
+        Row: {
+          chat_id: string | null
+          closed_at: string | null
+          created_at: string
+          reruns: number
+          spark_cost_micro: number
+          state: string
+          turn_id: string
+          use_sparks: boolean
+          user_id: string
+          visible: boolean
+        }
+        Insert: {
+          chat_id?: string | null
+          closed_at?: string | null
+          created_at?: string
+          reruns?: number
+          spark_cost_micro?: number
+          state?: string
+          turn_id: string
+          use_sparks?: boolean
+          user_id: string
+          visible?: boolean
+        }
+        Update: {
+          chat_id?: string | null
+          closed_at?: string | null
+          created_at?: string
+          reruns?: number
+          spark_cost_micro?: number
+          state?: string
+          turn_id?: string
+          use_sparks?: boolean
+          user_id?: string
+          visible?: boolean
+        }
+        Relationships: []
       }
       api_rate_limits: {
         Row: {
@@ -6263,6 +6311,7 @@ export type Database = {
           p_chat: string
           p_est: number
           p_feature: string
+          p_turn?: string
           p_user: string
         }
         Returns: Json
@@ -6285,11 +6334,13 @@ export type Database = {
           p_latency: number
           p_model: string
           p_out: number
+          p_provisional?: boolean
           p_reservation: string
           p_status: string
           p_tier: string
           p_units: number
           p_user: string
+          p_visible?: boolean
         }
         Returns: undefined
       }
@@ -6311,6 +6362,10 @@ export type Database = {
         Returns: number
       }
       ai_quota_status: { Args: { p_user: string }; Returns: Json }
+      ai_turn_close_charged: {
+        Args: { p_reservation: string; p_turn: string; p_user: string }
+        Returns: undefined
+      }
       ai_spend_today: { Args: never; Returns: Json }
       ai_usage_state: { Args: { p_user: string }; Returns: Json }
       analytics_rollup: { Args: never; Returns: number }

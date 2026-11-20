@@ -7,6 +7,7 @@ const feature = vi.hoisted(() => ({ require: vi.fn(), paid: new Set<string>() })
 vi.mock('@/lib/entitlements/server', () => ({ requireFeature: feature.require }))
 vi.mock('@/lib/entitlements/limits', () => ({ PAID_FEATURES: feature.paid }))
 
+import { loadMigrations } from '@/lib/server/__tests__/cronMigrations'
 import { reserveAiQuota, settleAiQuota } from './quota'
 
 const args = { userId: 'u1', feature: 'receipt' as const, estUnits: 5 }
@@ -90,5 +91,44 @@ describe('reserve and settle by cost', () => {
     await settleAiQuota(g, base)
     expect(rpc.mock.calls[0]![1]).not.toHaveProperty('p_audio_seconds')
     expect(rpc.mock.calls[0]![1]).not.toHaveProperty('p_extra_cost_micro')
+  })
+
+  // BDG-011 slice 2 (0338): a chat message's calls are grouped by turn id; other features send none.
+  it('passes the turn id and the tool-step facts only for a turn', async () => {
+    rpc.mockResolvedValue({ data: grant, error: null })
+    await reserveAiQuota({ ...args, feature: 'chat', turnId: 't1' })
+    expect(rpc.mock.calls[0]![1]).toMatchObject({ p_turn: 't1' })
+    rpc.mockClear()
+    await reserveAiQuota({ ...args, feature: 'chat' })
+    expect(rpc.mock.calls[0]![1]).not.toHaveProperty('p_turn')
+
+    rpc.mockReset().mockResolvedValue({ error: null })
+    const g = { allowed: true as const, userId: 'u1', reservationId: 'r1', chatId: null, newChat: false, rolled: false, soft: false, disabled: [] }
+    const base = { model: 'm', tier: 't', latencyMs: 1, usage: { promptTokens: 1, cachedTokens: 0, outputTokens: 1 }, status: 'ok' as const }
+    await settleAiQuota(g, { ...base, provisional: true, visible: false })
+    expect(rpc.mock.calls[0]![1]).toMatchObject({ p_provisional: true, p_visible: false })
+    rpc.mockClear()
+    await settleAiQuota(g, base)
+    expect(rpc.mock.calls[0]![1]).not.toHaveProperty('p_provisional')
+    expect(rpc.mock.calls[0]![1]).not.toHaveProperty('p_visible')
+  })
+
+  // A parameter name the SQL lacks makes PostgREST answer PGRST202, and reserve then falls back to v1 without a word.
+  it('sends only parameter names the latest SQL signatures have', async () => {
+    const migrations = loadMigrations()
+    const params = (fn: string) => {
+      const heads = migrations.flatMap(({ sql }) => [...sql.matchAll(new RegExp(`create\\s+(?:or\\s+replace\\s+)?function\\s+public\\.${fn}\\s*\\(([\\s\\S]*?)\\)\\s*returns`, 'gi'))].map((m) => m[1]!))
+      return new Set([...heads.at(-1)!.matchAll(/\b(p_\w+)\b/g)].map((m) => m[1]))
+    }
+    rpc.mockResolvedValue({ data: grant, error: null })
+    await reserveAiQuota({ ...args, feature: 'chat', advisorFree: true, turnId: 't1' })
+    const reserveSql = params('ai_quota_reserve_v2')
+    for (const k of Object.keys(rpc.mock.calls[0]![1] as object)) expect(reserveSql, k).toContain(k)
+
+    rpc.mockReset().mockResolvedValue({ error: null })
+    const g = { allowed: true as const, userId: 'u1', reservationId: 'r1', chatId: null, newChat: false, rolled: false, soft: false, disabled: [] }
+    await settleAiQuota(g, { model: 'm', tier: 't', latencyMs: 1, usage: { promptTokens: 1, cachedTokens: 0, outputTokens: 1 }, status: 'ok', audioSeconds: 1, extraCostMicro: 1, provisional: true, visible: true })
+    const settleSql = params('ai_quota_settle')
+    for (const k of Object.keys(rpc.mock.calls[0]![1] as object)) expect(settleSql, k).toContain(k)
   })
 })

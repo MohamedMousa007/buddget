@@ -44,6 +44,21 @@ describe('AI credit windows', () => {
     expect(body).toContain('units = units + v_units')
   })
 
+  // 0338 (BDG-011 slice 2): one charge per user message.
+  it('ai_quota_settle keeps the per-request rule without a turn and charges a turn once', () => {
+    const body = squash(latest('ai_quota_settle'))
+    expect(body).toContain('if r.turn_id is null then if r.use_sparks and')
+    expect(body).toContain('perform public.ai_turn_close_charged(p_user, r.turn_id, p_reservation)')
+    expect(body).toContain('set credits_exempt = true, units = 0')
+    expect(squash(latest('ai_quota_settle_core'))).toContain('v_free := v_free or r.free_rerun')
+  })
+
+  it('a free re-run and a hop of an open turn skip the credit check; other calls do not', () => {
+    const body = squash(latest('ai_quota_reserve_v2'))
+    expect(body).toContain('and not v_rerun and not (v_hop and v_turn is not null) and public.billing_enabled()')
+    expect(body).toContain("v_rerun := tr.turn_id is not null and tr.state = 'charged' and tr.reruns = 0")
+  })
+
   it('the credit sums count every non-sms, non-exempt event since the window cut', () => {
     const body = squash(latest('ai_credit_windows'))
     expect(body.match(/sum\(cost_usd_micro\)/g)).toHaveLength(2)

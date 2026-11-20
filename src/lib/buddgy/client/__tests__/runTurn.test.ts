@@ -70,6 +70,23 @@ describe('runTurn', () => {
     expect(seen).toContain('')
   })
 
+  // BDG-011 slice 2: one user message is charged once only if every call of it carries the same turn id.
+  it('sends the turn id on the first call and on every hop', async () => {
+    apiFetchAuth
+      .mockResolvedValueOnce(sse([meta, { t: 'calls', parts: [{ functionCall: { name: 'get_summary', args: {} } }], calls: [{ name: 'get_summary', args: {} }] }, done]))
+      .mockResolvedValueOnce(sse([{ ...meta, newChat: false }, { t: 'text', d: 'Done.' }, done]))
+    const turnId = '22222222-2222-4222-8222-222222222222'
+    await runTurn({ ...base, turnId, onText: () => undefined })
+    const bodies = apiFetchAuth.mock.calls.map((c) => JSON.parse((c[1] as { body: string }).body))
+    expect(bodies.map((b) => b.turnId)).toEqual([turnId, turnId])
+  })
+
+  it('sends no turn id when it has none', async () => {
+    apiFetchAuth.mockResolvedValueOnce(sse([meta, { t: 'text', d: 'Hi' }, done]))
+    await runTurn({ ...base, onText: () => undefined })
+    expect(JSON.parse((apiFetchAuth.mock.calls[0][1] as { body: string }).body)).not.toHaveProperty('turnId')
+  })
+
   it('keeps proposals gathered in an earlier hop when a later hop fails', async () => {
     apiFetchAuth
       .mockResolvedValueOnce(

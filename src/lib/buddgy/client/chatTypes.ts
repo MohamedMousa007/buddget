@@ -38,6 +38,8 @@ export interface UserItem {
   text: string
   /** Sent as a voice message: the words are the transcript. */
   voice?: boolean
+  /** Sent with every call for this message and reused by Retry, so the message is charged once (BDG-011). */
+  turnId?: string
 }
 
 export interface BuddgyItem {

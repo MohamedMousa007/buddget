@@ -33,6 +33,8 @@ export interface RunTurnArgs {
   history: WireMessage[]
   carry?: string
   chatId: string | null
+  /** One id per user message, the same on every hop and on Retry. */
+  turnId?: string
   locale: BuddgyLocale
   intent: BuddgyIntent
   route: string
@@ -157,6 +159,7 @@ export async function runTurn(args: RunTurnArgs): Promise<TurnOutcome> {
       const body: TurnRequest = {
         ...(chatId ? { chatId } : {}),
         ...(hop > 0 ? { hop: true } : {}),
+        ...(args.turnId ? { turnId: args.turnId } : {}),
         messages,
         context,
         carry: args.carry,

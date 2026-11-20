@@ -47,6 +47,47 @@ describe('POST /api/buddgy/turn, spend line', () => {
   })
 })
 
+// BDG-011 slice 2 (0338): one user message is charged as one turn. The route tells settle whether a call was a tool
+// step (the model asked the phone for data and hops are left) and whether the user saw anything.
+describe('POST /api/buddgy/turn, one charge per turn', () => {
+  const turnId = '33333333-3333-4333-8333-333333333333'
+  const run = async (part: unknown, body: Record<string, unknown>) => {
+    vi.stubEnv('GEMINI_API_KEY', 'k')
+    h.reserve.mockResolvedValueOnce({ allowed: true, userId: 'u1', reservationId: 'r1', chatId: 'c1', newChat: false, rolled: false, soft: false, disabled: [] })
+    h.call.mockResolvedValueOnce({
+      model: 'm',
+      res: new Response(sseBody([{ candidates: [{ content: { parts: [part] }, finishReason: 'STOP' }], usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 2 } }])),
+    })
+    const req = new Request('http://x/api/buddgy/turn', { method: 'POST', body: JSON.stringify({ messages: [{ role: 'user', text: 'hi' }], context: 'now', locale: 'en', ...body }) })
+    await (await POST(req)).text()
+  }
+
+  it('a lookup is a provisional tool step that showed nothing, and the turn id reaches the reservation', async () => {
+    await run({ functionCall: { name: 'get_budget', args: {} } }, { turnId })
+    expect(h.reserve).toHaveBeenCalledWith(expect.objectContaining({ turnId }))
+    expect(h.settle).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ status: 'ok', provisional: true, visible: false }))
+  })
+
+  it('an answer ends the turn and was seen', async () => {
+    await run({ text: 'Hello' }, { turnId })
+    expect(h.settle).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ status: 'ok', provisional: false, visible: true }))
+  })
+
+  it('a request without a turn id settles per request, as installed builds do', async () => {
+    await run({ functionCall: { name: 'get_budget', args: {} } }, {})
+    const settled = h.settle.mock.calls[0]![1] as Record<string, unknown>
+    expect(settled).not.toHaveProperty('provisional')
+    expect(settled).not.toHaveProperty('visible')
+  })
+
+  it('refuses a turn id that is not a uuid', async () => {
+    vi.stubEnv('GEMINI_API_KEY', 'k')
+    const req = new Request('http://x/api/buddgy/turn', { method: 'POST', body: JSON.stringify({ messages: [{ role: 'user', text: 'hi' }], context: 'now', locale: 'en', turnId: 'nope' }) })
+    expect((await POST(req)).status).toBe(400)
+    expect(h.reserve).not.toHaveBeenCalled()
+  })
+})
+
 describe('POST /api/buddgy/turn', () => {
   it('rejects by content-length before reading the body', async () => {
     vi.stubEnv('GEMINI_API_KEY', 'k')

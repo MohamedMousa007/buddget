@@ -85,6 +85,8 @@ export async function reserveAiQuota(args: {
   chatId?: string | null
   /** The turn is a free monthly Advisor answer: it is kept out of the credit windows and used up only when it succeeds. */
   advisorFree?: boolean
+  /** One user message in the chat: its calls are charged as one turn (migration 0338). */
+  turnId?: string
 }): Promise<QuotaResult> {
   if (!quotaStoreAvailable() && process.env.NODE_ENV !== 'production') {
     return { allowed: true, userId: args.userId, reservationId: null, chatId: args.chatId ?? null, newChat: false, rolled: false, soft: false, disabled: [] }
@@ -103,6 +105,7 @@ export async function reserveAiQuota(args: {
       p_feature: args.feature,
       p_est: Math.max(0, Math.round(args.estUnits)),
       ...(args.advisorFree ? { p_advisor_free: true } : {}),
+      ...(args.turnId ? { p_turn: args.turnId } : {}),
     }
     // v2 also counts in-flight reservations against per-month/day caps; until migration 0224 is applied fall back to v1.
     let useV1 = false
@@ -154,6 +157,10 @@ export interface SettleArgs {
   audioSeconds?: number
   /** Extra provider cost in millionths of a dollar that tokens do not show (a grounded web search). */
   extraCostMicro?: number
+  /** A chat tool step the phone answers with data: provisional until the turn's final call (migration 0338). */
+  provisional?: boolean
+  /** The call put something in front of the user: text, a proposal or a navigation. */
+  visible?: boolean
 }
 
 /** Records what the call actually cost. Failures are logged, never thrown into the response path. */
@@ -173,6 +180,8 @@ export async function settleAiQuota(grant: QuotaGrant, args: SettleArgs): Promis
       p_status: args.status,
       ...(args.audioSeconds ? { p_audio_seconds: Math.max(0, Math.ceil(args.audioSeconds)) } : {}),
       ...(args.extraCostMicro ? { p_extra_cost_micro: Math.max(0, Math.round(args.extraCostMicro)) } : {}),
+      ...(args.provisional ? { p_provisional: true } : {}),
+      ...(args.visible !== undefined ? { p_visible: args.visible } : {}),
     })
     if (error) console.error('[ai-quota] settle failed', error.message)
   } catch (e) {

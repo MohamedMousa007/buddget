@@ -37,7 +37,7 @@ function issuedCalls(prev: WireMessage | undefined): string[] {
 
 export function parseTurnRequest(raw: unknown, knownTools: ReadonlySet<string>): ParseResult {
   if (!isRecord(raw)) return { ok: false, reason: 'body' }
-  const { messages, context, carry, locale, intent, chatId } = raw
+  const { messages, context, carry, locale, intent, chatId, turnId } = raw
 
   if (!Array.isArray(messages) || messages.length === 0 || messages.length > TURN_LIMITS.maxMessages) return { ok: false, reason: 'messages' }
   if (typeof context !== 'string' || context.length > TURN_LIMITS.maxContextChars) return { ok: false, reason: 'context' }
@@ -45,6 +45,7 @@ export function parseTurnRequest(raw: unknown, knownTools: ReadonlySet<string>):
   if (typeof locale !== 'string' || !LOCALES.includes(locale as BuddgyLocale)) return { ok: false, reason: 'locale' }
   if (intent !== undefined && !INTENTS.includes(intent as BuddgyIntent)) return { ok: false, reason: 'intent' }
   if (chatId !== undefined && (typeof chatId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(chatId))) return { ok: false, reason: 'chatId' }
+  if (turnId !== undefined && (typeof turnId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(turnId))) return { ok: false, reason: 'turnId' }
 
   let total = 0
   const clean: WireMessage[] = []
@@ -96,6 +97,7 @@ export function parseTurnRequest(raw: unknown, knownTools: ReadonlySet<string>):
       locale: locale as BuddgyLocale,
       intent: intent as BuddgyIntent | undefined,
       chatId: chatId as string | undefined,
+      turnId: turnId as string | undefined,
       hop: clean[clean.length - 1].role === 'tool',
     },
   }

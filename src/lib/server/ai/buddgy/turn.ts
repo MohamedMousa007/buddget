@@ -39,7 +39,12 @@ export interface TurnOutcome {
   finish: string
   /** `aborted_empty`: cut or stopped before any text reached the user, so it is not charged (migration 0337). */
   status: 'ok' | 'error' | 'aborted' | 'aborted_empty'
+  /** Characters of text streamed to the user, and the tools the call asked for: the route reads a tool step from these. */
+  textChars: number
+  calls: string[]
 }
+
+type Ended = Omit<TurnOutcome, 'textChars' | 'calls'>
 
 /** Gemini reports output tokens only at the end; a stream cut mid-answer still delivered what it sent. */
 const estimateOutputTokens = (chars: number) => Math.ceil(chars / 4)
@@ -60,14 +65,15 @@ export function turnEventStream(
   // Shared with cancel(): an aborted request still settles whatever Gemini had reported.
   let usage = EMPTY_USAGE
   let textChars = 0
-  const aborted = (finish: string): TurnOutcome =>
+  const calls: WireToolCall[] = []
+  const aborted = (finish: string): Ended =>
     textChars === 0
       ? { usage, finish, status: 'aborted_empty' }
       : { usage: { ...usage, outputTokens: Math.max(usage.outputTokens, estimateOutputTokens(textChars)) }, finish, status: 'aborted' }
-  const settle = async (o: TurnOutcome) => {
+  const settle = async (o: Ended) => {
     if (settled) return
     settled = true
-    await onFinish(o)
+    await onFinish({ ...o, textChars, calls: calls.map((c) => c.name) })
   }
 
   return new ReadableStream<Uint8Array>({
@@ -77,7 +83,6 @@ export function turnEventStream(
       let finish = 'STOP'
       let blocked = false
       const parts: unknown[] = []
-      const calls: WireToolCall[] = []
 
       const handle = (payload: unknown) => {
         if (!isRecord(payload)) return

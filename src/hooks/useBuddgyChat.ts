@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
-import type { BuddgyBeat, BuddgyItem, ChatError, ChatItem, ProposalState, ProposalStatus } from '@/lib/buddgy/client/chatTypes'
+import type { BuddgyBeat, BuddgyItem, ChatError, ChatItem, ProposalState, ProposalStatus, UserItem } from '@/lib/buddgy/client/chatTypes'
 import { compressHistory } from '@/lib/buddgy/client/history'
 import { runLocal } from '@/lib/buddgy/client/localTurn'
 import { runTurn, TurnFailure } from '@/lib/buddgy/client/runTurn'
@@ -168,7 +168,7 @@ export function useBuddgyChat() {
   )
 
   const send = useCallback(
-    async (override?: string, opts?: { voice?: boolean }) => {
+    async (override?: string, opts?: { voice?: boolean; turnId?: string }) => {
       const text = (override ?? input).trim()
       if (!text || busyRef.current) return
       if (!guardSignedIn()) return
@@ -182,7 +182,8 @@ export function useBuddgyChat() {
       }
       lastActivityRef.current = Date.now()
 
-      const userItem: ChatItem = { id: newId(), role: 'user', text, ...(opts?.voice ? { voice: true } : {}) }
+      const turnId = opts?.turnId ?? crypto.randomUUID()
+      const userItem: ChatItem = { id: newId(), role: 'user', text, turnId, ...(opts?.voice ? { voice: true } : {}) }
       const replyId = newId()
       const base: BuddgyItem = { id: replyId, role: 'buddgy', text: '', proposals: [], reads: [], status: 'streaming' }
       const prior = itemsRef.current
@@ -221,6 +222,7 @@ export function useBuddgyChat() {
           history: messages,
           carry,
           chatId: chatIdRef.current,
+          turnId,
           locale,
           intent: classifyIntent(text),
           route: pathname,
@@ -266,11 +268,12 @@ export function useBuddgyChat() {
 
   const retry = useCallback(() => {
     const list = itemsRef.current
-    const lastUser = [...list].reverse().find((i) => i.role === 'user')
+    const lastUser = [...list].reverse().find((i): i is UserItem => i.role === 'user')
     if (!lastUser) return
     const cut = list.findIndex((i) => i.id === lastUser.id)
     commit(list.slice(0, cut))
-    void send(lastUser.text)
+    // Same turn id: a turn the server already charged gets one free re-run instead of a second charge.
+    void send(lastUser.text, lastUser.turnId ? { turnId: lastUser.turnId } : undefined)
   }, [commit, send])
 
   const keepGoing = useCallback(() => void send(t.inlineCopy.buddgyContinue), [t, send])
