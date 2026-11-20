@@ -79,3 +79,7 @@ Step 3 (BDG-011 slice 2) is now **Automated verification**; Retry on a phone sta
 ## Runner job 7 (2026-11-20, commit `c69c423d`)
 
 `vitest` on `src/lib/buddgy` and `src/hooks`: 807 passed, 0 failed. `npm run verify` passed: 6,600 passed and 0 failed in Cairo and New York, coverage above the floor, migration check, audit and build OK. BDG-015's consent rules are now **Automated verification**; the chat closing before a page opens stays **Manual verification required**.
+
+## Runner job 9 (2026-11-20, commit `4bd0c2a3`)
+
+The targeted run passed: Buddgy, hooks, ai-chat and membership, 866 of 866. `npm run verify` had 1 failure, at `noStyledRawButtons.test.ts:144`: the new chat list's two row buttons had no `data-raw-button-ok` reason. Lint, types, migration check, audit and build passed. The markers were added in `b8516a9b`, and the rerun goes with the next job.
