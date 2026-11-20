@@ -36,9 +36,14 @@ function propose(tool: string, args: Record<string, unknown>): Proposal {
   return r.proposal
 }
 
+/**
+ * renderToStaticMarkup reads zustand's server snapshot, the store's initial state. The hook calls the store's own
+ * `getInitialState`, not the copy on `useFinanceStore`, so spying on that copy does nothing; the initial state object
+ * itself is filled with the state set here instead.
+ */
+const serveStateToStaticRender = () => Object.assign(useFinanceStore.getInitialState(), useFinanceStore.getState())
+
 beforeEach(() => {
-  // renderToStaticMarkup reads zustand's server snapshot (the initial state); serve the state set here instead.
-  vi.spyOn(useFinanceStore, 'getInitialState').mockImplementation(() => useFinanceStore.getState())
   resetAutoSlots()
   resetSameTurnMemory()
   useFinanceStore.setState({
@@ -51,6 +56,7 @@ beforeEach(() => {
     exchangeRates: {},
     settings: { ...useFinanceStore.getState().settings, baseCurrency: 'EGP' },
   })
+  serveStateToStaticRender()
 })
 
 describe('the action-card shell, one render per pattern', () => {

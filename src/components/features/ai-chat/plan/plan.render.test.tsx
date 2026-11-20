@@ -17,8 +17,9 @@ const noop = () => {}
 const ctx = { now: new Date('2026-11-20T12:00:00'), locale: 'en' as const }
 
 beforeEach(() => {
-  vi.spyOn(useFinanceStore, 'getInitialState').mockImplementation(() => useFinanceStore.getState())
   useFinanceStore.setState({ paymentMethods: [], expenses: [], incomeSources: [], incomeEvents: [], budgetPlans: [], activeBudgetPlanId: null, exchangeRates: {}, settings: { ...useFinanceStore.getState().settings, baseCurrency: 'EGP' } })
+  // The static render reads the store's initial state object (a spy on useFinanceStore.getInitialState never reaches it).
+  Object.assign(useFinanceStore.getInitialState(), useFinanceStore.getState())
 })
 
 const block = (plan: ChatPlan, missed = false) =>
