@@ -22,6 +22,7 @@ import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { useT } from '@/lib/i18n'
 import { pocketDisplayName } from '@/lib/savings/pocketIdentity'
+import { incomeDestination } from '@/lib/savings/withdrawDestination'
 import { useActionToast } from '@/components/ui/ActionToast'
 import type { PocketVM } from '@/components/features/savings-v3/types'
 import type { Currency, InvestmentAssetType, SavingsWithdrawalPurpose } from '@/lib/store/types'
@@ -87,6 +88,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
   const pickFrom = (id: string) => {
     setFromId(id)
     if (moveToId === id) setMoveToId(null)
+    setAwayFromHolder(false)
     const c = pockets.find((p) => p.account.id === id)?.account.currency
     if (c) setCurrency(c)
   }
@@ -98,6 +100,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
   const [noteOpen, setNoteOpen] = useState(false)
   const [note, setNote] = useState('')
   const [logExpense, setLogExpense] = useState(false)
+  const [awayFromHolder, setAwayFromHolder] = useState(false)
   const [expenseCategory, setExpenseCategory] = useState('Other')
 
   const moveOn = purpose === 'move'
@@ -112,6 +115,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
 
   const legCurrency = from?.account.currency === 'XAU' ? baseCurrency : (from?.account.currency ?? currency)
   const leg = useLegAccount(from?.account, legCurrency)
+  const holderName = useFinanceStore((s) => s.paymentMethods.find((m) => m.id === from?.account.heldInPaymentMethodId)?.name)
 
   // Active debts, flattened across the three families (screen 07).
   const debtChips = useMemo(
@@ -168,7 +172,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
       updateHolding(target.id, investTopUpPatch(existing, qtyAdd, amountEgp, 'EGP', exchangeRates))
     } else if (reason) {
       const spendAndLog = reason === 'spend' && logExpense
-      const opts = reason === 'income' ? { toAccountId: leg.accountId } : spendAndLog ? { txId } : undefined
+      const opts = reason === 'income' ? { toAccountId: incomeDestination(from.account, awayFromHolder ? leg.accountId : null, leg.accountId) } : spendAndLog ? { txId } : undefined
       if (!withdraw(from.account.id, amountNum, currency, note.trim() || undefined, reason, opts)) { showToast(t.moveFailed); return false }
       if (spendAndLog) {
         addExpense({
@@ -233,7 +237,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
           <LabeledBlock label={t.purpose}>
             <div role="radiogroup" aria-label={t.purpose} className="space-y-2">
               {PURPOSES.map((p) => (
-                <SelectableCard key={p.key} selected={purpose === p.key} onClick={() => { setPurpose(p.key); setDebtId(null); setDebtOpen(false); setAssetClass(null); setMoveToId(null) }}>
+                <SelectableCard key={p.key} selected={purpose === p.key} onClick={() => { setPurpose(p.key); setDebtId(null); setDebtOpen(false); setAssetClass(null); setMoveToId(null); setAwayFromHolder(false) }}>
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-xl" style={{ background: tint(p.color, 14), color: p.color }}>{p.icon}</span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{t[p.key === 'transfer' ? 'invest' : p.key]}</p>
@@ -310,6 +314,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
 
           {!moveOn && reason === 'spend' && (
             <>
+              {holderName && <p className="text-xs text-[var(--color-brand-text-muted)]">{t.heldSpendHint(holderName)}</p>}
               <SettingsSwitchRow label={t.logExpense} hint={t.logExpenseHint} checked={logExpense} onChange={setLogExpense} />
               {logExpense && (
                 <LabeledBlock label={t.expenseCategory}>
@@ -325,7 +330,15 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
             </>
           )}
 
-          {!moveOn && reason === 'income' ? <AccountLegRow leg={leg} label={t.toAccount} /> : null}
+          {!moveOn && reason === 'income' && holderName && leg.views.length > 0 ? (
+            <LabeledBlock label={t.toAccount}>
+              <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+                <OptionChip selected={!awayFromHolder} onClick={() => setAwayFromHolder(false)}>{t.staysIn(holderName)}</OptionChip>
+                <OptionChip selected={awayFromHolder} onClick={() => setAwayFromHolder(true)}>{t.otherAccount}</OptionChip>
+              </div>
+              {awayFromHolder && <div className="mt-2"><AccountLegRow leg={leg} label={t.toAccount} /></div>}
+            </LabeledBlock>
+          ) : !moveOn && reason === 'income' && !holderName ? <AccountLegRow leg={leg} label={t.toAccount} /> : null}
 
           <NoteField open={noteOpen} onOpen={() => setNoteOpen(true)} onClose={() => setNoteOpen(false)} value={note} onChange={setNote}
             labels={{ add: t.note, placeholder: t.notePlaceholder, clear: t.clearNote }} />

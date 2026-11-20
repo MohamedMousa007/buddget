@@ -3246,6 +3246,9 @@ export interface Dictionary {
       currency: string
       fromAccount: string
       toAccount: string
+      staysIn: (account: string) => string
+      otherAccount: string
+      heldSpendHint: (account: string) => string
       whereFrom: string
       thisMonth: string
       outside: string
