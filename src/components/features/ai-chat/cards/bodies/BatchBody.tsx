@@ -18,7 +18,7 @@ function BatchRow({ item, onRemove, onRevise }: { item: BatchItem; onRemove: () 
   const name = p.what ?? p.title
   const value = (k: string) => p.rows.find((r) => r.key === k)?.value
   const sub = [value('category'), missing ? copy.payWith.label : value('method'), value('date')].filter(Boolean).join(' · ')
-  const category = typeof item.proposal.args.category === 'string' ? item.proposal.args.category : ''
+  const category = p.fields?.find((f) => f.key === 'category')?.value ?? ''
   return (
     <li className="border-b border-[var(--color-brand-border)] py-1">
       <div className="flex min-h-[52px] items-center gap-2.5">

@@ -238,8 +238,11 @@ Buddgy chats now work like ChatGPT and Claude, inside the same pop-up.
   - `add_income` sets its own pattern: create for a recurring source, record for money received once.
   - All 51 write and nav tools map.
 - **Tools enriched:**
-  - `add_expense`: record fields, row keys, `missing: ['method']` when no method was named and more than one exists (the default stays as the ringed guess; risk and what apply writes are unchanged), and `guessed: ['category']`.
-  - `add_income`.
+  - `add_expense`: record fields, row keys, `missing: ['method']` when no method was named and more than one exists, and `guessed: ['category']`.
+    - The default method stays as the ringed guess. Risk and the written expense are unchanged.
+    - An unnamed method is no longer stored in the args, so the question stays open after another field is edited, and apply resolves the same default.
+    - The category guess mark clears after any edit, because the args store the resolved category.
+  - `add_income`: keyed rows, so the record body draws its date as a picker line.
   - `transfer_between_pockets` and `withdraw_from_savings`: from/to with balances now and after.
   - `add_payment_method` and `add_credit_card`: a card face.
   - Every other tool renders through derivation, with the facts its rows already carry.
@@ -267,9 +270,9 @@ Buddgy chats now work like ChatGPT and Claude, inside the same pop-up.
     - `AccountPick`: `SelectableCard` and `BrandMark`.
   - Sheets mount only when opened.
   - Reused: `Button`, `IconButton`, `OptionChip`, `SelectableCard`, `Badge`, `FactsTable`, `AmountField`, `Input`, `ProgressRing`, `BrandMark`, `CardFaceChip`, `CardFace` (create preview at 0.6 scale).
-- **Copy:** `src/lib/i18n/buddgyCardCopy.ts` (en and ar). CTA verbs include "Add expense", "Add 3 expenses" (counting down to "Nothing to add"), "Move EGP 2,000.00", "Add card", "Pause", "Yes, cancel it" and "Keep it". Where nothing more specific fits, the label falls back to the chat's `approveRisk`.
+- **Copy:** `src/lib/i18n/buddgyCardCopy.ts` (en and ar). CTA verbs include "Add expense", "Add 3 expenses" (counting down to "Nothing to add"), "Move EGP 2,000", "Add card", "Pause", "Yes, cancel it" and "Keep it". Where nothing more specific fits, the label falls back to the chat's `approveRisk`.
 - **Differences from the mockups:**
-  - **Record lines:** Paid with is also a line that opens its strip; it starts open only when the method is missing. The mockup shows the strip open, with no line.
+  - **Record lines:** Paid with is also a line that opens its strip; it starts open only when the method is missing. The mockup shows the strip open, with no line. Picker lines appear only for a tool that keys its rows (`add_expense`, one-time `add_income`); the other record tools show their facts under the amount.
   - **Pay-with tiles:** 96×84. The mini card is 88×56 per the approved code, where the mockup tile holds a 70×44 face. The strip caps at 6 tiles plus Other.
   - **"Paid with?" is not a blocker:** the card applies with the ringed guess, as today. The mockup's "Needed to add it" is shown, but the primary button stays enabled.
   - **Create preview:** the card face, or a `BrandMark` with the first row's name, or a 0% `ProgressRing` for a goal. There is no `AccountRow` preview for a new account: `AccountRow` needs a balance view the proposal does not have.

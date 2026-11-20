@@ -21,6 +21,7 @@ import { patternOf, entityOf } from '@/lib/buddgy/tools/pattern'
 import type { ProposalPattern } from '@/lib/buddgy/tools/proposal'
 import type { ToolDomain } from '@/lib/buddgy/tools/spec'
 import { money } from '@/lib/buddgy/tools/writeKit'
+import { formatCurrency } from '@/lib/utils/formatters'
 import { useBuddgyCardCopy } from '@/lib/i18n/buddgyCardCopy'
 import { useBuddgyChatCopy } from '@/lib/i18n/buddgyChatCopy'
 
@@ -118,7 +119,7 @@ export function ProposalCard({ state, onApply, onDismiss, onRevise, onUndo, onRe
       tone={tone}
       icon={PATTERN_ICON[pattern] ?? DOMAIN_ICON[preview.domain]}
       title={preview.title}
-      meta={pattern === 'batch' && preview.amount !== undefined && preview.currency ? money(preview.amount, preview.currency) : undefined}
+      meta={pattern === 'batch' && preview.amount !== undefined && preview.currency ? formatCurrency(preview.amount, preview.currency) : undefined}
       primary={editing ? undefined : primary}
       secondary={editing ? [] : secondary}
       note={pattern === 'batch' && items.length > 1 ? copy.batch.note : undefined}

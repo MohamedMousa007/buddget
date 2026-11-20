@@ -135,7 +135,8 @@ function buildAddExpense(args: Record<string, unknown>, ctx: ToolContext, claimS
   const risk = eligible && (!claimSlot || claimAutoSlot()) ? 'auto' : 'approve'
   const methodName = s.paymentMethods.find((m) => m.id === method.id)?.name
 
-  const clean = { description, amount, currency, category, date, method: method.id ? refOf(method.id) : undefined, notes: text(args.notes, 200), recurring: args.recurring === true }
+  // A method the person never named stays unnamed in the args, so it is still asked about after another field is edited.
+  const clean = { description, amount, currency, category, date, method: method.id && !methodUnsaid ? refOf(method.id) : undefined, notes: text(args.notes, 200), recurring: args.recurring === true }
   return ok(
     makeProposal({
       tool: 'add_expense',

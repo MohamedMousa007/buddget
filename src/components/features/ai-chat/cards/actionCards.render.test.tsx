@@ -37,6 +37,8 @@ function propose(tool: string, args: Record<string, unknown>): Proposal {
 }
 
 beforeEach(() => {
+  // renderToStaticMarkup reads zustand's server snapshot (the initial state); serve the state set here instead.
+  vi.spyOn(useFinanceStore, 'getInitialState').mockImplementation(() => useFinanceStore.getState())
   resetAutoSlots()
   resetSameTurnMemory()
   useFinanceStore.setState({

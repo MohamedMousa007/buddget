@@ -6,7 +6,7 @@ import { pickerKeys, RecordPickers } from './RecordPickers'
 
 /** Quick record: the amount large, then Paid with / Category / Date as lines that open their pickers. */
 export function RecordBody({ preview, onRevise }: { preview: PreviewModel; onRevise: (patch: Record<string, string>) => void }) {
-  const drawn = new Set<string>([...pickerKeys(preview), ...(preview.amount !== undefined ? ['amount'] : []), ...(preview.what ? ['description'] : [])])
+  const drawn = new Set<string>([...pickerKeys(preview), ...(preview.amount !== undefined ? ['amount'] : []), ...(preview.what ? ['description', 'name'] : [])])
   const rest = preview.rows.filter((r) => !r.key || !drawn.has(r.key))
   return (
     <>

@@ -14,9 +14,14 @@ export const PICKER_KEYS = ['method', 'category', 'date'] as const
 
 type Key = (typeof PICKER_KEYS)[number]
 
-/** Which picker lines a preview can offer: an editable field for the key must exist, so the tool accepts the answer. */
+/**
+ * Which picker lines a preview can offer: the tool keys a row for it (so the line replaces that row) and has an
+ * editable field for it (so the tool accepts the answer). Other record tools keep their plain facts.
+ */
 export function pickerKeys(preview: PreviewModel): Key[] {
-  return PICKER_KEYS.filter((k) => preview.fields?.some((f) => f.key === k && (k === 'date' ? f.kind === 'date' : f.kind === 'select')))
+  return PICKER_KEYS.filter(
+    (k) => preview.rows.some((r) => r.key === k) && preview.fields?.some((f) => f.key === k && (k === 'date' ? f.kind === 'date' : f.kind === 'select')),
+  )
 }
 
 /**

@@ -168,13 +168,20 @@ describe('a picker revises the proposal', () => {
     expect(r?.ok && r.proposal.preview.missing).toBeUndefined()
   })
 
-  it('picking a category or a date changes that line only', () => {
+  it('picking a category clears its guess; picking a date sets the date', () => {
     const p = propose({ description: 'Uber', amount: 120 })
     const cat = reviseProposalArgs(p, { category: 'Transport' }, ctx)
     expect(cat?.ok && cat.proposal.preview.guessed).toBeUndefined()
     expect(cat?.ok && cat.proposal.args.category).toBe('Transport')
     const day = reviseProposalArgs(p, { date: '2026-10-18' }, ctx)
     expect(day?.ok && day.proposal.args).toMatchObject({ date: '2026-10-18', amount: 120 })
+  })
+
+  it('answering another field leaves the method question open until a method is picked', () => {
+    const p = propose({ description: 'Uber', amount: 120 })
+    const day = reviseProposalArgs(p, { date: '2026-10-18' }, ctx)
+    expect(day?.ok && day.proposal.preview.missing).toEqual(['method'])
+    expect(day?.ok && day.proposal.args.method).toBeUndefined()
   })
 
   it('a revised row keeps its key and its place in the batch, and the total follows', () => {

@@ -144,8 +144,8 @@ const add_income: WriteImpl = {
 
     const common = { name, amount, currency, frequency, type, ...(method.id ? { method: refOf(method.id) } : {}), ...(notes ? { notes } : {}) }
     const rows: PreviewRow[] = [
-      { label: L.name, value: name },
-      { label: L.amount, value: money(amount, currency) },
+      { key: 'name', label: L.name, value: name },
+      { key: 'amount', label: L.amount, value: money(amount, currency) },
       { label: L.frequency, value: L.frequencies[frequency] },
       { label: L.type, value: L.types[type] },
       ...methodRow(s, L.method, method.id),
@@ -185,7 +185,7 @@ const add_income: WriteImpl = {
     const date = args.date === undefined ? localTodayISO(ctx.now) : parseIsoDate(args.date)
     if (!date) return fail('The date must be a real date like 2026-10-19.')
     if (date > localTodayISO(ctx.now)) return fail('Money received once cannot be dated in the future.', 'Use the real received date, or add a recurring source for expected pay.')
-    rows.splice(3, 0, { label: L.dateReceived, value: date })
+    rows.splice(3, 0, { key: 'date', label: L.dateReceived, value: date })
     fields.push({ key: 'date', label: L.dateReceived, kind: 'date', value: date })
     const duplicate = s.incomeEvents.some((e) => !e.templateId && e.receivedDate === date && e.amount === amount && e.name.trim().toLowerCase() === name.toLowerCase())
     return ok(
