@@ -62,7 +62,7 @@ describe('budget in the chat, rendered', () => {
     const html = block(plan)
     expect(html).toContain('Review and save in the builder')
     expect(html).toContain('Change an answer')
-    expect(html).toContain('Nothing is saved until you review it in the builder.')
+    expect(html).toContain('Your plan is saved only after you review it in the builder.')
     expect(html).toContain('20,000')
     const handed = block(setPhase(plan, 'handed', 0))
     expect(handed).not.toContain('Review and save in the builder')
