@@ -94,3 +94,9 @@ The targeted run passed: Buddgy, hooks, ai-chat and membership, 866 of 866. `npm
 ## Runner job 11 (2026-11-20, commit `ccbf5a4c`)
 
 `npm run verify` passed: 6,658 passed and 0 failed in Cairo and New York, coverage above the floor, lint, types, migration check (306), audit and build OK. Card faces, the streak strip, Claude-style chats and BDG-003 are now **Automated verification**; their look stays with the owner (screenshots from job 10) and the device checks.
+
+## Runner job 12 (2026-11-21, commit `f99b9a17`)
+
+- **Unit:** 919 passed, 1 failed, at `actionCards.render.test.tsx:62`. Cause: the test's `getInitialState` spy never took effect under zustand v5, so the render read an empty store. Fixed in `44952132`. The same fix went into `plan.render.test.tsx`.
+- **Journey `g-buddgy`:** failed 2 of 2. Cause, found by reading the code: BDG-014's focus listener re-laid out the chat panel between mousedown and mouseup on Send, so the click missed. Fixed in `926da68d` with a press gate: layout changes from focus wait until the press ends. Not yet reproduced or rerun.
+- **Other gates:** lint, types, migration check, audit and build passed. 0 synthetic users left.
