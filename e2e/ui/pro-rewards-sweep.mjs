@@ -35,39 +35,50 @@ try {
     // Onboarding is a 10% rollout: keep it off so it never takes the screen.
     await ctx.route(/\/api\/flags(\?|$)/, async (r) => { let flags = {}; try { const res = await r.fetch({ url: r.request().url().replace(/^https:\/\/(www\.)?buddget\.app/, BASE) }); flags = (await res.json()).flags ?? {} } catch {} await r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ flags: { ...flags, onboarding_v1: false } }) }) })
     const p = await ctx.newPage()
-    await p.goto(`${BASE}/flow`, { waitUntil: 'domcontentloaded' })
-    if (!(await p.getByRole('textbox', { name: 'Email' }).isVisible({ timeout: 30000 }).catch(() => false))) await p.reload()
-    await p.getByRole('textbox', { name: 'Email' }).fill(email, { timeout: 60000 })
-    await p.getByRole('button', { name: 'Continue', exact: true }).click()
-    await p.getByRole('textbox', { name: 'Password' }).fill(PW)
-    await p.getByRole('button', { name: 'Sign me in' }).click()
-    // Signed in once the store holds this account's profile (works in any language the account last saved).
-    await p.waitForFunction(() => { try { return !!JSON.parse(localStorage.getItem('buddget-storage') || 'null')?.state?.profile?.id } catch { return false } }, null, { timeout: 90000 }).catch(async (e) => { await p.screenshot({ path: 'e2e/ui/out/prs-signin-fail.png' }); throw e })
-    await p.waitForTimeout(3000)
-    for (const loc of LOCS) for (const theme of THEMES) {
+    const signIn = async () => {
+      await p.context().addCookies([{ name: 'bdg-lang', value: 'en', url: BASE }])
+      await p.goto(`${BASE}/flow`, { waitUntil: 'domcontentloaded' })
+      if (!(await p.getByRole('textbox', { name: 'Email' }).isVisible({ timeout: 30000 }).catch(() => false))) await p.reload()
+      await p.getByRole('textbox', { name: 'Email' }).fill(email, { timeout: 60000 })
+      await p.getByRole('button', { name: 'Continue', exact: true }).click()
+      await p.getByRole('textbox', { name: 'Password' }).fill(PW)
+      await p.getByRole('button', { name: 'Sign me in' }).click()
+      // Signed in once the store holds this account's profile (works in any language the account last saved).
+      await p.waitForFunction(() => { try { return !!JSON.parse(localStorage.getItem('buddget-storage') || 'null')?.state?.profile?.id } catch { return false } }, null, { timeout: 90000 }).catch(async (e) => { await p.screenshot({ path: 'e2e/ui/out/prs-signin-fail.png' }); throw e })
+      await p.waitForTimeout(3000)
+    }
+    // Signed out = an email or password field on screen (by type, so it holds in every language).
+    const signedOut = () => p.locator('input[type=email], input[type=password], input[autocomplete=email], input[autocomplete=username]').first().isVisible().catch(() => false)
+    const applyPrefs = async (loc, theme) => {
       await p.evaluate(([l, t]) => { const k = 'buddget-storage'; const j = JSON.parse(localStorage.getItem(k) || '{"state":{}}'); j.state = j.state || {}; j.state.settings = { ...(j.state.settings || {}), theme: t, language: l }; localStorage.setItem(k, JSON.stringify(j)); document.cookie = 'bdg-lang=' + l + '; path=/' }, [loc, theme])
       await p.emulateMedia({ colorScheme: theme })
+    }
+    await signIn()
+    for (const loc of LOCS) for (const theme of THEMES) {
+      await applyPrefs(loc, theme)
       for (const r of ROUTES) {
         const tag = `${vw}/${loc}/${theme}/${r}`
         try {
           await p.goto(`${BASE}/${r}`, { waitUntil: 'domcontentloaded', timeout: 90000 })
-          await p.waitForFunction((l) => document.documentElement.lang.startsWith(l) && document.documentElement.dir === (l === 'ar' ? 'rtl' : 'ltr'), loc, { timeout: 30000 })
+          await p.waitForFunction((l) => document.documentElement.dataset.locale === l, loc, { timeout: 30000 }) // the app keeps dir=ltr in every language; data-locale is the switch
           await p.waitForFunction(() => (document.querySelector('main')?.innerText.trim().length ?? 0) > 20 && !document.querySelector('main .animate-pulse'), null, { timeout: 60000 }).catch(() => undefined)
           await p.waitForTimeout(2500)
+          if (await signedOut()) { await signIn(); await applyPrefs(loc, theme); await p.goto(`${BASE}/${r}`, { waitUntil: 'domcontentloaded', timeout: 90000 }); await p.waitForTimeout(2500); if (await signedOut()) throw new Error('signed out on ' + tag) }
           await p.addStyleTag({ content: 'nextjs-portal{display:none!important}' })
           const facts = await p.evaluate(() => ({ dir: document.documentElement.dir, dark: document.documentElement.classList.contains('dark'), url: location.pathname, hscroll: document.documentElement.scrollWidth > innerWidth + 1 }))
           await p.addScriptTag({ content: axeSrc })
           const axe = await p.evaluate(async () => (await window.axe.run(document, { resultTypes: ['violations'], exclude: [['nextjs-portal']] })).violations.map((v) => ({ id: v.id, impact: v.impact, n: v.nodes.length, ex: v.nodes.slice(0, 2).map((x) => x.target.join(' ').slice(0, 90)) })))
           const tap = await p.evaluate(async () => {
             const frame = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
-            const els = [...document.querySelectorAll('main button,main a[href],main [role=button],main [role=switch],main [role=tab],main input:not([type=hidden])')].filter((e) => { const r = e.getBoundingClientRect(), s = getComputedStyle(e); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && !e.closest('[aria-hidden=true]') && !e.disabled })
+            const els = [...document.querySelectorAll('main button,main a[href],main [role=button],main [role=switch],main [role=tab],main input:not([type=hidden])')].filter((e) => { if ((e.matches('[role=switch],input') && e.closest('label')) || e.parentElement?.closest('a[href]')) return false // expected: a switch inside a full-row label (the row is the target); a link nested in a card link (founder chip)
+              const r = e.getBoundingClientRect(), s = getComputedStyle(e); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && !e.closest('[aria-hidden=true]') && !e.disabled })
             const bad = []
             for (const e of els) {
-              e.scrollIntoView({ block: 'center', inline: 'center' }); await frame()
+              e.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' }); await frame() // main has scroll-behavior:smooth: an animated scroll is still moving when measured
               const r = e.getBoundingClientRect(); if (r.top < 0 || r.bottom > innerHeight || r.left < 0 || r.right > innerWidth) continue // not fully on screen: skip, never measure an off-screen box
               const cx = r.x + r.width / 2, cy = r.y + r.height / 2, dx = 21, dy = 21
               let miss = 0; const tgt = new Set()
-              for (const [x, y] of [[cx - dx, cy - dy], [cx + dx, cy - dy], [cx - dx, cy + dy], [cx + dx, cy + dy]]) { const t = document.elementFromPoint(Math.max(1, Math.min(innerWidth - 1, x)), Math.max(1, Math.min(innerHeight - 1, y))); if (!(t && (t === e || e.contains(t)))) { miss++; tgt.add(t ? (t.tagName + '.' + String(t.className || '').split(' ')[0]).slice(0, 40) + (t.closest('button,a,[role=button]') ? '(ctl)' : '') : 'none') } }
+              for (const [x, y] of [[cx - dx, cy - dy], [cx + dx, cy - dy], [cx - dx, cy + dy], [cx + dx, cy + dy]]) { const t = document.elementFromPoint(Math.max(1, Math.min(innerWidth - 1, x)), Math.max(1, Math.min(innerHeight - 1, y))); if (!(t && (t === e || e.contains(t) || t.closest('[class*=fchip]')))) { miss++; tgt.add(t ? (t.tagName + '.' + String(t.className || '').split(' ')[0]).slice(0, 40) + (t.closest('button,a,[role=button]') ? '(ctl)' : '') : 'none') } }
               if (miss) bad.push({ t: (e.getAttribute('aria-label') || e.innerText || e.tagName).replace(/\s+/g, ' ').slice(0, 40), w: Math.round(r.width), h: Math.round(r.height), miss, tgt: [...tgt].join('+') })
             }
             return { n: els.length, bad }
@@ -75,18 +86,18 @@ try {
           const flagged = axe.some((v) => v.impact === 'critical' || v.impact === 'serious') || facts.hscroll || facts.url !== '/' + r
           if (flagged && process.env.SHOTS) await p.screenshot({ path: `e2e/ui/out/prs-${tag.replace(/\//g, '_')}.png`, fullPage: true })
           out.push({ tag, ...facts, axe, tap })
-        } catch (e) { out.push({ tag, error: String(e).slice(0, 160) }) }
+        } catch (e) { if (String(e).includes('signed out on')) throw e; out.push({ tag, error: String(e).slice(0, 160) }) }
       }
     }
     await ctx.close()
   }
   await b.close()
 } finally {
+  fs.mkdirSync('e2e/ui/out', { recursive: true })
+  fs.writeFileSync('e2e/ui/out/pro-rewards-sweep.json', JSON.stringify(out, null, 1)) // written even when the run aborts
   for (const t of ['founders', 'billing_events', 'trial_claims']) await fetch(`${URL_}/rest/v1/${t}?user_id=eq.${uid}`, { method: 'DELETE', headers: H })
   await fetch(`${URL_}/auth/v1/admin/users/${uid}`, { method: 'DELETE', headers: H })
 }
-fs.mkdirSync('e2e/ui/out', { recursive: true })
-fs.writeFileSync('e2e/ui/out/pro-rewards-sweep.json', JSON.stringify(out, null, 1))
 const agg = {}
 for (const x of out) { for (const v of x.axe ?? []) (agg[`axe ${v.impact} ${v.id} ${v.ex[0] ?? ''}`] ??= new Set()).add(x.tag); for (const t of x.tap?.bad ?? []) (agg[`tap ${t.t} ${t.w}x${t.h} miss${t.miss} -> ${t.tgt}`] ??= new Set()).add(x.tag); if (x.hscroll) (agg['horizontal scroll'] ??= new Set()).add(x.tag); if (x.url && !x.tag.endsWith(x.url.slice(1))) (agg[`redirected to ${x.url}`] ??= new Set()).add(x.tag); if (x.error) (agg[`error ${x.error.slice(0, 60)}`] ??= new Set()).add(x.tag) }
 console.log('pages', out.length, 'errors', out.filter((x) => x.error).length, 'controls', out.reduce((a, x) => a + (x.tap?.n ?? 0), 0))
