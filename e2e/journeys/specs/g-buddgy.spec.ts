@@ -22,7 +22,7 @@ test('G Buddgy request > approve > verify > undo', async ({ page, user }) => {
 
   const log = chat.getByRole('log')
   await test.step('a proposal card asks for approval (nothing written yet)', async () => {
-    const approve = log.getByRole('button', { name: /^Looks good/ }).first()
+    const approve = log.getByRole('button', { name: /^(Looks good|Add expense)/ }).first()
     await expect(approve).toBeVisible({ timeout: 30_000 })
     const st = await localWait(page, (s) => s)
     expect(st.expenses.filter((e: any) => /coffee/i.test(e.description))).toHaveLength(0)

@@ -2,20 +2,27 @@
 
 import { useState } from 'react'
 import {
-  BarChart3, Brain, Check, Compass, CreditCard, Landmark, PieChart, PiggyBank, Receipt, Repeat, Settings, Target, Undo2, User, Wallet,
+  ArrowDownUp, BarChart3, Brain, Compass, CreditCard, Landmark, Layers, Pencil, PieChart, PiggyBank, Receipt, Repeat, Settings, Target, Trash2, User, Wallet,
   type LucideIcon,
 } from 'lucide-react'
-import { AmountField } from '@/components/ui/AmountField'
-import { Button } from '@/components/ui/button'
-import { DatePickerField } from '@/components/ui/DatePickerField'
-import { FactsTable } from '@/components/ui/FactsTable'
-import { Input } from '@/components/ui/input'
-import { SelectField } from '@/components/ui/SelectField'
+import { AfterState } from '@/components/features/ai-chat/cards/AfterState'
+import { BuddgyActionCard, type CardAction } from '@/components/features/ai-chat/cards/BuddgyActionCard'
+import { EditFields } from '@/components/features/ai-chat/cards/EditFields'
+import { BatchBody } from '@/components/features/ai-chat/cards/bodies/BatchBody'
+import { ChangeBody } from '@/components/features/ai-chat/cards/bodies/ChangeBody'
+import { CreateBody } from '@/components/features/ai-chat/cards/bodies/CreateBody'
+import { GoBody } from '@/components/features/ai-chat/cards/bodies/GoBody'
+import { MoveBody } from '@/components/features/ai-chat/cards/bodies/MoveBody'
+import { RecordBody } from '@/components/features/ai-chat/cards/bodies/RecordBody'
+import { RemoveBody } from '@/components/features/ai-chat/cards/bodies/RemoveBody'
+import { StatusBody } from '@/components/features/ai-chat/cards/bodies/StatusBody'
 import type { ProposalState } from '@/lib/buddgy/client/chatTypes'
-import type { EditableField } from '@/lib/buddgy/tools/proposal'
+import { patternOf, entityOf } from '@/lib/buddgy/tools/pattern'
+import type { ProposalPattern } from '@/lib/buddgy/tools/proposal'
 import type { ToolDomain } from '@/lib/buddgy/tools/spec'
+import { money } from '@/lib/buddgy/tools/writeKit'
+import { useBuddgyCardCopy } from '@/lib/i18n/buddgyCardCopy'
 import { useBuddgyChatCopy } from '@/lib/i18n/buddgyChatCopy'
-import { cn } from '@/lib/utils'
 
 const DOMAIN_ICON: Record<ToolDomain, LucideIcon> = {
   expenses: Receipt,
@@ -33,122 +40,91 @@ const DOMAIN_ICON: Record<ToolDomain, LucideIcon> = {
   reports: BarChart3,
 }
 
-const TONE_HEAD = {
-  add: 'bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]',
-  change: 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)]',
-  danger: 'bg-[var(--color-brand-red-soft)] text-[var(--color-brand-red)]',
-} as const
-
-function FieldControl({ field, value, onChange }: { field: EditableField; value: string; onChange: (v: string) => void }) {
-  if (field.kind === 'amount') return <AmountField value={value} onChange={onChange} currency={field.currency} label={field.label} className="bg-[var(--color-brand-elevated)]" />
-  if (field.kind === 'date') return <DatePickerField value={value} onChange={onChange} />
-  if (field.kind === 'select') return <SelectField value={value} onChange={onChange} items={field.options ?? []} aria-label={field.label} />
-  return <Input size="brand" value={value} onChange={(e) => onChange(e.target.value)} aria-label={field.label} />
-}
+const PATTERN_ICON: Partial<Record<ProposalPattern, LucideIcon>> = { batch: Layers, change: Pencil, move: ArrowDownUp, remove: Trash2 }
 
 export interface ProposalCardProps {
   state: ProposalState
   onApply: () => void
   onDismiss: () => void
-  onRevise: (patch: Record<string, string>) => void
+  /** `rowKey` names the batch row a picker or edit belongs to. */
+  onRevise: (patch: Record<string, string>, rowKey?: string) => void
   onUndo: () => void
+  onRemoveRow?: (rowKey: string) => void
+  onRetry?: () => void
 }
 
 /**
- * One pending change, drawn from the proposal's own preview data. The same card serves every
- * tool: a header, the facts, optional editable fields, and the approve / edit / skip actions.
+ * One pending change in the Buddgy action-card shell, with the body its pattern calls for (record, batch, create,
+ * change, move, remove, status, go). Every body is drawn from the proposal's own preview, so no tool is special-cased here.
  */
-export function ProposalCard({ state, onApply, onDismiss, onRevise, onUndo }: ProposalCardProps) {
-  const copy = useBuddgyChatCopy()
+export function ProposalCard({ state, onApply, onDismiss, onRevise, onUndo, onRemoveRow, onRetry }: ProposalCardProps) {
+  const chat = useBuddgyChatCopy()
+  const copy = useBuddgyCardCopy()
+  const [editing, setEditing] = useState(false)
   const { proposal, status } = state
   const { preview } = proposal
-  const Icon = DOMAIN_ICON[preview.domain]
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState<Record<string, string>>({})
 
-  if (status !== 'pending') {
-    const done = status === 'applied'
-    return (
-      <div className="flex min-h-11 items-center gap-2 rounded-xl border border-[var(--color-brand-border)] px-3 py-2 text-[0.8125rem]">
-        <span className={cn('flex size-6 shrink-0 items-center justify-center rounded-full', done ? 'bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]' : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]')}>
-          {done ? <Check className="size-3.5" aria-hidden /> : <Icon className="size-3.5" aria-hidden />}
-        </span>
-        <span className="min-w-0 flex-1 truncate text-[var(--color-brand-text-secondary)]">
-          {copy.statuses[status]}
-          {state.message ? ` · ${state.message}` : ''}
-        </span>
-        {done && state.undo ? (
-          <Button variant="ghost" size="touch" onClick={onUndo} className="shrink-0 px-3 text-[0.8125rem]">
-            <Undo2 aria-hidden />
-            {copy.undo}
-          </Button>
-        ) : null}
-      </div>
-    )
-  }
+  if (status !== 'pending') return <AfterState state={state} onUndo={onUndo} onRetry={onRetry} />
 
-  const editable = (preview.fields?.length ?? 0) > 0
-  const danger = preview.tone === 'danger'
-  const valueOf = (f: EditableField) => draft[f.key] ?? f.value
+  const pattern = patternOf(proposal)
+  const danger = pattern === 'remove' || preview.tone === 'danger'
+  const tone = danger ? 'danger' : preview.tone
+  const items = preview.items ?? []
+  const editable = pattern !== 'batch' && (preview.fields?.length ?? 0) > 0
+  const revise = (patch: Record<string, string>) => onRevise(patch)
+
+  const label =
+    copy.primary({
+      tool: proposal.tool,
+      pattern,
+      entity: preview.entity ?? entityOf(proposal.tool),
+      count: items.length,
+      amount: preview.amount !== undefined && preview.currency ? money(preview.amount, preview.currency) : undefined,
+    }) ?? chat.approveRisk(proposal.risk, tone)
+  const primary = pattern === 'go' ? undefined : { label, onClick: onApply, danger, disabled: pattern === 'batch' && items.length === 0 }
+  const secondary: CardAction[] = [
+    ...(editable && !editing ? [{ label: chat.edit, onClick: () => setEditing(true) }] : []),
+    { label: danger ? copy.keep : chat.dismiss, onClick: onDismiss },
+  ]
+
+  const body = (() => {
+    if (editing && preview.fields) {
+      return (
+        <EditFields
+          fields={preview.fields}
+          error={state.message}
+          onSave={(patch) => {
+            onRevise(patch)
+            setEditing(false)
+          }}
+          onCancel={() => setEditing(false)}
+        />
+      )
+    }
+    switch (pattern) {
+      case 'record': return <RecordBody preview={preview} onRevise={revise} />
+      case 'batch': return <BatchBody items={items} onRemoveRow={(k) => onRemoveRow?.(k)} onRevise={(patch, k) => onRevise(patch, k)} />
+      case 'create': return <CreateBody preview={preview} onRevise={revise} />
+      case 'move': return <MoveBody preview={preview} />
+      case 'remove': return <RemoveBody preview={preview} />
+      case 'status': return <StatusBody proposal={proposal} />
+      case 'go': return <GoBody preview={preview} onGo={onApply} />
+      default: return <ChangeBody preview={preview} />
+    }
+  })()
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
-      <div className={cn('flex items-center gap-2 px-3.5 py-2.5 text-[0.8125rem] font-bold', TONE_HEAD[preview.tone])}>
-        <Icon className="size-4 shrink-0" aria-hidden />
-        <span className="min-w-0 flex-1 truncate">{preview.title}</span>
-      </div>
-      {editing ? (
-        <div className="space-y-3 p-3.5">
-          {preview.fields!.map((f) => (
-            <div key={f.key} className="space-y-1">
-              <span className="text-[0.6875rem] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{f.label}</span>
-              <FieldControl field={f} value={valueOf(f)} onChange={(v) => setDraft((d) => ({ ...d, [f.key]: v }))} />
-            </div>
-          ))}
-          {state.message ? <p role="alert" className="text-xs text-[var(--color-brand-red)]">{state.message}</p> : null}
-          <div className="flex gap-2">
-            <Button
-              size="touch"
-              className="flex-1"
-              onClick={() => {
-                onRevise(draft)
-                setEditing(false)
-                setDraft({})
-              }}
-            >
-              {copy.update}
-            </Button>
-            <Button variant="outline" size="touch" onClick={() => { setEditing(false); setDraft({}) }}>
-              {copy.cancel}
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-3 p-3">
-          <FactsTable rows={preview.rows.map((r) => ({ label: r.label, value: r.value, sub: r.before ? <s className="opacity-70">{r.before}</s> : undefined }))} />
-          {preview.effect ? <p className="px-1 text-xs text-[var(--color-brand-amber)]">{preview.effect}</p> : null}
-          {state.message ? <p role="alert" className="px-1 text-xs text-[var(--color-brand-red)]">{state.message}</p> : null}
-          <div className="flex gap-2">
-            <Button variant={danger ? 'destructive-solid' : 'default'} size="touch" className="flex-1" onClick={onApply}>
-              {copy.approveRisk(proposal.risk, preview.tone)}
-            </Button>
-            {editable ? (
-              <Button variant="outline" size="touch" onClick={() => setEditing(true)}>
-                {copy.edit}
-              </Button>
-            ) : (
-              <Button variant="outline" size="touch" onClick={onDismiss}>
-                {copy.dismiss}
-              </Button>
-            )}
-          </div>
-          {editable ? (
-            <Button variant="ghost" size="touch" className="w-full text-[var(--color-brand-text-muted)]" onClick={onDismiss}>
-              {copy.dismiss}
-            </Button>
-          ) : null}
-        </div>
-      )}
-    </div>
+    <BuddgyActionCard
+      tone={tone}
+      icon={PATTERN_ICON[pattern] ?? DOMAIN_ICON[preview.domain]}
+      title={preview.title}
+      meta={pattern === 'batch' && preview.amount !== undefined && preview.currency ? money(preview.amount, preview.currency) : undefined}
+      primary={editing ? undefined : primary}
+      secondary={editing ? [] : secondary}
+      note={pattern === 'batch' && items.length > 1 ? copy.batch.note : undefined}
+    >
+      {body}
+      {!editing && state.message ? <p role="alert" className="px-1 text-xs text-[var(--color-brand-red)]">{state.message}</p> : null}
+    </BuddgyActionCard>
   )
 }

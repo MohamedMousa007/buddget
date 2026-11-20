@@ -14,7 +14,9 @@ export interface AIChatMessageListProps {
   step: string | null
   onApply: (itemId: string, proposalId: string) => void
   onDismiss: (itemId: string, proposalId: string) => void
-  onRevise: (itemId: string, proposalId: string, patch: Record<string, string>) => void
+  onRevise: (itemId: string, proposalId: string, patch: Record<string, string>, rowKey?: string) => void
+  onRemoveRow: (itemId: string, proposalId: string, rowKey: string) => void
+  onRetryProposal: (itemId: string, proposalId: string) => void
   onUndo: (itemId: string, proposalId: string) => void
   onRetry: () => void
   onContinue: () => void
@@ -42,7 +44,7 @@ function moodFor(item: BuddgyItem) {
 }
 
 /** The transcript. A live log region so screen readers hear each reply as it lands. */
-export function AIChatMessageList({ items, step, onApply, onDismiss, onRevise, onUndo, onRetry, onContinue, onNewChat }: AIChatMessageListProps) {
+export function AIChatMessageList({ items, step, onApply, onDismiss, onRevise, onRemoveRow, onRetryProposal, onUndo, onRetry, onContinue, onNewChat }: AIChatMessageListProps) {
   const copy = useBuddgyChatCopy()
   return (
     <div role="log" aria-live="polite" aria-relevant="additions text" className="space-y-4">
@@ -81,7 +83,9 @@ export function AIChatMessageList({ items, step, onApply, onDismiss, onRevise, o
                     state={p}
                     onApply={() => onApply(item.id, p.proposal.id)}
                     onDismiss={() => onDismiss(item.id, p.proposal.id)}
-                    onRevise={(patch) => onRevise(item.id, p.proposal.id, patch)}
+                    onRevise={(patch, rowKey) => onRevise(item.id, p.proposal.id, patch, rowKey)}
+                    onRemoveRow={(rowKey) => onRemoveRow(item.id, p.proposal.id, rowKey)}
+                    onRetry={() => onRetryProposal(item.id, p.proposal.id)}
                     onUndo={() => onUndo(item.id, p.proposal.id)}
                   />
                 </div>

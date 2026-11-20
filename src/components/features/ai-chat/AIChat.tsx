@@ -29,7 +29,7 @@ import { computePanel, readViewport, safeAreaInsets, type PanelGeometry } from '
 export function AIChat() {
   const {
     isOpen, close, items, input, setInput, busy, step, beat, online, bottomRef, newChat, send, stop, retry, keepGoing,
-    applyProposal, dismissProposal, reviseProposal, undoApplied, chats, activeId, openChat, deleteChat,
+    applyProposal, dismissProposal, retryProposal, reviseProposal, removeBatchRow, undoApplied, chats, activeId, openChat, deleteChat,
   } = useBuddgyChat()
   const copy = useBuddgyChatCopy()
   const chatVoice = useChatVoice((text) => void send(text, { voice: true }))
@@ -131,6 +131,8 @@ export function AIChat() {
                   onApply={applyProposal}
                   onDismiss={dismissProposal}
                   onRevise={reviseProposal}
+                  onRemoveRow={removeBatchRow}
+                  onRetryProposal={retryProposal}
                   onUndo={undoApplied}
                   onRetry={retry}
                   onContinue={keepGoing}
