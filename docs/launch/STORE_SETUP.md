@@ -83,6 +83,8 @@ Prepared content only. Nothing was entered in App Store Connect, Play Console or
 
 Why changed (S5a business review): bank-SMS apps already exist in Egypt and the UAE, so no "only app that" wording; "Free. No ads." is gone (billing is on); the measured-accuracy claim is **held**: `docs/launch/S8f-bank-accuracy.md` shows no Egyptian bank at "supported" (NBE and CIB partial, the rest not enough data), so S5c gate 1 is not met. Until the per-bank table is published, the copy names no accuracy figure and no "supported" bank list. When gate 1 passes, add one line: "Reads texts from <banks in the published table>".
 
+**Council decision (2026-11-20, four voices, unanimous): option (a).** No accuracy figure and no bank names in any listing, ad or in-app SMS screen until the per-bank table is published. Not naming NBE or CIB either: a bank name reads as a promise, and 58% and 39% of their booked rows have no account. The "97% / 94% get a row" figure is not accuracy and is never quoted. Describe the mechanism instead (optional, the messages you allow, you check what is logged). The faster route to a real claim is fixing account attachment on NBE and CIB rows and labelling about 20 messages per bank; metadata can be edited after launch with no new build.
+
 Egypt first. UAE and Saudi listings stay plain until their bank tables exist.
 
 ### English

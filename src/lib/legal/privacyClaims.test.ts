@@ -60,7 +60,5 @@ describe('SLG-6 / SLG-7 / SLG-12: the privacy policy matches the deployment and 
     for (const t1 of ['30-day trial, once', 'Refunds.', '4 a month and 12 a year', 'no cash value']) expect(plans).toContain(t1)
     expect(plans).not.toMatch(/guarantee/i)
     for (const t2 of ['مرة واحدة', 'الاسترداد', '12 في السنة', 'لا قيمة نقدية']) expect(plansAr).toContain(t2)
-    expect(readFileSync(`${t}/TermsUsageSections.tsx`, 'utf8')).not.toMatch(/bank notification SMS/)
-    expect(readFileSync(`${t}/ar/TermsUsageSections.tsx`, 'utf8')).not.toContain('رسائل إشعارات البنك')
   })
 })

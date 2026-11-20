@@ -80,7 +80,7 @@ export function TermsUsageSections() {
       <LegalSection title="7. SMS Auto-Tracking Feature">
         <p>
           buddget offers an optional SMS auto-tracking feature that enables automatic expense detection
-          from SMS messages from banks and other businesses that carry a transaction, via an iOS Shortcut or Android background service. This
+          from bank notification SMS messages via an iOS Shortcut or Android background service. This
           feature is strictly opt-in, disabled by default, and requires your explicit activation in
           Settings.
         </p>

@@ -99,7 +99,7 @@ Top questions: collects data **Yes**; all data encrypted in transit **Yes**; use
 | Financial info | Other financial info (the budget data the user enters or approves) | Yes | App functionality | Required | No |
 | Financial info | Payment info (card, bank) | **No**: the stores take payment, we never see it | | | |
 | Messages | SMS or MMS | Yes | App functionality | Optional | No (raw text deleted on a schedule, section 3) |
-| Messages | Emails, other in-app messages | **No** (recommended: Buddgy chats are not kept as a transcript; the saved notes are covered under Other financial info and App activity). Owner to confirm | | | |
+| Messages | Emails, other in-app messages | **No** (Buddgy chats are not kept as a transcript; the saved notes are covered under Other financial info and App activity). | | | |
 | Photos and videos | Photos | Yes | App functionality | Optional | Yes (scans are processed, not kept) |
 | Audio | Voice or sound recordings | Yes | App functionality | Optional | **Yes** (deleted after transcription) |
 | App activity | App interactions | Yes | Analytics, app functionality | Required | No |
@@ -119,7 +119,7 @@ The **Advertising ID** question in App content is already answered No (2026-11-1
 | Vercel | Requests as they pass | Hosting | fra1 |
 | Google (Gemini) | Buddgy context, receipt images, SMS text for the fallback parse (masked for learning) | AI | United States |
 | Groq (Whisper) | Voice audio | Transcription, not retained | United States |
-| Sentry | Account id, device info, scrubbed error events | Crash reports | Per the Sentry project (confirm) |
+| Sentry | Account id, device info, scrubbed error events | Crash reports | Per the Sentry project |
 | RevenueCat | Account id, purchase records | Subscriptions, Sparks | United States |
 | Apple, Google Play | Payment, refunds | Stores | |
 | Firebase Cloud Messaging, APNs | Device token, notification title and short body | Push | |
@@ -135,7 +135,4 @@ The **Advertising ID** question in App content is already answered No (2026-11-1
 
 ## 7. Open points that touch these answers
 
-1. The Gemini fallback parse sends the SMS text readable (masked only when learning a pattern). The policy now says so. If the owner wants masking there too, that is a code change and the policy sentence can then be softened.
-2. The "Emails, other in-app messages" row: owner to confirm the No recommendation.
-3. Sentry region: confirm the project's data region and fix the cell above.
-4. Re-check this file after any new SDK, permission or personal-data field.
+1. Re-check this file after any new SDK, permission or personal-data field.

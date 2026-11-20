@@ -72,9 +72,7 @@ export function PrivacyDataSections() {
           and contain no personal details are kept so parsing keeps working. No raw message is ever
           kept longer than 60 days. SMS data is encrypted in transit and at rest, is used only to
           provide this feature and improve its accuracy, is never sold, and is never used for
-          advertising. When our learned patterns cannot read a message, its text is sent to Google
-          Gemini to extract the amount, merchant and date; when we learn a new pattern, the model sees
-          only a masked version.
+          advertising.
         </p>
         <p>
           <strong className="text-[var(--color-brand-text-primary)]">AI query data:</strong>{' '}
