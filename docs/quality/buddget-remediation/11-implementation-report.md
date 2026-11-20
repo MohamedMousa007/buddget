@@ -291,3 +291,41 @@ Buddgy chats now work like ChatGPT and Claude, inside the same pop-up.
 | Picker revises the proposal (method answers `missing`, category, date, a batch row keeps its key) | `__tests__/batch.test.ts` | **Automated verification (pending runner)** through `reviseProposalArgs` and `replaceBatchItem`. Taps are not covered (node render tests only). |
 | Shell, eight bodies, after states | `cards/**`, `ProposalCard.tsx`, `cards/actionCards.render.test.tsx` | **Automated verification (pending runner)**: one static render per pattern, plus each after state. **Manual verification required**: the look against the mockups in en and ar, light and dark, picker taps, the Other sheet, Pick a date. |
 | Pay-with strip, sheets over the chat | `pickers/PayWith.tsx`, `DatePick.tsx` | **Native verification required**: the sheet stacking above the chat panel, and the horizontal strip scroll in the iOS and Android WebView. |
+
+## Step 12: budget in chat (2.1) (owner-approved canvas "Building a plan in the chat")
+
+- **Builder in production:** `StudioPage`, opened by `useBudgetTakeover` on `/budget-setup`. The v5 prototype is not touched.
+- **Choice card:** `start_budget_setup` now has its own card pattern, `plan`, with the body `PlanStartBody`. It offers "Build it here with me" and "Open the budget builder" (today's apply: the chat closes, then `/budget-setup` opens the studio), plus the cost line. No local intent offer was added: the model calling `start_budget_setup` is the only entry.
+- **Storage:** `SavedChat.plan?: ChatPlan`, shaped `{ v: 3, base: FlowState, screens: { answers: ScreenAnswer[], itemIds: string[] }[], status: 'asking' | 'paused' | 'ready' | 'handed', savedAt }`.
+  - The live flow is never stored. It is replayed from `base` through `applyScreen`, the reducer that `StudioPage.submit` now uses too.
+  - Questions and answers go into the chat as ordinary `buddgy` and `user` items. Search, titles and restore work unchanged, and the model sees the answers as context on a later turn.
+  - A plan from another question set, or one left for more than seven days, is dropped when the chat is reopened.
+- **Questions:** each one is the builder's own `ScreenStep`, with an additive `compact` prop that replaces the page heading with a plain title and reason. Grouped fields, defaults, "Not sure" and Continue all work as in the builder.
+  - Back takes away the last screen and its two bubbles.
+  - Pause hands the composer back to normal chat, and "Continue the plan" resumes.
+  - "Good enough, build now" shows when the builder would show it.
+- **Typed answers:** while a question waits, `send()` routes the text to `typedAnswer` before the quick-add path and `runTurn`. `parseTyped` reads amount, stepper, slider, toggle or confirm (yes and no, in en and ar), chips and multi (by label), with no model call. An unreadable reply keeps the question and says so under the card. Retry never re-sends an answer.
+- **Ready:** `PlanReadyCard` shows the engine's draft: `studioFacts` and `engineDraft`, the same helpers the studio's build now calls. It shows income, a split by the three chapters, the four biggest lines and the rest, "Review and save in the builder", and "Change an answer" (which is Back).
+- **Hand-over:** `requestBudgetStudio(handover?: FlowState)` sets `budgetStudioHandover`, which is not persisted.
+  - The takeover passes it to `StudioPage` as `handover`. The studio starts on that state with `opener: 'done'` and `buildNow` true.
+  - The studio writes the profile answers once on arrival, because the chat never does. It then runs its normal build: entities, engine, `/api/budget/ai` charged as `budget`, and a draft plan. After that it opens review.
+  - The chat marks the plan `handed`, so a second tap can never build twice.
+- **Copy:** `src/lib/i18n/buddgyPlanCopy.ts` (en, ar). Question wording comes from the builder's own copy.
+
+**Differences from the mockups**
+- Question cards use the builder's controls (`SelectableCard` rows for short option lists, `OptionChip` for long ones), not chips everywhere. Confirm questions are the builder's "What I found" screen with its segmented control, not two buttons.
+- The progress count comes from the screens still pending, so it changes as answers unlock or close questions. The choice card says "A few quick questions", not "About 8".
+- The ready card splits by the plan's three chapters (Must pay, Everyday, Saving), not Needs, Wants and Saving. Its numbers come from the engine before the AI refinement, so review can differ slightly.
+- The card shows the engine's own line names. There is no sentence like "EGP 2,000 a month toward the car".
+- The cost line keeps the approved text, "not your chat usage". Per the plan's cost facts, a budget build draws from the same AI credits under its own feature tag. **The owner may want this line reworded.**
+- The progress strip sits under the chat header, and the composer placeholder becomes "Or type your answer". The header keeps its chat title.
+
+| Item | Files | Status |
+|---|---|---|
+| Chat flow gives the builder's answers, skips, cursor, facts and engine draft for the same inputs | `buddgy/plan/chatPlan.ts`, `planTurns.ts`, `budget/flow/flow.ts` (`applyScreen`), `budget/studioPreview.ts`, `buddgy/plan/__tests__/chatPlan.test.ts` | **Automated verification (pending runner)**: written, not run on the Mac. |
+| Typed answers for each control, en and ar | `buddgy/plan/parseTyped.ts`, `__tests__/parseTyped.test.ts` | **Automated verification (pending runner)** |
+| Resume mid-flow from a saved chat (JSON round trip, same next question), stale or old-version plan dropped | `client/savedChats.ts`, `useBuddgyChat.ts`, `chatPlan.test.ts` | **Automated verification (pending runner)** for the pure part. The hook's reopen wiring has no automated test. |
+| Hand-over state the builder reads, not persisted, one-shot | `useSettingsStore.ts`, `useBudgetTakeover.ts`, `StudioPage.tsx`, `chatPlan.test.ts` | **Automated verification (pending runner)** for the store contract. **Manual verification required**: landing on the building screen, then review, from the chat. |
+| No turn, network or AI build during the questions | `chatPlan.test.ts` (`runTurn`, `apiFetchAuth`, `refineDraft` mocked and asserted untouched), `routesToPlan` | **Automated verification (pending runner)** at the routing and flow level. The routing inside `useBuddgyChat.send` is not covered: there is no hook harness. |
+| Choice card, progress strip, question, paused, ready and handed cards | `ai-chat/plan/*`, `ProposalCard.tsx`, `plan.render.test.tsx`, `pattern.test.ts` | **Automated verification (pending runner)**: static renders. **Manual verification required**: the look against the mockups in en and ar, light and dark, and the keyboard over the composer. |
+| Journey: answer in chat, land on review with the same numbers | none | **Blocked**: no Playwright case written yet. It needs the cloud runner and a seeded user. |
