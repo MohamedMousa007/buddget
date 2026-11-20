@@ -75,3 +75,7 @@ Step 3 (BDG-011 slice 2) is now **Automated verification**; Retry on a phone sta
 ## Runner job 6 (2026-11-20, commit `0e35780b`)
 
 `vitest` on `src/components/features/ai-chat`: 14 passed (geometry and orb 10 of 10, composer 4 of 4). `npm run verify` passed: 6,599 passed and 0 failed in Cairo and New York, coverage above the floor, migration check, audit and build OK. BDG-014 and BDG-018 logic is now **Automated verification**; the look on a phone stays **Native verification required**.
+
+## Runner job 7 (2026-11-20, commit `c69c423d`)
+
+`vitest` on `src/lib/buddgy` and `src/hooks`: 807 passed, 0 failed. `npm run verify` passed: 6,600 passed and 0 failed in Cairo and New York, coverage above the floor, migration check, audit and build OK. BDG-015's consent rules are now **Automated verification**; the chat closing before a page opens stays **Manual verification required**.
