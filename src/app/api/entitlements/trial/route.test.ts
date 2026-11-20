@@ -4,13 +4,14 @@ const h = vi.hoisted(() => ({
   uid: 'u1' as string | null,
   user: { email: 'First.Last+x@gmail.com', email_confirmed_at: '2026-11-01T00:00:00Z', is_anonymous: false } as Record<string, unknown> | null,
   rpc: vi.fn(),
+  lookupError: null as { message: string } | null,
 }))
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/server/clientGate', () => ({ gateOutdatedClient: async () => null }))
 vi.mock('@/lib/auth/resolveApiUser', () => ({ resolveActiveApiIdentity: async () => (h.uid ? { id: h.uid } : null) }))
 vi.mock('@/lib/supabase/service', () => ({
   createServiceRoleClient: () => ({
-    auth: { admin: { getUserById: async () => ({ data: { user: h.user }, error: null }) } },
+    auth: { admin: { getUserById: async () => (h.lookupError ? { data: { user: null }, error: h.lookupError } : { data: { user: h.user }, error: null }) } },
     rpc: h.rpc,
   }),
 }))
@@ -21,6 +22,7 @@ const call = () => POST(new Request('http://x/api/entitlements/trial', { method:
 
 beforeEach(() => {
   h.uid = 'u1'
+  h.lookupError = null
   h.user = { email: 'First.Last+x@gmail.com', email_confirmed_at: '2026-11-01T00:00:00Z', is_anonymous: false }
   h.rpc.mockReset().mockResolvedValue({ data: { status: 'granted', trial_ends_at: '2026-11-29T00:00:00Z' }, error: null })
 })
@@ -74,6 +76,12 @@ describe('POST /api/entitlements/trial', () => {
       expect(res.status).toBe(200)
       expect(await res.json()).toEqual({ status })
     }
+  })
+
+  it('S8A B-15 answers 503, not unverified, when the Auth lookup fails, so the client can retry', async () => {
+    h.lookupError = { message: 'auth down' }
+    expect((await call()).status).toBe(503)
+    expect(h.rpc).not.toHaveBeenCalled()
   })
 
   it('answers 503 when the database call fails, so the client can retry', async () => {

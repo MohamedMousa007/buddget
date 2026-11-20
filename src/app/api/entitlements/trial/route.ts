@@ -20,7 +20,8 @@ export async function POST(request: Request) {
   if (!identity) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
   const service = createServiceRoleClient()
-  const { data: found } = await service.auth.admin.getUserById(identity.id)
+  const { data: found, error: lookupError } = await service.auth.admin.getUserById(identity.id)
+  if (lookupError) return NextResponse.json({ error: 'unavailable' }, { status: 503, headers: noStore })
   const user = found?.user
   if (!user?.email || !user.email_confirmed_at || user.is_anonymous) return reply('unverified')
   const emailKey = normalizeEmailKey(user.email)

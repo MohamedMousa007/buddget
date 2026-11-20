@@ -112,6 +112,25 @@ test('S8C-01 (QA-60 gap, fixed 0332): payment_methods.opening_balance refuses Na
   expect(r.status).toBe(400)
 })
 
+test('S8A X-4 (fixed 0335): the remaining money tables refuse NaN and Infinity; a normal row is accepted', async () => {
+  const rows: Array<[string, string, Record<string, unknown>]> = [
+    ['goals', 'target_amount', { name: 'qa s8a', target_amount: 1 }],
+    ['income_sources', 'amount', { name: 'qa s8a', amount: 1, effective_start: TODAY }],
+    ['recurring_expenses', 'amount', { amount: 1 }],
+    ['subscriptions', 'amount', { name: 'qa s8a', amount: 1 }],
+  ]
+  for (const [table, col, base] of rows) {
+    const ok = { id: crypto.randomUUID(), user_id: USERS.A.id, ...base }
+    const good = await rest(A, table, { method: 'POST', body: JSON.stringify(ok) })
+    expect(good.status, `${table} normal row`).toBe(201)
+    await rest(A, `${table}?id=eq.${ok.id}`, { method: 'DELETE' })
+    for (const bad of ['NaN', 'Infinity']) {
+      const r = await rest(A, table, { method: 'POST', body: JSON.stringify({ ...ok, id: crypto.randomUUID(), [col]: bad }) })
+      expect(r.status, `${table}.${col} ${bad}`).toBe(400)
+    }
+  }
+})
+
 test('QA-61: the migrations README says the folder is the record', () => {
   const readme = readFileSync(resolve(__dirname, '../../../supabase/migrations/README.md'), 'utf8')
   expect(readme).toMatch(/The folder is the record \(QA-61/)
