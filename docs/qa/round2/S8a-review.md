@@ -9,7 +9,7 @@ Scope:
 
 Method:
 - Four parallel reviewers covered billing and invites, sync and net worth, SMS, and security and DB.
-- Every P1 below was re-read at its lines by the coordinating session.
+- The coordinating session re-read every P1 and the P0 at their lines, except M-2, whose mechanism only the SMS reviewer traced.
 - Three read-only live queries returned metadata only, run one at a time.
 
 The sync branch `claude/ecstatic-shamir-e2f695` was not reviewed. Only its cross-module risks are listed (section 6).
@@ -28,22 +28,22 @@ Severity:
 |---|---|---|---|---|---|
 | S-1 | P1 (P0 when chained) | `src/components/sync/SupabaseFinanceSync.ts:456`, `src/components/sync/flushBaseline.ts:11`, `SupabaseFinanceSync.ts:317` | After a successful flush, the baseline becomes the **live** store snapshot taken *after* `runFullSync`. An expense added while the pull is in flight (resume, reconnect or pull-to-refresh) is recorded as sent and never reaches the server. A later full pull after a stale cursor (QA-107) then deletes it on the device. `flushOnce` also returns `true` while `!isOnline()`, so offline edits are marked sent whenever the pull still succeeds. | Build the baseline from what the flush actually sent plus the rows the pull returned, not from the live store; report "not flushed" when offline. | Verified |
 | S-2 | P1 | `src/lib/accounts/balance.ts:83`, `:112-122` | Since QA-13 a pocket is an earmark inside its account, and held pockets are left out of the net-worth total. A pocket-funded expense is skipped for the account (`fundedFromSavingsTxId`), and the pocket withdrawal with no `paymentMethodId` is skipped too. Buying something from the pocket therefore leaves net worth unchanged. Paying a debt from it lowers the debt only, so net worth **rises**. | For withdrawals from a pocket with `heldInPaymentMethodId`, apply `-amount` to the holding account. | Verified (mechanism) |
-| S-3 | P1 | `src/lib/store/useFinanceStore.ts:985-1003` | Undo of a debt payment funded from a pocket restores the pocket withdrawal and the schedule with their **old** edit times. Under 0319 the withdrawal stays deleted on the server and the restored schedule is rejected as stale. `savings_balance_delta_enabled` is **true on live**, so the server pocket balance and the device disagree (money created on one side). | Stamp restored rows with a fresh `edited_at`, as the plain-delete undo already does. | Live flag checked |
+| S-3 | P1 | `src/lib/store/useFinanceStore.ts:985-1003` (`retake` and `schedule` skip `restoredNow`) | Undo of a debt payment funded from a pocket restores the pocket withdrawal and the schedule with their **old** edit times. Under 0319 the withdrawal stays deleted on the server and the restored schedule is rejected as stale. `savings_balance_delta_enabled` is **true on live**, so the server pocket balance and the device disagree (money created on one side). | Pass `retake` and `schedule` through `restoredNow`, as the payment and expenses already are. | Verified; live flag checked |
 | B-1 | P1 | `src/lib/billing/revenuecat.ts:101-129`, `src/app/api/billing/revenuecat/route.ts`; `docs/launch/STORE_SETUP.md:13` | `event.environment` is never read, and the dashboard sends all events. A TestFlight, App Review or Play license tester's free sandbox purchase gives real Plus and permanent Sparks. It also turns that user's invite rewards into Pro-level Sparks and burns their real trial. | Ignore `environment: 'SANDBOX'` unless a QA flag is set; set the RevenueCat webhook to production events. Test: H8. | Verified |
 | B-17 | P1 | `supabase/migrations/0333_trial_cap_real_users_network_review.sql:65-108` | Once a trial ends, the entitlement row is `source='default'`, so the "already entitled" check passes. The store and `billing_events` checks do not apply, and `trial_claims` is keyed only on the mailbox. An email change (enabled) gives a fresh 30 days with all data kept, repeatable forever. The app claims automatically on first open. | Refuse when this `user_id` already has a `trial_claims` row or any past `plus_trial` grant; add a unique partial index on `trial_claims(user_id)`. Test: X6. | Verified |
-| M-1 | P1 | `src/app/api/sms/parse/route.ts:1147-1252`, `src/lib/sms/ingestGuards.ts:247-253` | QA-14 holds an AI-read credit from a new sender. The hold returns outcome `awaiting_confirmation`, which `debtAwaitingUser` turns into `success`. The stats insert then records the sender's currency, and the drain writes `sms_sender_currency`, exactly what `senderKnownForUser` reads. Forged credit #1 is held; #2 from the same sender books on its own, even if #1 was dismissed. The same holds for `senderHeld`. | Pass `currency: null` to `recordSmsStats` when `senderHeld`, `capHeld` or `aiCreditHeld`, or define "known" as a sender with a booked, unflagged row. | Verified |
+| M-1 | P1 | `src/app/api/sms/parse/route.ts:1147-1252`, `src/lib/sms/ingestGuards.ts:247-253` | QA-14 holds an AI-read credit from a new sender. The hold returns outcome `awaiting_confirmation`, which `debtAwaitingUser` turns into `success`. The stats insert then records the sender's currency, and the drain writes `sms_sender_currency`, exactly what `senderKnownForUser` reads. Forged credit #1 is held; #2 from the same sender books on its own, even if #1 was dismissed. The same holds for `senderHeld`. The drain `sms_stats_drain` (0140:86-91, unchanged since; 0300 only schedules it) upserts every row with a currency. | Pass `currency: null` to `recordSmsStats` when `senderHeld`, `capHeld` or `aiCreditHeld`, or define "known" as a sender with a booked, unflagged row. | Verified |
 | M-2 | P1 | `src/lib/sms/maskForModel.ts:20`, `src/app/api/sms/parse/route.ts:984`, `:1110-1113` | QA-36 masks phone-like numbers whole, keeping no last four. On the `ai_new` tier the account and counterparty tails come from the model's reading of that masked text. A transfer to the user's own wallet named by its mobile number gets a fake tail, misses the own-account check and books as Remittance spending. A 10-11 digit account number starting with 0 loses its tail the same way. | Keep the last four of masked numbers, or re-derive the tails from the real message after the parse. | Reviewer-verified mechanism; frequency not measured |
-| SYNC-P0 | P0 (open on main, fixed on the sync branch) | sign-out path on main | Sign-out ignores the flush result, and the flush says "ok" while offline. Signing out offline, or after a failed flush, wipes unsent edits without asking. | Land the `ecstatic-shamir` fix before the next build. | Reviewer, cross-branch |
+| SYNC-P0 | P0 (open on main, fixed on the sync branch) | `src/lib/auth/signOutFlush.ts:9-15`, `src/components/sync/SupabaseFinanceSync.ts:317` | `settleBeforeWipe` treats a rejected flush as sent (`finalFlush.then(..., log)` resolves), and `flushOnce` returns `true` while offline. Signing out offline, or after a failed flush, wipes unsent edits without asking. | Wipe only on a real success; ask otherwise. Land the `ecstatic-shamir` fix before the next build. | Verified on main |
 
 ## 2. P2
 
 | ID | Where | Failure scenario | Suggested fix |
 |---|---|---|---|
 | S-4 | `src/lib/store/useFinanceStore.ts:1463` | Activation Undo restores with an old edit time, so it stays deleted under 0319. Plan history is lost silently, the case 6856ef0c says it fixed. | Fresh `edited_at` on restore. |
-| S-5 | expense-delete undo, same file | Undo of an expense delete loses its receipt link (same old-edit-time pattern). | As S-4. |
-| S-6 | `updateIncomeEvent`, same file | Editing the received date keeps the old exact time (QA-11), so the balance books the income at the wrong moment. The Buddgy income path never sets the time. | Recompute `occurredAt` when the date changes. |
+| S-5 | `useFinanceStore.ts:366-368`, `src/lib/receipt/receiptCascade.ts:29-35` | Undo of an expense delete loses its receipt link (same old-edit-time pattern). | As S-4. |
+| S-6 | `updateIncomeEvent` in `useFinanceStore.ts` | Editing the received date keeps the old exact time (QA-11), so the balance books the income at the wrong moment. The Buddgy income path never sets the time. | Recompute `occurredAt` when the date changes. |
 | S-7 | system vault writers (QA-108) | The vault the app creates has no holding account; the one the month-carry cron creates has one. For app-created vaults the primary account falls by the carry each month. | Same `held_in_payment_method_id` in both writers. |
-| S-8 | `src/lib/accounts/balance.ts:69-75` | QA-88 is half done: an entry in another currency with no rate is still counted 1:1 inside the account (`approx` only), and net worth is not flagged incomplete. | Skip the leg as XAU is skipped; surface `approx` as "incomplete". |
+| S-8 | `src/lib/accounts/balance.ts:69-75`, `netWorthBasis.ts:15-21` | QA-88 is half done: an entry in another currency with no rate is still counted 1:1 inside the account (`approx` only), and net worth is not flagged incomplete. | Skip the leg as XAU is skipped; surface `approx` as "incomplete". |
 | B-2 | `src/lib/entitlements/trial.ts:6-15` | `+tag` is folded only for Gmail, so `x+1@outlook.com`, iCloud and Proton give unlimited trials from one inbox. The trial route has no disposable check and no rate limit. | Fold `+tag` for all domains; add the disposable check and a per-IP limit. |
 | B-3 | 0333:74, 91-95 | The 200-a-day cap is global: one actor can use it up and lock out real sign-ups. The lock is per user, so parallel claims overshoot. | Cap per IP or network first; take a global advisory lock around the count and insert. |
 | B-4 | 0332:164-176 | Invite activation ("3 days, 5 records") counts client-written `created_at`. A fake friend passes in a minute; only the caps limit rewards. | Use a server-stamped time. |
@@ -61,25 +61,24 @@ Severity:
 
 ## 3. P3
 
-- **B-8 to B-16 (billing):**
-  - retired packs drop purchases and refunds;
-  - `SUBSCRIPTION_EXTENDED` is ignored;
-  - UNCANCELLATION with no expiry gives Plus forever;
-  - the webhook's stay-offer stamp error is swallowed;
-  - `trial_days = 0` burns every lifetime trial;
-  - clawback keeps milestone points;
-  - TRANSFER does not move the month's Sparks;
-  - per-user loops in `rewards_daily` and `referral_evaluate` (N+1 against the DB rules);
-  - stale comments.
+- **B-8:** `src/lib/billing/revenuecat.ts:160-163`, 0306:207-213. TRANSFER moves the plan but not the month's Sparks. Fix: end the sender's Sparks period in the transfer branch.
+- **B-9:** 0332:514-525. The sweep granted `authenticated` on every function anon could run. Checked on live (section 5): nothing server-only is open. Future sweeps should grant from a named list.
+- **B-10:** `src/app/api/billing/revenuecat/route.ts:48`, 0306:73-88. A retired pack (`active = false`) drops its in-flight purchases and refunds, and the event is still marked `applied`. Fix: route on all `spark_products`, and record `not_granted`.
+- **B-11:** `revenuecat.ts:184-216`. `SUBSCRIPTION_EXTENDED` is ignored. Fix: map it to `entitlementOf(ev, {})`.
+- **B-12:** `revenuecat.ts:201-204`. UNCANCELLATION or REFUND_REVERSED with no `expiration_at_ms` writes `active` with a null end, which means Plus forever. Fix: ignore when the expiry is null.
+- **B-13:** `route.ts:80-84`. The stay-offer stamp error is logged and still answered 200, outside the `billing_apply` transaction. Fix: move it into `billing_apply`, or answer 500.
+- **B-14:** 0333:98-100. `trial_days = 0` burns every member's lifetime trial. Fix: return `trials_off` before inserting the claim.
+- **B-15:** `src/app/api/entitlements/trial/route.ts:23-25`, `billingSession.ts:11-13`. An Auth lookup error reads as `unverified`, and the client never retries in that run. Fix: answer 503, and clear `claimedFor` on a null result.
+- **B-16:** 0308:278-299. Clawback never decrements `activated_count`, and the 3, 5 and 10 milestone awards (0332:258-262) are kept. Also per-user loops in `rewards_daily` and `referral_evaluate` (N+1 against the DB rules), and stale comments.
 - **M-7:** `src/lib/sms/pairing.ts:112`. The QA-38 24-hour reference search runs only when the 5-minute window is empty, even when the only leg there is then dropped by the amount filter.
 - **M-8:** `src/lib/sms/fxEvent.ts:35`. The FX same-account check compares tails exactly (`001` vs `0001`), not by the SQL suffix rule.
 - **M-9:** QA-34's remembered "both mine" is keyed on bare tails. It survives deleting the account, or a new account with the same tail.
 - **M-10:** `src/lib/sms/ingestGuards.ts:125`. QA-47 compares the capture day in the user's time zone with the bank's Cairo day. Users west of Cairo, or with a lagging phone clock, get the wrong day.
-- **S-9:** a multi-tab rehydrate brings back rows the other tab deleted.
-- **S-10:** false "your Undo lost" notices.
-- **S-11:** the Cash id is derived from the signed-out profile id `local`.
-- **S-12:** the account-adjustment mapper sends the Cash placeholder id raw.
-- **S-13:** knowing a user's id lets someone pre-claim that user's derived vault or Cash id (it blocks the row; no money moves).
+- **S-9:** `useFinanceStore.ts` `foldUnsavedRows` (about line 2490). A multi-tab rehydrate re-adds every row missing from the other tab's copy, so rows that tab deleted come back. Fix: fold back only rows that differ from this tab's last persisted copy.
+- **S-10:** `src/lib/store/undoWatch.ts`, `SupabaseFinanceSync.ts:639-642`. False "your Undo lost" notices. Fix: drop the id when the row is deleted locally or the undo flush is acknowledged.
+- **S-11:** `src/lib/accounts/actions.ts:31-36`. The Cash id is derived from the signed-out profile id `local`. Fix: guard on `profile.id === 'local'`.
+- **S-12:** `src/lib/supabase/remote/mappers/accountAdjustmentMapper.ts:9`. The Cash placeholder id is sent raw, not through `serverPaymentMethodId`. Fix: resolve it at the call site.
+- **S-13:** `pocketIdentity.ts:27`, `actions.ts:16`. The ids are derivable from the user id, and RLS allows any id on insert, so anyone can pre-claim another user's vault or Cash id (it blocks the row; no money moves). Fix: an insert trigger, or accept the risk.
 - **X-5:** the email hook has no overall deadline, only Resend's 2.5 s. With a slow DB it can pass Supabase's 5 s: the user sees an error, the email arrives anyway, and a retry replaces the code. Errors are not cached. Fix: one 4 s `AbortSignal` per request.
 - **X-6:** 0326 checks `budget_categories.link_ids` only for debts and goals.
 - **X-7:** the 0327 `paywall_views` purge has no batch or timeout (harmless until late 2027).
@@ -92,38 +91,44 @@ Severity:
 
 ## 4. The red closing replay: root cause
 
-What was red: the parent session's run of `src/lib/sms/gold/closingReplay.test.ts` failed with `Hook timed out in 180000ms` in `beforeAll`. No check failed. The same run also timed out `src/lib/budget/flow/flow.test.ts`.
+Two red states, a day apart, with different causes. The replay was not run in this session (see "Run still needed" below), so both causes come from reading the code and the git history.
 
-Cause, by reading (the local run was refused, see below):
-1. **The replay runs inside the full suite whenever the export exists.** `vitest.config.ts:11` includes `src/**/*.test.ts`, and the replay only skips when the export is missing. The `fable-5-prioritization-c5372d` worktree holds `.claude/sms-s2c-replay.json`, so `npm run verify` there (`scripts/verify.sh:13`, `vitest run --coverage`, every file in parallel) runs it under coverage instrumentation.
-2. **One `beforeAll` holds seven full replays** (A, B, C, plus four `u10` order runs), about 960 messages each, all under a single 180 s hook budget. Each dispatch is driven in `tick(100)` steps of `advanceTimersByTimeAsync` (`src/lib/sms/gold/closingReplay.ts:483-491`).
-3. **QA-37 (b315662f) added work per FX leg:**
-   - an `asset_prices` read;
-   - a sibling re-read;
-   - on disagreement, an unpair, a window search and a second `claimSibling`, which can add another 400 ms pause (4 more ticks).
+**State 1, the red that the S8a plan row names (most likely cause; now fixed).**
+- The S8a row was added to `docs/MASTER_PLAN_LAUNCH.md` in 99061dbd (2026-11-19 08:30).
+- That is after QA-37 (b315662f) and before both harness repairs:
+  - 0b6d7ac6 (06:40, earlier that morning) added `asset_prices` to the replay's empty tables. QA-37 reads that table, and the in-memory service throws on any table it does not know.
+  - e24d06ed (09:20, an hour after the row) passed the routes' `DEFAULT_MARKET_RATES` to the replay instead of `{}`.
+- Before e24d06ed, the replay's FX check judged the USD/EGP legs at the stale built-in bridge, about 50.2. The real HSBC exchange pairs sit near 53, so QA-37's 3% tolerance refused them and check i (FX pairs still pair) failed.
+- Root cause: the QA-37 fix changed the inputs the booking code reads (a live rate table and the caller's rates), and the replay harness did not feed them. It was a harness gap, not a booking regression.
+- Remaining risk: check i now passes only while `DEFAULT_MARKET_RATES.USD_EGP` stays within about 52.3 to 54.85 (M-5). A rate update outside that band turns it red again.
 
-   QA-38 and QA-34 add reads on the pairing path too.
+**State 2, a later full-suite run (2026-11-20, `fable-5-prioritization-c5372d`, which has both repairs): `Hook timed out in 180000ms` in `beforeAll`.**
+- In the same run, `src/lib/budget/flow/flow.test.ts` also timed out.
+- Likely cause: load, not logic.
+  - `vitest.config.ts:11` includes every `src/**/*.test.ts`. The replay skips only when the export is missing, and that worktree holds the export. So `npm run verify` (`scripts/verify.sh:13`, `--coverage`, every file in parallel) runs seven full replays of about 960 messages inside one 180 s `beforeAll`. Each dispatch is driven in 100 ms fake-timer steps (`closingReplay.ts:483-491`).
+  - QA-37, QA-38 and QA-34 added reads, and sometimes a second 400 ms pause, on the pairing path.
+  - It has happened before: S4 saw `templateReplay.test.ts` time out under load, and e24d06ed raised that file's timeout to 60 s.
+- Caveat: reading cannot tell a slow run from a hang. The `drive` loop ticks until the dispatch settles, so a dispatch waiting on something that is not a fake timer would also show up as this timeout. Only a standalone run tells them apart.
 
-   Each is small, but with coverage and the parallel suite they push the hook past 180 s. This has happened before: S4 recorded `templateReplay.test.ts` timing out under load, and e24d06ed raised that file's timeout to 60 s.
-4. **Not a logic regression, as far as reading can tell.** The QA-37 rate path was fixed in 0b6d7ac6 (`asset_prices` answered empty) and e24d06ed (`DEFAULT_MARKET_RATES`). Every new query method used (`neq`, `lte`, `limit`, `maybeSingle`) is implemented by the in-memory builder, so nothing can throw "not implemented".
-
-What could still turn a check red once it runs to completion (from the SMS review):
-- **Check i, column C:** the two HSBC FX pairs (`50641027+cafcae46`, `985f7ad6+b0854359`) pass only while `DEFAULT_MARKET_RATES.USD_EGP` stays within about 52.3 to 54.85 (M-5).
+What else could still fail once the replay runs to the end:
 - **QA-34:** remembered answers can add replay-only pairs that take a leg paired differently live (check i).
 - **Route-only holds (QA-14, QA-39):** these are invisible to the replay, so check j's "replay books income where live had no row" grows with every hold since 2026-11-19 (information only, not asserted).
 
 Suggested fix:
-- Take `closingReplay.test.ts` and `templateReplay.test.ts` out of the default vitest `include`, and run them only by name, e.g. a `replay:closing` script with its own config.
-- Split the seven replays into separate `it` blocks, each with its own timeout (or raise the hook to 600 s).
-- Keep `verify` green in any worktree that holds the export.
+- Take `closingReplay.test.ts` and `templateReplay.test.ts` out of the default vitest `include` and run them by name (a `replay:closing` script with its own config).
+- Split the seven replays into separate `it` blocks, each with its own timeout.
+- Give the replay its own FX rate fixture instead of `DEFAULT_MARKET_RATES`, so check i does not move when the app's default rate is updated.
 
-**Run still needed.** It must run on this Mac, because the export may not go to the cloud. The run was attempted here and refused by the auto-mode safety check, which applies the owner rule against test runners on the Mac. The owner has to allow one run:
+**Run still needed, owner decision.** The export may not go to the cloud, and the owner rule says no test runner on this Mac, so only the owner can allow this one local run. This session's attempt was refused by the auto-mode safety check; the refusal named no reason, and the same command also linked `node_modules` into this worktree. Run it in the `fable-5-prioritization-c5372d` worktree after it merges `origin/main`; that worktree holds the export and its dependencies:
 
 ```bash
-SMS_S2C_REPLAY="../fable-5-prioritization-c5372d/.claude/sms-s2c-replay.json" TZ=Africa/Cairo npx vitest run src/lib/sms/gold/closingReplay.test.ts --reporter=verbose
+TZ=Africa/Cairo npx vitest run src/lib/sms/gold/closingReplay.test.ts --reporter=verbose
 ```
 
-Run alone, with no coverage, it should finish. If it then passes all twelve checks, the root cause above is confirmed. If check i fails in column C, the cause is M-5.
+Run alone with no coverage:
+- it finishes with all twelve checks passing: state 2 is load;
+- it fails check i: M-5 (rate band);
+- it still hangs: a dispatch waits on something other than a fake timer, so bisect over b315662f, 833f9c5b and 3116895e.
 
 ## 5. Live checks run (metadata only)
 
@@ -157,7 +162,7 @@ Added, as `test.fail` with the finding id:
 - `e2e/api/round2/pro-rewards/30-billing.spec.ts`: **H8** (B-1, a sandbox purchase gives no Pro) and **X6** (B-17, no second trial after an email change).
 
 Runs to ask for (branch `claude/s8a-qa-fix-review-2159fb`):
-1. `npx playwright test -c e2e/api/round2/pro-rewards/playwright.config.ts --reporter=line --trace off -g "H8|X6"`. Expect both to report as expected failures, then run `node e2e/api/round2/pro-rewards/teardown.mjs` and check that 0 synthetic users are left.
+1. `QA_SHOW_OPEN_BUGS=1 npx playwright test -c e2e/api/round2/pro-rewards/playwright.config.ts --reporter=line --trace off -g "H8|X6"`. With the switch set, the `test.fail` marks are off, so the report shows which line failed: it should be the final `expect`, not setup (a daily-cap hit on the first claim, or the sign-in after the email change). Then run once without the switch (both should report as expected failures), run `node e2e/api/round2/pro-rewards/teardown.mjs`, and check that 0 synthetic users are left.
 2. Cases still to write in the fix sessions (no existing case covers them):
    - S-1: `e2e/sync/`, an edit made during a pull is on the server after the next flush.
    - S-2: `src/lib/accounts/balance.test.ts`, paying from a held pocket lowers net worth.
