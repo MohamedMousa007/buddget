@@ -2,7 +2,7 @@
 import type { Page } from '@playwright/test'
 import { expect, goto, localWait, test, tile } from '../lib/fixtures'
 import { serverRows } from '../lib/server'
-import { addAccount, blur, dialog } from '../lib/ui'
+import { addAccount, addBorrow, blur, dialog } from '../lib/ui'
 
 const netWorthFlow = async (page: Page) => { await goto(page, '/flow'); return tile(page, 'Net worth') }
 const qnbBalance = async (page: Page) => {
