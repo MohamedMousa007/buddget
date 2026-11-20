@@ -19,9 +19,9 @@
 
 ```
 Preconditions (not this program's code)
-  P-a  sync branch green (job 18) and merged ──┐
-  P-b  S8a merged                              │
-  P-c  owner store steps (S9) ─────────────┐   │
+  P-a  sync branch green (job 18), then sync, S8a, S-2 merged ──┐
+  P-b  owner store steps (S9) ─────────────┐                    │
+  P-c  a reachable cloud QA runner         │                    │
                                            │   │
 Track 1  Settings                          │   └─> BDG-001 (mapper + enum migration + merge rule)
                                            │
@@ -37,7 +37,7 @@ Track 3  SMS device state
 Track 4  Billing
   BDG-019 client fixes ──> BDG-020 Manage sheet (+ `store` on /me) ──> BDG-021 polish
   BDG-022 transaction ownership + reconcile job (migration) ── must land before a second store sells
-  end-to-end verification of all four ──> needs P-c
+  end-to-end verification of all four ──> needs P-b
 
 Track 5  Cards and invites
   BDG-003 flip rig ──> BDG-004/006 copy and layout ──> BDG-005 share image (if approved)
