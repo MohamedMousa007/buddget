@@ -46,15 +46,16 @@ Test tier: **DT** tests mandatory, **CX** targeted test, **UI** mockup then owne
 - **Second slice, only if the numbers justify it:** send only the tools the intent needs. Today: 14% of the prompt cached, 7,634 units per call.
 - **Files:** `src/lib/buddgy/client/history.ts`, `useBuddgyChat.ts`, the turn route, `classifyIntent.ts`, chat copy. **Migration:** none.
 - **Cost warning:** keeping more history raises units per turn, so Free users (6 credits a session) reach their limit sooner. Measure on live before and after.
-- **Decided by council (2026-11-20, owner asked for a council ruling).** All four voices agreed.
-  - **Reload or kill:** the transcript stays, for reading only. It is stored on this phone only, keyed by user id, and wiped on sign-out or account switch.
-  - **After 30 idle minutes:** the model starts fresh, as today, and gets only the recap. The old messages stay on screen above a "New chat" divider, shown as earlier history.
-  - **Proposals:** a pending proposal brought back after a restart becomes stale and can never be applied. Apply re-checks against the store, so a restored card can never write twice.
-  - **Privacy:** balances in a restored transcript follow the current privacy setting when shown.
-  - **Divider:** the chat id is restored with the transcript. If the server has already moved on, the restored part is labelled earlier history, so the screen never promises a memory the model lacks.
-  - **Cost:** nothing extra per call, since what is shown is not what is sent.
-  - **Strongest dissent (critic):** plain-text finance on the device, in backups and on shared phones. Accepted, with the wipe on sign-out and masking at show time.
-  - **Next:** the divider and history styling are UI, so they need a mockup and owner approval first. Wipe, stale-on-restore and masking get unit tests.
+- **Owner ruling (2026-11-20), replacing the earlier council ruling:** Buddgy chats work like ChatGPT, Claude and Gemini, and Buddgy stays a pop-up.
+  - **Per chat:** each chat keeps its own context. A chat list in the pop-up reopens any chat, even after the app was closed, and continues it.
+  - **New chat:** starts fresh, and nothing from other chats is sent.
+  - **Delete:** deleting a chat deletes its context with it.
+  - **Memory:** facts Buddgy learns about the user go to Memory and reach every new chat. The user can see and delete them. This reuses the existing `remember` / `forget_memory` tools.
+  - **No idle split:** there is no 30-minute divider.
+  - **Usage stays low:** Buddgy gets the last few turns word for word plus a short recap, never the whole chat.
+  - **Stale proposals:** a pending proposal brought back after the app was closed becomes stale and can't be applied twice.
+  - **Mockups:** the canvas at https://claude.ai/artifact/Fh1u8jwfpAara3z6oJVe3K has the chats page, the plan and confirmation page, and the streak page. It supersedes `docs/mockups/buddgy-chat-restore.html`.
+  - **Server change this needs:** the idle rule (`ai_idle_minutes`) must stop starting a new server chat when a chat is reopened. That is a migration, with tests.
 
 ### 1.3 BDG-001 Theme and settings (DT, M, Opus) — after P-a
 - **Change 1:** add `system` to the `theme_mode` enum (a lone statement) and upload it as is; remove the mapping to `dark`.
