@@ -12,7 +12,7 @@
 | S6 | **Account state and device state are read from the wrong side.** | BDG-008 (pill reads the account), BDG-002 (setup percentage changes by device), BDG-020 (store shown follows the device, not the subscription) | Per-device `last_sms_at` (exists), platform-aware setup steps, `store` on `/me` |
 | S7 | **One shared flip component.** | BDG-003 on four cards | `FlipCardRig` |
 | S8 | **Seven single-choice pickers.** | BDG-026, 027, 028 | One standard picker for this sheet; wider consolidation is optional |
-| S9 | **Store setup is not finished on the owner's side.** No RevenueCat event has reached the database in 30 days. | BDG-019, 020, 022 cannot be verified end to end | Owner steps: Paid Apps agreement, banking and tax active; In-App Purchase key in RevenueCat; two webhook secrets on Vercel |
+| S9 | **No purchase has been proven end to end.** Store setup is done for iOS (owner; RevenueCat checked 2026-11-20), yet the database holds no billing event. | BDG-019, 020, 022 cannot be verified end to end | Owner steps: Paid Apps agreement, banking and tax active; In-App Purchase key in RevenueCat; two webhook secrets on Vercel |
 | S10 | **Live database is ahead of main**; the sync and S8a branches are unmerged. | BDG-H1, H2; anything here that touches sync files | Merge order: sync, S8a, S-2, then this program |
 
 ## Dependency graph

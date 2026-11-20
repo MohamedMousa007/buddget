@@ -72,7 +72,18 @@ The audit rejected two items and changed eleven. The biggest change: the Buddgy 
 3. Give this program a cloud QA runner it can reach.
 4. Install an iOS simulator runtime, or plan on your own phone for the device checks.
 
-**Rulings**
+**Answered by the owner on 2026-11-20**
+- Back navigation: on every screen, not only the six (ruling 15).
+- Budget request: Buddgy builds in chat and hands over to the builder's review page, charged as a budget build (ruling 5). Now item 2.1 in the plan.
+- Invites: no expiry, landing page before an image, "for new accounts", shorten only the sample (ruling 7).
+- Streak: wants a mockup first (ruling 8). Done: `docs/mockups/streak-zero-state.html`.
+- Device checks: the owner does them.
+- Store setup: done for iOS; Android billing after the final build.
+- Runner jobs 18 to 21: handled in another session.
+- QA runner: "create one". Requested.
+- Bank logos (ruling 11): asked what the limit is; answered, decision still open.
+
+**Rulings still open: 1, 2, 3, 4, 6, 9, 10, 11, 12, 13, 14 (web rail only)**
 1. Buddgy charging: accept "free unless you saw text or an action was applied"? Is a written refusal charged? Reset testers' AI windows once?
 2. SMS: does a Shortcut run turn "Set up" into the switch, or only finishing the guide or confirming the skip?
 3. Theme: store System on the server (one migration, recommended) or drop System from the tile?
