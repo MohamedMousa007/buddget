@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { memo, type ReactNode } from 'react'
 import { SlidersHorizontal, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { OptionChip } from '@/components/ui/OptionChip'
@@ -21,8 +21,15 @@ export interface FlowChip {
 }
 
 
-/** One quick-filter chip: a budget chip when it carries budget state, else a plain option chip. */
-export function FlowChipItem({ chip: c }: { chip: FlowChip }) {
+const sameBudget = (a?: BudgetChipStatus, b?: BudgetChipStatus) => a === b || (!!a && !!b && a.kind === b.kind && ('pct' in a ? 'pct' in b && a.pct === b.pct : true))
+
+/**
+ * One quick-filter chip: a budget chip when it carries budget state, else a plain option chip.
+ * Memoised on what the chip shows: the page rebuilds the chip objects on every render, and the rail plus the row
+ * mount each one twice (QA-84 burst). `onPress` and `icon` are left out of the comparison on purpose: both are derived
+ * from `key` and `selected`, and the actions behind `onPress` are store actions with a stable identity.
+ */
+export const FlowChipItem = memo(function FlowChipItem({ chip: c }: { chip: FlowChip }) {
   const t = useT()
   const ariaLabel = c.ariaLabel ?? (c.selected ? t.flow.removeFilter(c.label) : t.flow.showOnly(c.label))
   return c.budget ? (
@@ -33,7 +40,7 @@ export function FlowChipItem({ chip: c }: { chip: FlowChip }) {
       {c.label}
     </OptionChip>
   )
-}
+}, (a, b) => a.chip.key === b.chip.key && a.chip.label === b.chip.label && a.chip.selected === b.chip.selected && a.chip.ariaLabel === b.chip.ariaLabel && sameBudget(a.chip.budget, b.chip.budget))
 
 /** From lg the chips leave the row and live in this rail card beside the ledger. */
 export function FlowChipRail({ title, chips }: { title: string; chips: FlowChip[] }) {

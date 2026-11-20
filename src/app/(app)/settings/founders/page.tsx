@@ -9,6 +9,7 @@ import { MembershipPanel } from '@/components/features/membership/PointsList'
 import { Fine, PageStack, Section, Sub, plainDate } from '@/components/features/rewards/pageParts'
 import { MembershipHero } from '@/components/features/membership/MembershipHero'
 import { SettingsSubPageShell } from '@/components/features/settings/SettingsSubPageShell'
+import { PlanPending } from '@/components/features/billing/PlanPending'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { billingOn, useBillingStore } from '@/lib/billing/billingStore'
@@ -52,7 +53,7 @@ export default function FoundersPage() {
   const load = useCallback(() => { void fetchCredits().then(setCredits) }, [])
   useEffect(() => { if (allowed && on) load() }, [allowed, on, load])
 
-  if (!me || !on || !allowed) return null
+  if (me && (!on || !allowed)) return null
   const mine = number !== null ? credits?.find((r) => r.number === number) : undefined
 
   const send = async (value: string) => {
@@ -70,6 +71,8 @@ export default function FoundersPage() {
     const blob = await founderCardImage({ number: formatFounderNumber(number), mark: f.mark, wordmark: c.proName.replace(' Pro', '') })
     if (!blob || !(await shareOrSaveImage(blob, `founder-${formatFounderNumber(number).slice(1)}.png`))) setShareError(true)
   }
+
+  if (!me) return <SettingsSubPageShell title={f.title}><PlanPending rows={4} /></SettingsSubPageShell>
 
   const tag = number !== null ? formatFounderNumber(number) : ''
   const joined = plainDate(user?.created_at, locale)

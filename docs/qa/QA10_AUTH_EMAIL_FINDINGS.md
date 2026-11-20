@@ -538,3 +538,21 @@ Subject: `Confirm your new buddget email`
 - Frankfurt auth logs show repeated `bad_jwt: unrecognized JWT kid dd9e16b3-… for ES256` on `GET /user` (11-18 16:05-16:14). **[infer]** Clients hold tokens signed by the old Singapore keys, or the signing keys were not carried over. This is not email, but it is related to the move.
 - 874 `welcome` sends failed with "RESEND_API_KEY is not set" (null user_id, 11-18 00:57-04:37) [live]. Some environment without the key writes to the production `email_log`.
 - `supabase/README.md:10-23` is out of date (it says there is no sign-in OTP and that recovery is a link). The hook makes Supabase templates irrelevant.
+
+## 7. Follow-up, 2026-11-19: D-1 hook timeout and the "RESEND_API_KEY is not set" rows
+
+Evidence: live `email_log` (counts and address shapes only) and the Frankfurt auth logs.
+
+- **Production email works after the Frankfurt move.** Real sends from Vercel delivered on 11-18 (welcome ×2, password_reset 383 ms) and the admin unlock code on 11-19. The production key is set.
+- **The "RESEND_API_KEY is not set" rows (about 3,800 so far, 11-18 00:57 to 04:37 and 11-19 07:49 to 18:20 UTC) are all QA traffic.** Every one goes to a synthetic `@buddget-qa.test` address (`qa-ui-1`, `qa-e2e-ui-*`, `qa-e2e-q6-*`, `qa-e2e-n1..3-*`, `qa-e2e-pr-sweep-*` ...). They come from QA dev servers (cloud sessions) that run without a Resend key but write to the live `email_log`. `/api/auth/welcome` gives the claim back on a failed send, so each app boot retries; that is why one user has up to 222 rows. `user_id` is null because the test users were deleted afterwards (the row's user link is cleared). Nothing reached a real user.
+- **D-1 root cause: the Send Email hook runs close to Supabase's fixed 5 s limit.** On 11-19 (the hook was switched on that day) it ran 8 times from sign-ups: 7 succeeded in 1.1 to 4.1 s, and 1 timed out at 07:58 UTC (5.17 s, a cloud QA sign-up). The route, on a cold Vercel function, reads the template from the DB, looks up the locale and waits up to 4 s for Resend before it answers.
+- **Logging gap:** none of the 7 successful hook sends on 11-19 has an `email_log` row (the last `auth_hook` row is 11-18). The log insert after an `auth_hook` send fails silently (`console.error` only), most likely because the user row is not visible yet during the sign-up hook.
+- **Before 11-19** the hook was off on Frankfurt, so the 6 real sign-ups from 11-16 to 11-18 got Supabase's default link email, not a code (the QA-10 blocker, now resolved).
+
+Fixes (no owner step needed; the Vercel key is fine):
+1. Make the hook answer faster:
+   - cache rendered templates in memory with a TTL;
+   - skip the locale lookup for `auth_hook` and use the payload's metadata;
+   - cut the Resend timeout to about 2.5 s, so the hook always answers inside 5 s.
+2. Log `auth_hook` sends without a user link, so the insert cannot fail.
+3. QA dev servers must not write to the live `email_log`. Skip the send and the log when `RESEND_API_KEY` is absent outside production. The welcome route then stops retrying on every boot.

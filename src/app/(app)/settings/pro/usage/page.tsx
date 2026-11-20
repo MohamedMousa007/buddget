@@ -12,7 +12,7 @@ import { NoticeBanners } from '@/components/features/usage/NoticeHost'
 import { packLists } from '@/components/features/usage/packList'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { SkeletonList } from '@/components/ui/SkeletonList'
+import { PlanPending } from '@/components/features/billing/PlanPending'
 import { billingOn, useBillingStore, type UsageWindow } from '@/lib/billing/billingStore'
 import { PRO_PACK_BONUS } from '@/lib/billing/packBonus'
 import { subscriptionView } from '@/lib/billing/subscriptionView'
@@ -99,7 +99,7 @@ export default function UsagePage() {
   return (
     <SettingsSubPageShell title={copy.page.title} backHref="/settings/pro">
       {!me ? (
-        <SkeletonList rows={4} />
+        <PlanPending rows={4} />
       ) : !usage ? (
         <EmptyState title={copy.page.errorTitle} description={copy.page.errorBody} action={<Button size="touch" onClick={() => void refresh()}>{copy.actions.tryAgain}</Button>} />
       ) : (

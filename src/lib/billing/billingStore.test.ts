@@ -20,6 +20,15 @@ describe('the billing-off gate', () => {
     expect(useBillingStore.getState().me).toBeNull()
   })
 
+  it('S8G-07: a failed read raises the error flag, and a good retry clears it', async () => {
+    h.fetch.mockResolvedValueOnce({ ok: false, json: async () => ({}) })
+    await useBillingStore.getState().refresh()
+    expect(useBillingStore.getState().error).toBe(true)
+    h.fetch.mockResolvedValueOnce(reply(me()))
+    await useBillingStore.getState().refresh()
+    expect(useBillingStore.getState()).toMatchObject({ error: false, me: expect.objectContaining({ planKey: 'free' }) })
+  })
+
   it('a failed read leaves billing off', async () => {
     h.fetch.mockRejectedValue(new Error('offline'))
     await useBillingStore.getState().refresh()

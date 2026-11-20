@@ -75,7 +75,7 @@ export function HotStreakCard({ title, subtitle, points, pointsLabel, weeks, str
       <div className={s.hotTop}>
         <span className={s.flame}><Flame /></span>
         <div>
-          <h4 dir="auto">{title}</h4>
+          <h3 dir="auto">{title}</h3>
           {subtitle ? <p dir="auto">{subtitle}</p> : null}
         </div>
         <div className={s.pts}><b dir="ltr">{points}</b><span dir="auto">{pointsLabel}</span></div>

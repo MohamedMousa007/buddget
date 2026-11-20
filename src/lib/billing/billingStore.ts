@@ -41,6 +41,8 @@ export interface BillingMe {
 
 interface BillingStore {
   me: BillingMe | null
+  /** True when the last read failed and there is still no plan to show; the pages offer Try again instead of a skeleton. */
+  error: boolean
   refresh: () => Promise<BillingMe | null>
   reset: () => void
 }
@@ -52,18 +54,24 @@ export const isPaidPlan = (me: BillingMe | null | undefined): boolean => !!me &&
 
 export const useBillingStore = create<BillingStore>((set, get) => ({
   me: null,
+  error: false,
   refresh: async () => {
+    if (get().error) set({ error: false })
     try {
       const res = await apiFetchAuth('/api/entitlements/me')
-      if (!res.ok) return get().me
+      if (!res.ok) {
+        set({ error: true })
+        return get().me
+      }
       const me = (await res.json()) as BillingMe
-      set({ me })
+      set({ me, error: false })
       return me
     } catch {
+      set({ error: true })
       return get().me
     }
   },
-  reset: () => set({ me: null }),
+  reset: () => set({ me: null, error: false }),
 }))
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
