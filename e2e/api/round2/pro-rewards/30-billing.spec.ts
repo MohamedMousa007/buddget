@@ -79,6 +79,14 @@ test.describe('RevenueCat webhook', () => {
     expect((await svc(`user_entitlements?user_id=eq.${u.id}&select=status`)).json[0].status).toBe('active')
   })
 
+  test('H8 a SANDBOX purchase (TestFlight, App Review, license tester) never gives Pro in production', async () => {
+    test.fail(true, 'S8A B-1: the webhook never reads event.environment')
+    const u = await user('h8')
+    await rcPost(ev(u, { environment: 'SANDBOX' }))
+    const ent = (await svc(`user_entitlements?user_id=eq.${u.id}&select=plan_key`)).json[0]
+    expect(ent?.plan_key ?? 'free').not.toBe('plus')
+  })
+
   test('H5 a Sparks pack: Free buyer gets 650, Pro buyer 650 + 97 (15%); a replayed or reused transaction pays nothing more', async () => {
     const f = await user('h5f')
     const txn = `qa-tx-${randomUUID()}`
@@ -180,6 +188,19 @@ test.describe('trial', () => {
     const w = await user('x5c')
     await svc('billing_events', { method: 'POST', body: JSON.stringify({ provider: 'revenuecat', event_id: `qa-s8g-${randomUUID()}`, type: 'NON_RENEWING_PURCHASE', user_id: w.id, product_id: 'sparks_650', event_at: new Date().toISOString(), outcome: 'applied' }) })
     expect((await app('/api/entitlements/trial', { method: 'POST', token: w.token })).json.status).toBe('granted')
+  })
+
+  test('X6 an account whose trial ended cannot take another by changing its email', async () => {
+    test.fail(true, 'S8A B-17: trial_claim is keyed only on the mailbox; an ended trial row is source default')
+    const u = await user('x6')
+    expect((await app('/api/entitlements/trial', { method: 'POST', token: u.token })).json.status).toBe('granted')
+    await setEntitlement(u.id, { ...TRIAL(), status: 'expired', trial_ends_at: new Date(Date.now() - 86_400_000).toISOString() })
+    const { ENV, SB_URL, signIn } = await import('./lib')
+    const email = u.email.replace('x6-', 'x6b-')
+    await fetch(`${SB_URL}/auth/v1/admin/users/${u.id}`, { method: 'PUT', headers: { apikey: ENV.SUPABASE_SECRET_KEY, Authorization: `Bearer ${ENV.SUPABASE_SECRET_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, email_confirm: true }) })
+    made.push({ id: u.id, email, token: '' })
+    const token = await signIn(email)
+    expect((await app('/api/entitlements/trial', { method: 'POST', token })).json.status).toBe('already_claimed')
   })
 })
 
