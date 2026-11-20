@@ -178,3 +178,19 @@ Buddgy chats now work like ChatGPT and Claude, inside the same pop-up.
 | Server: chats continue | `supabase/migrations/0340_ai_chats_continue.sql` | Proven on live in a rolled-back transaction (a chat idle 2 hours continued: same chat, `new_chat` false), then applied. All 3 plans show 43200. |
 | Saved chats, restore, caps, groups, search, account wipe | `savedChats.ts`, `useBuddgyChats.ts`, `useBuddgyChat.ts`, `clearBudgetData.ts` | Unit tests written, **not yet run** (`savedChats.test.ts`) |
 | Chat list in the pop-up | `AIChatList.tsx`, `AIChat.tsx`, `AIChatHeader.tsx` (optional `onShowChats`, default unchanged), `buddgyChatCopy.ts` | **Manual verification required** (list, search, open, delete, Memory, reopen after closing the app) |
+
+## Step 10: streak from join week (owner-approved design `S9-Final12Weeks`)
+
+**Open issue:** every current account joined before loyalty launched on 2026-11-17. For these accounts the strip counts from the join date, so most past cells are empty, for example "Weeks 9–20" with only the last week or two lit. Fixing that needs a server field, the first loyalty week, which is out of scope here.
+
+- **Join week:** taken from `user.created_at` (the auth user, already read on this page for "Since"). It is turned into a local date and measured against the server's week grid: the last `streak.weeks[].week` is this week's local start (`user_settings.week_start_day`). The server's `'before'` state does not mark the join week, because it counts from the first kept week. `loyalty_week_summary` carries no join data. The local date uses the device time zone, not `user_settings.timezone`, so a sign-up within hours of midnight on a week boundary can be one week off.
+- **Strip:** week 1 sits first and the strip fills left to right. Weeks not reached yet are dashed outlines. Weeks before the join never show, including a seasonal freeze or last week during the grace days. From week 13 on it shows the latest 12. Kept, frozen, missed and this week (ringed) look as before.
+- **Caption:** one line under the strip: "Week 1 · since you joined", "Weeks 1–3 · since you joined", "Weeks 3–14 · you joined in week 1" (en and ar). The spoken summary uses the same range and counts only the weeks shown.
+- **Week numbers inside cells:** not drawn. They do not fit beside the flame or snowflake glyph without a second row, which the design had and which would add about 16px.
+- **Height:** +20px (4px gap plus one 16px caption line). No new card or heading.
+- **Component:** `HotStreakCard` changes are additive. It gains the `future` week kind and an optional `caption`, and the default render is unchanged (the gallery and existing tests still use it as before).
+
+| Item | Files | Status |
+|---|---|---|
+| Strip logic and week number from join date | `rewardsState.ts` (`weekSinceJoin`, `streakStrip`), `RewardsView.tsx` | Unit tests written in `rewardsState.test.ts` for: joined this week, week 3, week 9 with a freeze, week 14 showing 3–14, a missed week, pre-join weeks hidden, and the week-boundary dates. **Not yet run** (cloud runner). |
+| Dashed cells and caption | `HotStreakCard.tsx`, `membership.module.css`, `rewardsCopy.ts` | Render test in `membershipComponents.test.tsx`, **not yet run**. **Manual verification required**: look in en and ar, height. |

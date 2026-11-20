@@ -1,4 +1,4 @@
-import type { StreakWeek } from '@/components/features/membership/HotStreakCard'
+import { STREAK_STRIP_WEEKS, type StreakWeek } from '@/components/features/membership/HotStreakCard'
 import { isTierLocked, tierProgressPct } from '@/components/features/membership/tiers'
 import type { RewardsState, TierKey, WeekState } from '@/lib/loyalty/rewardsTypes'
 
@@ -27,6 +27,26 @@ const LOOK: Record<WeekState, StreakWeek> = { kept: 'kept', frozen: 'frozen', mi
 /** The server's 12 weeks as the strip draws them: the last one is this week, lit when kept and ringed while it is still open. */
 export function stripWeeks(weeks: RewardsState['streak']['weeks']): StreakWeek[] {
   return weeks.map((w, i) => (i === weeks.length - 1 ? (w.state === 'kept' ? 'current' : w.state === 'frozen' ? 'frozen' : 'pending') : LOOK[w.state]))
+}
+
+/** This week's number counted from the week the user joined (week 1), on the server's week grid. Both dates are YYYY-MM-DD. */
+export function weekSinceJoin(thisWeekStart: string, joinedOn: string): number {
+  const days = Math.round((Date.parse(thisWeekStart) - Date.parse(joinedOn)) / 86_400_000)
+  return Math.max(1, Math.floor((days + 6) / 7) + 1)
+}
+
+/**
+ * The strip from the week the user joined: week 1 first, weeks not reached yet dashed; once past 12 weeks, the latest 12.
+ * The server's last week is week `weekNow`; its weeks before week 1 are never shown.
+ */
+export function streakStrip(weeks: RewardsState['streak']['weeks'], weekNow: number): { cells: Array<{ week: StreakWeek; n: number }>; from: number; to: number; shown: RewardsState['streak']['weeks'] } {
+  const look = stripWeeks(weeks)
+  const from = Math.max(1, weekNow - STREAK_STRIP_WEEKS + 1)
+  const cells = Array.from({ length: STREAK_STRIP_WEEKS }, (_, i) => {
+    const n = from + i
+    return { n, week: n > weekNow ? 'future' as const : look[look.length - 1 - (weekNow - n)] ?? 'missed' }
+  })
+  return { cells, from, to: weekNow, shown: weeks.slice(-(weekNow - from + 1)) }
 }
 
 export function stripCounts(weeks: RewardsState['streak']['weeks']): { kept: number; frozen: number; missed: number } {

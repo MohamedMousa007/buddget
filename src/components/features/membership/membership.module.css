@@ -103,6 +103,9 @@
 .wk .wkOn { background: linear-gradient(180deg, color-mix(in oklab, var(--ember) 22%, var(--color-brand-elevated)), color-mix(in oklab, var(--member-gilt-hi) 12%, var(--color-brand-elevated))); border-color: color-mix(in oklab, var(--member-gilt-hi) 35%, transparent); }
 .wk .wkFz { background: color-mix(in oklab, var(--frost) 16%, var(--color-brand-elevated)); border-color: color-mix(in oklab, var(--frost) 35%, transparent); color: var(--frost); }
 .wk .wkNow { height: 36px; box-shadow: 0 0 0 1.5px var(--member-gilt-hi), 0 0 16px -2px color-mix(in oklab, var(--ember-deep) 70%, transparent); }
+.wk .wkAhead { background: transparent; border-style: dashed; border-color: var(--color-brand-border-strong); }
+.wkBox { display: grid; gap: 4px; }
+.wkCap { font-size: .71875rem; line-height: 1rem; font-weight: 600; color: var(--color-brand-text-secondary); }
 .foot { display: flex; justify-content: space-between; gap: 8px; font-size: .71875rem; color: var(--color-brand-text-secondary); }
 .foot b { color: var(--color-brand-text-primary); font-weight: 600; }
 

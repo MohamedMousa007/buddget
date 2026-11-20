@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { RewardsState, TierKey } from '@/lib/loyalty/rewardsTypes'
 import { rewardsCopy } from '@/lib/i18n/rewardsCopy'
 import type { BillingMe } from '@/lib/billing/billingStore'
-import { cardProgress, cardTier, shopRowState, streakPoints, stripCounts, stripWeeks } from './rewardsState'
+import { cardProgress, cardTier, shopRowState, streakPoints, streakStrip, stripCounts, stripWeeks, weekSinceJoin } from './rewardsState'
 import { memberMarks } from './useMemberMarks'
 
 const tier = (key: TierKey, minPoints: number, requiresPro = false, requiresFounder = false) => ({ key, name: key, minPoints, requiresPro, requiresFounder, sparksGift: 0, perks: [] })
@@ -52,6 +52,61 @@ describe('the streak strip', () => {
     expect(streakPoints(3)).toBe(30)
     expect(streakPoints(6)).toBe(75)
     expect(streakPoints(8)).toBe(110)
+  })
+})
+
+describe('the strip counted from the week the user joined', () => {
+  type S = RewardsState['streak']['weeks'][number]['state']
+  /** The server's 12 weeks, oldest first, ending with this week (2026-11-16). */
+  const server = (...tail: S[]) => [...Array<S>(12 - tail.length).fill('before'), ...tail].map((state, i) => ({ week: `w${i}`, state }))
+  const kinds = (s: ReturnType<typeof streakStrip>) => s.cells.map((c) => c.week)
+  const numbers = (s: ReturnType<typeof streakStrip>) => s.cells.map((c) => c.n)
+  const en = rewardsCopy.en.rewards.streak
+
+  it('week number from the join date, on the server week grid', () => {
+    expect(weekSinceJoin('2026-11-16', '2026-11-16')).toBe(1)
+    expect(weekSinceJoin('2026-11-16', '2026-11-19')).toBe(1)
+    expect(weekSinceJoin('2026-11-16', '2026-11-15')).toBe(2)
+    expect(weekSinceJoin('2026-11-16', '2026-11-09')).toBe(2)
+    expect(weekSinceJoin('2026-11-16', '2026-11-08')).toBe(3)
+    expect(weekSinceJoin('2026-11-16', '2026-08-17')).toBe(14)
+  })
+  it('joined this week: week 1 ringed, the other 11 dashed, nothing padded before it', () => {
+    const s = streakStrip(server('open', 'open'), 1)
+    expect(kinds(s)).toEqual(['pending', ...Array(11).fill('future')])
+    expect(numbers(s)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+    expect([s.from, s.to, s.shown.length]).toEqual([1, 1, 1])
+    expect(en.range(s.from, s.to)).toBe('Week 1 · since you joined')
+  })
+  it('week 3: two kept weeks, this week ringed, nine dashed', () => {
+    const s = streakStrip(server('kept', 'kept', 'open'), 3)
+    expect(kinds(s)).toEqual(['kept', 'kept', 'pending', ...Array(9).fill('future')])
+    expect(en.range(s.from, s.to)).toBe('Weeks 1–3 · since you joined')
+  })
+  it('week 9 with a frozen week 5, this week kept', () => {
+    const s = streakStrip(server('kept', 'kept', 'kept', 'kept', 'frozen', 'kept', 'kept', 'kept', 'kept'), 9)
+    expect(kinds(s)).toEqual(['kept', 'kept', 'kept', 'kept', 'frozen', 'kept', 'kept', 'kept', 'current', 'future', 'future', 'future'])
+    expect(numbers(s).slice(0, 9)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9])
+    expect(stripCounts(s.shown)).toEqual({ kept: 8, frozen: 1, missed: 0 })
+    expect(en.range(s.from, s.to)).toBe('Weeks 1–9 · since you joined')
+  })
+  it('week 14: the latest 12, weeks 3 to 14, no dashed cells', () => {
+    const weeks = server('kept', 'kept', 'frozen', 'kept', 'kept', 'kept', 'kept', 'frozen', 'kept', 'kept', 'kept', 'kept')
+    const s = streakStrip(weeks, 14)
+    expect(numbers(s)).toEqual([3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
+    expect(kinds(s)).toEqual(stripWeeks(weeks))
+    expect(s.shown).toHaveLength(12)
+    expect(en.range(s.from, s.to)).toBe('Weeks 3–14 · you joined in week 1')
+  })
+  it('a missed week stays an empty cell in its place', () => {
+    const s = streakStrip(server('kept', 'missed', 'kept', 'open'), 4)
+    expect(kinds(s).slice(0, 5)).toEqual(['kept', 'missed', 'kept', 'pending', 'future'])
+    expect(stripCounts(s.shown)).toEqual({ kept: 2, frozen: 0, missed: 1 })
+  })
+  it('weeks before the join never show, even a seasonal freeze or last week still open', () => {
+    const s = streakStrip(server('frozen', 'open', 'open'), 1)
+    expect(kinds(s)[0]).toBe('pending')
+    expect(kinds(s).filter((k) => k === 'frozen')).toHaveLength(0)
   })
 })
 

@@ -2,8 +2,8 @@ import { useId, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import s from './membership.module.css'
 
-/** One week on the strip. `current` is this week, kept; `pending` is this week, not kept yet; `missed` is an empty cell. */
-export type StreakWeek = 'kept' | 'frozen' | 'missed' | 'current' | 'pending'
+/** One week on the strip. `current` is this week, kept; `pending` is this week, not kept yet; `missed` is an empty cell; `future` is a week not reached yet (dashed). */
+export type StreakWeek = 'kept' | 'frozen' | 'missed' | 'current' | 'pending' | 'future'
 
 export const STREAK_STRIP_WEEKS = 12
 
@@ -65,11 +65,25 @@ export interface HotStreakCardProps {
   footStart?: ReactNode
   /** "2 freezes left". */
   footEnd?: ReactNode
+  /** "Weeks 1–3 · since you joined", one line under the strip. */
+  caption?: ReactNode
   className?: string
 }
 
 /** The hot streak: the flame, twelve weeks with kept, frozen and this-week cells, the next bonus and the freezes left. */
-export function HotStreakCard({ title, subtitle, points, pointsLabel, weeks, stripLabel, footStart, footEnd, className }: HotStreakCardProps) {
+export function HotStreakCard({ title, subtitle, points, pointsLabel, weeks, stripLabel, footStart, footEnd, caption, className }: HotStreakCardProps) {
+  const strip = (
+    <div className={s.wk} role="img" aria-label={stripLabel}>
+      {streakCells(weeks).map((w, i) => {
+        const look = streakCellLook(w)
+        return (
+          <span key={i} data-week={w} className={cn(look.lit && s.wkOn, look.frozen && s.wkFz, look.now && s.wkNow, w === 'future' && s.wkAhead)}>
+            {look.glyph === 'flame' ? <Flame /> : look.glyph === 'snow' ? <Snow /> : null}
+          </span>
+        )
+      })}
+    </div>
+  )
   return (
     <div className={cn(s.hot, className)}>
       <div className={s.hotTop}>
@@ -80,16 +94,7 @@ export function HotStreakCard({ title, subtitle, points, pointsLabel, weeks, str
         </div>
         <div className={s.pts}><b dir="ltr">{points}</b><span dir="auto">{pointsLabel}</span></div>
       </div>
-      <div className={s.wk} role="img" aria-label={stripLabel}>
-        {streakCells(weeks).map((w, i) => {
-          const look = streakCellLook(w)
-          return (
-            <span key={i} data-week={w} className={cn(look.lit && s.wkOn, look.frozen && s.wkFz, look.now && s.wkNow)}>
-              {look.glyph === 'flame' ? <Flame /> : look.glyph === 'snow' ? <Snow /> : null}
-            </span>
-          )
-        })}
-      </div>
+      {caption ? <div className={s.wkBox}>{strip}<span dir="auto" aria-hidden className={s.wkCap}>{caption}</span></div> : strip}
       {footStart || footEnd ? <div className={s.foot}><span dir="auto">{footStart}</span><span dir="auto">{footEnd}</span></div> : null}
     </div>
   )

@@ -197,6 +197,13 @@ describe('HotStreakCard', () => {
     expect(count(out, 'data-week="frozen"')).toBe(1)
     expect(out).toContain('aria-label="Last 12 weeks"')
   })
+  it('weeks not reached yet are drawn dashed, and the caption sits under the strip only when given', () => {
+    const weeks = ['pending', ...Array(11).fill('future')] as const
+    const out = html(createElement(HotStreakCard, { title: 't', points: '+0', pointsLabel: 'p', stripLabel: 'Week 1', weeks, caption: 'Week 1 · since you joined' }))
+    expect(count(out, 'data-week="future"')).toBe(11)
+    expect(out).toContain('Week 1 · since you joined')
+    expect(html(createElement(HotStreakCard, { title: 't', points: '+0', pointsLabel: 'p', stripLabel: 'x', weeks }))).not.toContain('since you joined')
+  })
 })
 
 describe('TierLadder', () => {

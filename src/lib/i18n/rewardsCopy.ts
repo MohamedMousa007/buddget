@@ -149,7 +149,9 @@ export interface RewardsCopy {
       title: (n: number) => string
       best: (n: number) => string
       pointsLabel: string
-      strip: (kept: number, frozen: number, missed: number) => string
+      strip: (range: string, kept: number, frozen: number, missed: number) => string
+      /** The weeks the strip shows, counted from the week the user joined (week 1). */
+      range: (from: number, to: number) => string
       nextBonus: (x: string) => string
       weeks: (n: number) => string
       topBonus: string
@@ -431,7 +433,8 @@ const en: RewardsCopy = {
       title: () => '{b}-week streak',
       best: (n) => (n === 1 ? 'Your best is 1 week' : `Your best is ${n} weeks`),
       pointsLabel: 'points this streak',
-      strip: (kept, frozen, missed) => `Last 12 weeks: ${kept} kept, ${frozen} frozen, ${missed} missed`,
+      strip: (range, kept, frozen, missed) => `${range}: ${kept} kept, ${frozen} frozen, ${missed} missed`,
+      range: (from, to) => (from === to ? `Week ${to} · since you joined` : from === 1 ? `Weeks 1–${to} · since you joined` : `Weeks ${from}–${to} · you joined in week 1`),
       nextBonus: (x) => `Next bonus at {b} · x${x}`,
       weeks: (n) => `${n} weeks`,
       topBonus: 'Your weeks earn {b} now',
@@ -753,7 +756,8 @@ const ar: RewardsCopy = {
       title: (n) => (n === 1 ? 'سلسلة من أسبوع {b}' : n === 2 ? 'سلسلة من {b} أسبوعين' : n <= 10 ? 'سلسلة من {b} أسابيع' : 'سلسلة من {b} أسبوعاً'),
       best: (n) => (n === 1 ? 'أفضل سلسلة لك أسبوع واحد' : n === 2 ? 'أفضل سلسلة لك أسبوعان' : n <= 10 ? `أفضل سلسلة لك ${n} أسابيع` : `أفضل سلسلة لك ${n} أسبوعاً`),
       pointsLabel: 'نقاط هذه السلسلة',
-      strip: (kept, frozen, missed) => `آخر 12 أسبوعاً: ${kept} محفوظة، ${frozen} مجمّدة، ${missed} فائتة`,
+      strip: (range, kept, frozen, missed) => `${range}: ${kept} محفوظة، ${frozen} مجمّدة، ${missed} فائتة`,
+      range: (from, to) => (from === to ? `الأسبوع ${to} · منذ انضمامك` : from === 1 ? `الأسابيع 1–${to} · منذ انضمامك` : `الأسابيع ${from}–${to} · انضممت في الأسبوع 1`),
       nextBonus: (x) => `المضاعفة التالية عند {b} · x${x}`,
       weeks: (n) => (n <= 10 ? `${n} أسابيع` : `${n} أسبوعاً`),
       topBonus: 'أسابيعك تكسب {b} الآن',

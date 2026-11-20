@@ -1,5 +1,6 @@
 'use client'
 
+import { format } from 'date-fns'
 import { useState } from 'react'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { memberNumber } from '@/components/features/billing/ProStateView'
@@ -24,7 +25,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { cn } from '@/lib/utils'
 import { cardFinishClass } from './cosmetics'
 import { Fine, PageStack, Section, initials, withBold } from './pageParts'
-import { STANDARD_COSMETIC, cardProgress, cardTier, shopRowState, stripCounts, stripWeeks, streakPoints } from './rewardsState'
+import { STANDARD_COSMETIC, cardProgress, cardTier, shopRowState, streakPoints, streakStrip, stripCounts, stripWeeks, weekSinceJoin } from './rewardsState'
 
 type ShopItem = RewardsState['shop'][number]
 
@@ -50,7 +51,11 @@ export function RewardsView({ rewards }: { rewards: RewardsState }) {
   const next = rewards.nextTier
   const nextLine = shown.tier === 'founder' ? c.highest : shown.tier === 'elite' ? c.topPro : next && next.pointsToGo > 0 ? c.toNext(fmt(next.pointsToGo), tierName(next.key)) : next ? tierName(next.key) : c.highest
   const streak = rewards.streak
-  const counts = stripCounts(streak.weeks)
+  const thisWeek = streak.weeks.at(-1)?.week
+  const weekNow = thisWeek && user?.created_at ? weekSinceJoin(thisWeek, format(new Date(user.created_at), 'yyyy-MM-dd')) : null
+  const strip = weekNow ? streakStrip(streak.weeks, weekNow) : null
+  const range = strip ? c.streak.range(strip.from, strip.to) : null
+  const counts = stripCounts(strip ? strip.shown : streak.weeks)
 
   const shopLabel = (item: ShopItem) => (item.kind === 'repair' ? c.shop.repair : item.kind === 'freeze' ? c.shop.freeze : item.kind === 'card_finish' ? c.shop.finish : c.shop.look)
   const press = async (item: ShopItem) => {
@@ -105,8 +110,9 @@ export function RewardsView({ rewards }: { rewards: RewardsState }) {
         subtitle={c.streak.best(streak.best)}
         points={`+${fmt(streakPoints(streak.current))}`}
         pointsLabel={c.streak.pointsLabel}
-        weeks={stripWeeks(streak.weeks)}
-        stripLabel={c.streak.strip(counts.kept, counts.frozen, counts.missed)}
+        weeks={strip ? strip.cells.map((cell) => cell.week) : stripWeeks(streak.weeks)}
+        stripLabel={c.streak.strip(range ?? c.streak.range(1, streak.weeks.length), counts.kept, counts.frozen, counts.missed)}
+        caption={range}
         footStart={streak.nextMultiplierAt ? withBold(c.streak.nextBonus(streak.nextMultiplierAt === 4 ? '1.5' : '2'), c.streak.weeks(streak.nextMultiplierAt)) : withBold(c.streak.topBonus, 'x2')}
         footEnd={withBold(c.streak.freezes(rewards.freezes.banked), rewards.freezes.banked)}
       />
