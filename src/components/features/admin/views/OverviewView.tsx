@@ -3,6 +3,7 @@
 import { AlertTriangle, CheckCircle2, CreditCard, LifeBuoy, MessageSquareText, RefreshCw, Smartphone, TrendingUp, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { adminNavigate } from '../adminRouter'
+import { aiModelAlertLines, type AiModelAlert } from '../aiModelAlertDisplay'
 import { useAdminQuery } from '../adminClient'
 import { ago, compact, num, pct } from '../format'
 import { BarList, CHART, Legend, StackedBars, TrendChart } from '../ui/Charts'
@@ -26,6 +27,7 @@ interface OverviewData {
   activity: Array<{ day: string; active_users: number; sessions: number }>
   sms: { total: number; parsed: number; failed: number; rejected: number; undelivered: number; daily: Array<{ day: string; total: number; parsed: number; failed: number }> }
   adoption: Record<string, number>
+  aiAlerts?: AiModelAlert[]
 }
 
 const ADOPTION_LABELS: Array<[string, string]> = [
@@ -48,6 +50,7 @@ export default function OverviewView({ status }: { status: AdminStatus }) {
   if (sms.undelivered > 0) attention.push({ tone: 'warning', text: `${sms.undelivered} parsed SMS never reached the app`, go: ['sms', { tab: 'errors' }] })
   if (o.tickets.urgent > 0) attention.push({ tone: 'negative', text: `${o.tickets.urgent} urgent ticket${o.tickets.urgent > 1 ? 's' : ''} open`, go: ['support'] })
   if (o.tickets.unassigned > 0) attention.push({ tone: 'warning', text: `${o.tickets.unassigned} ticket${o.tickets.unassigned > 1 ? 's' : ''} without an owner`, go: ['support'] })
+  for (const text of aiModelAlertLines(data.aiAlerts ?? [])) attention.push({ tone: 'negative', text, go: can('ai.cost.view') ? ['ai-cost'] : undefined })
   if (o.users_banned > 0) attention.push({ tone: 'warning', text: `${o.users_banned} suspended account${o.users_banned > 1 ? 's' : ''}`, go: ['users', { state: 'banned' }] })
 
   const smsRate = o.sms_7d.total ? o.sms_7d.parsed / o.sms_7d.total : 0

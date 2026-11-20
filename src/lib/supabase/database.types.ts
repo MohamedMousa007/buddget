@@ -608,6 +608,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_model_alerts: {
+        Row: {
+          alert_date: string
+          calls: number
+          created_at: string
+          empties: number
+          errors: number
+          failed_share: number
+          id: number
+          model: string
+          rule: string
+          thresholds: Json
+        }
+        Insert: {
+          alert_date: string
+          calls: number
+          created_at?: string
+          empties: number
+          errors: number
+          failed_share: number
+          id?: never
+          model: string
+          rule: string
+          thresholds: Json
+        }
+        Update: {
+          alert_date?: string
+          calls?: number
+          created_at?: string
+          empties?: number
+          errors?: number
+          failed_share?: number
+          id?: never
+          model?: string
+          rule?: string
+          thresholds?: Json
+        }
+        Relationships: []
+      }
       ai_price_book: {
         Row: {
           audio_usd_per_min: number | null
@@ -6298,6 +6337,7 @@ export type Database = {
             }
             Returns: number
           }
+      ai_chat_error_check: { Args: never; Returns: number }
       ai_credit_windows: {
         Args: { p_t: string; p_user: string }
         Returns: Json

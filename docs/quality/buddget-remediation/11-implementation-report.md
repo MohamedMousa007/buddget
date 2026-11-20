@@ -331,3 +331,29 @@ Buddgy chats now work like ChatGPT and Claude, inside the same pop-up.
 | No turn, network or AI build during the questions | `chatPlan.test.ts` (`runTurn`, `apiFetchAuth`, `refineDraft` mocked and asserted untouched), `routesToPlan` | **Automated verification (runner job 14)** at the routing and flow level. The routing inside `useBuddgyChat.send` is not covered: there is no hook harness. |
 | Choice card, progress strip, question, paused, ready and handed cards | `ai-chat/plan/*`, `ProposalCard.tsx`, `plan.render.test.tsx`, `pattern.test.ts` | **Automated verification (runner job 14)**: static renders. **Manual verification required**: the look against the mockups in en and ar, light and dark, and the keyboard over the composer. |
 | Journey: answer in chat, land on review with the same numbers | none | Not written. A Playwright case in `e2e/journeys` is still to do; it needs the model to call `start_budget_setup`, or a seeded chat. |
+
+## Step 13: 1.1b chat error-rate alert
+
+- **Why:** the quick tier (`gemini-2.5-flash-lite`) logged only `error` on chat from 19 Oct to 16 Nov, 33 calls over about 4 weeks, and nothing watched it.
+- **Migration `0342_ai_chat_error_alert.sql`** (applied to `tzioppxwsljhlglyducm` with `execute_sql`):
+  - partial index `ai_usage_events_chat_created_idx (created_at) INCLUDE (model, status) WHERE feature IN ('chat','chat_hop')`;
+  - table `ai_model_alerts` with `UNIQUE (model, alert_date)`, RLS on, nothing for anon or authenticated, and 180-day retention inside the check;
+  - setting `ai_chat_error_alert` = `{"maxErrorShare": 0.25, "minCalls": 10, "allFailedMinCalls": 3}`, with the same defaults when the key or a field is missing;
+  - `ai_chat_error_check()`, SECURITY DEFINER, `EXECUTE` for `service_role` only: one set-based `INSERT ... SELECT ... GROUP BY model ... ON CONFLICT DO NOTHING` over the last 24 hours;
+  - pg_cron `ai-chat-error-check` daily at 06:05 UTC.
+- **Failed** = `error` + `aborted_empty`. A stalled upstream lands in `aborted_empty` (`turn.ts`), and so does a user Stop before any text. `ok` and `aborted` count as healthy.
+- **Delivery:** the admin Overview's "Needs attention" list shows one line per model from the last 7 days (newest day), and links to AI cost. Email was not used: sending runs in Node through Resend with no SQL-side queue, and system sends fail on this project with "RESEND_API_KEY is not set". `integration_outbox` is ticket-shaped and has never sent a row. **Residual risk:** the portal is a pull channel, so someone has to open the Overview.
+- **Live proof (rolled back):** the whole migration except the cron line, plus synthetic rows, ran in one transaction that ended in `RAISE EXCEPTION`. The synthetic rows were `qa-synth-all-fail` (3 of 3 `error`), `qa-synth-share` (4 of 12), `qa-synth-healthy` (2 of 12) and `qa-synth-not-chat` (5 sms errors). Result: `run1=2 run2=0`, with alert rows `all_failed 3/3` and `share 12/4/0.3333`. Afterwards the table and index did not exist and no synthetic rows were left.
+- **Backtest** of the rule at 06:05 UTC each day, 15 Oct to 21 Nov: it trips only `gemini-2.5-flash-lite`, on 20 Oct (3/3), 2 Nov, 9 Nov, 11 Nov (12/12) and 14 Nov. No other model trips.
+- **EXPLAIN** (358 rows today, so the planner seq-scans either way):
+  - before, natural: `Seq Scan on ai_usage_events`;
+  - before, `enable_seqscan=off`: `Bitmap Index Scan on ai_usage_events_user_cover_idx` with a `created_at` condition on the non-leading column, which reads the whole index;
+  - after, `enable_seqscan=off`: `Index Only Scan using ai_usage_events_chat_created_idx`, `Index Cond: created_at >= now() - 24h`.
+- `get_advisors` (security): the only new finding is INFO "RLS enabled, no policy" on `ai_model_alerts`, which is intended and the same as every other admin table.
+
+| Item | Files | Status |
+|---|---|---|
+| Check function, thresholds from settings, service_role only, one alert per model per day | `supabase/migrations/0342_ai_chat_error_alert.sql`, `src/lib/server/__tests__/sqlContracts.test.ts` | **Automated verification**: live rolled-back proof done; the contract tests are written but not run (cloud runner). |
+| Daily cron, frequency rule, `SCHEDULED_JOBS.md` row | `docs/SCHEDULED_JOBS.md`, `src/lib/server/__tests__/cronGuardrails.test.ts` | **Automated verification**: written, not run (cloud runner). Job live in `cron.job`. |
+| Overview "Needs attention" line | `src/app/api/admin/overview/route.ts`, `views/OverviewView.tsx`, `aiModelAlertDisplay.ts` (+ `.test.ts`), `database.types.ts` | Unit test written, not run. **Manual verification required**: the line in the portal (no alert exists yet, so it shows once a model trips). |
+| Owner email or push | none | **Blocked**: no SQL-side email queue, and `RESEND_API_KEY` is not set for system sends. |

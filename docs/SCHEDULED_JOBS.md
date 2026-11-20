@@ -22,6 +22,7 @@ Rules: nothing runs more often than every 15 minutes unless the migration says w
 | `db-retention` | daily 02:10 | Deletes analytics rows older than 400 days and unlinked rejected SMS log rows older than 365 days | Low: exits when nothing is due |
 | `cleanup-trusted-devices` | daily 03:20 | Deletes expired trusted devices | Low |
 | `sms-zero-variance` | daily 04:17 | Quarantines SMS templates whose amount never varies (90-day scan, index `sms_parse_log_zero_variance_idx`) | Low, index-only |
+| `ai-chat-error-check` | daily 06:05 | `ai_chat_error_check()` records one `ai_model_alerts` row per Buddgy chat model per day whose failed share (`error` + `aborted_empty`) in the last 24 hours passes the `ai_chat_error_alert` thresholds (default over 25% with 10+ calls, or all of 3+ calls); the admin Overview lists the last 7 days under Needs attention | Low: one grouped index-only scan on `ai_usage_events_chat_created_idx` |
 | `cleanup-anon-users` | Sundays 03:15 | Removes abandoned anonymous users | Low |
 
 Removed in database load phase A: `admin-metrics` (refreshed on admin view instead), `sms-pending-discards`, `sms-heal-stuck`, `sms-stats-drain` (merged into `sms-tick`).

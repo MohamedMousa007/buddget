@@ -51,6 +51,7 @@ describe('database load guardrails', () => {
     expect(jobs.has('crash_retention')).toBe(true)
     expect(jobs.has('sms-tick')).toBe(true)
     expect(jobs.has('notifications-hourly')).toBe(true)
+    expect(jobs.get('ai-chat-error-check')?.schedule).toBe('5 6 * * *')
     expect(jobs.has('admin-metrics')).toBe(false)
     expect(jobs.has('sms-pending-discards')).toBe(false)
   })

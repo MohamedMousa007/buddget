@@ -68,3 +68,45 @@ describe('AI credit windows', () => {
     expect(body.match(/feature <> 'sms' and not credits_exempt and created_at >= (w_cut|s_cut)/g)).toHaveLength(2)
   })
 })
+
+// 0342 (1.1b): the daily chat error-rate check. The live proof (rolled back) is in 11-implementation-report.md, step 13.
+describe('chat error-rate alert', () => {
+  const file = migrations.find((m) => /^0342_/.test(m.file))
+  const sql = squash(file?.sql ?? '')
+
+  it('ai_chat_error_check exists and only service_role may run it', () => {
+    expect(file, '0342 defines the check').toBeDefined()
+    expect(latest('ai_chat_error_check')).toBeTruthy()
+    expect(sql).toContain('create or replace function public.ai_chat_error_check() returns integer language plpgsql security definer set search_path = public')
+    expect(sql).toContain('revoke all on function public.ai_chat_error_check() from public, anon, authenticated;')
+    expect(sql).toContain('grant execute on function public.ai_chat_error_check() to service_role;')
+    expect(sql).not.toMatch(/grant execute on function public\.ai_chat_error_check\(\) to [^;]*(anon|authenticated)/)
+    expect(sql).toContain('revoke all on public.ai_model_alerts from anon, authenticated;')
+  })
+
+  it('reads its thresholds from platform_settings, with defaults when the key or a field is missing', () => {
+    const body = squash(latest('ai_chat_error_check'))
+    expect(body).toContain("from platform_settings where key = 'ai_chat_error_alert'")
+    expect(body).toContain("coalesce((cfg ->> 'maxerrorshare')::numeric, 0.25)")
+    expect(body).toContain("coalesce((cfg ->> 'mincalls')::integer, 10)")
+    expect(body).toContain("coalesce((cfg ->> 'allfailedmincalls')::integer, 3)")
+    expect(body).toContain('(p.calls >= min_calls and (p.errors + p.empties)::numeric / p.calls > max_share) or (p.calls >= all_min and p.errors + p.empties = p.calls)')
+    expect(sql).toContain("on conflict (key) do nothing")
+  })
+
+  it('scans only chat calls of the last 24 hours, grouped by model, on the partial index', () => {
+    const body = squash(latest('ai_chat_error_check'))
+    expect(body).toContain("e.feature in ('chat', 'chat_hop') and e.created_at >= now() - interval '24 hours' and e.model is not null group by e.model")
+    expect(body).toContain("count(*) filter (where e.status = 'error')")
+    expect(body).toContain("count(*) filter (where e.status = 'aborted_empty')")
+    expect(sql).toContain("on public.ai_usage_events (created_at) include (model, status) where feature in ('chat', 'chat_hop')")
+  })
+
+  it('records at most one alert per model per day, so a second run adds nothing', () => {
+    const body = squash(latest('ai_chat_error_check'))
+    expect(sql).toContain('unique (model, alert_date)')
+    expect(sql).toContain('model text not null')
+    expect(body).toContain('on conflict (model, alert_date) do nothing')
+    expect(body).toContain("(now() at time zone 'utc')::date")
+  })
+})
