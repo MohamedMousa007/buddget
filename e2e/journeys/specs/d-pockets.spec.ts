@@ -86,7 +86,7 @@ test('D2 pocket created from an account you already have keeps net worth [QA-013
   expect(await netWorthFlow(page)).toBe(5000)
 })
 
-test('D3 money leaving a pocket held in an account moves the account [S-2]', async ({ page }) => {
+test('D3 money leaving a pocket held in an account moves the account [S-2]', async ({ page, user }) => {
   await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 5000 })
   await localWait(page, (s) => s.paymentMethods.find((m: any) => m.name === 'QNB Alahli' && m.openingBalance === 5000))
   await newPocket(page, { kind: /^QNB Alahli/, amount: 500 })
