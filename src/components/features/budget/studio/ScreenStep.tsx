@@ -6,14 +6,15 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
-import { defaultFor, screenNodes } from '@/lib/budget/flow/flow'
+import { defaultFor, screenNodes, type ScreenAnswer } from '@/lib/budget/flow/flow'
 import type { FlowNode, FlowState, FlowValue } from '@/lib/budget/flow/types'
 import type { Currency } from '@/lib/store/types'
+import { questionText } from '@/lib/budget/flow/questionText'
 import { useBudgetStudioCopy } from '../useStudioCopy'
 import { QuestionControl } from './QuestionControl'
 import { StudioHeading } from './StudioHeading'
 
-export type ScreenAnswer = { id: string; value: FlowValue } | { id: string; skip: true }
+export type { ScreenAnswer }
 
 export interface ScreenStepProps {
   state: FlowState
@@ -25,7 +26,10 @@ export interface ScreenStepProps {
   /** Fills `{income}` and `{n}` in a question. */
   fill: (id: string) => string
   onSubmit: (answers: ScreenAnswer[]) => void
+  /** Inside a Buddgy chat card: a plain question and reason instead of the page heading with Buddgy's face. */
+  compact?: boolean
 }
+
 
 const isValid = (x: FlowNode, v: FlowValue | undefined): boolean =>
   x.control === 'amount' ? typeof v === 'number' && v >= (x.id === 'income' ? 1 : 0)
@@ -35,7 +39,7 @@ const isValid = (x: FlowNode, v: FlowValue | undefined): boolean =>
         : true
 
 /** One card of the budget builder: the question, and the few related fields its answers unlock, on a single screen. */
-export function ScreenStep({ state, head, reopen, base, saved, fill, onSubmit }: ScreenStepProps) {
+export function ScreenStep({ state, head, reopen, base, saved, fill, onSubmit, compact = false }: ScreenStepProps) {
   const ui = useBudgetStudioCopy()
   const [values, setValues] = useState<Record<string, FlowValue>>(() =>
     reopen ? Object.fromEntries(Object.entries(state.a).filter(([k]) => state.a[k] !== undefined)) : {},
@@ -47,24 +51,23 @@ export function ScreenStep({ state, head, reopen, base, saved, fill, onSubmit }:
   const found = head.control === 'confirm'
   const first = nodes[0]
   const copyOf = (x: FlowNode) => ui.q[x.id] ?? { label: x.id, why: '' }
-  const textOf = (x: FlowNode) => {
-    const c = copyOf(x)
-    const count = Number(fill(x.id))
-    const plural = count === 1 ? 'one' : count === 2 ? 'two' : ''
-    return (c.variants?.[x.variant?.(state) ?? ''] ?? (x.control === 'confirm' ? c.variants?.[plural] : undefined) ?? c.label).replace('{income}', fill(x.id)).replace('{n}', fill(x.id))
-  }
+  const textOf = (x: FlowNode) => questionText(ui, x, state, fill)
+  const title = found ? ui.found.title : first ? textOf(first) : ''
+  const hint = found ? ui.found.sub : first ? `${ui.why}: ${copyOf(first).why}` : undefined
 
   const submit = () =>
     onSubmit(nodes.map((x): ScreenAnswer => (skips.includes(x.id) ? { id: x.id, skip: true } : { id: x.id, value: valueOf(x) as FlowValue })))
 
   return (
-    <div className="flex flex-col gap-5">
-      <StudioHeading
-        mood="curious"
-        label={ui.buddgyAsks}
-        title={found ? ui.found.title : first ? textOf(first) : ''}
-        hint={found ? ui.found.sub : first ? `${ui.why}: ${copyOf(first).why}` : undefined}
-      />
+    <div className={compact ? 'flex flex-col gap-3' : 'flex flex-col gap-5'}>
+      {compact ? (
+        <div>
+          <p dir="auto" className="text-base font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
+          {hint ? <p dir="auto" className="mt-0.5 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{hint}</p> : null}
+        </div>
+      ) : (
+        <StudioHeading mood="curious" label={ui.buddgyAsks} title={title} hint={hint} />
+      )}
 
       {found ? (
         <div className="flex flex-col gap-3">

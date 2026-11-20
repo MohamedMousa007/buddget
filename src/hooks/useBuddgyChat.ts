@@ -22,6 +22,14 @@ import { useLocale, useT } from '@/lib/i18n'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useUsageStore } from '@/lib/usage/usageStore'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { navigate } from '@/lib/navigation/navigate'
+import { formatCurrency } from '@/lib/utils/formatters'
+import { budgetStudioCopyAr, budgetStudioCopyEn } from '@/lib/i18n/budgetPage/studioCopy'
+import { buddgyPlanCopy } from '@/lib/i18n/buddgyPlanCopy'
+import type { ScreenAnswer } from '@/lib/budget/flow/flow'
+import { handoverState, initialFlow, planPhase, resumePlan, routesToPlan, setPhase, startPlan, type ChatPlan } from '@/lib/buddgy/plan/chatPlan'
+import { submitScreen, takeBack, typedAnswer, type PlanCtx } from '@/lib/buddgy/plan/planTurns'
 
 const newId = () => crypto.randomUUID()
 
@@ -59,6 +67,11 @@ export function useBuddgyChat() {
   const chats = useBuddgyChats((s) => s.chats)
   const activeId = useBuddgyChats((s) => s.activeId)
   const bottomRef = useRef<HTMLDivElement>(null)
+  /** A budget being built in this chat (plan 2.1). Its questions never reach the model. */
+  const planRef = useRef<ChatPlan | null>(null)
+  const [plan, setPlan] = useState<ChatPlan | null>(null)
+  /** The last typed answer could not be read; the question stands. */
+  const [planMissed, setPlanMissed] = useState(false)
 
   const commit = useCallback((next: ChatItem[]) => {
     itemsRef.current = next
@@ -77,8 +90,19 @@ export function useBuddgyChat() {
       updatedAt: Date.now(),
       items: forSaving(next),
       tainted: taintedRef.current,
+      ...(planRef.current ? { plan: planRef.current } : {}),
     })
   }, [])
+
+  const commitPlan = useCallback(
+    (next: ChatPlan | null, nextItems?: ChatItem[]) => {
+      planRef.current = next
+      setPlan(next)
+      setPlanMissed(false)
+      commit(nextItems ?? itemsRef.current)
+    },
+    [commit],
+  )
 
   const patchBuddgy = useCallback(
     (id: string, update: Updater) => {
@@ -96,6 +120,9 @@ export function useBuddgyChat() {
     // BDG-015: a yes to move the user belongs to one chat.
     resetNavConsent()
     activeIdRef.current = null
+    planRef.current = null
+    setPlan(null)
+    setPlanMissed(false)
     useBuddgyChats.getState().setActive(null)
     commit([])
     chatIdRef.current = null
@@ -118,6 +145,8 @@ export function useBuddgyChat() {
       createdAtRef.current = chat.createdAt
       chatIdRef.current = chat.serverChatId
       taintedRef.current = chat.tainted
+      planRef.current = resumePlan(chat.plan, Date.now())
+      setPlan(planRef.current)
       // Shown, not re-saved: looking at a chat must not move it to the top of the list.
       const restored = restoreItems(chat.items)
       itemsRef.current = restored
@@ -250,10 +279,76 @@ export function useBuddgyChat() {
     [applyProposal, locale, patchBuddgy],
   )
 
+  const planCtx = useCallback(
+    (): PlanCtx => ({
+      ui: locale === 'ar' ? budgetStudioCopyAr : budgetStudioCopyEn,
+      money: (n) => formatCurrency(n, useFinanceStore.getState().settings.baseCurrency, false),
+      now: Date.now(),
+      newId,
+    }),
+    [locale],
+  )
+
+  /** "Build it here": the builder's questions start in this chat from what the app already knows. */
+  const startPlanHere = useCallback(
+    (itemId: string, proposalId: string) => {
+      if (findProposal(itemId, proposalId)?.status !== 'pending') return
+      const live = planRef.current
+      // A plan already under way in this chat carries on rather than starting over.
+      planRef.current = live && planPhase(live) !== 'handed' ? setPhase(live, 'asking', Date.now()) : startPlan(initialFlow(useFinanceStore.getState()), Date.now())
+      setPlan(planRef.current)
+      decide(itemId, proposalId, 'applied', buddgyPlanCopy[locale].start.started)
+    },
+    [decide, locale],
+  )
+
+  const answerPlan = useCallback(
+    (answers: ScreenAnswer[]) => {
+      if (!planRef.current) return
+      const step = submitScreen(planRef.current, itemsRef.current, answers, planCtx())
+      commitPlan(step.plan, step.items)
+    },
+    [commitPlan, planCtx],
+  )
+
+  const planBack = useCallback(() => {
+    if (!planRef.current) return
+    const step = takeBack(planRef.current, itemsRef.current, Date.now())
+    commitPlan(step.plan, step.items)
+  }, [commitPlan])
+
+  const setPlanPhase = useCallback(
+    (status: 'asking' | 'paused' | 'ready') => {
+      if (planRef.current && planPhase(planRef.current) !== 'handed') commitPlan(setPhase(planRef.current, status, Date.now()))
+    },
+    [commitPlan],
+  )
+
+  /** "Review and save in the builder": once per plan, so a second tap can never build twice. The build there is charged as a budget build. */
+  const handOverPlan = useCallback(() => {
+    const p = planRef.current
+    if (!p || planPhase(p) !== 'ready') return
+    commitPlan(setPhase(p, 'handed', Date.now()))
+    setActiveModal(null)
+    useSettingsStore.getState().requestBudgetStudio(handoverState(p))
+    navigate('/budget-setup')
+  }, [commitPlan, setActiveModal])
+
   const send = useCallback(
     async (override?: string, opts?: { voice?: boolean; turnId?: string }) => {
       const text = (override ?? input).trim()
       if (!text || busyRef.current) return
+      // A budget question is waiting: the reply answers it on the phone, with no model call and nothing counted.
+      if (routesToPlan(planRef.current)) {
+        const step = typedAnswer(planRef.current, itemsRef.current, text, planCtx())
+        if (!step) {
+          setPlanMissed(true)
+          return
+        }
+        if (override === undefined) setInput('')
+        commitPlan(step.plan, step.items)
+        return
+      }
       if (!guardSignedIn()) return
       if (override === undefined) setInput('')
 
@@ -336,7 +431,7 @@ export function useBuddgyChat() {
         }
       }
     },
-    [commit, finishWithProposals, guardSignedIn, input, locale, online, pathname, patchBuddgy],
+    [commit, commitPlan, finishWithProposals, guardSignedIn, input, locale, online, pathname, patchBuddgy, planCtx],
   )
 
   const stop = useCallback(() => abortRef.current?.abort(), [])
@@ -344,7 +439,8 @@ export function useBuddgyChat() {
   const retry = useCallback(() => {
     const list = itemsRef.current
     const lastUser = [...list].reverse().find((i): i is UserItem => i.role === 'user')
-    if (!lastUser) return
+    // A budget answer is not a message: it is never re-sent to the model.
+    if (!lastUser || planRef.current?.screens.some((x) => x.itemIds.includes(lastUser.id))) return
     const cut = list.findIndex((i) => i.id === lastUser.id)
     commit(list.slice(0, cut))
     // Same turn id: a turn the server already charged gets one free re-run instead of a second charge.
@@ -391,5 +487,14 @@ export function useBuddgyChat() {
     removeBatchRow,
     undoApplied,
     bottomRef,
+    plan,
+    planMissed,
+    startPlanHere,
+    answerPlan,
+    planBack,
+    pausePlan: () => setPlanPhase('paused'),
+    resumePlan: () => setPlanPhase('asking'),
+    buildPlanEarly: () => setPlanPhase('ready'),
+    handOverPlan,
   }
 }

@@ -5,6 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { WifiOff } from 'lucide-react'
 import { useBuddgyChat } from '@/hooks/useBuddgyChat'
 import { useBuddgyChatCopy } from '@/lib/i18n/buddgyChatCopy'
+import { useBuddgyPlanCopy } from '@/lib/i18n/buddgyPlanCopy'
+import { planPhase, planProgress } from '@/lib/buddgy/plan/chatPlan'
+import { PlanBlock } from '@/components/features/ai-chat/plan/PlanBlock'
+import { PlanProgress } from '@/components/features/ai-chat/plan/PlanProgress'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useScrollLock } from '@/lib/ui/scrollLock'
 import { AIChatHeader } from '@/components/features/ai-chat/AIChatHeader'
@@ -30,8 +34,12 @@ export function AIChat() {
   const {
     isOpen, close, items, input, setInput, busy, step, beat, online, bottomRef, newChat, send, stop, retry, keepGoing,
     applyProposal, dismissProposal, retryProposal, reviseProposal, removeBatchRow, undoApplied, chats, activeId, openChat, deleteChat,
+    plan, planMissed, startPlanHere, answerPlan, planBack, pausePlan, resumePlan, buildPlanEarly, handOverPlan,
   } = useBuddgyChat()
   const copy = useBuddgyChatCopy()
+  const planCopy = useBuddgyPlanCopy()
+  const asking = plan !== null && planPhase(plan) === 'asking'
+  const progress = asking ? planProgress(plan) : null
   const chatVoice = useChatVoice((text) => void send(text, { voice: true }))
   const orb = useSettingsStore((s) => s.buddgyOrb)
   const [panel, setPanel] = useState<PanelGeometry | null>(() => {
@@ -121,6 +129,7 @@ export function AIChat() {
               />
             ) : (
             <>
+            {progress ? <PlanProgress n={progress.n} of={progress.of} onPause={pausePlan} /> : null}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {items.length === 0 ? (
                 <AIChatEmptyState onPickSuggestion={(prompt) => void send(prompt)} />
@@ -137,8 +146,12 @@ export function AIChat() {
                   onRetry={retry}
                   onContinue={keepGoing}
                   onNewChat={newChat}
+                  onBuildHere={startPlanHere}
                 />
               )}
+              {plan ? (
+                <PlanBlock plan={plan} missed={planMissed} onAnswer={answerPlan} onBack={planBack} onResume={resumePlan} onBuildEarly={buildPlanEarly} onHandOver={handOverPlan} />
+              ) : null}
               <div ref={bottomRef} />
             </div>
 
@@ -157,6 +170,7 @@ export function AIChat() {
               onSend={() => void send()}
               onStop={stop}
               busy={busy}
+              placeholder={asking ? planCopy.placeholder : undefined}
               usageKey={`${busy}:${items.length === 0}`}
               mic={{ state: chatVoice.state, error: chatVoice.error, onStart: () => void chatVoice.start(), onStop: () => void chatVoice.stop() }}
             />

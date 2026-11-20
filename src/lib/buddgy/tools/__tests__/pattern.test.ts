@@ -19,7 +19,7 @@ const EXPECTED: Record<string, ProposalPattern> = {
   delete_subscription: 'remove', delete_payment_method: 'remove', delete_savings_account: 'remove', delete_investment_holding: 'remove',
   delete_budget_plan: 'remove', cancel_subscription: 'remove', clear_debt: 'remove', forget_memory: 'remove',
   pause_subscription: 'status', resume_subscription: 'status', achieve_goal: 'status', activate_budget_plan: 'status',
-  open_screen: 'go', open_setting: 'go', open_sheet: 'go', start_budget_setup: 'go',
+  open_screen: 'go', open_setting: 'go', open_sheet: 'go', start_budget_setup: 'plan',
 }
 
 const writeTools = [...TOOLS.values()].filter((t) => t.write).map((t) => t.spec)

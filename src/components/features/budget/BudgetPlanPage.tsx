@@ -127,6 +127,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
     return (
       <StudioPage
         intent={studio.intent}
+        handover={studio.handover}
         onClose={() => setStudio(null)}
         onBuilt={(id, aiNote) => {
           setStudio(null)

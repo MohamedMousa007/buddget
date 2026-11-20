@@ -6,6 +6,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { registerBackGuard } from '@/lib/navigation/backGuard'
 import type { CreateIntent } from '@/lib/budget/templates'
 import type { BudgetBlock } from '@/lib/store/types'
+import type { FlowState } from '@/lib/budget/flow/types'
 
 export interface ReviewTarget {
   id: string
@@ -26,15 +27,16 @@ export function useBudgetTakeover(onActivate: (id: string) => void) {
   const [building, setBuilding] = useState<string | null>(null)
   const [buildEmpty, setBuildEmpty] = useState(false)
   const [creating, setCreating] = useState(false)
-  const [studio, setStudio] = useState<{ intent: CreateIntent | null } | null>(null)
+  const [studio, setStudio] = useState<{ intent: CreateIntent | null; handover?: FlowState } | null>(null)
   const [review, setReview] = useState<ReviewTarget | null>(null)
 
   // Buddgy's chat can start the guided setup; the request is honoured once, here, and cleared.
   const studioRequested = useSettingsStore((s) => s.budgetStudioRequested)
   useEffect(() => {
     if (!studioRequested) return
+    const handover = useSettingsStore.getState().budgetStudioHandover
     useSettingsStore.getState().clearBudgetStudioRequest()
-    setStudio({ intent: null })
+    setStudio(handover ? { intent: null, handover } : { intent: null })
   }, [studioRequested])
 
   const openBuilder = useCallback((id: string, empty = false) => {

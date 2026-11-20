@@ -25,7 +25,7 @@ const BY_NAME: Record<string, ProposalPattern> = {
   open_screen: 'go',
   open_setting: 'go',
   open_sheet: 'go',
-  start_budget_setup: 'go',
+  start_budget_setup: 'plan',
 }
 
 const ENTITY: Record<string, PreviewEntity> = {

@@ -27,7 +27,7 @@ export interface PreviewRow {
 }
 
 /** Which of the eight card bodies draws this proposal (docs/quality/buddget-remediation/buddgy-action-cards.md). */
-export type ProposalPattern = 'record' | 'batch' | 'create' | 'change' | 'move' | 'remove' | 'status' | 'go'
+export type ProposalPattern = 'record' | 'batch' | 'create' | 'change' | 'move' | 'remove' | 'status' | 'go' | 'plan'
 
 /** What a create card previews: the thing as the app will show it. */
 export type PreviewEntity = 'card' | 'account' | 'debt' | 'plan' | 'subscription' | 'goal' | 'income' | 'holding' | 'memory'

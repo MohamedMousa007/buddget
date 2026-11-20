@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import { createSafeLocalStorage } from '@/lib/store/safeLocalStorage'
 import type { IncomeSourceType, PaymentMethodType } from '@/lib/store/types'
 import type { StudioDraft } from '@/lib/budget/studioDraft'
+import type { FlowState } from '@/lib/budget/flow/types'
 // Type-only: erased at compile time, so this does not create a runtime cycle
 // between the store and the component that renders the mood.
 import type { BuddgyMood } from '@/components/ai/BuddgyIcon'
@@ -109,10 +110,12 @@ interface SettingsState {
   settingsFocusId: string | null
   /** Buddgy asked to start the guided budget setup; the Budget page opens it once and clears this. Not persisted. */
   budgetStudioRequested: boolean
+  /** Answers collected in the Buddgy chat (2.1): the studio opens on them and builds at once. Not persisted. */
+  budgetStudioHandover: FlowState | null
   /** The account whose data this session has actually pulled from the server; null until the first pull lands. Not persisted. */
   serverSyncedFor: string | null
   markServerSynced: (userId: string | null) => void
-  requestBudgetStudio: () => void
+  requestBudgetStudio: (handover?: FlowState) => void
   clearBudgetStudioRequest: () => void
   setSettingsFocusId: (id: string | null) => void
   /** Bring back every banner and prompt the user dismissed or snoozed. */
@@ -241,10 +244,11 @@ export const useSettingsStore = create<SettingsState>()(
       setPaydayFocusId: (id) => set({ paydayFocusId: id }),
       settingsFocusId: null,
       budgetStudioRequested: false,
+      budgetStudioHandover: null,
       serverSyncedFor: null,
       markServerSynced: (userId) => set({ serverSyncedFor: userId }),
-      requestBudgetStudio: () => set({ budgetStudioRequested: true }),
-      clearBudgetStudioRequest: () => set({ budgetStudioRequested: false }),
+      requestBudgetStudio: (handover) => set({ budgetStudioRequested: true, budgetStudioHandover: handover ?? null }),
+      clearBudgetStudioRequest: () => set({ budgetStudioRequested: false, budgetStudioHandover: null }),
       setSettingsFocusId: (id) => set({ settingsFocusId: id }),
       restoreDismissedPrompts: () => set({ dismissedBanners: [], snoozedBanners: {}, hiddenStatusUntil: {} }),
       monthFilter: getCurrentMonth(),

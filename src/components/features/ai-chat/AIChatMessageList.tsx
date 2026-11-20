@@ -21,6 +21,8 @@ export interface AIChatMessageListProps {
   onRetry: () => void
   onContinue: () => void
   onNewChat: () => void
+  /** "Build it here" on a budget request card (plan 2.1). */
+  onBuildHere?: (itemId: string, proposalId: string) => void
 }
 
 function Dots() {
@@ -44,7 +46,7 @@ function moodFor(item: BuddgyItem) {
 }
 
 /** The transcript. A live log region so screen readers hear each reply as it lands. */
-export function AIChatMessageList({ items, step, onApply, onDismiss, onRevise, onRemoveRow, onRetryProposal, onUndo, onRetry, onContinue, onNewChat }: AIChatMessageListProps) {
+export function AIChatMessageList({ items, step, onApply, onDismiss, onRevise, onRemoveRow, onRetryProposal, onUndo, onRetry, onContinue, onNewChat, onBuildHere }: AIChatMessageListProps) {
   const copy = useBuddgyChatCopy()
   return (
     <div role="log" aria-live="polite" aria-relevant="additions text" className="space-y-4">
@@ -87,6 +89,7 @@ export function AIChatMessageList({ items, step, onApply, onDismiss, onRevise, o
                     onRemoveRow={(rowKey) => onRemoveRow(item.id, p.proposal.id, rowKey)}
                     onRetry={() => onRetryProposal(item.id, p.proposal.id)}
                     onUndo={() => onUndo(item.id, p.proposal.id)}
+                    onBuildHere={onBuildHere ? () => onBuildHere(item.id, p.proposal.id) : undefined}
                   />
                 </div>
               ))}

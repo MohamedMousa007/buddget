@@ -207,3 +207,16 @@ export function pruneInapplicable(s: FlowState): FlowState {
   }
   return cur
 }
+
+export type ScreenAnswer = { id: string; value: FlowValue } | { id: string; skip: true }
+
+/**
+ * One screen's answers laid onto the flow, the same way for the builder and the Buddgy chat. Reopening a screen replaces its
+ * answers, so they are cleared first and anything they no longer unlock is dropped.
+ */
+export function applyScreen(s: FlowState, answers: readonly ScreenAnswer[], reopened = false): FlowState {
+  const ids = new Set(answers.map((x) => x.id))
+  let after: FlowState = reopened ? { ...s, a: Object.fromEntries(Object.entries(s.a).filter(([k]) => !ids.has(k))), skipped: s.skipped.filter((k) => !ids.has(k)) } : s
+  for (const x of answers) after = 'skip' in x ? skip(after, x.id) : answer(after, x.id, x.value)
+  return reopened ? pruneInapplicable(after) : after
+}

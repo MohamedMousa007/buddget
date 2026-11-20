@@ -12,6 +12,7 @@ import { BatchBody } from '@/components/features/ai-chat/cards/bodies/BatchBody'
 import { ChangeBody } from '@/components/features/ai-chat/cards/bodies/ChangeBody'
 import { CreateBody } from '@/components/features/ai-chat/cards/bodies/CreateBody'
 import { GoBody } from '@/components/features/ai-chat/cards/bodies/GoBody'
+import { PlanStartBody } from '@/components/features/ai-chat/plan/PlanStartBody'
 import { MoveBody } from '@/components/features/ai-chat/cards/bodies/MoveBody'
 import { RecordBody } from '@/components/features/ai-chat/cards/bodies/RecordBody'
 import { RemoveBody } from '@/components/features/ai-chat/cards/bodies/RemoveBody'
@@ -24,6 +25,7 @@ import { money } from '@/lib/buddgy/tools/writeKit'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useBuddgyCardCopy } from '@/lib/i18n/buddgyCardCopy'
 import { useBuddgyChatCopy } from '@/lib/i18n/buddgyChatCopy'
+import { useBuddgyPlanCopy } from '@/lib/i18n/buddgyPlanCopy'
 
 const DOMAIN_ICON: Record<ToolDomain, LucideIcon> = {
   expenses: Receipt,
@@ -41,7 +43,7 @@ const DOMAIN_ICON: Record<ToolDomain, LucideIcon> = {
   reports: BarChart3,
 }
 
-const PATTERN_ICON: Partial<Record<ProposalPattern, LucideIcon>> = { batch: Layers, change: Pencil, move: ArrowDownUp, remove: Trash2 }
+const PATTERN_ICON: Partial<Record<ProposalPattern, LucideIcon>> = { batch: Layers, change: Pencil, move: ArrowDownUp, remove: Trash2, plan: PieChart }
 
 export interface ProposalCardProps {
   state: ProposalState
@@ -52,15 +54,18 @@ export interface ProposalCardProps {
   onUndo: () => void
   onRemoveRow?: (rowKey: string) => void
   onRetry?: () => void
+  /** A budget request's "Build it here": the builder's questions run in the chat (plan 2.1). */
+  onBuildHere?: () => void
 }
 
 /**
  * One pending change in the Buddgy action-card shell, with the body its pattern calls for (record, batch, create,
  * change, move, remove, status, go). Every body is drawn from the proposal's own preview, so no tool is special-cased here.
  */
-export function ProposalCard({ state, onApply, onDismiss, onRevise, onUndo, onRemoveRow, onRetry }: ProposalCardProps) {
+export function ProposalCard({ state, onApply, onDismiss, onRevise, onUndo, onRemoveRow, onRetry, onBuildHere }: ProposalCardProps) {
   const chat = useBuddgyChatCopy()
   const copy = useBuddgyCardCopy()
+  const planCopy = useBuddgyPlanCopy()
   const [editing, setEditing] = useState(false)
   const { proposal, status } = state
   const { preview } = proposal
@@ -82,7 +87,7 @@ export function ProposalCard({ state, onApply, onDismiss, onRevise, onUndo, onRe
       count: items.length,
       amount: preview.amount !== undefined && preview.currency ? money(preview.amount, preview.currency) : undefined,
     }) ?? chat.approveRisk(proposal.risk, tone)
-  const primary = pattern === 'go' ? undefined : { label, onClick: onApply, danger, disabled: pattern === 'batch' && items.length === 0 }
+  const primary = pattern === 'go' || pattern === 'plan' ? undefined : { label, onClick: onApply, danger, disabled: pattern === 'batch' && items.length === 0 }
   const secondary: CardAction[] = [
     ...(editable && !editing ? [{ label: chat.edit, onClick: () => setEditing(true) }] : []),
     { label: danger ? copy.keep : chat.dismiss, onClick: onDismiss },
@@ -110,6 +115,7 @@ export function ProposalCard({ state, onApply, onDismiss, onRevise, onUndo, onRe
       case 'remove': return <RemoveBody preview={preview} />
       case 'status': return <StatusBody proposal={proposal} />
       case 'go': return <GoBody preview={preview} onGo={onApply} />
+      case 'plan': return onBuildHere ? <PlanStartBody onBuildHere={onBuildHere} onOpenBuilder={onApply} /> : <GoBody preview={preview} onGo={onApply} />
       default: return <ChangeBody preview={preview} />
     }
   })()
@@ -118,7 +124,7 @@ export function ProposalCard({ state, onApply, onDismiss, onRevise, onUndo, onRe
     <BuddgyActionCard
       tone={tone}
       icon={PATTERN_ICON[pattern] ?? DOMAIN_ICON[preview.domain]}
-      title={preview.title}
+      title={pattern === 'plan' ? planCopy.start.title : preview.title}
       meta={pattern === 'batch' && preview.amount !== undefined && preview.currency ? formatCurrency(preview.amount, preview.currency) : undefined}
       primary={editing ? undefined : primary}
       secondary={editing ? [] : secondary}

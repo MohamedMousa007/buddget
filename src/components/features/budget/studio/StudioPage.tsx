@@ -10,7 +10,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { resumeStudioDraft } from '@/lib/budget/studioDraft'
 import { buildFactsFromStore } from '@/lib/budget/factsFromStore'
-import { buildPlan, ENGINE_VERSION } from '@/lib/budget/engine'
+import { ENGINE_VERSION } from '@/lib/budget/engine'
 import { refineDraft } from '@/lib/budget/budgetAiClient'
 import { applyRefinement } from '@/lib/budget/budgetAi'
 import { commitFlowEntities, createdIds, relinkDraft } from '@/lib/budget/studioEntities'
@@ -18,15 +18,14 @@ import { recordBuild } from '@/lib/budget/learnHooks'
 import { isOnline } from '@/hooks/useNetworkStatus'
 import { draftToCategories } from '@/lib/budget/draftToPlan'
 import { repairDraft } from '@/lib/budget/validate'
-import { acceptDescribed, answer, createFlow, flowReadiness, nextQuestion, pruneInapplicable, skip, STAGES, stageOf } from '@/lib/budget/flow/flow'
+import { draftContext, engineDraft, studioFacts } from '@/lib/budget/studioPreview'
+import { acceptDescribed, applyScreen, createFlow, flowReadiness, nextQuestion, STAGES, stageOf, type ScreenAnswer } from '@/lib/budget/flow/flow'
 import { get } from '@/lib/budget/flow/derive'
 import { knownFromStore } from '@/lib/budget/flow/known'
 import { isTracked } from '@/lib/accounts/kinds'
 import { NODES, NODE_BY_ID } from '@/lib/budget/flow/nodes'
 import { PROFILE_ANSWERS, profilePatch } from '@/lib/budget/flow/profile'
-import { applyAnswers } from '@/lib/budget/flow/toFacts'
 import type { FlowIntent, FlowState, FlowValue } from '@/lib/budget/flow/types'
-import type { PlanDraft } from '@/lib/budget/facts'
 import type { CreateIntent } from '@/lib/budget/templates'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import { formatCurrency } from '@/lib/utils/formatters'
@@ -34,7 +33,7 @@ import { useBudgetPageCopy } from '../usePageCopy'
 import { useBudgetStudioCopy } from '../useStudioCopy'
 import { KnownSheet, type KnownRow } from './KnownSheet'
 import { OpenerStep } from './OpenerStep'
-import { ScreenStep, type ScreenAnswer } from './ScreenStep'
+import { ScreenStep } from './ScreenStep'
 import { UnderstoodStep } from './UnderstoodStep'
 
 const newId = () => crypto.randomUUID()
@@ -43,19 +42,21 @@ const PERCENT_ANSWERS = new Set(['partnerSharePct', 'taxPct'])
 
 export interface StudioPageProps {
   intent: CreateIntent | null
+  /** Answers collected in the Buddgy chat: the studio starts on them and builds at once. */
+  handover?: FlowState
   onClose: () => void
   /** The draft plan the studio built; `aiNote` is true when Buddgy's notes could not be added. */
   onBuilt: (planId: string, aiNote: boolean) => void
 }
 
 /** Card-by-card builder: related questions share a screen, answers are saved to the profile as they land. */
-export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
+export function StudioPage({ intent, handover, onClose, onBuilt }: StudioPageProps) {
   const ui = useBudgetStudioCopy()
   const page = useBudgetPageCopy()
   const store = useFinanceStore
   const facts = useMemo(() => buildFactsFromStore(store.getState(), new Date()), [store])
   const [state, setState] = useState<FlowState>(
-    () => resumeStudioDraft(useSettingsStore.getState().budgetStudioDraft, intent, Date.now()) ?? createFlow((intent ?? 'mixed') as FlowIntent, knownFromStore(facts, store.getState().profile.financialProfile, store.getState().paymentMethods.some(isTracked))),
+    () => handover ?? resumeStudioDraft(useSettingsStore.getState().budgetStudioDraft, intent, Date.now()) ?? createFlow((intent ?? 'mixed') as FlowIntent, knownFromStore(facts, store.getState().profile.financialProfile, store.getState().paymentMethods.some(isTracked))),
   )
   const [saved, setSaved] = useState(false)
   const [focusId, setFocusId] = useState<string | null>(null)
@@ -63,7 +64,7 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
   // The state before each screen, so Back restores it exactly.
   const [trail, setTrail] = useState<FlowState[]>([])
   const [attempt, setAttempt] = useState(0)
-  const [buildNow, setBuildNow] = useState(false)
+  const [buildNow, setBuildNow] = useState(handover !== undefined)
   const [understood, setUnderstood] = useState<string[] | null>(null)
   const [buildError, setBuildError] = useState(false)
   const building = useRef(false)
@@ -98,15 +99,14 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
     commit({ ...after, opener: 'done' })
   }
 
+  // The chat never writes the profile; the answers it handed over land here, once, as the builder's own screens would.
+  useEffect(() => {
+    if (handover) saveToProfile(handover.a)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   const submit = (answers: ScreenAnswer[]) => {
-    // Reopening a screen replaces its answers, so they are cleared first.
     const reopened = focusId !== null
-    const ids = new Set(answers.map((x) => x.id))
-    let after: FlowState = reopened
-      ? { ...state, a: Object.fromEntries(Object.entries(state.a).filter(([k]) => !ids.has(k))), skipped: state.skipped.filter((k) => !ids.has(k)) }
-      : state
-    for (const x of answers) after = 'skip' in x ? skip(after, x.id) : answer(after, x.id, x.value)
-    if (reopened) after = pruneInapplicable(after)
+    const after = applyScreen(state, answers, reopened)
     saveToProfile(after.a)
     setSaved(answers.some((x) => PROFILE_ANSWERS.has(x.id)))
     if (!reopened) setTrail((t) => [...t, state])
@@ -138,24 +138,12 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
         const committed: FlowState = { ...state, entities: created.current }
         commit(committed)
         // The plan uses the richer answered debts and goals (with their rates and dates), not the records just created from them.
-        // Remembered answers and this run's answers are laid over the store facts together, once, so a partner share is never applied twice.
-        const live2 = store.getState()
-        const fresh = buildFactsFromStore(live2, new Date(), { remembered: false })
-        const made = createdIds(created.current)
-        const answers = { ...live2.profile.financialProfile?.budgetProfile, ...committed.a }
-        const merged = applyAnswers({ ...fresh, debts: fresh.debts.filter((d) => !made.has(d.id)), goals: fresh.goals.filter((g) => !made.has(g.id)) }, answers, committed.intent)
-        const engine = buildPlan(merged)
-        const ctx = (d: PlanDraft) => ({
-          income: d.income,
-          subscriptionsLive: merged.subscriptionsMonthly,
-          debtMinimums: Object.fromEntries(merged.debts.map((x) => [x.id, x.minimum])),
-          goalMonthly: Object.fromEntries(merged.goals.map((g) => [g.id, g.monthly])),
-        })
-        const base0 = repairDraft(engine, ctx(engine)).draft
+        const merged = studioFacts(store.getState(), committed.a, committed.intent, createdIds(created.current))
+        const base0 = engineDraft(merged)
         const refined = await refineDraft(merged, base0, controller.signal)
         if (cancelled) return
         const folded = refined.ok ? applyRefinement(base0, refined.data) : null
-        const final = relinkDraft(folded ? repairDraft(folded, ctx(folded)).draft : base0, created.current)
+        const final = relinkDraft(folded ? repairDraft(folded, draftContext(merged, folded)).draft : base0, created.current)
         const s = store.getState()
         const id = s.addBudgetPlan(page.planNames.fresh, {
           status: 'draft',

@@ -1,4 +1,5 @@
 import type { BuddgyItem, ChatItem } from '@/lib/buddgy/client/chatTypes'
+import type { ChatPlan } from '@/lib/buddgy/plan/chatPlan'
 
 /** Chats kept on this phone, newest first (BDG-013: Buddgy chats work like ChatGPT and Claude). */
 export const MAX_CHATS = 50
@@ -16,6 +17,8 @@ export interface SavedChat {
   items: ChatItem[]
   /** A read ran in this chat, so later write proposals still need a tap. */
   tainted: boolean
+  /** A budget being built in this chat (plan 2.1), so it resumes on the same question. */
+  plan?: ChatPlan
 }
 
 export const isStreaming = (items: readonly ChatItem[]): boolean => items.some((i) => i.role === 'buddgy' && i.status === 'streaming')
