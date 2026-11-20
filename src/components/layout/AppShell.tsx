@@ -106,7 +106,10 @@ function SmsStartupSync() {
       void import('@/lib/devices/client').then((m) => m.sendDeviceHeartbeat(userId, status?.enabled ?? false))
       // No Shortcut/receiver on this device → nothing to arm. Queued SMS still drain below: a phone that was
       // disarmed or reset keeps its backlog, and skipping the drain left those cards "waiting" forever.
-      const canArm = Boolean(status?.wired || status?.needsResync)
+      // iPhone: a setup claim or a Shortcut run, the same rule Settings uses for its switch (a stored token is not enough).
+      const { isIOS } = await import('@/lib/native/isNative')
+      const { iosSetUpHere } = await import('@/lib/sms/setupState')
+      const canArm = Boolean((isIOS() ? iosSetUpHere(status) : status?.wired) || status?.needsResync)
 
       // 2. Reconcile armed-state to the account's remembered intent — this is what
       //    makes on/off follow the ACCOUNT across sign-out/in: A stays armed, B

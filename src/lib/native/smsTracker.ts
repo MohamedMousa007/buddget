@@ -19,7 +19,8 @@ export interface SmsBridgeStatus {
    * The device capability: a Shortcut (iOS) / receiver (Android) physically
    * exists here. True once setup finished, the bridge ever fired, or a token is
    * stored. DEVICE truth — survives account switches; only a fresh install
-   * clears it. Gates whether Settings shows the switch vs. the setup CTA.
+   * clears it. Android uses it as "set up here"; iOS reads setupCompleted and
+   * lastRunAt instead, because a token alone proves nothing (src/lib/sms/setupState.ts).
    */
   wired: boolean
   /** Which account the stored ingest token belongs to ('' if none). */

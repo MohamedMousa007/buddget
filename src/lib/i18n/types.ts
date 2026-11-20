@@ -2825,6 +2825,10 @@ export interface Dictionary {
     iosCardTitle: string
     iosStatusWaiting: string
     iosStatusConnected: (time: string) => string
+    iosStatusNotSetUp: string
+    iosStatusNotConfirmed: string
+    iosStatusRunSeen: string
+    iosStatusQuiet: (days: number) => string
     iosStepKeywordsTitle: string
     iosStepKeywordsDesc: string
     iosKeywordsYourCurrencies: string
@@ -2887,7 +2891,14 @@ export interface Dictionary {
       openShortcuts: string
       addKeyword: string
       finish: string
-      automationActive: string
+      notConfirmed: string
+      notConfirmedHint: string
+      confirmed: string
+      skipGuide: string
+      skipConfirmTitle: string
+      skipConfirmBody: string
+      skipConfirmCta: string
+      skipConfirmCancel: string
       copied: (word: string) => string
       kwChipsLabel: string
       openMessages: string

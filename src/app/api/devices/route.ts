@@ -32,8 +32,11 @@ export async function GET(request: Request) {
   if ('res' in c) return c.res
   const service = createServiceRoleClient()
   const { data: rows } = await service.from('user_devices').select('*').eq('user_id', c.userId).is('revoked_at', null).order('last_seen_at', { ascending: false })
+  const me = rows?.find((d) => d.device_id === c.deviceId)
   return NextResponse.json({
     thisDeviceId: c.deviceId,
+    // This phone's own SMS facts whatever its role (BDG-008): `lastSmsAt` below is blanked for a phone that does not collect.
+    thisDeviceSms: me ? { firstAt: me.first_sms_at, lastAt: me.last_sms_at } : null,
     devices: (rows ?? []).map((d) => ({
       deviceId: d.device_id, name: d.name ?? d.model ?? d.platform, platform: d.platform, appVersion: d.app_version, lastSeenAt: d.last_seen_at,
       collectsSms: d.collects_sms, isMain: d.is_main, notify: d.notify, pushPermission: d.push_permission, lastSmsAt: d.collects_sms ? d.last_sms_at : null,

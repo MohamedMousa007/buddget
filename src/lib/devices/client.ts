@@ -135,6 +135,17 @@ export async function fetchDeviceCollectsSms(): Promise<boolean | null> {
   }
 }
 
+/** This phone's first and last SMS on the server, or null when it has no record yet or the read failed. */
+export async function fetchThisDeviceSms(): Promise<{ firstAt: string | null; lastAt: string | null } | null> {
+  try {
+    const res = await apiFetchAuth('/api/devices')
+    if (!res.ok) return null
+    return ((await res.json()) as { thisDeviceSms?: { firstAt: string | null; lastAt: string | null } | null }).thisDeviceSms ?? null
+  } catch {
+    return null
+  }
+}
+
 /** A removed phone signs out and forgets its identity, so signing in again registers it as a new device. */
 async function signOutRemovedDevice(): Promise<void> {
   const { resetDeviceId } = await import('@/lib/native/deviceId')

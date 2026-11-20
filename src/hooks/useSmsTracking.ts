@@ -17,7 +17,8 @@ import { isNative, isAndroid, isIOS } from '@/lib/native/isNative'
 import { createClient } from '@/lib/supabase/client'
 import { apiFetchAuth } from '@/lib/apiBase'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
-import { setDeviceCollectsSms } from '@/lib/devices/client'
+import { fetchThisDeviceSms, setDeviceCollectsSms } from '@/lib/devices/client'
+import { NO_DEVICE_FACTS, deriveSmsSetupState, iosSetUpHere, type SmsDeviceFacts } from '@/lib/sms/setupState'
 import { saveSmsToken, setSmsEnabled, setIosSetupCompleted, getSmsBridgeStatus, SMS_QUEUE_CHANGED_EVENT, type SmsBridgeStatus } from '@/lib/native/smsTracker'
 
 export interface TokenInfo {
@@ -54,7 +55,43 @@ export function useSmsArmed(): boolean {
   return isNative() ? (armed ?? smsTrackingEnabled) : smsTrackingEnabled
 }
 
-export function useSmsTracking() {
+/**
+ * Newest account SMS that carries no device id (a phone on a token from before tokens were device-bound), refusal
+ * rows excluded. Index scan on sms_parse_log_user_received_idx (EXPLAIN on live, 2026-11-20).
+ */
+async function fetchLegacyLastSms(userId: string): Promise<string | null> {
+  const { data } = await createClient()
+    .from('sms_parse_log')
+    .select('received_at')
+    .eq('user_id', userId)
+    .is('device_id', null)
+    .or('failure_code.is.null,failure_code.not.in.(device_blocked,invalid_body,invalid_json)')
+    .order('received_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  return data?.received_at ?? null
+}
+
+/**
+ * The iPhone setup claim (guide Finish or confirmed skip): stores the ingest token, then records the claim and arms.
+ * Returns the token, or null when it could not be issued or stored; then nothing is claimed or armed (BDG-008).
+ */
+export async function claimIosSetup(uid: string | null): Promise<string | null> {
+  if (!uid) return null
+  const res = await apiFetchAuth('/api/sms/setup-token', { method: 'POST' }).catch(() => null)
+  if (!res?.ok) return null
+  const { token } = await res.json() as TokenInfo
+  if (!token) return null
+  await saveSmsToken(token, uid)
+  const stored = await getSmsBridgeStatus()
+  if (!stored?.tokenSaved || stored.tokenUserId !== uid) return null
+  await setIosSetupCompleted(true)
+  await setSmsEnabled(true)
+  return token
+}
+
+/** `withDeviceSms` also reads this phone's server-side SMS facts (iPhone only), for the setup card and onboarding. */
+export function useSmsTracking({ withDeviceSms = false }: { withDeviceSms?: boolean } = {}) {
   const t = useSettingsHubCopy().sms
   const { settings, updateSettings } = useFinanceStore(
     useShallow((s) => ({
@@ -69,15 +106,15 @@ export function useSmsTracking() {
   const [lastReceivedAt, setLastReceivedAt] = useState<string | null>(null)
   const [todayCount, setTodayCount] = useState(0)
   const [deviceStatus, setDeviceStatus] = useState<SmsBridgeStatus | null>(null)
+  const [deviceSms, setDeviceSms] = useState<SmsDeviceFacts>(NO_DEVICE_FACTS)
 
   // Per-device truth: on native the bridge state is authoritative (a synced
   // setting from another device must not show "on" until this device is armed).
   // On web there is no bridge — the synced setting is the source.
   const isEnabled = isNative() ? deviceStatus?.enabled ?? false : settings.smsTrackingEnabled
-  // iOS shows the switch once the device is WIRED (a Shortcut exists here), which
-  // survives account switches — so switching accounts on a set-up phone never
-  // regresses to the setup CTA. Android/web always show it.
-  const isSetup = isNative() && isIOS() ? deviceStatus?.wired ?? false : true
+  // iOS shows the switch once this phone has a setup claim or a Shortcut run (BDG-008; a token alone is not enough).
+  // Both are device facts that survive account switches. Android/web always show it.
+  const isSetup = isNative() && isIOS() ? iosSetUpHere(deviceStatus) : true
 
   const refreshStatus = useCallback(async () => {
     if (!isNative()) return
@@ -90,6 +127,26 @@ export function useSmsTracking() {
     const { data } = await createClient().auth.getSession()
     return data.session?.user?.id ?? null
   }, [])
+
+  const refreshDeviceSms = useCallback(async () => {
+    if (!withDeviceSms || !isNative() || !isIOS()) return
+    const own = await fetchThisDeviceSms()
+    const firstSmsAt = own?.firstAt ?? null
+    const lastSmsAt = own?.lastAt ?? null
+    const uid = firstSmsAt || lastSmsAt ? null : await currentUserId()
+    setDeviceSms({ firstSmsAt, lastSmsAt, legacyLastSmsAt: uid ? await fetchLegacyLastSms(uid) : null })
+  }, [withDeviceSms, currentUserId])
+
+  useEffect(() => {
+    void refreshDeviceSms()
+    const onVisible = () => { if (document.visibilityState === 'visible') void refreshDeviceSms() }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener(SMS_QUEUE_CHANGED_EVENT, refreshDeviceSms)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener(SMS_QUEUE_CHANGED_EVENT, refreshDeviceSms)
+    }
+  }, [refreshDeviceSms])
 
   useEffect(() => {
     void refreshStatus()
@@ -226,29 +283,29 @@ export function useSmsTracking() {
   }, [updateSettings, refreshStatus, currentUserId, t])
 
   /**
-   * Called when the user finishes the iOS Shortcut setup guide: arm the bridge
-   * (token + enabled), mark setup complete (reveals the switch, ON), and sync
-   * the cross-device intent. Returns once the device status reflects it.
+   * Called when the user finishes the iOS Shortcut guide or confirms "Shortcuts already exist": arm the bridge
+   * (token + enabled), record the claim (reveals the switch, ON), and sync the cross-device intent.
+   * False when the token could not be fetched: then nothing is claimed or armed and the guide stays open.
    */
-  const completeIosSetup = useCallback(async () => {
+  const completeIosSetup = useCallback(async (): Promise<boolean> => {
     setLoading(true)
     try {
       const uid = await currentUserId()
-      const res = await apiFetchAuth('/api/sms/setup-token', { method: 'POST' })
-      if (res.ok && uid) {
-        const data = await res.json() as TokenInfo
-        setTokenInfo(data)
-        await saveSmsToken(data.token, uid)
+      const token = await claimIosSetup(uid)
+      if (!token || !uid) {
+        setError(t.setupFailed)
+        return false
       }
-      await setIosSetupCompleted(true)
-      await setSmsEnabled(true)
+      setTokenInfo({ token })
+      setError(null)
       updateSettings({ smsTrackingEnabled: true })
-      if (uid) void setDeviceCollectsSms(uid, true)
+      void setDeviceCollectsSms(uid, true)
       await refreshStatus()
+      return true
     } finally {
       setLoading(false)
     }
-  }, [updateSettings, refreshStatus, currentUserId])
+  }, [updateSettings, refreshStatus, currentUserId, t])
 
   const fetchToken = useCallback(async () => {
     const uid = await currentUserId()
@@ -285,5 +342,7 @@ export function useSmsTracking() {
     lastReceivedAt,
     todayCount,
     permission: deviceStatus?.permission,
+    /** The five iPhone facts (BDG-008). Server facts are empty unless `withDeviceSms` is set. */
+    setup: deriveSmsSetupState(settings.smsTrackingEnabled, deviceStatus, deviceSms, Date.now()),
   }
 }

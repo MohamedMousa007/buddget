@@ -8,12 +8,13 @@ const h = vi.hoisted(() => ({
   curated: null as null | Record<string, unknown>,
   dispatch: vi.fn(),
   gemini: null as null | Record<string, unknown>,
+  deviceId: null as string | null,
 }))
 
 vi.mock('server-only', () => ({}))
 vi.mock('next/server', async (orig) => ({ ...(await orig<typeof import('next/server')>()), after: () => {} }))
 vi.mock('@/lib/server/clientGate', () => ({ gateOutdatedClient: async () => null }))
-vi.mock('@/lib/sms/resolveSmsUser', () => ({ resolveSmsCaller: async () => ({ userId: 'u1', deviceId: null }) }))
+vi.mock('@/lib/sms/resolveSmsUser', () => ({ resolveSmsCaller: async () => ({ userId: 'u1', deviceId: h.deviceId }) }))
 vi.mock('@/lib/sms/deviceGate', () => ({ smsDeviceGate: async () => null }))
 vi.mock('@/lib/server/rateLimit', () => ({ rateLimitOutcome: async () => 'ok' }))
 vi.mock('@/lib/server/userTimeZone', () => ({ getUserTimeZone: async () => 'Africa/Cairo' }))
@@ -106,6 +107,7 @@ const flagsOn = (logId: unknown) => (h.db.expenses ?? []).find((e) => e.sms_log_
 beforeEach(() => {
   h.db = {}
   h.seq = 0
+  h.deviceId = null
   h.curated = curated()
   h.dispatch.mockReset().mockImplementation(async (_s: unknown, input: Row) => {
     const expense = { id: `exp-${h.seq++}`, user_id: 'u1', sms_log_id: input.logId, sms_flags: (input.smsFlags as string[] | undefined) ?? null }
@@ -329,4 +331,28 @@ describe('N6 / N19: a truncated message is held with the facts the parse resolve
     expect(await res.json()).toMatchObject({ ok: true, autoAdded: true })
   })
 
+})
+
+describe('BDG-008: first_sms_at is this phone\'s verified fact', () => {
+  const device = (id: string) => (h.db.user_devices ?? []).find((d) => d.device_id === id)!
+
+  it('the first SMS sets it once, a later one moves only last_sms_at, another phone is untouched', async () => {
+    h.db.user_devices = [
+      { user_id: 'u1', device_id: 'phone-a', first_sms_at: null, last_sms_at: null },
+      { user_id: 'u1', device_id: 'phone-b', first_sms_at: null, last_sms_at: null },
+    ]
+    h.deviceId = 'phone-a'
+    await post({ message: PLAIN, receivedAt: '2026-10-27T10:00:00+03:00', eventId: EVT(1) })
+    expect(device('phone-a')).toMatchObject({ first_sms_at: '2026-10-27T10:00:00+03:00', last_sms_at: '2026-10-27T10:00:00+03:00' })
+
+    await post({ message: WITH_REF, receivedAt: '2026-10-28T10:00:00+03:00', eventId: EVT(2) })
+    expect(device('phone-a')).toMatchObject({ first_sms_at: '2026-10-27T10:00:00+03:00', last_sms_at: '2026-10-28T10:00:00+03:00' })
+    expect(device('phone-b')).toMatchObject({ first_sms_at: null, last_sms_at: null })
+  })
+
+  it('a text from a token with no device id writes no device row', async () => {
+    h.db.user_devices = [{ user_id: 'u1', device_id: 'phone-a', first_sms_at: null, last_sms_at: null }]
+    await post({ message: PLAIN, receivedAt: '2026-10-27T10:00:00+03:00', eventId: EVT(1) })
+    expect(device('phone-a')).toMatchObject({ first_sms_at: null, last_sms_at: null })
+  })
 })

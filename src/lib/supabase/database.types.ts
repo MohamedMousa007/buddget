@@ -5635,6 +5635,7 @@ export type Database = {
           collects_sms: boolean
           created_at: string
           device_id: string
+          first_sms_at: string | null
           is_main: boolean
           last_seen_at: string
           last_sms_at: string | null
@@ -5658,6 +5659,7 @@ export type Database = {
           collects_sms?: boolean
           created_at?: string
           device_id: string
+          first_sms_at?: string | null
           is_main?: boolean
           last_seen_at?: string
           last_sms_at?: string | null
@@ -5681,6 +5683,7 @@ export type Database = {
           collects_sms?: boolean
           created_at?: string
           device_id?: string
+          first_sms_at?: string | null
           is_main?: boolean
           last_seen_at?: string
           last_sms_at?: string | null
