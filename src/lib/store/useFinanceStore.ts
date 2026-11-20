@@ -364,7 +364,7 @@ export const useFinanceStore = create<FinanceStore>()(
 
       restoreExpense: (expense) => {
         const restored = expense.receiptId
-          ? restoreExpenseReceipt(expense.receiptId, (r) => set((state) => (state.receipts.some((x) => x.id === r.id) ? state : { receipts: [...state.receipts, r] })))
+          ? restoreExpenseReceipt(expense.receiptId, (r) => set((state) => (state.receipts.some((x) => x.id === r.id) ? state : { receipts: [...state.receipts, restoredNow(r)] })))
           : false
         const dangling = !!expense.receiptId && !restored && !get().receipts.some((r) => r.id === expense.receiptId)
         // A fresh edit time: the server only clears a tombstone for an action newer than the delete.
@@ -526,9 +526,17 @@ export const useFinanceStore = create<FinanceStore>()(
 
       updateIncomeEvent: (id, updates) =>
         set((state) => ({
-          incomeEvents: state.incomeEvents.map((e) =>
-            e.id === id ? { ...e, ...updates, updatedAt: new Date().toISOString() } : e
-          ),
+          incomeEvents: state.incomeEvents.map((e) => {
+            if (e.id !== id) return e
+            // S-6: a moved received date moves the instant too (today: now; another day: day-level), as on add.
+            const movedDay = updates.receivedDate && updates.receivedDate !== e.receivedDate && !('occurredAt' in updates)
+            return {
+              ...e,
+              ...updates,
+              ...(movedDay ? { occurredAt: occurredNow(updates.receivedDate!) } : {}),
+              updatedAt: new Date().toISOString(),
+            }
+          }),
         })),
 
       deleteIncomeEvent: (id, deleteLinkedDebt) =>
@@ -983,7 +991,8 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => {
           if (state.debtPayments.some((p) => p.id === snapshot.payment.id)) return state
           // Undo takes the returned money out of the pocket again, as the original withdrawal did.
-          const retake = snapshot.savingsTx && !state.savingsTransactions.some((t) => t.id === snapshot.savingsTx!.id) ? snapshot.savingsTx : undefined
+          // S-3: the re-taken withdrawal and the schedule carry a fresh edit time, or the server keeps them deleted / stale.
+          const retake = snapshot.savingsTx && !state.savingsTransactions.some((t) => t.id === snapshot.savingsTx!.id) ? restoredNow(snapshot.savingsTx) : undefined
           // The returned money was spent before Undo: re-taking it would mint money, so the Undo is refused.
           const pocket = retake ? state.savingsAccounts.find((a) => a.id === retake.accountId) : undefined
           if (retake && (!pocket || pocket.currentBalance + balanceEpsilon(pocket.currency) < retake.amount)) return state
@@ -994,7 +1003,7 @@ export const useFinanceStore = create<FinanceStore>()(
             ...snapshot.expenses.filter((x) => !state.expenses.some((e) => e.id === x.id)).map(restoredNow),
           ]
           const recurringDebtPayments = snapshot.schedule
-            ? state.recurringDebtPayments.map((r) => (r.id === snapshot.schedule!.id ? snapshot.schedule! : r))
+            ? state.recurringDebtPayments.map((r) => (r.id === snapshot.schedule!.id ? { ...snapshot.schedule!, updatedAt: new Date().toISOString() } : r))
             : state.recurringDebtPayments
           const savingsTransactions = retake ? [...state.savingsTransactions, retake] : state.savingsTransactions
           const savingsAccounts = retake
@@ -1460,8 +1469,12 @@ export const useFinanceStore = create<FinanceStore>()(
         return undo
       },
 
+      // S-4: an activation brought back by Undo is newer than its delete, so it carries a fresh edit time.
       restoreBudgetActivation: (undo) =>
-        set({ activeBudgetPlanId: undo.activeBudgetPlanId, budgetPlanActivations: undo.activations }),
+        set((state) => {
+          const live = new Set(state.budgetPlanActivations.map((a) => a.id))
+          return { activeBudgetPlanId: undo.activeBudgetPlanId, budgetPlanActivations: undo.activations.map((a) => (live.has(a.id) ? a : restoredNow(a))) }
+        }),
 
       addBuddgyMemory: (text, source, kind = 'fact', planId) => {
         const clean = text.replace(/\s+/g, ' ').trim().slice(0, MEMORY_MAX_CHARS)

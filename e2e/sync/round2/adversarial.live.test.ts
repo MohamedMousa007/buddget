@@ -106,4 +106,49 @@ describe('round 2 sync (live)', () => {
     expect(rows).toHaveLength(1)
     expect(rows[0].deleted_at).not.toBeNull()
   })
+  it('D-9: an offline edit that reaches a deleted row leaves it deleted with its content unchanged, and the device converges', async () => {
+    const A = await liveClient(EMAIL); const B = await liveClient(EMAIL)
+    const e = expense({ amount: 120 }); const s1: Snapshot = { ...emptySnapshot(), expenses: [e] }
+    await flushDiff(A.client, A.userId, emptySnapshot(), s1)
+    await flushDiff(A.client, A.userId, s1, { ...s1, expenses: [] })
+    const r = await flushDiff(B.client, B.userId, s1, { ...s1, expenses: [{ ...e, amount: 999, updatedAt: iso(1000) }] })
+    expect(r.errors).toEqual([])
+    expect(r.skippedWrites, 'the skip is reported so the app re-pulls').toBe(1)
+    const row = (await A.client.from('expenses').select('amount, deleted_at').eq('id', e.id).single()).data!
+    expect(row.deleted_at).not.toBeNull()
+    expect(Number(row.amount)).toBe(120)
+  })
+
+  it('D-5: a delete stamped in the server\'s future (device clock ahead) is still undone by the Undo that follows', async () => {
+    const A = await liveClient(EMAIL)
+    const e = expense(); const s1: Snapshot = { ...emptySnapshot(), expenses: [e] }
+    await flushDiff(A.client, A.userId, emptySnapshot(), s1)
+    await A.client.from('expenses').update({ deleted_at: iso(90_000) }).eq('id', e.id)
+    const r = await flushDiff(A.client, A.userId, { ...s1, expenses: [] }, { ...s1, expenses: [{ ...e, updatedAt: iso(0) }] })
+    expect(r.errors).toEqual([])
+    expect((await count(A.client, e.id))[0]?.deleted_at, 'undo brought the row back').toBeNull()
+  })
+
+  it('D-9: a re-sent tombstone does not move the delete time', async () => {
+    const A = await liveClient(EMAIL)
+    const e = expense(); const s1: Snapshot = { ...emptySnapshot(), expenses: [e] }
+    await flushDiff(A.client, A.userId, emptySnapshot(), s1)
+    await flushDiff(A.client, A.userId, s1, { ...s1, expenses: [] })
+    const first = (await count(A.client, e.id))[0]?.deleted_at
+    await new Promise((r) => setTimeout(r, 1500))
+    await flushDiff(A.client, A.userId, s1, { ...s1, expenses: [] })
+    expect((await count(A.client, e.id))[0]?.deleted_at).toBe(first)
+  })
+  it('S-1: an edit made while a pull is in flight is on the server after the next flush', async () => {
+    const A = await liveClient(EMAIL)
+    const e = expense(); const s1: Snapshot = { ...emptySnapshot(), expenses: [e] }
+    await flushDiff(A.client, A.userId, emptySnapshot(), s1)
+    const delta = (await pullDelta(A.client, null))!
+    // The device added `mid` while that pull was answering; the baseline is the delivered copy plus the pulled rows.
+    const mid = expense({ description: 'QA r2 mid-pull' })
+    const baseline = applyDelta(s1, delta, s1)
+    const store = { ...applyDelta({ ...s1, expenses: [...s1.expenses, mid] }, delta, s1) }
+    expect((await flushDiff(A.client, A.userId, baseline, store)).errors).toEqual([])
+    expect(await count(A.client, mid.id)).toHaveLength(1)
+  })
 })

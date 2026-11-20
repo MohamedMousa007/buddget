@@ -278,6 +278,36 @@ describe('IPN own-account transfer — reference match needs the same device', (
   })
 })
 
+describe('D-3: legs from two of the user\'s phones, or the credit arriving first', () => {
+  it('two phones, shared reference and the same person on both messages → one Transfer, no income', async () => {
+    const svc = makeService(state)
+    const a = await createSmsTransaction(svc, inLeg({ deviceId: 'dev-2', counterpartyHash: 'h1' }), opts)
+    persist(state, inLeg({ deviceId: 'dev-2', counterpartyHash: 'h1' }), a)
+    const b = await createSmsTransaction(svc, outLeg({ counterpartyHash: 'h1' }), opts)
+    expect(b.outcome).toBe('transfer_paired')
+    expectSettledAsTransfer()
+  })
+
+  it('two phones with only the reference still does not settle', async () => {
+    const svc = makeService(state)
+    const a = await createSmsTransaction(svc, inLeg({ deviceId: 'dev-2' }), opts)
+    persist(state, inLeg({ deviceId: 'dev-2' }), a)
+    const b = await createSmsTransaction(svc, outLeg(), opts)
+    expect(b.outcome).toBe('expense')
+    expectBothLegsStay()
+  })
+
+  it('the credit posted first although the debit happened earlier → one Transfer, the income retracted', async () => {
+    const svc = makeService(state)
+    const lateIn = inLeg({ receivedAtIso: '2026-07-18T18:57:00Z' })
+    const a = await createSmsTransaction(svc, lateIn, opts)
+    persist(state, lateIn, a)
+    const b = await createSmsTransaction(svc, outLeg(), opts)
+    expect(b.outcome).toBe('transfer_paired')
+    expectSettledAsTransfer()
+  })
+})
+
 describe('IPN own-account transfer — no shared reference does not settle on its own', () => {
   // No shared reference in the bodies → 1b can't fire. A fee-sized difference needs the reference, so the legs stay.
   const OUT_NOREF = 'Account 0001 debited IPN outward transfer EGP 2015 to Sample Holder'

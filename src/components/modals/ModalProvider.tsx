@@ -16,6 +16,7 @@ import { useLogDueSubscriptions } from '@/hooks/useLogDueSubscriptions'
 import { useEnsureSystemCash } from '@/hooks/useEnsureSystemCash'
 import { CashOnHandSheet } from '@/components/features/accounts/CashOnHandSheet'
 import { useActionToast } from '@/components/ui/ActionToast'
+import { offlineSafe } from './offlineSafeSheet'
 
 // While a chunk loads nothing renders (sheets mount closed); if it cannot load (offline, never cached) tell the user.
 function SheetFallback({ error }: { error?: Error | null }) {
@@ -57,17 +58,17 @@ function usePrefetchSheets() {
 }
 
 // Sheets that are not offline capture paths load as separate chunks right after mount.
-const EditIncomeSheet = dynamic(() => import('./EditIncomeSheet').then((m) => m.EditIncomeSheet), { ssr: false, loading: SheetFallback })
-const EditIncomeEventSheet = dynamic(() => import('./EditIncomeEventSheet').then((m) => m.EditIncomeEventSheet), { ssr: false, loading: SheetFallback })
-const AmountReceivedSheet = dynamic(() => import('./AmountReceivedSheet').then((m) => m.AmountReceivedSheet), { ssr: false, loading: SheetFallback })
-const GlobalAssignIncomeSheet = dynamic(() => import('./AssignIncomeSheet').then((m) => m.GlobalAssignIncomeSheet), { ssr: false, loading: SheetFallback })
-const AddDebtSheet = dynamic(() => import('./AddDebtSheet').then((m) => m.AddDebtSheet), { ssr: false, loading: SheetFallback })
-const AddRecurringDebtPaymentSheet = dynamic(() => import('./AddRecurringDebtPaymentSheet').then((m) => m.AddRecurringDebtPaymentSheet), { ssr: false, loading: SheetFallback })
-const AddCreditCardSheet = dynamic(() => import('./AddCreditCardSheet').then((m) => m.AddCreditCardSheet), { ssr: false, loading: SheetFallback })
-const PaymentMethodsSheet = dynamic(() => import('./PaymentMethodsSheet').then((m) => m.PaymentMethodsSheet), { ssr: false, loading: SheetFallback })
-const LifestyleSheet = dynamic(() => import('./LifestyleSheet').then((m) => m.LifestyleSheet), { ssr: false, loading: SheetFallback })
-const HouseholdRentSheet = dynamic(() => import('./HouseholdRentSheet').then((m) => m.HouseholdRentSheet), { ssr: false, loading: SheetFallback })
-const AIChat = dynamic(() => import('@/components/features/ai-chat/AIChat').then((m) => m.AIChat), { ssr: false, loading: SheetFallback })
+const EditIncomeSheet = dynamic(offlineSafe(() => import('./EditIncomeSheet').then((m) => m.EditIncomeSheet)), { ssr: false, loading: SheetFallback })
+const EditIncomeEventSheet = dynamic(offlineSafe(() => import('./EditIncomeEventSheet').then((m) => m.EditIncomeEventSheet)), { ssr: false, loading: SheetFallback })
+const AmountReceivedSheet = dynamic(offlineSafe(() => import('./AmountReceivedSheet').then((m) => m.AmountReceivedSheet)), { ssr: false, loading: SheetFallback })
+const GlobalAssignIncomeSheet = dynamic(offlineSafe(() => import('./AssignIncomeSheet').then((m) => m.GlobalAssignIncomeSheet)), { ssr: false, loading: SheetFallback })
+const AddDebtSheet = dynamic(offlineSafe(() => import('./AddDebtSheet').then((m) => m.AddDebtSheet)), { ssr: false, loading: SheetFallback })
+const AddRecurringDebtPaymentSheet = dynamic(offlineSafe(() => import('./AddRecurringDebtPaymentSheet').then((m) => m.AddRecurringDebtPaymentSheet)), { ssr: false, loading: SheetFallback })
+const AddCreditCardSheet = dynamic(offlineSafe(() => import('./AddCreditCardSheet').then((m) => m.AddCreditCardSheet)), { ssr: false, loading: SheetFallback })
+const PaymentMethodsSheet = dynamic(offlineSafe(() => import('./PaymentMethodsSheet').then((m) => m.PaymentMethodsSheet)), { ssr: false, loading: SheetFallback })
+const LifestyleSheet = dynamic(offlineSafe(() => import('./LifestyleSheet').then((m) => m.LifestyleSheet)), { ssr: false, loading: SheetFallback })
+const HouseholdRentSheet = dynamic(offlineSafe(() => import('./HouseholdRentSheet').then((m) => m.HouseholdRentSheet)), { ssr: false, loading: SheetFallback })
+const AIChat = dynamic(offlineSafe(() => import('@/components/features/ai-chat/AIChat').then((m) => m.AIChat)), { ssr: false, loading: SheetFallback })
 
 export function ModalProvider() {
   const { setActiveModal, openAiChatWithSeed } = useSettingsStore()

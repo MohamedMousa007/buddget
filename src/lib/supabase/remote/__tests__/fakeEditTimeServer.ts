@@ -32,8 +32,10 @@ export function fakeEditTimeServer(clock: { now: number }) {
     }
     const oldEdit = Date.parse(old.edited_at)
     const { edited_at: _e, updated_at: _u, ...content } = incoming as Record<string, unknown>
-    // 0319: a delete is undone only by an action newer than the delete.
-    if (old.deleted_at && content.deleted_at === null && !(sentEdit !== undefined && sentEdit > Date.parse(old.deleted_at))) delete content.deleted_at
+    // 0331 (D-9): a write to a deleted row that does not bring it back is skipped.
+    if (old.deleted_at && content.deleted_at !== null) return false
+    // 0319 + 0334: a delete is undone only by an action newer than the delete, give or take the 3 s edit tolerance.
+    if (old.deleted_at && content.deleted_at === null && (sentEdit === undefined || sentEdit < Date.parse(old.deleted_at) - TOLERANCE_MS)) delete content.deleted_at
     if (sentEdit === undefined || sentEdit === oldEdit) {
       rows.set(old.id, { ...old, ...content, deleted_at: 'deleted_at' in content ? (content.deleted_at as string | null) : old.deleted_at, updated_at: pgTime(clock.now) } as Row)
       return true
@@ -61,7 +63,8 @@ export function fakeEditTimeServer(clock: { now: number }) {
         in: (_c: string, ids: string[]) => {
           for (const id of ids) {
             const r = rows.get(id)
-            if (r) rows.set(id, { ...r, deleted_at: patch.deleted_at, updated_at: pgTime(clock.now) })
+            // 0331: an already deleted row is left alone; a delete time is held at the server's now.
+            if (r && !r.deleted_at) rows.set(id, { ...r, deleted_at: pgTime(Math.min(Date.parse(patch.deleted_at), clock.now)), updated_at: pgTime(clock.now) })
           }
           return Promise.resolve({ error: null })
         },

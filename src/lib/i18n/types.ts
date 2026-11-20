@@ -1975,6 +1975,8 @@ export interface Dictionary {
     errorPasswordWeakComposition: string
     errorSignUpGeneric: string
     errorEmailSendFailed: string
+    errorEmailHookSlow: string
+    errorSignInSlow: string
     errorOtpIncomplete: string
     passwordStrengthLabel: string
     passwordStrengthWeak: string
@@ -2005,7 +2007,7 @@ export interface Dictionary {
     signOutUnsentTitle: string
     signOutUnsentBody: string
     signOutAnyway: string
-    signOutKeepWaiting: string
+    signOutStay: string
     rememberMe: string
     emailCheckInFlight: string
     showPassword: string

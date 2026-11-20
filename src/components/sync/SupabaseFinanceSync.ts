@@ -26,6 +26,7 @@ import {
   mergeSnapshots,
 } from '@/lib/supabase/remote'
 import { stampEdits } from '@/lib/supabase/remote/stampEdits'
+import { deepEqual } from '@/lib/supabase/remote/diff'
 import { holdParkedBack } from '@/lib/supabase/remote/parkedRows'
 import type { ParkedRow } from '@/lib/supabase/remote/sync'
 import { hasUnpersistedWrites, STORAGE_QUOTA_EVENT } from '@/lib/store/safeLocalStorage'
@@ -46,24 +47,45 @@ const DEBOUNCE_MS = 500
 const RESUME_THROTTLE_MS = 30_000
 
 const fingerprintTimers = new Map<string, ReturnType<typeof setTimeout>>()
+/** The newest delivered baseline per user that is not yet written as a fingerprint. */
+const pendingFingerprints = new Map<string, Snapshot>()
+function savePendingFingerprint(userId: string, snap: Snapshot): void {
+  if (pendingFingerprints.get(userId) !== snap) return
+  pendingFingerprints.delete(userId)
+  // Signed out meanwhile: the wipe already removed this user's fingerprint, and nothing of theirs may come back.
+  if (syncSuspended) return
+  saveFingerprint(userId, snap)
+}
+/**
+ * S8d-6: a reload inside the idle delay booted on the previous fingerprint and re-sent rows the server already had.
+ * Leaving the page writes the pending fingerprint at once.
+ */
+export function flushPendingFingerprints(): void {
+  for (const [userId, snap] of [...pendingFingerprints]) {
+    clearTimeout(fingerprintTimers.get(userId))
+    savePendingFingerprint(userId, snap)
+  }
+}
 /** Remembers what the server has received, so edits still unsent when the app closes are found at the next start. */
 function persistBaseline(userId: string, snap: Snapshot | null): void {
   if (!snap) return
+  pendingFingerprints.set(userId, snap)
   clearTimeout(fingerprintTimers.get(userId))
   fingerprintTimers.set(userId, setTimeout(() => {
     // Hashing a large store is main-thread work: do it when the UI is idle, but never later than the next burst.
-    if (typeof requestIdleCallback === 'function') requestIdleCallback(() => saveFingerprint(userId, snap), { timeout: 1500 })
-    else saveFingerprint(userId, snap)
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(() => savePendingFingerprint(userId, snap), { timeout: 1500 })
+    else savePendingFingerprint(userId, snap)
   }, 300))
 }
 
 /** Imperative flush handle set by the mounted `SupabaseFinanceSync`. Other
  *  modules (e.g. AuthProvider.signOut) call `flushFinanceNow()` to drain any
- *  pending debounced write before they wipe localStorage. Returns a promise
- *  so callers can await the round-trip. */
+ *  pending debounced write before they wipe localStorage. Resolves true only
+ *  when the server has acknowledged every local edit (D-2: a flush skipped
+ *  offline or refused by the server leaves edits unsent and resolves false). */
 let pendingFlush: (() => Promise<boolean>) | null = null
-export function flushFinanceNow(): Promise<void> {
-  return pendingFlush ? pendingFlush().then(() => undefined) : Promise.resolve()
+export function flushFinanceNow(): Promise<boolean> {
+  return pendingFlush ? pendingFlush() : Promise.resolve(true)
 }
 
 /** Imperative full-sync handle (set by the mounted `SupabaseFinanceSync`).
@@ -250,7 +272,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         // merging server rows visibly changes the dashboard totals. The pull is one small delta request.
         const first = runFullSync(supabase, userId, null, () => !cancelled)
         coldPull.current = first.catch(() => undefined)
-        incoming = await first
+        incoming = (await first).incoming
         pulled = true
       } catch (e) {
         console.error('[finance sync] pull failed', e)
@@ -286,7 +308,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     const scheduleRetry = () => {
       if (retryTimer) return
       const delay = flushRetryDelay(retryAttempt)
-      if (delay === null || !isOnline()) return
+      if (!isOnline()) return
       retryAttempt++
       retryTimer = setTimeout(() => {
         retryTimer = null
@@ -313,8 +335,8 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       if (!hydrated.current) return true
       // Offline: don't attempt a doomed flush that would raise the sync-failure
       // banner. prevSnap doesn't advance, so the reconnect flush (or the next
-      // online mutation) sends exactly this diff.
-      if (!isOnline()) return true
+      // online mutation) sends exactly this diff. S-1: it reports "not sent", so no caller treats it as delivered.
+      if (!isOnline()) return false
       // A stale debounce timer can fire after suspendFinanceSync() is called
       // during sign-out. At that point the store has already been reset to
       // empty defaults, and flushing would soft-delete all server-side data.
@@ -402,11 +424,11 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
 
     let disposed = false
     const stillCurrent = () => !disposed
-    /** Unsent edits exist when a tracked slice is no longer the object the last delivered baseline holds. */
+    /** Unsent edits exist when a tracked slice differs from the baseline (by content: S-1 baselines are rebuilt, not the store's own arrays). */
     const hasUnsent = () => {
       const base = prevSnap.current as Record<string, unknown> | null
       const now = useFinanceStore.getState() as unknown as Record<string, unknown>
-      return !base || TRACKED_SLICES.some((k) => now[k] !== base[k])
+      return !base || TRACKED_SLICES.some((k) => now[k] !== base[k] && !deepEqual(now[k], base[k]))
     }
 
     // The device refused a save: push what is unsent now, so the server holds it if the app is closed before space frees up.
@@ -416,8 +438,9 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     }
     window.addEventListener(STORAGE_QUOTA_EVENT, onQuota)
 
-    // Expose for imperative callers (signOut).
-    pendingFlush = flush
+    // Expose for imperative callers (signOut). Before hydration the store holds nothing of this user's to lose.
+    const flushAcked = async () => (await flush()) && (!hydrated.current || !hasUnsent())
+    pendingFlush = flushAcked
     const stopResume = onSecondFactorResolved(() => {
       retryAttempt = 0
       void pendingSync?.().catch((e) => console.error('[finance sync] resume after second factor failed', e))
@@ -450,11 +473,13 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
             parkedNow = []
           }
           const flushed = await flush()
-          const incoming = await runFullSync(supabase, userId, prevSnap.current, stillCurrent)
+          const { incoming, serverBaseline } = await runFullSync(supabase, userId, prevSnap.current, stillCurrent)
           // Newest edit wins: tell the device whose edit was the older one.
           if (skippedSent && countReplaced(skippedSent, snapshot(useFinanceStore.getState())) > 0) useSyncFailures.getState().setNotice('editReplaced')
           skippedSent = null
-          prevSnap.current = baselineAfterFlush(prevSnap.current, snapshot(useFinanceStore.getState()), flushed, parkedNow)
+          // S-1: the new baseline is what the server holds (the delivered baseline plus the pulled rows), never the live
+          // store: an edit made while the pull was in flight stays unsent and goes out with the next flush.
+          prevSnap.current = serverBaseline ?? baselineAfterFlush(prevSnap.current, snapshot(useFinanceStore.getState()), flushed, parkedNow)
           persistBaseline(userId, prevSnap.current)
           lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
           dropAdoptedLogged(incoming)
@@ -505,6 +530,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     // desktop reload, mobile background, iOS app-switch. `visibilitychange`
     // fires BEFORE unload so fetches have a chance to complete.
     const onHide = () => {
+      flushPendingFingerprints()
       if (timer.current) {
         clearTimeout(timer.current)
         timer.current = null
@@ -598,7 +624,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       if (timer.current) clearTimeout(timer.current)
       if (retryTimer) clearTimeout(retryTimer)
       if (gateTimer) clearTimeout(gateTimer)
-      if (pendingFlush === flush) pendingFlush = null
+      if (pendingFlush === flushAcked) pendingFlush = null
       pendingSync = null
     }
   }, [userId])
@@ -619,12 +645,21 @@ function ownedByAnother(userId: string): boolean {
  * caught up (everything, on a first pull). If the delta call fails for any reason the proven full pull takes over,
  * so sync never depends on the new path. Does NOT touch `dataReady` — callers own the loading affordance.
  */
+/**
+ * What a pull brought in. `serverBaseline` is the delivered baseline with the server's rows folded in (S-1): what the
+ * server holds now, as far as this device knows. Null when there is no delivered baseline to fold into (cold pull).
+ */
+interface PullResult {
+  incoming: Expense[]
+  serverBaseline: Snapshot | null
+}
+
 async function runFullSync(
   supabase: ReturnType<typeof createClient>,
   userId: string,
   delivered: Snapshot | null,
   stillCurrent: () => boolean = () => true,
-): Promise<Expense[]> {
+): Promise<PullResult> {
   // Sign-out (or a new mount) while a request was in flight: its answer must not be written back into a wiped store.
   const stale = () => syncSuspended || !stillCurrent()
   // A cursor only means something next to a store that holds this account's data.
@@ -634,10 +669,10 @@ async function runFullSync(
     // One cheap probe first: when nothing changed since the last pull, skip the full pull (any doubt answers "changed").
     if (since && !(await hasChangesSince(supabase, since))) {
       if (!stale()) useSettingsStore.getState().markServerSynced(userId)
-      return []
+      return { incoming: [], serverBaseline: delivered }
     }
     const delta = await pullDelta(supabase, since)
-    if (!delta || stale()) return []
+    if (!delta || stale()) return { incoming: [], serverBaseline: null }
     // The account was reset elsewhere: our copy is stale, and merging it would bring the erased data back.
     if (delta.profile && wipeOnReset(userId, delta.profile.extras.dataResetAt ?? null)) return runFullSync(supabase, userId, null, stillCurrent)
     // Re-snapshot right before the merge so edits made during the round-trip aren't clobbered.
@@ -652,11 +687,11 @@ async function runFullSync(
     if (hasUnpersistedWrites()) clearSyncCursors()
     else writeSyncCursor(userId, storeVersion(), delta.cursor)
     useSettingsStore.getState().markServerSynced(userId)
-    return delta.expenses.upserts
+    return { incoming: delta.expenses.upserts, serverBaseline: delivered ? applyDelta(delivered, delta, delivered) : null }
   } catch (e) {
     console.warn('[finance sync] delta pull failed, using the full pull', e)
     clearSyncCursors()
-    if (stale()) return []
+    if (stale()) return { incoming: [], serverBaseline: null }
     return runLegacyFullSync(supabase, userId, stale)
   }
 }
@@ -697,16 +732,17 @@ async function runLegacyFullSync(
   supabase: ReturnType<typeof createClient>,
   userId: string,
   stale: () => boolean = () => false,
-): Promise<Expense[]> {
+): Promise<PullResult> {
   // The fallback path must honour a reset too, or it would merge the stale local copy back in.
   const { data: stamp } = await supabase.from('profiles').select('data_reset_at').eq('id', userId).maybeSingle()
-  if (stale()) return []
+  if (stale()) return { incoming: [], serverBaseline: null }
   wipeOnReset(userId, stamp?.data_reset_at ?? null)
   const server = await pullAll(supabase, userId)
-  if (!server || stale()) return []
+  if (!server || stale()) return { incoming: [], serverBaseline: null }
   applyMerged(mergeSnapshots(snapshot(useFinanceStore.getState()), server), userId)
   useSettingsStore.getState().markServerSynced(userId)
-  return server.expenses
+  // A full pull IS the server's copy.
+  return { incoming: server.expenses, serverBaseline: server }
 }
 
 /**
