@@ -118,25 +118,27 @@ export async function registerPushNotifications(args: RegisterArgs): Promise<boo
     // Capacitor plugin directly (already bundled via @capacitor-firebase/messaging
     // in CapApp-SPM) to get the real FCM token without importing its web module
     // (which pulls in firebase/messaging and breaks the static Next.js build).
-    if (isIOS()) {
-      try {
-        const { Capacitor } = await import('@capacitor/core')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const plugins = (Capacitor as unknown as { Plugins: Record<string, unknown> }).Plugins
-        if (Capacitor.isPluginAvailable('FirebaseMessaging') && plugins) {
-          const result = await (plugins['FirebaseMessaging'] as { getToken: () => Promise<{ token: string }> }).getToken()
-          if (result?.token) void postPushToken(result.token, args)
-        }
-      } catch (e) {
-        console.error('[push] iOS FCM token fetch failed', e)
-      }
-    }
+    // Not awaited: getToken waits on APNs, which took about 5 minutes on a Mac, and the permission sheet spun the whole time.
+    if (isIOS()) void fetchIosFcmToken(args)
 
     return true
   } catch (e) {
     console.error('[push] register failed', e)
     registeredUserId = null
     return false
+  }
+}
+
+async function fetchIosFcmToken(args: RegisterArgs): Promise<void> {
+  try {
+    const { Capacitor } = await import('@capacitor/core')
+    const plugins = (Capacitor as unknown as { Plugins: Record<string, unknown> }).Plugins
+    if (Capacitor.isPluginAvailable('FirebaseMessaging') && plugins) {
+      const result = await (plugins['FirebaseMessaging'] as { getToken: () => Promise<{ token: string }> }).getToken()
+      if (result?.token) void postPushToken(result.token, args)
+    }
+  } catch (e) {
+    console.error('[push] iOS FCM token fetch failed', e)
   }
 }
 
