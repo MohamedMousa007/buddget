@@ -7,9 +7,11 @@
 --     carried text or a proposal) is free in full: its tool steps are made exempt and their units come off the chat.
 --   * Shown = text streamed, or a proposal or navigation (p_visible, sent by the server from the tool kinds). Whether
 --     the user later applies a proposal happens on the phone, out of the server's sight; a proposal counts as shown.
---   * Retry reuses the turn id. Retrying a turn that was charged gets one free re-run: no credit check, no Sparks,
---     no units, not counted as a chat turn. A third attempt is an ordinary paid one. The per-minute rate limit and
---     the unit safety windows still apply to a re-run.
+--   * Retry reuses the turn id. Retrying a turn that was charged gets one free re-run, tool steps included: no credit
+--     check, no Sparks, no units, not counted as a chat turn. The re-run is used up only when it shows something, so
+--     a re-run that fails again leaves the next Retry free too. After a shown re-run, a further attempt is paid. The
+--     per-minute rate limit and the unit safety windows still apply to a re-run.
+--   * No attempt column: a hop flag plus the turn's state tell a Retry from a next step.
 --   * A turn left open (the phone stopped between steps) is closed as charged on the user's next new message: only a
 --     failure the server itself saw makes a turn free.
 --   * Hops inherit the turn's funding (credits or Sparks) from its first call, so one turn never splits across both.
@@ -36,10 +38,13 @@ create table if not exists public.ai_turns (
   spark_cost_micro bigint not null default 0,
   visible boolean not null default false,
   reruns integer not null default 0,
+  rerun_open boolean not null default false,
+  rerun_seen boolean not null default false,
   created_at timestamptz not null default now(),
   closed_at timestamptz,
   primary key (user_id, turn_id)
 );
+alter table public.ai_turns add column if not exists rerun_open boolean not null default false, add column if not exists rerun_seen boolean not null default false;
 create index if not exists ai_turns_open_idx on public.ai_turns (user_id) where state = 'open';
 alter table public.ai_turns enable row level security;
 revoke all on public.ai_turns from anon, authenticated;
@@ -85,7 +90,7 @@ end;
 $$;
 
 drop function if exists public.ai_quota_reserve_v2(uuid, uuid, text, numeric, boolean);
-create function public.ai_quota_reserve_v2(p_user uuid, p_chat uuid, p_feature text, p_est numeric, p_advisor_free boolean default false, p_turn uuid default null)
+create or replace function public.ai_quota_reserve_v2(p_user uuid, p_chat uuid, p_feature text, p_est numeric, p_advisor_free boolean default false, p_turn uuid default null)
 returns jsonb language plpgsql security definer set search_path to 'public' as $$
 declare
   L jsonb; w jsonb; r jsonb; t timestamptz := now();
@@ -104,13 +109,16 @@ begin
   if p_turn is not null and p_feature in ('chat', 'chat_hop') then
     select * into tr from public.ai_turns where user_id = p_user and turn_id = p_turn for update;
     if v_hop then
-      -- A hop belongs to an open turn of this user; any other hop is billed per request, as before.
-      if tr.turn_id is not null and tr.state = 'open' then v_turn := p_turn; v_use_sparks := tr.use_sparks; end if;
+      -- A hop belongs to an open turn of this user, or to its free re-run; any other hop is billed per request, as before.
+      if tr.turn_id is not null and tr.state = 'open' then v_turn := p_turn; v_use_sparks := tr.use_sparks;
+      elsif tr.turn_id is not null and tr.rerun_open then v_turn := p_turn; v_rerun := true;
+      end if;
     else
       -- A new message closes this user's other open turns as charged and forgets closed ones after two days.
       for o in select turn_id from public.ai_turns where user_id = p_user and state = 'open' and turn_id <> p_turn limit 20 loop
         perform public.ai_turn_close_charged(p_user, o.turn_id, null);
       end loop;
+      update public.ai_turns set rerun_open = false where user_id = p_user and rerun_open and turn_id <> p_turn;
       delete from public.ai_turns where user_id = p_user and state <> 'open' and created_at < t - interval '2 days';
       v_turn := p_turn;
       -- The same message again (Retry). An attempt left open is charged as it stands, then the retry is the free re-run.
@@ -151,12 +159,12 @@ begin
     where id = (r ->> 'reservation_id')::uuid;
   if v_turn is not null and not v_hop then
     if v_rerun then
-      update public.ai_turns set reruns = reruns + 1 where user_id = p_user and turn_id = v_turn;
+      update public.ai_turns set rerun_open = true, rerun_seen = false where user_id = p_user and turn_id = v_turn;
     else
       -- A first attempt, or a paid one after a free attempt or a used re-run: the turn starts over.
       insert into public.ai_turns (user_id, turn_id, chat_id, use_sparks) values (p_user, v_turn, (r ->> 'chat_id')::uuid, v_use_sparks)
       on conflict (user_id, turn_id) do update
-        set state = 'open', closed_at = null, spark_cost_micro = 0, visible = false, chat_id = excluded.chat_id, use_sparks = excluded.use_sparks;
+        set state = 'open', closed_at = null, spark_cost_micro = 0, visible = false, rerun_open = false, chat_id = excluded.chat_id, use_sparks = excluded.use_sparks;
     end if;
   end if;
   if v_credit and not v_use_sparks then
@@ -171,7 +179,7 @@ revoke all on function public.ai_quota_reserve_v2(uuid, uuid, text, numeric, boo
 grant execute on function public.ai_quota_reserve_v2(uuid, uuid, text, numeric, boolean, uuid) to service_role;
 
 drop function if exists public.ai_quota_settle(uuid, uuid, numeric, integer, integer, integer, text, text, integer, text, integer, bigint);
-create function public.ai_quota_settle(
+create or replace function public.ai_quota_settle(
   p_reservation uuid, p_user uuid, p_units numeric, p_in integer, p_cached integer, p_out integer, p_model text, p_tier text, p_latency integer, p_status text,
   p_audio_seconds integer default 0, p_extra_cost_micro bigint default 0, p_provisional boolean default false, p_visible boolean default null)
 returns void language plpgsql security definer set search_path to 'public' as $$
@@ -210,6 +218,16 @@ begin
       elsif v_free or p_status = 'aborted' or not coalesce(p_provisional, false) then
         perform public.ai_turn_close_charged(p_user, r.turn_id, p_reservation);
       end if;
+    end if;
+  else
+    -- A step of the free re-run. Its final call ends the re-run, which is used up only if it showed something.
+    update public.ai_turns
+      set rerun_seen = rerun_seen or (not v_free and (not coalesce(p_provisional, false) or coalesce(p_visible, false)))
+      where user_id = p_user and turn_id = r.turn_id and rerun_open
+      returning * into tr;
+    if found and (v_free or p_status = 'aborted' or not coalesce(p_provisional, false)) then
+      update public.ai_turns set rerun_open = false, reruns = reruns + case when tr.rerun_seen then 1 else 0 end
+        where user_id = p_user and turn_id = r.turn_id;
     end if;
   end if;
 

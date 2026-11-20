@@ -48,13 +48,18 @@ Migration `0338_ai_one_charge_per_turn.sql` is applied on live. The server alrea
 - **The final call decides.**
   - If the whole turn showed nothing (no text, no proposal, no navigation) and ends in an error or an empty cut, it is free in full. Its tool steps are made exempt and their units come off the chat.
   - Otherwise the turn is charged once.
-- **Retry** of a turn that was already charged gets one free re-run: no credit check, no Sparks, no units, and it does not count as a chat turn. A third attempt is paid. The per-minute rate limit and the unit safety windows still apply.
+- **Retry** of a turn that was already charged gets one free re-run, its tool steps included: no credit check, no Sparks, no units, and it does not count as a chat turn. The re-run is used up only once it shows something, so a re-run that fails again leaves the next Retry free. After a shown re-run, a further attempt is paid. The per-minute rate limit and the unit safety windows still apply.
 - **A turn left open** (the phone stopped between steps) is charged when the next message arrives. Only a failure the server itself saw makes a turn free.
 - **Hops inherit their funding** (credits or Sparks) from the turn's first call.
 
 **Readings that need the owner's sign-off:**
 - "A turn whose actions were applied is charged" is read as "a proposal or navigation was shown". Applying happens later on the phone, where the server cannot see it.
 - A free re-run replays the model rather than returning a stored answer. Nothing stores reply text today.
+- There is no `attempt` column. The hop flag and the turn's state tell a Retry from a next step.
+- A new `ai_turns` table holds one small row per message. Rows are deleted after two days, on the user's next message.
+- A turn left open (abandoned) is charged.
+- A paid attempt after a shown re-run is charged again.
+- A turn freed in full keeps its +1 on the chat's turn counter.
 
 | Item | Files | Status |
 |---|---|---|
@@ -64,7 +69,7 @@ Migration `0338_ai_one_charge_per_turn.sql` is applied on live. The server alrea
 
 ## Tests for step 3
 
-**Live SQL, rolled back: passed.**
+**Live SQL, rolled back: passed** (8 cases, rerun after the advisor found that a re-run's tool steps were billed per request; fixed in 0338 and re-applied before any client sent a turn id).
 
 | Case | Result |
 |---|---|
@@ -73,6 +78,8 @@ Migration `0338_ai_one_charge_per_turn.sql` is applied on live. The server alrea
 | Lookup, then the final call fails | Turn free, all rows exempt with the cost logged, chat units back to 0, no Sparks |
 | Stop after text | Charged once |
 | Retry of a charged turn | Free re-run: units 0, chat turns unchanged, no Sparks. The third attempt is paid. |
+| Retry of a charged turn that does a lookup and then answers | Both re-run rows free and exempt, chat units unchanged, no new Sparks |
+| Retry that fails with nothing shown | The next Retry is still free; after it shows, the next attempt is paid |
 | Open turn followed by a new message | Charged |
 
 **Unit tests: pending runner (job 5).**

@@ -57,6 +57,9 @@ describe('AI credit windows', () => {
     const body = squash(latest('ai_quota_reserve_v2'))
     expect(body).toContain('and not v_rerun and not (v_hop and v_turn is not null) and public.billing_enabled()')
     expect(body).toContain("v_rerun := tr.turn_id is not null and tr.state = 'charged' and tr.reruns = 0")
+    // The re-run's own tool steps are free too, and it is used up only once it showed something.
+    expect(body).toContain('elsif tr.turn_id is not null and tr.rerun_open then v_turn := p_turn; v_rerun := true')
+    expect(squash(latest('ai_quota_settle'))).toContain('reruns = reruns + case when tr.rerun_seen then 1 else 0 end')
   })
 
   it('the credit sums count every non-sms, non-exempt event since the window cut', () => {
