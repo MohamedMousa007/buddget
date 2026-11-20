@@ -144,3 +144,18 @@ Before this change, one approved "Open a screen" card gave Buddgy a yes for ever
 |---|---|---|
 | A yes per place, flows always ask | `navConsent.ts`, `exec/navigation.ts`, `runTurn.ts`, `useBuddgyChat.ts`, `copy.ts`, `prompt.ts` | **Automated verification** (runner job 7): a new case in `runTurn.test.ts`; consent calls updated in `runTurn.test.ts` and `injectionGolden.test.ts` |
 | The chat closes before a page opens | `exec/navigation.ts` | **Manual verification required** (ask "open my debts", approve; the chat closes and Debts shows) |
+
+## Step 7: BDG-003, a flipped card never shows its front mirrored on the back (2026-11-20)
+
+All four flipping cards (Guest pass, Pro member, Letterpress tier, Founder) share `FlipCardRig`, so one change covers them. The cause, from the finding: WebKit doesn't honour the hide-the-back rule on the wrapper, so the turned-away face is painted mirrored over the visible one.
+
+- **The rig hides the turned-away face itself.** `rigFrame` now reports `showBack` (flip past 90°), and `paint()` sets `visibility: hidden` on the face turned away. This works on every engine, including with reduced motion.
+- **Belt and braces:**
+  - The hide-the-back rule is also on the painted `.face`, as in the original mockup.
+  - Each side gets its own 3D layer (`translateZ(0)`).
+  - The locked-tier dim filter moved from `.slot` to `.face`, so it no longer sits on the element that hides its back.
+
+| Item | Files | Status |
+|---|---|---|
+| One face at a time, switching at 90 degrees | `flipPhysics.ts`, `FlipCardRig.tsx`, `cards.module.css` | Unit test written, **not yet run** (`membershipComponents.test.tsx`) |
+| The back on an iPhone | | **Native verification required** (flip the invite, Pro, rewards and founder cards; the back shows only back text) |

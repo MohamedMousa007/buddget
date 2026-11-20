@@ -44,6 +44,8 @@ export interface RigFrame {
   card: string
   floor: string
   floorOpacity: string
+  /** Past 90 degrees the back faces the viewer. The rig hides the other face by itself, not only by backface-visibility (BDG-003). */
+  showBack: boolean
   /** Custom properties for both faces: sheen position and strength, light position, light strength. */
   vars: { '--sx': string; '--sa': string; '--mx': string; '--my': string; '--ga': string }
 }
@@ -61,6 +63,7 @@ export function rigFrame(r: RigState, t: number, reduce: boolean): RigFrame {
     card: `rotateY(${r.flip + r.px * 11 * dir}deg) rotateX(${-r.py * 8 + wobble}deg) scale(${1 + turning * 0.07})`,
     floor: `translateX(-50%) scale(${(1 - turning * 0.35) * (1 - float / 70)}, ${1 - turning * 0.2})`,
     floorOpacity: String(0.9 - turning * 0.4),
+    showBack: back,
     vars: {
       '--sx': `${-60 + (r.flip / 180) * 120 + r.px * 15}%`,
       '--sa': String(0.18 + turning * 0.7),

@@ -58,6 +58,9 @@ export function FlipCardRig({ front, back, label, dimmed, overlay, defaultFlippe
         if (!el) continue
         for (const [k, v] of Object.entries(f.vars)) el.style.setProperty(k, v)
       }
+      // BDG-003: WebKit can paint the turned-away face mirrored over the other one; hide it outright.
+      if (frontSlot.current) frontSlot.current.style.visibility = f.showBack ? 'hidden' : 'visible'
+      if (backSlot.current) backSlot.current.style.visibility = f.showBack ? 'visible' : 'hidden'
     }
     const tick = (now: number) => {
       // The spring is tuned per 60 Hz step; a fixed step keeps it the same speed on a 120 Hz screen.

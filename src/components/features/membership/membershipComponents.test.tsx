@@ -46,6 +46,13 @@ describe('flip physics', () => {
     expect(Number(f.floorOpacity)).toBeCloseTo(0.5)
     expect(rigFrame(initialRig(), 0, false).lift).toBe('translateY(0px)')
   })
+  // BDG-003: exactly one face is shown at a time, switching at 90 degrees, so the back never shows the front mirrored.
+  it('shows the front up to 90 degrees and the back past it', () => {
+    expect(rigFrame({ ...initialRig(), flip: 0 }, 0, false).showBack).toBe(false)
+    expect(rigFrame({ ...initialRig(), flip: 90 }, 0, false).showBack).toBe(false)
+    expect(rigFrame({ ...initialRig(), flip: 91 }, 0, false).showBack).toBe(true)
+    expect(rigFrame(initialRig(true), 0, true).showBack).toBe(true)
+  })
   it('the pointer tilts the card and moves the light, mirrored on the back', () => {
     expect(pointerTilt(150, 25, { left: 100, top: 0, width: 100, height: 100 })).toEqual({ tx: 0, ty: -0.5 })
     const front = rigFrame({ ...initialRig(), px: 1, hover: 1 }, 0, false)
