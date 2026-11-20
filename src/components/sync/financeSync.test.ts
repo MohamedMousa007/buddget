@@ -59,7 +59,7 @@ vi.mock('@/hooks/useNetworkStatus', () => ({
   networkReady: Promise.resolve(),
   subscribeNetwork: vi.fn(() => vi.fn()),
 }))
-vi.mock('@/hooks/remote/hydrateGuard', () => ({ markHydrated: vi.fn(), resetHydrationGuard: vi.fn() }))
+vi.mock('@/hooks/remote/hydrateGuard', () => ({ markHydrated: vi.fn(), markPulled: vi.fn(), resetHydrationGuard: vi.fn() }))
 vi.mock('@/lib/market/marketData', () => ({ ensureMarketDataFresh: vi.fn(async () => {}) }))
 vi.mock('@/lib/theme/applyTheme', () => ({ applyTheme: vi.fn() }))
 vi.mock('@/components/sync/flushedFingerprint', () => ({ baselineForBoot: (_u: string, cache: unknown) => cache, saveFingerprint: h.saveFingerprint }))
@@ -169,6 +169,29 @@ describe('finance sync flush / re-baseline', () => {
     expect(h.saveFingerprint).toHaveBeenCalledWith('u1', delivered)
     flushPendingFingerprints()
     expect(h.saveFingerprint).toHaveBeenCalledTimes(1)
+  })
+
+  it('S-1: after a pull the baseline is the delivered copy plus the pulled rows, not the live store', async () => {
+    const serverBase = { marker: 'server-baseline' }
+    vi.mocked(pullDelta).mockResolvedValueOnce({ cursor: 'c1', profile: null, expenses: { upserts: [], deletedIds: [] } } as never)
+    vi.mocked(applyDelta).mockImplementation(((local: unknown, _d: unknown, delivered: unknown) =>
+      (local === delivered ? serverBase : { marker: 'merged', settings: { theme: 'light' } })) as never)
+    await syncFinanceNow()
+    h.flushDiff.mockClear()
+    await flushFinanceNow()
+    // The live store (where an edit made during the pull sits) is diffed against what the server holds, so the edit goes out.
+    expect(calls()[0]![2]).toBe(serverBase)
+    vi.mocked(applyDelta).mockReset()
+  })
+
+  it('S-1: offline, a flush reports nothing sent', async () => {
+    h.online = false
+    try {
+      await syncFinanceNow().catch(() => undefined)
+      expect(h.flushDiff).not.toHaveBeenCalled()
+    } finally {
+      h.online = true
+    }
   })
 
   it('after suspendFinanceSync a pending flush is dropped, not sent', async () => {
