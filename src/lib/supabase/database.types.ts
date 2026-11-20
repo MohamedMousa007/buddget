@@ -818,6 +818,8 @@ export type Database = {
           chat_id: string | null
           closed_at: string | null
           created_at: string
+          rerun_open: boolean
+          rerun_seen: boolean
           reruns: number
           spark_cost_micro: number
           state: string
@@ -830,6 +832,8 @@ export type Database = {
           chat_id?: string | null
           closed_at?: string | null
           created_at?: string
+          rerun_open?: boolean
+          rerun_seen?: boolean
           reruns?: number
           spark_cost_micro?: number
           state?: string
@@ -842,6 +846,8 @@ export type Database = {
           chat_id?: string | null
           closed_at?: string | null
           created_at?: string
+          rerun_open?: boolean
+          rerun_seen?: boolean
           reruns?: number
           spark_cost_micro?: number
           state?: string
