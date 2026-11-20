@@ -113,3 +113,17 @@ No Keyboard plugin, no change to native config.
 | Geometry and keyboard rule | `src/components/features/ai-chat/panelGeometry.ts` (new), `AIChat.tsx` | Unit test written, **not yet run**. Five cases: no keyboard is unchanged, the panel sits above the iOS keyboard, it follows a panned view, Android stops reserving the tab bar, desktop is untouched. |
 | Orb keeps its place | `src/components/ai/AIChatBubble.tsx` | **Native verification required** (Android: open the keyboard in chat, close it, the orb stays put) |
 | How it looks on a phone | | **Native verification required** (iPhone and Android: tap the composer, the header and composer both stay in view) |
+
+## Step 5: BDG-018, the orb follows the finger and springs to an edge (2026-11-20)
+
+While dragged, the orb follows the finger on both axes, kept inside the screen. On release it glides (240 ms) to the nearer edge, judged by where the orb's centre is.
+
+- **Dead zone:** releasing within 24px of the middle keeps its current side.
+- **Saving:** the new position is saved once, on release, instead of on every frame.
+- **Mirroring:** the side is physical (left or right of the screen), so Arabic needs no extra rule.
+- **The hint:** not built. The plan left it as an owner decision, and the Council's view was that following the finger is hint enough.
+
+| Item | Files | Status |
+|---|---|---|
+| Snap side, dead zone, screen limits | `panelGeometry.ts` (`snapSide`, `dragLeft`), `AIChatBubble.tsx` | Unit test written, **not yet run** |
+| How the drag feels | | **Native verification required** (drag sideways on a phone, release near the middle, release past it) |

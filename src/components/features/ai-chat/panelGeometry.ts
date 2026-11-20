@@ -92,3 +92,18 @@ export function computePanel(orb: BuddgyOrbPosition, view: Viewport, safe: Inset
   const sideInset = (orb.side === 'left' ? ins.left : ins.right) + EDGE_GAP
   return { side: orb.side, top, width, height, sideInset, originX: ORB_INSET + ORB_SIZE / 2 - sideInset, originY: orbCenter - top }
 }
+
+/** Releasing the orb this close to the middle keeps its side, so a small wobble never flips it (BDG-018). */
+export const SNAP_DEAD_ZONE = 24
+
+/** The edge the orb springs to when let go: the nearer one, by where its centre is, not where the finger is. */
+export function snapSide(orbCenterX: number, screenWidth: number, current: 'left' | 'right'): 'left' | 'right' {
+  const mid = screenWidth / 2
+  if (Math.abs(orbCenterX - mid) <= SNAP_DEAD_ZONE) return current
+  return orbCenterX < mid ? 'left' : 'right'
+}
+
+/** The orb's left edge while it follows the finger, kept inside the screen. */
+export function dragLeft(fingerX: number, screenWidth: number): number {
+  return Math.max(ORB_INSET, Math.min(screenWidth - ORB_SIZE - ORB_INSET, fingerX - ORB_SIZE / 2))
+}

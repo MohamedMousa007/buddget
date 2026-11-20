@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computePanel, keyboardOpen } from './panelGeometry'
+import { ORB_INSET, ORB_SIZE, computePanel, dragLeft, keyboardOpen, snapSide } from './panelGeometry'
 
 // BDG-014: the chat panel must sit inside what the user can see, above the keyboard, so the composer is never covered.
 const notch = { top: 47, bottom: 34, left: 0, right: 0 }
@@ -45,5 +45,22 @@ describe('computePanel', () => {
     const a = computePanel(orb, { width: 1280, height: 800, offsetTop: 0, keyboard: true }, notch)
     const b = computePanel(orb, { width: 1280, height: 800, offsetTop: 0, keyboard: false }, notch)
     expect(a).toEqual(b)
+  })
+})
+
+// BDG-018: the orb follows the finger on both axes and springs to the nearer edge, with a dead zone in the middle.
+describe('orb drag', () => {
+  it('springs to the nearer edge', () => {
+    expect(snapSide(60, 390, 'right')).toBe('left')
+    expect(snapSide(330, 390, 'left')).toBe('right')
+  })
+  it('keeps its side when let go near the middle', () => {
+    expect(snapSide(195 + 20, 390, 'left')).toBe('left')
+    expect(snapSide(195 - 20, 390, 'right')).toBe('right')
+  })
+  it('never leaves the screen while it follows the finger', () => {
+    expect(dragLeft(-50, 390)).toBe(ORB_INSET)
+    expect(dragLeft(900, 390)).toBe(390 - ORB_SIZE - ORB_INSET)
+    expect(dragLeft(195, 390)).toBe(195 - ORB_SIZE / 2)
   })
 })

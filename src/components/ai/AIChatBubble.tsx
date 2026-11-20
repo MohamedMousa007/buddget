@@ -15,7 +15,7 @@ import { IconButton } from '@/components/ui/IconButton'
 import { useBuddgyMood, buddgyStatusText } from '@/lib/ai/useBuddgyMood'
 import { useBuddgyLife } from '@/hooks/useBuddgyLife'
 import { NUDGE_RULES, type BuddgyNudge } from '@/lib/ai/buddgyIdeas'
-import { ORB_INSET as EDGE_INSET, ORB_SIZE, readViewport } from '@/components/features/ai-chat/panelGeometry'
+import { ORB_INSET as EDGE_INSET, ORB_SIZE, dragLeft, readViewport, snapSide } from '@/components/features/ai-chat/panelGeometry'
 
 interface AIChatBubbleProps {
   /** Opens the chat; with a prompt, sends it straight away (a tapped tip). */
@@ -23,6 +23,7 @@ interface AIChatBubbleProps {
 }
 
 const TALK_MS = 1600
+const SETTLE_MS = 240
 const clampTop = (top: number) => Math.max(70, Math.min(window.innerHeight - 150, top))
 
 /**
@@ -51,6 +52,8 @@ export function AIChatBubble({ onOpen }: AIChatBubbleProps) {
   const reactRef = useRef<HTMLSpanElement>(null)
   const life = useBuddgyLife(reactRef, orb.side, chatOpen)
   const [dragging, setDragging] = useState(false)
+  /** While dragged, or gliding to its edge after release: where the orb is drawn. */
+  const [drag, setDrag] = useState<{ left: number; top: number; settling?: boolean } | null>(null)
   const [nudge, setNudge] = useState<BuddgyNudge | null>(null)
   const [talking, setTalking] = useState(false)
 
@@ -101,16 +104,18 @@ export function AIChatBubble({ onOpen }: AIChatBubbleProps) {
     const startX = e.clientX
     const startY = e.clientY
     let moved = false
+    let last: { left: number; top: number } | null = null
 
+    // BDG-018: the orb follows the finger on both axes, then springs to the nearer edge on release.
     const onMove = (ev: globalThis.PointerEvent) => {
       if (!moved && (Math.abs(ev.clientX - startX) > 4 || Math.abs(ev.clientY - startY) > 4)) {
         moved = true
         setDragging(true)
         setNudge(null)
       }
-      const top = clampTop(ev.clientY - ORB_SIZE / 2)
-      const side: 'left' | 'right' = ev.clientX < window.innerWidth / 2 ? 'left' : 'right'
-      setBuddgyOrb({ side, top })
+      if (!moved) return
+      last = { left: dragLeft(ev.clientX, window.innerWidth), top: clampTop(ev.clientY - ORB_SIZE / 2) }
+      setDrag(last)
     }
     const end = () => {
       btn.removeEventListener('pointermove', onMove)
@@ -118,6 +123,12 @@ export function AIChatBubble({ onOpen }: AIChatBubbleProps) {
       btn.removeEventListener('pointercancel', end)
       btn.removeEventListener('lostpointercapture', end)
       setDragging(false)
+      if (!last) return
+      const side = snapSide(last.left + ORB_SIZE / 2, window.innerWidth, useSettingsStore.getState().buddgyOrb.side)
+      const edge = side === 'left' ? EDGE_INSET : window.innerWidth - ORB_SIZE - EDGE_INSET
+      setDrag({ left: edge, top: last.top, settling: true })
+      setBuddgyOrb({ side, top: last.top })
+      window.setTimeout(() => setDrag(null), SETTLE_MS)
     }
     const onUp = () => {
       end()
@@ -169,8 +180,9 @@ export function AIChatBubble({ onOpen }: AIChatBubbleProps) {
         transition={{ type: 'spring', stiffness: 420, damping: 24 }}
         whileTap={{ scale: 0.9 }}
         style={{
-          top: orb.top,
-          ...sideStyle(EDGE_INSET),
+          top: drag?.top ?? orb.top,
+          ...(drag ? { left: drag.left } : sideStyle(EDGE_INSET)),
+          transition: drag?.settling ? `left ${SETTLE_MS}ms cubic-bezier(.2,.8,.2,1)` : undefined,
           width: ORB_SIZE,
           height: ORB_SIZE,
           touchAction: 'none',
