@@ -79,8 +79,8 @@ test.describe('RevenueCat webhook', () => {
     expect((await svc(`user_entitlements?user_id=eq.${u.id}&select=status`)).json[0].status).toBe('active')
   })
 
-  test('H8 a SANDBOX purchase (TestFlight, App Review, license tester) never gives Pro in production', async () => {
-    test.fail(!process.env.QA_SHOW_OPEN_BUGS, 'S8A B-1: the webhook never reads event.environment')
+  test('H8 S8A B-1 (fixed) a SANDBOX purchase (TestFlight, App Review, license tester) never gives Pro in production', async () => {
+    test.skip(process.env.REVENUECAT_ACCEPT_SANDBOX === '1', 'this server accepts sandbox events on purpose')
     const u = await user('h8')
     await rcPost(ev(u, { environment: 'SANDBOX' }))
     const ent = (await svc(`user_entitlements?user_id=eq.${u.id}&select=plan_key`)).json[0]
@@ -190,8 +190,7 @@ test.describe('trial', () => {
     expect((await app('/api/entitlements/trial', { method: 'POST', token: w.token })).json.status).toBe('granted')
   })
 
-  test('X6 an account whose trial ended cannot take another by changing its email', async () => {
-    test.fail(!process.env.QA_SHOW_OPEN_BUGS, 'S8A B-17: trial_claim is keyed only on the mailbox; an ended trial row is source default')
+  test('X6 S8A B-17 (fixed 0336) an account whose trial ended cannot take another by changing its email', async () => {
     const u = await user('x6')
     expect((await app('/api/entitlements/trial', { method: 'POST', token: u.token })).json.status).toBe('granted')
     await setEntitlement(u.id, { ...TRIAL(), status: 'expired', trial_ends_at: new Date(Date.now() - 86_400_000).toISOString() })
