@@ -148,7 +148,8 @@ export interface SettleArgs {
   tier: string
   latencyMs: number
   usage: TokenUsage
-  status: 'ok' | 'error' | 'aborted'
+  /** `error` and `aborted_empty` are logged with their cost but not charged (migration 0337). */
+  status: 'ok' | 'error' | 'aborted' | 'aborted_empty'
   /** Audio seconds for a transcription, priced from the price book. */
   audioSeconds?: number
   /** Extra provider cost in millionths of a dollar that tokens do not show (a grounded web search). */

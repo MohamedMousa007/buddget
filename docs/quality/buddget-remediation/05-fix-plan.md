@@ -25,7 +25,7 @@ Test tier: **DT** tests mandatory, **CX** targeted test, **UI** mockup then owne
 - The route passes "text was sent" to settle (the stream knows it; token counts arrive too late to judge it).
 - The per-minute rate check keeps counting exempt rows, so exemptions cannot be farmed.
 - Every failure draws a visible bubble with Retry (client; arrives with the next build).
-- A daily check on the chat error share per model, reported through the existing admin alerts. The November silence lasted 8 days because nothing watched it.
+- **Moved out of slice 1:** a daily check on the chat error share per model. No shared admin-alert helper exists, and a new scheduled job needs a `SCHEDULED_JOBS.md` row and the cron guardrail test, so it is its own small item (1.1b). The quick tier was silent for about four weeks because nothing watched it.
 - **Migration:** yes, changed functions only. If a parameter is added, drop the old signature in the same migration and grant `EXECUTE` to `service_role` only.
 - **Installed builds:** same requests, fairer charge. No change needed in the app.
 
@@ -69,7 +69,7 @@ Test tier: **DT** tests mandatory, **CX** targeted test, **UI** mockup then owne
 - **UI:** one implementation for Settings and onboarding. Finish says "Not confirmed yet" until verified, never "Automation active". Setup is not marked claimed when the token fetch failed. The guide gets "Shortcuts already exist? Skip guide" with a confirm. X moves inside the header row. Health copy is neutral and never says "deleted".
 - **Which fact shows the switch instead of "Set up":** owner decision. The brief says only "claimed". The Council says "run seen" should count too, because a run is the only proof iOS ever gives that the Shortcut exists.
 - **Pill:** this phone's `last_sms_at`. Phones on an older token with no device id keep the account-level reading, so they do not drop to "waiting".
-- **Server:** a new device row no longer forces collecting off against the account preference (`registry.ts:74`); installed builds benefit.
+- **Server:** a new device row no longer forces collecting off against the account preference (`registry.ts:74`); installed builds benefit. This changes which phone collects, so it ships with the rest of 1.5 and a device check, not ahead of it.
 - **Migration:** yes. `user_devices.first_sms_at`, set where `last_sms_at` is written (`parse/route.ts:807`). Backfill from `sms_parse_log`: earliest row per `(user_id, device_id)`, refusal rows excluded, in batches with a short statement timeout, `EXPLAIN` first.
 - **Unsourced:** that iOS cannot list or inspect Shortcuts. Apple pages were fetched; none states it. The design assumes it and shows only what a run or an SMS proves.
 
@@ -127,7 +127,7 @@ The brief asks for approval before migrations, reward-rule changes, security cha
 
 ## Build order
 1. Phase 0.
-2. Server-only first, because installed builds benefit at once: 1.2 server part, 1.1 slice 1, the SMS server precedence fix.
+2. Server-only first, because installed builds benefit at once: 1.2 server part, 1.1 slice 1. **Built 2026-11-20, see `11-implementation-report.md`.**
 3. In parallel, separate files: **(a)** 1.1 slice 2 then the rest of 1.2; **(b)** 1.5; **(c)** 1.3 once P-a lands; **(d)** 1.4.
 4. Phase 2: chat items as one group (009, 012, 010, 015, 014, 018), billing 020 after 1.4, then 017, 003.
 5. Phase 3 after mockups and rulings.
