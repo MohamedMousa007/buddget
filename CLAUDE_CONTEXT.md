@@ -1,5 +1,5 @@
 # CLAUDE_CONTEXT.md — buddget System Snapshot
-> Updated: 2026-10-23 (Accounts refactor: migrations 0150-0155); other sections may lag. Re-generate after major architecture changes.
+> Updated: 2026-11-20 (S9 reconcile: native builds, palette, Capacitor config, versions; other sections may lag). Re-generate after major architecture changes.
 
 ---
 
@@ -7,7 +7,7 @@
 
 | Layer | Stack |
 |---|---|
-| Framework | Next.js 16.2.1 (React 19, TypeScript, Webpack) |
+| Framework | Next.js 16.4.5 (React 19.2, TypeScript, Webpack) |
 | Styling | Tailwind CSS v4 + CSS custom properties |
 | State | Zustand v5 (`src/lib/store/types.ts`) |
 | Backend | Supabase (PostgreSQL + RLS + Auth) |
@@ -24,11 +24,11 @@
 
 ---
 
-## Database — Migration Log (latest repo file 0155; 0150-0155 = Accounts refactor: payment_methods parent_id/opening_balance/opening_at/closed_at/track_sms + guard trigger, ledger `occurred_at` + `to_payment_method_id` + pocket/SMS links, `account_balance_reports` (server-written) + `account_adjustments` (synced) + `latest_balance_reports()`, `user_settings.privacy`, atomic `adjust_pocket_balance`; was 0147; 0136 email templates, 0137 welcome flag, 0138 hygiene (no-op update suppression, HOT-friendly indexes, unlogged telemetry), 0139 analytics v2 (`analytics_touch`, `app_activity_days`, `admin_metrics_cache`, pg_cron), 0140 SMS v2 (stats outbox + drain, `sms_corpus`, retention), 0141 retention (`housekeeping`, tombstones 90d), 0142 `sync_pull` (delta sync), 0143 nudge channel policies, 0144 client gate (`app_client_gate` via `pgrst.db_pre_request`), 0145 admin grouped counts, 0146 atomic email publish, 0147 notification candidates; earlier: 0127 = admin portal: 0123 staff/roles/credentials/sessions/audit, 0124 support + plans/entitlements/loyalty/flags/settings, 0125 `admin_*` analytics functions, 0126 `admin_rate_hit` limiter, 0127 analytics perf (BRIN index, faster retention/directory); previous 0121 = Budget v2: plan status/intent/origin, line block/links/due_day/essential/locked, `budget_plan_activations`, `buddgy_memories`, `profiles.financial_profile`; previous 0119; goals v3 = 0116 funding + goal_allocation_runs, 0117 business category, 0118 plan_start, 0119 goal alert switches; subscriptions redesign = 0114 + 0115)
+## Database — Migration Log (latest repo file 0333, 2026-11-20; later detail below stops at 0155; 0150-0155 = Accounts refactor: payment_methods parent_id/opening_balance/opening_at/closed_at/track_sms + guard trigger, ledger `occurred_at` + `to_payment_method_id` + pocket/SMS links, `account_balance_reports` (server-written) + `account_adjustments` (synced) + `latest_balance_reports()`, `user_settings.privacy`, atomic `adjust_pocket_balance`; was 0147; 0136 email templates, 0137 welcome flag, 0138 hygiene (no-op update suppression, HOT-friendly indexes, unlogged telemetry), 0139 analytics v2 (`analytics_touch`, `app_activity_days`, `admin_metrics_cache`, pg_cron), 0140 SMS v2 (stats outbox + drain, `sms_corpus`, retention), 0141 retention (`housekeeping`, tombstones 90d), 0142 `sync_pull` (delta sync), 0143 nudge channel policies, 0144 client gate (`app_client_gate` via `pgrst.db_pre_request`), 0145 admin grouped counts, 0146 atomic email publish, 0147 notification candidates; earlier: 0127 = admin portal: 0123 staff/roles/credentials/sessions/audit, 0124 support + plans/entitlements/loyalty/flags/settings, 0125 `admin_*` analytics functions, 0126 `admin_rate_hit` limiter, 0127 analytics perf (BRIN index, faster retention/directory); previous 0121 = Budget v2: plan status/intent/origin, line block/links/due_day/essential/locked, `budget_plan_activations`, `buddgy_memories`, `profiles.financial_profile`; previous 0119; goals v3 = 0116 funding + goal_allocation_runs, 0117 business category, 0118 plan_start, 0119 goal alert switches; subscriptions redesign = 0114 + 0115)
 
 Live project: `tzioppxwsljhlglyducm` (eu-central-1, moved from Singapore `ydihurtbcnoflhormgzi` on 2026-11-16; Vercel `fra1`). Verified 2026-10-16: live tables/columns == `src/lib/supabase/database.types.ts` (41 tables). Latest applied: `income_sources_sort_order` (= repo 0109). Repo file numbers and applied migration names drift (e.g. repo 0108 = applied `0104_debt_payments_funded_from_savings`); compare schema, not names. Session-start check: `list_migrations`, then regenerate types and diff.
 
-Native builds: GitHub Actions only (`ios-release.yml` -> TestFlight, `android-release.yml` -> APK on Drive), dispatched by `scripts/native-release.sh`, on demand ("build and upload apps" = both). One-time secrets: `scripts/ci-secrets.sh`.
+Native builds: **local, on the owner's Mac**, via `bash scripts/native-release.sh [label]` (cap:build, iOS archive -> TestFlight, Android APK -> Drive, version bumps committed and pushed to dev and main), only when the owner's message says "build and upload apps" (always both platforms). Prerequisites are in the script header. GitHub Actions is not used (`ios-release.yml` / `android-release.yml` and `ci.yml` stay in `.github/workflows/` but are never dispatched). Tests and `npm run verify` run on the cloud qa-runner, not on the Mac (`docs/QA_CLOUD.md`).
 
 **Schema rules:**
 - All tables use `uuid` PKs (`gen_random_uuid()`)
@@ -39,87 +39,35 @@ Native builds: GitHub Actions only (`ios-release.yml` -> TestFlight, `android-re
 
 ## Design Tokens
 
-### Brand Colors
+Source of truth: `src/app/globals.css` (and `docs/DESIGN_SYSTEM.md` for rules). The identity is **teal**. There are two real palettes: light (`:root`) and dark (`.dark`), both AA-checked (`src/app/globalsContrast.test.ts`). The app's default theme is `light` (`defaultFinanceData.theme`; the setting is `dark | light | system`); the marketing site opens dark unless the visitor chose light (`src/lib/site/theme.ts`). The welcome, lock and landing screens use one fixed dark floor (`--auth-floor`, `#0A100F`) with no light variant. Never hardcode hex in components: use the tokens (a guard test enforces it).
 
-```css
-/* Light mode (:root) */
---color-brand-red:            #E50914;
---color-brand-red-hover:      #C5070F;
---color-brand-gold:           #D4A017;
---color-brand-green:          #18A349;
---color-brand-green-hover:    #12843B;
---color-brand-amber:          #E08800;
---color-brand-bg:             #F5F5F7;
---color-brand-card:           #FFFFFF;
---color-brand-elevated:       #F0F0F4;
---color-brand-border:         #D4D4DC;
---color-brand-text-primary:   #1A1A24;
---color-brand-text-secondary: #5A5A72;
---color-brand-text-muted:     #8A8AA0;
+### Brand and semantic colours
 
-/* Dark mode (.dark) */
---color-brand-red:            #E50914;   /* unchanged */
---color-brand-red-hover:      #F40612;
---color-brand-gold:           #F5C842;
---color-brand-green:          #1DB954;
---color-brand-green-hover:    #25D067;
---color-brand-amber:          #FF9F0A;
---color-brand-bg:             #0A0A0F;
---color-brand-card:           #111118;
---color-brand-elevated:       #1A1A24;
---color-brand-border:         #2A2A38;
---color-brand-text-primary:   #FFFFFF;
---color-brand-text-secondary: #CFCFE0;  /* bumped from #A0A0B8 — WCAG AA fix */
---color-brand-text-muted:     #9898B0;
-```
+| Token | Light | Dark |
+|---|---|---|
+| `--color-brand-primary` (fill: buttons, FAB, active nav) | `#0D8578` | `#1FC3B2` |
+| `--color-brand-primary-ink` (teal text, links) | `#0B7568` | `#7FE6DA` |
+| `--color-brand-primary-soft` | `#E3F6F3` | `#0F2723` |
+| `--color-brand-on-primary` (label on the fill) | `#FFFFFF` | `#04201C` |
+| `--color-brand-primary-bright` (chart marks, glyphs; never a text/fill pair on light) | `#12B0A0` | `#1FC3B2` |
+| `--color-brand-red` (negative, destructive) | `#BE343A` | `#F2646A` |
+| `--color-brand-green` (positive, income) | `#0F7635` | `#37C368` |
+| `--color-brand-amber` (warning, due soon) | `#8C5E0A` | `#EDB24A` |
+| `--color-brand-gold` (investment, Founder) | `#896617` | `#EDC463` |
+| `--color-brand-bg` | `#F4F7F6` | `#0A100F` |
+| `--color-brand-card` | `#FFFFFF` | `#111917` |
+| `--color-brand-elevated` | `#ECF1F0` | `#18211F` |
+| `--color-brand-sunken` | `#E2E9E8` | `#212C2A` |
+| `--color-brand-border` / `-strong` | `#DDE6E4` / `#CBD6D3` | `#25302E` / `#33403D` |
+| `--color-brand-text-primary` | `#0D1A18` | `#EAF2F0` |
+| `--color-brand-text-secondary` | `#566B68` | `#9BABA8` |
+| `--color-brand-text-muted` | `#5F6968` | `#879592` |
 
-### Semantic / Shadcn tokens
-
-```css
-/* Light */
---background: #F5F5F7;   --foreground: #1A1A24;
---card: #FFFFFF;          --card-foreground: #1A1A24;
---primary: #E50914;       --primary-foreground: #FFFFFF;
---secondary: #F0F0F4;     --muted: #F0F0F4;
---muted-foreground: #5A5A72;
---border: #D4D4DC;        --input: #D4D4DC;
---ring: #E50914;          --destructive: #E50914;
-
-/* Dark */
---background: #0A0A0F;   --foreground: #FFFFFF;
---card: #111118;          --muted: #1A1A24;
---muted-foreground: #CFCFE0;
---border: #2A2A38;        --input: #2A2A38;
-```
+Fills (`red`, `green`, `amber`) take `--color-brand-on-*` labels (white on light, `#04201C` on dark). Shadcn aliases (`--background`, `--primary` = the teal fill, `--destructive`, `--border`, `--input`) point at the same values. Focus ring is `--color-brand-focus` (`#0B7568` on light); red is only for errors and destructive actions. Elevation is the 3-step `--shadow-sm/md/lg` scale; the older `.glass-card` class is legacy.
 
 ### Border Radius
 
-Base `--radius: 0.75rem`. Derived scale:
-
-| Tailwind class | CSS var | Value |
-|---|---|---|
-| `rounded-sm` | `--radius-sm` | `0.45rem` |
-| `rounded-md` | `--radius-md` | `0.6rem` |
-| `rounded-lg` | `--radius-lg` | `0.75rem` (base) |
-| `rounded-xl` | `--radius-xl` | `1.05rem` |
-| `rounded-2xl` | `--radius-2xl` | `1.35rem` |
-| `rounded-3xl` | `--radius-3xl` | `1.65rem` |
-| `rounded-4xl` | `--radius-4xl` | `1.95rem` |
-
-Card convention: `rounded-xl`. Button default: `rounded-lg`.
-
-### Glassmorphism
-
-```css
-/* .glass-card — light */
-background: rgba(255, 255, 255, 0.7);
-border: 1px solid rgba(0, 0, 0, 0.06);
-backdrop-filter: blur(12px);
-
-/* .dark .glass-card */
-background: rgba(26, 26, 36, 0.8);
-border: 1px solid rgba(255, 255, 255, 0.06);
-```
+Root `--radius` is 12px. Steps: sm 6, md 8, lg and xl 12 (buttons, inputs), 2xl 16 (cards), 3xl 24 (sheet tops), 4xl 28 (`globals.css`).
 
 ### Typography
 
@@ -129,43 +77,19 @@ border: 1px solid rgba(255, 255, 255, 0.06);
 | Headings | `var(--font-heading)` | `font-heading` |
 | Mono / numbers | `var(--font-mono)` | `font-mono` / `.font-mono-numbers` |
 
-`.font-mono-numbers` adds `font-variant-numeric: tabular-nums`.
+Fonts load through `next/font/google` in `src/app/(app)/layout.tsx`: DM Sans (`--font-sans`), JetBrains Mono (`--font-mono`), IBM Plex Sans Arabic (`--font-sans-ar`); the system stacks in `globals.css` are the fallback. `.font-mono-numbers` adds `font-variant-numeric: tabular-nums`.
 Arabic locale: `html[data-locale='ar']` prepends `var(--font-sans-ar)` to sans + heading stacks.
 
-### Tailwind color aliases (use these in JSX)
+### Tailwind aliases (use these in JSX)
 
-```
-bg-brand-bg / bg-brand-card / bg-brand-elevated
-bg-brand-red / bg-brand-green / bg-brand-gold / bg-brand-amber
-text-brand-red / text-brand-green / text-brand-gold / text-brand-amber
-text-[--color-brand-text-primary] (or text-foreground)
-text-[--color-brand-text-secondary] (or text-muted-foreground)
-border-[--color-brand-border] (or border-border)
-```
+`bg-brand-bg|card|elevated|sunken`, `text-brand-primary-ink`, `bg-brand-primary`, `text-brand-red|green|gold|amber`, `text-[--color-brand-text-primary|secondary|muted]`, `border-[--color-brand-border]`. Full list: the `@theme` block at the top of `globals.css`.
 
 ---
 
 ## Component Patterns
 
-### Button (`src/components/ui/button.tsx`)
-Built on `@base-ui/react/button` + CVA.
-
-| Size | Height | Notes |
-|---|---|---|
-| `xs` | `h-6` (24px) | `px-2`, icon-xs: `size-6` |
-| `sm` | `h-7` (28px) | `px-2.5`, icon-sm: `size-7` |
-| `default` | `h-8` (32px) | `px-2.5`, icon: `size-8` |
-| `lg` | `h-9` (36px) | `px-2.5`, icon-lg: `size-9` |
-
-For 44px mobile touch targets, use a larger wrapper or `size-11` icon button.
-
-Variants: `default` (brand-red filled) · `outline` · `secondary` · `ghost` · `destructive` (red tinted) · `link`
-
-### Input (`src/components/ui/input.tsx`)
-Built on `@base-ui/react/input`.
-- `h-8`, `rounded-lg`, `border-input`, `dark:bg-input/30`
-- Focus ring: `ring-3 ring-ring/50` (brand-red)
-- Date/month inputs auto-call `showPicker()` on click
+### Button and Input (`src/components/ui/button.tsx`, `input.tsx`)
+Built on `@base-ui/react` + CVA. Sizes, variants and the 44px touch-target rule live in `docs/DESIGN_SYSTEM.md`; read it before touching UI. Inputs: `size="brand"` is the app's real control (48px, rounded-xl, h-12); the default h-8 density is for compact and admin surfaces. Reuse `src/components/ui` and `src/components/features` before writing anything new.
 
 ### Sheet / Modal spacing
 - Inner padding: `p-4` (mobile) / `p-6` (desktop)
@@ -235,14 +159,14 @@ Brain on the server, hands on the device. Full guide: `docs/buddgy/INTERNAL_GUID
 - Every AI route (`/api/ai`, budget, receipt, voice, sms main parse) reserves and settles through `src/lib/server/ai/quota.ts`.
 - Sync: re-adding a deleted id now clears the tombstone (`emitList` inserts send `deleted_at: null`), which is what makes undo of deletes real.
 
-## Capacitor Native Config
+## Capacitor Native Config (`capacitor.config.ts`)
 
-- App ID: `online.buddget` · Web dir: `out/`
-- Allowed navigation: `buddget.app`, `*.buddget.app`, `buddget.online`
-- Splash bg: `#0A0A0F` · Status bar: DARK `#0A0A0F`
-- Local notification icon color: `#E50914`
-- Preferences group: `group.online.buddget`
-- iOS: `contentInset: always` · Android: `captureInput: true`
+- App ID: `app.buddget` (iOS bundle and Android package) · Web dir: `out/` · schemes `https`
+- Allowed navigation: `buddget.app`, `*.buddget.app`
+- Splash bg and status bar: `#0A100F` (status bar style `DARK`)
+- iOS: `contentInset: 'never'` (CSS `env(safe-area-inset-*)` owns every inset) · Android: `captureInput: true`, `minWebViewVersion: 111`, WebView debugging off unless `CAP_WEBVIEW_DEBUG=1`
+- Social login: Facebook off, so no advertising-ID permissions are merged; `AD_ID` is also removed explicitly in `AndroidManifest.xml`
+- Privacy declarations for the stores: `docs/launch/PRIVACY_DECLARATIONS.md`
 
 ---
 

@@ -22,7 +22,7 @@ export function PrivacyDocument() {
             </p>
             <h1 className="text-3xl font-bold font-heading tracking-tight">Privacy Policy</h1>
             <p className="text-sm text-[var(--color-brand-text-muted)]">
-              Effective date: October 28, 2026 &nbsp;·&nbsp; Last updated: November 5, 2026
+              Effective date: October 28, 2026 &nbsp;·&nbsp; Last updated: November 20, 2026
             </p>
             <p className="text-sm text-[var(--color-brand-text-secondary)] max-w-xl">
               This policy explains how buddget collects, uses, stores, and protects your data. Also see our{' '}
@@ -46,7 +46,7 @@ export function PrivacyDocument() {
             <p className="text-xs font-medium text-[var(--color-brand-primary-ink)]">قانوني</p>
             <h1 className="text-3xl font-bold font-heading tracking-tight">سياسة الخصوصية</h1>
             <p className="text-sm text-[var(--color-brand-text-muted)]">
-              تاريخ السريان: 28 أكتوبر 2026 &nbsp;·&nbsp; آخر تحديث: 5 نوفمبر 2026
+              تاريخ السريان: 28 أكتوبر 2026 &nbsp;·&nbsp; آخر تحديث: 20 نوفمبر 2026
             </p>
             <p className="text-sm text-[var(--color-brand-text-secondary)] max-w-xl">
               توضّح هذه السياسة كيف تجمع «بادجت» بياناتك وتستخدمها وتخزّنها وتحميها. اطّلع أيضًا على{' '}

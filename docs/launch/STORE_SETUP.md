@@ -72,3 +72,173 @@ Eligibility: paid for at least 1 month, 24 months between offers, all 175 territ
 ## Re-running
 
 Prices and offers are read live from Apple with `get-product-store-state`; changes go through `create-product-store-state-plan` -> plan -> apply (review the diff first). Review screenshots: `upload-product-store-state-screenshot` reserves a slot, PUT the bytes to the returned URL, then set `screenshot_id` + MD5 in a plan.
+
+---
+
+# S9 additions (2026-11-20): listing, screenshots, open owner steps
+
+Prepared content only. Nothing was entered in App Store Connect, Play Console or RevenueCat. Privacy answers: `docs/launch/PRIVACY_DECLARATIONS.md`. Older listing copy: `docs/launch/S6-store-listing.md` (still correct for the Pro, trial and subscription-terms text; its lead and screenshot order are replaced below).
+
+## Listing copy v2 (leads with privacy, no-SMS use, Arabic, installments; not with AI)
+
+Why changed (S5a business review): bank-SMS apps already exist in Egypt and the UAE, so no "only app that" wording; "Free. No ads." is gone (billing is on); the measured-accuracy claim is **held**: `docs/launch/S8f-bank-accuracy.md` shows no Egyptian bank at "supported" (NBE and CIB partial, the rest not enough data), so S5c gate 1 is not met. Until the per-bank table is published, the copy names no accuracy figure and no "supported" bank list. When gate 1 passes, add one line: "Reads texts from <banks in the published table>".
+
+**Owner decision (2026-11-20), over a 3-0 council vote for option (a):** the listing keeps an accuracy claim, in words only. Use "reads your bank texts accurately and keeps getting better". No percentage and no bank names until the per-bank table is published: `S8f-bank-accuracy.md` measures no figure ("booked correctly" is unmeasured), so any number would be one we cannot back. Never quote the "97% / 94% get a row" figure; it is not accuracy. Metadata can be edited after launch with no new build.
+
+Egypt first. UAE and Saudi listings stay plain until their bank tables exist.
+
+### English
+
+- **Name (30):** buddget: Budget & Expenses
+- **Subtitle (App Store, 30):** Private. Arabic. Automatic.
+- **Promotional text (170):** Your texts stay yours: buddget reads only the messages you allow, and works fine without any. Full Arabic. Track installments and BNPL. 30 days of Pro on us.
+- **Short description (Google Play, 80):** Budget and track spending in Arabic or English. SMS is optional. You decide.
+- **Keywords (App Store, 100):** budget,expense,tracker,egp,arabic,installments,bnpl,savings,debt,goals,sms,wallet,bills,money
+- **Description:**
+
+  Know what is safe to spend today, in Arabic or English.
+
+  buddget tracks your spending, bills, debts, goals and installments in one place, in Egyptian pounds and other currencies. No bank login, ever.
+
+  Private by design
+  - Accurate bank-text reading that keeps getting better.
+  - Reading bank texts is optional and off until you turn it on. The app works fully without it.
+  - On Android only incoming texts are seen, never your inbox. On iPhone, a Shortcut you create sends them.
+  - Only business-sender and transaction-like messages leave your phone; the raw text is deleted within weeks.
+  - No ads, no advertising ID, no selling your data. Delete your account in the app any time.
+
+  Built for how people really pay
+  - Installments and buy-now-pay-later plans with due dates
+  - Subscriptions, cards, wallets and cash
+  - Budgets, goals, debts and reports you can export
+  - Add by voice or by scanning a receipt
+  - Full Arabic, not just translated labels
+
+  Free forever: tracking, budgets, goals, debts, reports, and a weekly allowance of Buddgy, our assistant.
+  buddget Pro: about 10x the assistant, voice and receipts, the Advisor, unlimited saved budgets.
+
+  30 days of Pro on us. Every new account starts with every Pro feature for 30 days, no card. After that you move to Free automatically; nothing is charged and nothing is deleted.
+
+  Subscription terms, privacy and terms links: the block in `S6-store-listing.md` ("Subscription terms (required text)"), unchanged.
+
+### Arabic
+
+- **الاسم:** buddget: ميزانية ومصروفات
+- **العنوان الفرعي:** خاص. عربي. تلقائي.
+- **النص الترويجي:** رسائلك تبقى لك: يقرأ buddget الرسائل التي تسمح بها فقط، ويعمل جيدًا بدونها. عربي كامل. تابع الأقساط وخدمات اشتر الآن وادفع لاحقًا. 30 يومًا من Pro علينا.
+- **الوصف القصير (Google Play):** ميزانية ومصروفات بالعربية أو الإنجليزية. الرسائل اختيارية، والقرار لك.
+- **الوصف:**
+
+  اعرف ما يمكنك إنفاقه اليوم بأمان، بالعربية أو الإنجليزية.
+
+  يتابع buddget مصروفاتك وفواتيرك وديونك وأهدافك وأقساطك في مكان واحد، بالجنيه المصري وعملات أخرى. بلا تسجيل دخول إلى البنك، أبدًا.
+
+  خصوصية من الأساس
+  - قراءة دقيقة لرسائل البنك تتحسن باستمرار.
+  - قراءة رسائل البنك اختيارية ومعطّلة حتى تفعّلها. والتطبيق يعمل كاملًا بدونها.
+  - على أندرويد يرى التطبيق الرسائل الواردة فقط، لا صندوق الوارد. وعلى iPhone يرسلها اختصار تنشئه أنت.
+  - لا يغادر هاتفك إلا رسائل الجهات التجارية والرسائل الشبيهة بالمعاملات، ويُحذف نصها الخام خلال أسابيع.
+  - بلا إعلانات ولا معرّف إعلانات ولا بيع لبياناتك. احذف حسابك من التطبيق متى شئت.
+
+  مصمم لطريقة الدفع الفعلية
+  - الأقساط وخطط اشتر الآن وادفع لاحقًا مع مواعيد الاستحقاق
+  - الاشتراكات والبطاقات والمحافظ والنقد
+  - ميزانيات وأهداف وديون وتقارير قابلة للتصدير
+  - أضف بالصوت أو بمسح إيصال
+  - عربي كامل، لا مجرد عناوين مترجمة
+
+  مجاني للأبد: التتبع والميزانيات والأهداف والديون والتقارير، وحصة أسبوعية من Buddgy مساعدنا.
+  buddget Pro: حوالي 10 أضعاف المساعد، والصوت والإيصالات، والمستشار، وميزانيات محفوظة بلا حد.
+
+  30 يومًا من Pro علينا. كل حساب جديد يبدأ بكل ميزات Pro لمدة 30 يومًا بلا بطاقة. وبعدها تنتقل تلقائيًا إلى المجاني؛ لا يُخصم شيء ولا يُحذف شيء.
+
+Paywall copy (separate task, same rules): normal price and the founding end date, no crossed-out price, the yearly amount as the main annual price, no founding price, no "guarantee", no refund promise.
+
+### Store fields that must match the build
+
+- Support URL: `https://buddget.app` support page or `support@buddget.app`; Marketing URL: `https://buddget.app`; Privacy: `https://my.buddget.app/privacy`; Terms: `https://my.buddget.app/terms`.
+- Age rating: 4+ (Apple), PEGI 3 / Everyone (Play), already set on Play. No user-generated content shared with others, no gambling (loyalty points have no cash value and no chance).
+- Category: Finance (primary). Copyright: 2026 buddget.
+- Reviewer notes and demo account: `PRIVACY_DECLARATIONS.md` section 6. Demo persona **Layla Hassan** with seeded EGP data; use the `__qa` seed helpers (`docs/QA_CLOUD.md`) on a fresh account in the Frankfurt project, not a real person.
+
+## Screenshot shot list
+
+All screens show the persona **Layla Hassan** and invented merchants and amounts, never a real person's data. Capture English and Arabic; Arabic keeps the English-order layout for launch (QA-27). Light theme for the first set, dark as the second set if time allows. Captions: the six in `S6-store-listing.md`, re-ordered to the story below.
+
+### Story order (same on every device class)
+
+1. **Today's number:** home with "safe to spend today" and the month ring. Caption: What can you spend today? One number, calculated for you.
+2. **Private by design:** Settings > SMS Tracking with the off-by-default switch and the "works without SMS" line. Caption: Your texts stay yours. You decide.
+3. **A bank text becomes a transaction:** Flow list with an SMS-sourced expense and its source chip. Caption: Every bank text, sorted without typing.
+4. **Installments and BNPL:** debts page with a BNPL plan and its due dates. Caption: Installments and pay-later plans, never missed.
+5. **Full Arabic:** the same home or Flow screen in Arabic. Caption: عربي كامل.
+6. **Ask Buddgy** (voice or chat answering from the numbers). Caption: Ask Buddgy. It answers from your own numbers.
+7. **Pro and the trial:** Plan and billing in Trial state. Caption: 30 days of Pro on us. No card.
+8. (optional) **Rewards and invites** screen.
+
+### iPhone (App Store)
+
+- Required: **6.9-inch** (1320 x 2868) or, if absent, 6.5-inch (1284 x 2778); Apple scales down for the smaller sizes. 3 to 10 screenshots; use 7.
+- Source: the iOS Simulator on the store build (iPhone 17 Pro Max), not the web. **Waits for the owner's build instruction.**
+
+### iPad (App Store, required because the app supports iPad, `TARGETED_DEVICE_FAMILY = 1,2`)
+
+- Required: **13-inch** (2064 x 2752 portrait, or 2752 x 2064 landscape); 12.9-inch (2048 x 2732) is accepted as the fallback. 3 to 10 screenshots; use 5: 1 today's number, 3 Flow, 4 installments, 5 Arabic, 7 Plan and billing.
+- Source: iPad Pro 13-inch simulator, portrait first, one landscape set if the layout differs (S7b walks both). **Waits for the build.**
+
+### Google Play
+
+- Phone: 1080 x 1920 or larger, 16:9 or 9:16, 2 to 8; use 7 (the story above). Current files in `docs/launch/play-assets/phone-*.png` are the pre-redesign set and must be replaced.
+- 7-inch and 10-inch tablet: 1200 x 1920 and 1600 x 2560 (optional but lifts tablet ranking; use 4).
+- Feature graphic 1024 x 500 and icon 512 x 512 exist in `docs/launch/play-assets/`; refresh the feature graphic to the new lead ("Private. Arabic. Automatic.").
+- Source: Android emulator on the store build. **Waits for the build.**
+
+### What can be scripted now (cloud qa-runner, Playwright; listed, not run here)
+
+These need no native build. They use the existing suites first: `e2e/ui/sweep.mjs` (viewport x theme x locale), `e2e/ui/seed.ts`, `e2e/ui/pro-rewards-sweep.mjs`. Add one new spec, `e2e/ui/store-shots.mjs`, in the same style (fresh synthetic `qa-e2e-*` user with the Layla Hassan persona, seeded through the `__qa` helpers, deleted at the end, zero left), and list it in `e2e/README.md`.
+
+| Capture | Route | Viewport | Locale x theme | Use |
+|---|---|---|---|---|
+| Today's number | `/` (home) | 430 x 932 | en, ar x light, dark | Play phone, web store badge preview |
+| SMS settings, off by default | `/settings/sms` | 430 x 932 | en, ar x light | Privacy screenshot, marketing site |
+| Flow with an SMS-sourced row | `/flow` | 430 x 932 | en, ar x light | Phone set |
+| Installments / BNPL | `/debts` | 430 x 932 | en, ar x light | Phone set |
+| Plan and billing, trial | `/settings/pro` | 430 x 932 | en, ar x light, dark | Phone set, paywall preview |
+| Rewards and invite | `/settings/rewards`, `/settings/invite` | 430 x 932 | en, ar x light | Optional |
+| Tablet set | the five above | 768 x 1024 and 1024 x 768 | en x light | Play 7-inch and 10-inch (resize to 1200 x 1920 / 1600 x 2560 with device scale factor), cross-check for iPad layout |
+| Marketing site home, privacy and terms | `/`, `/legal/privacy`, `/legal/terms` (en and ar site) | 1440 x 900 and 390 x 844 | en, ar x dark, light | Check legal text rendering after S9; site hero shots |
+
+Playwright notes: `deviceScaleFactor: 3` for crisp phone shots, `reducedMotion: 'reduce'`, wait for fonts and the locale (`document.fonts.ready`, `html[lang]`), hide the dev overlay, screenshots to a git-ignored folder, only the summary line in the report. These web captures are a draft and a layout check; the store images are the simulator and emulator ones from the build.
+
+## Owner steps still open
+
+### Play Console (app.buddget, created 2026-11-19)
+
+From the Play Console memory, `STORE_SETUP.md` above and `docs/MASTER_PLAN_LAUNCH.md` H0:
+
+1. **RECEIVE_SMS permission declaration:** submit the Permissions Declaration Form with the 30-second recording (script and justification text in `docs/GOOGLE_PLAY_SUBMISSION.md` section 3). A rejection blocks the core feature, so this goes first.
+2. **Closed test:** personal account needs 12 testers for 14 days before production. Add testers, start the test track as soon as an AAB exists. This drives the launch date.
+3. **App content, still open:** Sign-in details (a reviewer demo account, Layla Hassan persona, fresh in the Frankfurt project, credentials only in the form); Target audience (18+, not for children); re-open **Data safety** and enter the table in `PRIVACY_DECLARATIONS.md` section 4 (the memory lists Data safety as both done and open: re-check every row, it predates the AD_ID and Facebook removal and the purchase and invite data); Advertising ID stays No.
+4. **Store listing:** title, short and long description (v2 above, EN and AR translations in Manage translations), icon, feature graphic, phone and tablet screenshots, category Finance, contact email, privacy URL.
+5. **Release:** upload the signed AAB (needs the owner's build instruction), release notes, countries (Egypt first), staged rollout.
+6. **Monetization:** create `pro_monthly:monthly`, `pro_annual:annual` and the Sparks products, link the service account (View app information, View financial data, Manage orders and subscriptions), connect Google developer notifications and paste the Pub/Sub topic; upload the JSON key in RevenueCat (`app86a098cc89`); RevenueCat webhook secrets in Vercel (iOS section, item 1).
+7. **Pre-launch report** and Android vitals review before promoting past the closed test.
+
+### App Store Connect (iOS, bundle `app.buddget`)
+
+1. **Agreements:** confirm Paid Apps agreement, banking and tax are active; Small Business Program enrolment (the 15% the plan assumes).
+2. **Subscriptions:** Billing Grace Period (3 days), App Store Server Notifications V2 URL from RevenueCat, optional promotional images, Family Sharing decision (off). Submit the subscriptions and Sparks packs **with the next app version** and run one sandbox purchase of each kind.
+3. **App Privacy:** enter the table in `PRIVACY_DECLARATIONS.md` section 2; tracking: No.
+4. **App information:** name, subtitle, promotional text, description, keywords (v2 above), EN and AR localisations, support and marketing URLs, privacy URL, category Finance, age rating questionnaire, copyright.
+5. **Screenshots:** iPhone 6.9-inch and iPad 13-inch sets from the build (list above), plus Arabic set.
+6. **App Review information:** the demo account and notes from `PRIVACY_DECLARATIONS.md` section 6; add the retention message `buddget pro` for review with the version.
+7. **Build:** TestFlight build after the owner's word (the current builds, TestFlight 145 and Android vc178, predate the QA fixes, so a new build is needed before the store build and screenshots).
+8. **Support:** Sign in with Apple stays on; account deletion path named in the review notes.
+
+### Both consoles and Vercel
+
+- Vercel: `NEXT_PUBLIC_REVENUECAT_IOS_KEY` (and the Android key), `REVENUECAT_WEBHOOK_AUTH`, `REVENUECAT_WEBHOOK_HMAC_SECRET`, `TRIAL_CLAIM_KEY_SECRET` (QA-59, until set the trial key falls back to plain SHA-256), `SMS_REQUIRE_DEVICE_HEADER=1`.
+- **14 days' notice before paid features go on sale:** the Terms promised it and the new Terms 7A repeats it. Send the in-app notice and email at least 14 days before Pro is promoted (S5c V-6).
+- Terms 7A refund text says only that Apple and Google decide refunds; no refund or extension promise of our own.
+- Egypt: a lawyer's read of the trial, refund and Sparks wording is still recommended (S5c section 11); a new Consumer Protection Law is expected to replace the e-commerce law.
+- Supabase: Send Email hook (done 2026-11-19), OTP length 6.
