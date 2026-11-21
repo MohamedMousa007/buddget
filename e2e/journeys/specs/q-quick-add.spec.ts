@@ -87,7 +87,8 @@ test('Q3 Savings opens Add money directly on Wealth, once, and saves', async ({ 
     await goto(page, '/reports')
     await openTile(page, /^Savings/)
     const d = dialog(page, 'Add money')
-    await d.getByRole('radio').first().click()
+    // The first pocket is preselected in the Into field (BDG-026-028 picker).
+    await expect(d.getByRole('button', { name: /^Into: / })).toBeVisible()
     await d.getByRole('textbox', { name: 'Amount' }).fill('500')
     await blur(page)
     await d.getByRole('button', { name: /^Add [\d,]+ to / }).click()

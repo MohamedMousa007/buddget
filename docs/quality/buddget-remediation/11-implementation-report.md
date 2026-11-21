@@ -372,8 +372,8 @@ Buddgy chats now work like ChatGPT and Claude, inside the same pop-up.
 - **Gesture** (`src/lib/navigation/edgeSwipe.ts`, mounted by `EdgeSwipeBack` in `AppShell`):
   - starts within 20 pt of the leading edge and commits on release after 60 pt of mostly horizontal travel;
   - is cancelled early by a vertical or wrong-way move;
-  - ignores touches that start on the Buddgy orb (`data-no-ptr`), inputs, sliders, a horizontal scroller with content to scroll, or a finger-driven carousel (`touch-action: pan-y`, as `PaymentCardCarousel` sets);
-  - mirrors to the right edge when `<html dir="rtl">`;
+  - ignores touches that start on the Buddgy orb (`data-no-ptr`), inputs, sliders, a sheet's drag strip (`touch-none`), a horizontal scroller with content to scroll, or a finger-driven carousel (`touch-action: pan-y` on an element that does not scroll vertically, as `PaymentCardCarousel` sets). A `ModalShell` body is `pan-y` but scrolls vertically, so a swipe there still reaches the back guards;
+  - mirrors to the right edge when `<html dir="rtl">`. The i18n provider pins `dir="ltr"` today, so this branch is dormant;
   - uses passive listeners only, so pull-to-refresh and scrolling are untouched.
 - **iOS has no `canGoBack`:** `navStore` counts shell pushes since the document loaded, with `popstate` taking one off. An undercount only sends a back to Flow.
 - **Android system back gesture:** Capacitor delivers it as `backButton`, the same event as the hardware key. `MainActivity` and the manifest override nothing, so it keeps working through `goBack('android')`.
@@ -384,7 +384,7 @@ Buddgy chats now work like ChatGPT and Claude, inside the same pop-up.
 | Gesture decision: start zone, 60 pt threshold, vertical and wrong-way rejection, RTL mirror, ignored targets | `src/lib/navigation/edgeSwipe.ts`, `edgeSwipe.test.ts` | **Automated verification (runner job pending)**: written, not run on the Mac. |
 | Back action: guard first, modal, unguarded overlay, tab-root no-op, history, no-history to Flow; Android order unchanged | `src/lib/navigation/goBack.ts`, `edgeSwipe.test.ts`, `navStore.ts`, `navigate.ts` | **Automated verification (runner job pending)**: written, not run on the Mac. |
 | Android handler moved onto `goBack('android')` | `src/components/layout/AppShell.tsx` | **Native verification required**: hardware back and the system back gesture on a device (sheet closes first, inner screen goes back, exit toast on `/`). |
-| Swipe feel on iPhone: edge pickup, no clash with carousels, PlanDeck, PaydayTimeline or the orb, sheet closes first | `src/components/layout/EdgeSwipeBack.tsx` | **Native verification required** (needs a native build; none was run). There is no slide animation by design, since the owner asked for no UI change. |
+| Swipe feel on iPhone: edge pickup, no clash with carousels, PlanDeck, PaydayTimeline or the orb, sheet closes first | `src/components/layout/EdgeSwipeBack.tsx` | **Native verification required** (needs a native build; none was run). There is no slide animation by design, since the owner asked for no UI change. Multi-step screens with no back guard (for example `/start`) leave the screen on a swipe instead of stepping back one step, the same as Android back today. |
 
 ## Step 15: pocket picker (BDG-026-028)
 
@@ -400,13 +400,14 @@ Buddgy chats now work like ChatGPT and Claude, inside the same pop-up.
   - It is a sibling sheet above Add money, so the typed amount survives.
   - `PocketFormSheet` gains an optional `onCreated(id, currency)`, and `AddHoldingSheet` an optional `onPocketCreated`. The new pocket is selected and its currency taken from the callback, because the `pockets` prop is one render behind (`pocketCurrency`).
 - **Strings:** `searchPockets` and `addPocket` added in en and ar.
-- **Journey suite:** `d-pockets.spec.ts` now picks Into and From through the picker, and a new case D3 covers Add pocket from Add money: the amount is kept, the new pocket is selected, and the deposit is saved. The case is listed in `e2e/README.md`.
+- **Journey suite:** a shared `pickPocket` helper (`e2e/journeys/lib/ui.ts`) picks Into and From through the picker in `d-pockets.spec.ts` (D) and `round2/r1-core.spec.ts`. Q3 in `q-quick-add.spec.ts` asserts the preselected Into field instead of clicking a pocket card. A new case, D3, covers Add pocket from Add money: the amount is kept, the new pocket is selected, and the deposit is saved. It is listed in `e2e/README.md`.
+- **Left as is:** Withdraw's "Move to" pocket choice stays a compact horizontal chip row. The picker keeps its search text between opens, as the provider mode already does.
 
 | Item | Files | Status |
 |---|---|---|
 | Variant renders pockets (name, balance, glyph, search, Add pocket); provider mode unchanged | `ProviderPickerSheet.tsx`, `ProviderPickerSheet.pockets.render.test.ts` | **Automated verification (runner job pending)**: written, not run on the Mac. |
 | Picking a pocket sets the form value; Add pocket calls the add flow; no Add pocket on Withdraw | `MoneySheetParts.tsx`, `PocketPickerField.render.test.ts`, `selectedPocket.ts` (+ test) | **Automated verification (runner job pending)** at the prop-wiring and pure-logic level. Vitest here is node-only, so the state changes inside the sheet are covered by journey D3. |
-| Add pocket opens the existing flow and returns to Add money with the amount kept and the new pocket selected | `AddSavingsSheetV3.tsx`, `AddHoldingSheet.tsx`, `PocketFormSheet.tsx`, `e2e/journeys/specs/d-pockets.spec.ts` (D3) | **Automated verification (runner job pending)**: journey written, not run. |
+| Add pocket opens the existing flow and returns to Add money with the amount kept and the new pocket selected | `AddSavingsSheetV3.tsx`, `AddHoldingSheet.tsx`, `PocketFormSheet.tsx`, `e2e/journeys/specs/d-pockets.spec.ts` (D3) | **Automated verification (runner job pending)**: journey written, not run. The runner job should cover `d-pockets` (D, D2, D3), `q-quick-add` Q3 and `round2/r1-core`. |
 | Look of the field row and picker in en and ar, light and dark; the numpad if it is open when Add pocket is tapped | same | **Manual verification required**. |
 
 ## Step 17: setup bar and Privacy & lock (BDG-002, BDG-023)

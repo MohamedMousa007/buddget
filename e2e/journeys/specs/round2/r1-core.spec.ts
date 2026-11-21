@@ -4,7 +4,7 @@ import { appNav, expect, goto, localState, localWait, signIn, test, tile } from 
 import { rows } from '../../lib/admin'
 import { serverRows } from '../../lib/server'
 import { installApiShim, forceFlags } from '../../lib/apiShim'
-import { addAccount, addBorrow, addExpense, addMoneyIn, blur, dialog, payDebt, pickMethod } from '../../lib/ui'
+import { addAccount, addBorrow, addExpense, addMoneyIn, blur, dialog, payDebt, pickMethod, pickPocket } from '../../lib/ui'
 
 const ERR = /Something went wrong|Application error|Unhandled Runtime Error/i
 const qnbTile = (p: Page) => p.getByRole('button', { name: /QNB Alahli/ }).first()
@@ -42,7 +42,7 @@ test('R02 pocket funding is an internal move: Flow shows no income and no spendi
   await expect(form).toBeHidden()
   await page.getByRole('button', { name: 'Add money' }).first().click()
   const d = dialog(page, 'Add money')
-  await d.getByRole('radio', { name: /QA R02 pocket/ }).click()
+  await pickPocket(page, d, 'Into', /QA R02 pocket/)
   await d.getByRole('textbox', { name: 'Amount' }).fill('600')
   await blur(page)
   await d.getByRole('button', { name: /^Add [\d,]+ to QA R02 pocket/ }).click()

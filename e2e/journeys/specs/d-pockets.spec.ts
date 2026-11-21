@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- test code reads untyped store and PostgREST JSON */
-import type { Locator, Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
 import { expect, goto, localWait, test, tile } from '../lib/fixtures'
 import { serverRows } from '../lib/server'
-import { addAccount, blur, dialog } from '../lib/ui'
+import { addAccount, blur, dialog, pickPocket } from '../lib/ui'
 
 const netWorthFlow = async (page: Page) => { await goto(page, '/flow'); return tile(page, 'Net worth') }
 const qnbBalance = async (page: Page) => {
@@ -23,17 +23,6 @@ async function newPocket(page: Page, o: { kind: RegExp; name?: string; amount: n
   await blur(page)
   await form.getByRole('button', { name: 'Create pocket' }).click()
   await expect(form).toBeHidden()
-}
-
-/** BDG-026-028: the pocket choice is one field that opens the provider-style picker over the pockets. */
-async function pickPocket(page: Page, sheet: Locator, leg: 'Into' | 'From', name: RegExp) {
-  const field = sheet.getByRole('button', { name: new RegExp(`^${leg}`) })
-  if (name.test((await field.getAttribute('aria-label')) ?? '')) return
-  await field.click()
-  const picker = dialog(page, 'Choose a pocket')
-  await picker.getByRole('radio', { name }).click()
-  await expect(picker).toBeHidden()
-  await expect(field).toHaveAttribute('aria-label', new RegExp(`^${leg}: ${name.source}`))
 }
 
 test('D savings pocket allocate > withdraw > balances > net worth', async ({ page, user }) => {
