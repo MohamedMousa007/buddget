@@ -33,7 +33,7 @@ describe('edge swipe verdict', () => {
 })
 
 describe('edge swipe ignored targets', () => {
-  const plain = { overflowX: 'visible', touchAction: 'pan-x pan-y' }
+  const plain = { overflowX: 'visible', overflowY: 'visible', touchAction: 'pan-x pan-y' }
   const el = (sel: string | null, extra: Partial<EdgeTarget> = {}, parent: EdgeTarget | null = null): EdgeTarget => ({
     closest: (q: string) => (sel && q.split(', ').some((s) => s === sel) ? {} : null),
     parentElement: parent,
@@ -47,13 +47,17 @@ describe('edge swipe ignored targets', () => {
   it('ignores a horizontal scroller with content to scroll, not one that fits', () => {
     const scroller = el(null, { scrollWidth: 800, clientWidth: 390 })
     const fits = el(null, { scrollWidth: 390, clientWidth: 390 })
-    const style = () => ({ overflowX: 'auto', touchAction: 'pan-x pan-y' })
+    const style = () => ({ ...plain, overflowX: 'auto' })
     expect(isIgnoredTarget(el(null, {}, scroller), (e) => (e === scroller ? style() : plain))).toBe(true)
     expect(isIgnoredTarget(el(null, {}, fits), (e) => (e === fits ? style() : plain))).toBe(false)
   })
   it('ignores a finger-driven carousel (touch-action pan-y)', () => {
     const deck = el(null)
-    expect(isIgnoredTarget(el(null, {}, deck), (e) => (e === deck ? { overflowX: 'visible', touchAction: 'pan-y' } : plain))).toBe(true)
+    expect(isIgnoredTarget(el(null, {}, deck), (e) => (e === deck ? { ...plain, touchAction: 'pan-y' } : plain))).toBe(true)
+  })
+  it('a sheet body (vertical scroller, pan-y) is not a carousel, so the swipe reaches the back guards', () => {
+    const body = el(null)
+    expect(isIgnoredTarget(el(null, {}, body), (e) => (e === body ? { ...plain, overflowY: 'auto', touchAction: 'pan-y' } : plain))).toBe(false)
   })
   it('accepts plain page content', () => {
     expect(isIgnoredTarget(el(null, {}, el(null)), () => plain)).toBe(false)

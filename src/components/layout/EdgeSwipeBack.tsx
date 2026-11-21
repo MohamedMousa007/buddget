@@ -12,7 +12,7 @@ import { isScrollLocked } from '@/lib/ui/scrollLock'
 
 const computed = (el: EdgeTarget) => {
   const s = getComputedStyle(el as Element)
-  return { overflowX: s.overflowX, touchAction: s.touchAction }
+  return { overflowX: s.overflowX, overflowY: s.overflowY, touchAction: s.touchAction }
 }
 
 /**

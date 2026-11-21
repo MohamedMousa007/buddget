@@ -35,19 +35,20 @@ const OWN_TOUCH = '[data-no-ptr], input, textarea, select, [contenteditable]:not
 /**
  * Should a swipe starting on `target` be left alone? True for inputs, sliders, the orb, a
  * horizontal scroller (overflow-x with content to scroll) and a finger-driven carousel
- * (`touch-action: pan-y` or `none`, as PaymentCardCarousel sets).
+ * (`touch-action: pan-y` or `none`, as PaymentCardCarousel sets). A vertical scroller with
+ * `pan-y` (a ModalShell sheet body) is not a carousel, so a swipe there reaches the back guards.
  */
 export function isIgnoredTarget(
   target: EdgeTarget | null,
-  style: (el: EdgeTarget) => { overflowX: string; touchAction: string },
+  style: (el: EdgeTarget) => { overflowX: string; overflowY: string; touchAction: string },
 ): boolean {
   if (!target?.closest) return false
   if (target.closest(OWN_TOUCH)) return true
+  const scrolls = (o: string) => o === 'auto' || o === 'scroll'
   for (let el: EdgeTarget | null | undefined = target; el; el = el.parentElement) {
     const s = style(el)
-    if (s.touchAction === 'pan-y' || s.touchAction === 'none') return true
-    const scrolls = s.overflowX === 'auto' || s.overflowX === 'scroll'
-    if (scrolls && (el.scrollWidth ?? 0) > (el.clientWidth ?? 0) + 1) return true
+    if (s.touchAction === 'none' || (s.touchAction === 'pan-y' && !scrolls(s.overflowY))) return true
+    if (scrolls(s.overflowX) && (el.scrollWidth ?? 0) > (el.clientWidth ?? 0) + 1) return true
   }
   return false
 }
