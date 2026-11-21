@@ -59,11 +59,12 @@ function persistBaseline(userId: string, snap: Snapshot | null): void {
 
 /** Imperative flush handle set by the mounted `SupabaseFinanceSync`. Other
  *  modules (e.g. AuthProvider.signOut) call `flushFinanceNow()` to drain any
- *  pending debounced write before they wipe localStorage. Returns a promise
- *  so callers can await the round-trip. */
+ *  pending debounced write before they wipe localStorage. Resolves true only
+ *  when the server has acknowledged every local edit (D-2: a flush skipped
+ *  offline or refused by the server leaves edits unsent and resolves false). */
 let pendingFlush: (() => Promise<boolean>) | null = null
-export function flushFinanceNow(): Promise<void> {
-  return pendingFlush ? pendingFlush().then(() => undefined) : Promise.resolve()
+export function flushFinanceNow(): Promise<boolean> {
+  return pendingFlush ? pendingFlush() : Promise.resolve(true)
 }
 
 /** Imperative full-sync handle (set by the mounted `SupabaseFinanceSync`).
@@ -416,8 +417,9 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     }
     window.addEventListener(STORAGE_QUOTA_EVENT, onQuota)
 
-    // Expose for imperative callers (signOut).
-    pendingFlush = flush
+    // Expose for imperative callers (signOut). Before hydration the store holds nothing of this user's to lose.
+    const flushAcked = async () => (await flush()) && (!hydrated.current || !hasUnsent())
+    pendingFlush = flushAcked
     const stopResume = onSecondFactorResolved(() => {
       retryAttempt = 0
       void pendingSync?.().catch((e) => console.error('[finance sync] resume after second factor failed', e))
@@ -598,7 +600,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       if (timer.current) clearTimeout(timer.current)
       if (retryTimer) clearTimeout(retryTimer)
       if (gateTimer) clearTimeout(gateTimer)
-      if (pendingFlush === flush) pendingFlush = null
+      if (pendingFlush === flushAcked) pendingFlush = null
       pendingSync = null
     }
   }, [userId])

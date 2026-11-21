@@ -422,11 +422,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     if (!configured) return
+    // D-2: send, then decide. The final flush runs while sync is still live; only edits the server acknowledged count
+    // as sent. Anything unsent (offline, refused, or still in flight after a short wait) is the user's call, asked
+    // BEFORE any teardown, so "Stay signed in" leaves the session, the store and the sync exactly as they were.
+    const u = unsentCopyRef.current
+    const wipe = await settleBeforeWipe(flushFinanceNow(), () =>
+      confirmRef.current?.({ title: u.signOutUnsentTitle, body: u.signOutUnsentBody, confirmLabel: u.signOutAnyway, cancelLabel: u.signOutStay, destructive: true }) ?? Promise.resolve(false))
+    if (!wipe) return
     // Mark as user-initiated so the SIGNED_OUT handler skips the "session expired" modal.
     userInitiatedSignOutRef.current = true
-    // Start the final flush BEFORE suspending: flush() checks the suspend flag synchronously, so a flush begun
-    // after suspendFinanceSync() is a no-op and pending edits would be wiped by clearBudgetData().
-    const finalFlush = flushFinanceNow()
     // Suspend the subscribe listener synchronously so the upcoming store reset
     // doesn't trigger a flush that would overwrite server data with defaults.
     try { suspendFinanceSync() } catch { /* no-op */ }
@@ -463,10 +467,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // getSession() restores it and the "signed-out" user is logged back in.
     // Flush pending writes first (token still valid). Local scope clears storage
     // with NO network round-trip, so it can't hang on a slow link.
-    // Send, then wipe; a stalled request never holds the wipe: after a short wait the user decides.
-    const u = unsentCopyRef.current
-    await settleBeforeWipe(finalFlush, () =>
-      confirmRef.current?.({ title: u.signOutUnsentTitle, body: u.signOutUnsentBody, confirmLabel: u.signOutAnyway, cancelLabel: u.signOutKeepWaiting, destructive: true }) ?? Promise.resolve(true))
     // Explicit sign-out only (session expiry never reaches here): free this device's biometric binding while the token is still valid.
     try { await unbindBiometricOnSignOut() } catch (e) { console.error('[auth] biometric unbind failed', e) }
     try { await supabase.auth.signOut({ scope: 'local' }) } catch (e) { console.error('[auth] signOut failed', e) }
