@@ -510,40 +510,50 @@ Differences from the boards:
 
 ## Step 18: real bank logos (BDG-024)
 
-34 of the 48 catalogue banks now show their official logo, on a white padded tile, in place of the monogram. The other 14 keep today's monogram. Sources, licences, sizes and the skip reasons are in `bank-logos.md`.
+30 of the 48 catalogue banks now show their official logo on a white padded tile instead of the monogram. The other 18 keep today's monogram. `bank-logos.md` lists the sources, licences, sizes and the reason for each skip.
 
-- With logos (34):
-  - EG: nbe, cib, banquemisr, qnbeg, banqueducaire, aalex, albarakaeg, hsbceg.
-  - SA: d360, alrajhi, snb, riyadbank, sabb, alinma, albilad, anb, aljazira.
-  - AE: enbd, adcb, fab, mashreq, cbd.
-  - KW: nbk, kfh, boubyan, gulfbank, burgan.
-  - QA: qnb, qib, cbq.
-  - BH: bbk, nbb.
-  - OM: bankmuscat, bankdhofar.
-- Skipped (14): aaib, faisaleg, adibeg, adib, dib, rakbank, liv, wio, zand, weyay, dohabank, ilabank, bisb, nbo.
-- Wallets, BNPL brands and card schemes are not in this pass.
-- Files: 28 SVG and 6 PNG (max 512 px), 864 KB in all.
-  - Largest: `banquemisr.svg` (116 KB), `nbe.svg` (112 KB), `aalex.svg` (71 KB).
-  - Most of the rest are under 30 KB.
-- How it is wired:
-  - `BrandMark` gains an optional `logo` prop. The default is unchanged: no logo means the monogram on the brand colour.
-  - With a logo, the squircle is a white tile with a border-token ring, the same in both themes. The image is padded by 14% of the size. The alert badge still sits on the corner.
-  - `src/lib/payment/bankLogos.ts` holds the id-to-file map:
-    - `bankLogoSrc(id)` returns the file for an id.
-    - `bankLogoForName(name)` goes through `resolvePaymentBrandKey` and memoises the result. Generic names such as "Cash" and "Bank" resolve to nothing.
-  - Paths are root-relative `/logos/banks/<file>`, like `ProviderBadge`'s `/providers/`. The app sets no `basePath`, and the Capacitor export serves `public/` at the root.
-- Call sites passing `logo`:
-  - `AccountRow` (not for Cash) and `AccountPicker`.
-  - `AddAccountSheet` provider field and `DetectedAccountsSheet`.
-  - Onboarding `StepAccounts` (not for Cash).
-  - Buddgy `AccountPick` and `MoveBody`.
-  - `ProviderPickerSheet` catalogue rows reuse `BrandMark` at 38 px when a logo exists. Otherwise they keep the tinted initials.
-- Card faces (`CardFace`, `CardFaceChip`) print the bank's name as text, not a mark. They are unchanged.
+**With logos (30):**
+- EG: nbe, cib, banquemisr, qnbeg, aaib, aalex, albarakaeg, hsbceg
+- SA: d360, alrajhi, snb, riyadbank, sabb, alinma, albilad, anb
+- AE: enbd, adcb, fab
+- KW: nbk, kfh, boubyan, burgan
+- QA: qnb, qib, cbq
+- BH: bbk, nbb, ilabank
+- OM: bankdhofar
+
+**Official file found but too wide (6):** mashreq, gulfbank, cbd, aljazira, banqueducaire, bankmuscat.
+- Their wordmarks are wider than 4:1 and cannot be read in a 32 to 44 pt square, so they are not shipped.
+- Each needs an emblem-only official file, or the owner's call to crop.
+
+**No usable file (12):** faisaleg, adibeg, adib, dib, rakbank, liv, wio, zand, weyay, dohabank, bisb, nbo.
+
+**Not covered:** wallets, BNPL brands and card schemes. They are in scope but were not done in this pass.
+
+**Files:** 27 SVG and 3 PNG (max 512 px), 700 KB in total.
+- Largest: `banquemisr.svg` (116 KB), `nbe.svg` (112 KB).
+- No SVG optimiser is installed, so the SVGs are sanitised and whitespace-minified only.
+
+**How it works:**
+- `BrandMark` gains an optional `logo` prop. Without it, the default is unchanged: the monogram on the brand colour.
+- With a logo, the squircle becomes a white tile with a border-token ring, in both themes. The image is padded by 14% of the size, and the alert badge still sits on the corner.
+- `src/lib/payment/bankLogos.ts` maps catalogue ids to files:
+  - `bankLogoSrc(id)` returns the path for one id.
+  - `bankLogoForName(name)` resolves a name through `resolvePaymentBrandKey`, memoised. Generic names such as "Cash" or "Bank" get no logo.
+- Paths are root-relative (`/logos/banks/<file>`), the same as `ProviderBadge`'s `/providers/`. The app has no `basePath`, and the Capacitor export serves `public/` at the root.
+
+**Call sites passing `logo`:**
+- `AccountRow` (not for Cash) and `AccountPicker`
+- the `AddAccountSheet` provider field and `DetectedAccountsSheet`
+- onboarding `StepAccounts` (not for Cash)
+- Buddgy `AccountPick` and `MoveBody`
+- `ProviderPickerSheet` catalogue rows, which reuse `BrandMark` at 38 px when a logo exists and keep the tinted initials otherwise
+
+**Unchanged:** the card faces (`CardFace`, `CardFaceChip`). They print the bank's name as text, not a mark.
 
 | Item | Files | Status |
 |---|---|---|
-| Map and folder agree; every id with a file resolves to it, by id and by catalogue name; banks without a file and generic names get none | `bankLogos.ts`, `bankLogos.test.ts` | **Automated verification (runner job pending)**: written, not run on the Mac. tsc and eslint pass. |
-| SVGs carry no script, handler, foreignObject, image or external reference; PNGs are at most 512 px | `public/logos/banks/*`, `bankLogos.test.ts` | **Automated verification (runner job pending)**: written, not run on the Mac. The same regexes were checked locally against the files. |
-| `BrandMark` logo variant keeps the alert badge; without a logo it falls back to today's monogram | `BrandMark.tsx`, `accounts.render.test.ts` | **Automated verification (runner job pending)**: written, not run on the Mac. |
-| Provider picker row shows the logo; a brand without one keeps its initials | `ProviderPickerSheet.tsx`, `ProviderPickerSheet.pockets.render.test.ts` | **Automated verification (runner job pending)**: written, not run on the Mac. |
-| How the tiles look in light and dark at 32 to 44 px. Wide wordmarks (aalex, mashreq, cbd, nbe, banqueducaire) render small inside a square tile. | all call sites | **Manual verification required** (runner screenshot, then owner review). |
+| Map and folder agree. Every id with a file resolves to it, by id and by catalogue name. Banks without a file, and generic names, get no logo. | `bankLogos.ts`, `bankLogos.test.ts` | **Automated verification (runner job pending)**: written, not run on the Mac. tsc and eslint pass. |
+| SVGs carry no script, event handler, foreignObject, image or external reference. PNGs are at most 512 px. | `public/logos/banks/*`, `bankLogos.test.ts` | **Automated verification (runner job pending)**: written, not run on the Mac. The same regexes pass locally against the files. |
+| `BrandMark` logo variant keeps the alert badge. Without a logo it falls back to today's monogram. | `BrandMark.tsx`, `accounts.render.test.ts` | **Automated verification (runner job pending)**: written, not run on the Mac. |
+| A provider picker row shows the logo. A brand without one keeps its initials. | `ProviderPickerSheet.tsx`, `ProviderPickerSheet.pockets.render.test.ts` | **Automated verification (runner job pending)**: written, not run on the Mac. |
+| How the tiles look in light and dark at 32 to 44 px. Lockups near 3.5:1 (nbe, snb, riyadbank, enbd, hsbceg, qnb) read mainly by their emblem. | all call sites | **Manual verification required** (runner screenshot, then owner review). |
