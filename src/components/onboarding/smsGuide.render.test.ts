@@ -1,7 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createElement as h } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import SmsTrackingGuide, { STEPS } from './SmsTrackingGuide'
+
+vi.mock('@/components/ui/dialog/DialogProvider', () => ({ useConfirm: () => async () => true }))
+import SmsTrackingGuide, { DoneScene, STEPS } from './SmsTrackingGuide'
 import { ShortcutsScene } from './sms/ShortcutsScenes'
 
 describe('SMS guide renders', () => {
@@ -13,5 +15,19 @@ describe('SMS guide renders', () => {
     const html = renderToStaticMarkup(h(SmsTrackingGuide, {}))
     expect(html).toContain('Set up auto-tracking')
     expect(html).not.toMatch(/#[0-9a-f]{6}/i)
+  })
+  it('offers "Shortcuts already exist? Skip guide" on the intro (BDG-008)', () => {
+    expect(renderToStaticMarkup(h(SmsTrackingGuide, {}))).toContain('Shortcuts already exist? Skip guide')
+  })
+  it('the close button sits inside the header row, not over the status bar (BDG-008b)', () => {
+    const html = renderToStaticMarkup(h(SmsTrackingGuide, {}))
+    expect(html).not.toContain('absolute end-4 top-4')
+    expect(html).toMatch(/<div class="flex items-center gap-2\.5">(?:(?!<\/div>).)*aria-label="Close"/)
+  })
+  it('the done screen says "Not confirmed yet" until an SMS from this phone reached the server, never "Automation active"', () => {
+    const unverified = renderToStaticMarkup(h(DoneScene, { verified: false }))
+    expect(unverified).toContain('Not confirmed yet')
+    expect(unverified).not.toContain('Automation active')
+    expect(renderToStaticMarkup(h(DoneScene, { verified: true }))).not.toContain('Not confirmed yet')
   })
 })

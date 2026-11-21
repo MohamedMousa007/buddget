@@ -56,6 +56,15 @@ export async function promoteMain(service: ServiceClient, userId: string, leavin
   })
 }
 
+/**
+ * A heartbeat's `collects` is the phone's armed flag, which is false on every fresh install (BDG-008): it must not decide
+ * the new row against the account. An explicit `collectsSms` (the user's switch) still wins.
+ */
+async function accountWantsSms(service: ServiceClient, userId: string): Promise<boolean> {
+  const { data } = await service.from('user_settings').select('sms_tracking_enabled').eq('user_id', userId).maybeSingle()
+  return Boolean(data?.sms_tracking_enabled)
+}
+
 /** Creates this install's row, or refreshes what the phone knows about itself. Roles are never overwritten by a heartbeat. */
 export async function upsertSelf(service: ServiceClient, userId: string, deviceId: string, report: SelfReport) {
   const now = new Date().toISOString()
@@ -71,7 +80,7 @@ export async function upsertSelf(service: ServiceClient, userId: string, deviceI
     const row = {
       user_id: userId, device_id: deviceId, platform: report.platform, model: report.model ?? null,
       name, app_version: report.appVersion ?? null,
-      collects_sms: report.collectsSms ?? report.collects ?? false, last_seen_at: now,
+      collects_sms: report.collectsSms ?? (report.collects === true || (await accountWantsSms(service, userId))), last_seen_at: now,
       push_permission: report.pushPermission ?? null,
       session_id: report.sessionId ?? null,
     }

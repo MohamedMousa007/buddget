@@ -5734,6 +5734,7 @@ export type Database = {
           collects_sms: boolean
           created_at: string
           device_id: string
+          first_sms_at: string | null
           is_main: boolean
           last_seen_at: string
           last_sms_at: string | null
@@ -5757,6 +5758,7 @@ export type Database = {
           collects_sms?: boolean
           created_at?: string
           device_id: string
+          first_sms_at?: string | null
           is_main?: boolean
           last_seen_at?: string
           last_sms_at?: string | null
@@ -5780,6 +5782,7 @@ export type Database = {
           collects_sms?: boolean
           created_at?: string
           device_id?: string
+          first_sms_at?: string | null
           is_main?: boolean
           last_seen_at?: string
           last_sms_at?: string | null
@@ -6414,11 +6417,11 @@ export type Database = {
         Returns: number
       }
       ai_quota_status: { Args: { p_user: string }; Returns: Json }
+      ai_spend_today: { Args: never; Returns: Json }
       ai_turn_close_charged: {
         Args: { p_reservation: string; p_turn: string; p_user: string }
         Returns: undefined
       }
-      ai_spend_today: { Args: never; Returns: Json }
       ai_usage_state: { Args: { p_user: string }; Returns: Json }
       analytics_rollup: { Args: never; Returns: number }
       analytics_touch: {

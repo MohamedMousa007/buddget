@@ -135,6 +135,20 @@ export async function fetchDeviceCollectsSms(): Promise<boolean | null> {
   }
 }
 
+/** `boundToken`: this phone holds an active token bound to it (always true once it has delivered). */
+export interface ThisDeviceSms { firstAt: string | null; lastAt: string | null; boundToken: boolean }
+
+/** This phone's first and last SMS on the server, or null when it has no record yet or the read failed. */
+export async function fetchThisDeviceSms(): Promise<ThisDeviceSms | null> {
+  try {
+    const res = await apiFetchAuth('/api/devices')
+    if (!res.ok) return null
+    return ((await res.json()) as { thisDeviceSms?: ThisDeviceSms | null }).thisDeviceSms ?? null
+  } catch {
+    return null
+  }
+}
+
 /** A removed phone signs out and forgets its identity, so signing in again registers it as a new device. */
 async function signOutRemovedDevice(): Promise<void> {
   const { resetDeviceId } = await import('@/lib/native/deviceId')

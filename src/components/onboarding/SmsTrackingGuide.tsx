@@ -6,6 +6,7 @@ import { Check, ChevronLeft, Coffee, Copy, MessageSquare, Plus, ShieldCheck, X }
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
 import { Badge } from '@/components/ui/badge'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
@@ -125,24 +126,38 @@ function TestScreen({ keyword, onCopy }: { keyword: string; onCopy: (k: string) 
   )
 }
 
-function DoneScene() {
+/** Only an SMS from this phone reaching the server confirms the setup (BDG-008); until then the screen says so. */
+export function DoneScene({ verified }: { verified: boolean }) {
   const g = useT().smsTracking.guide
   return (
     <div className="flex flex-col items-center gap-3">
-      <span className="flex size-[72px] items-center justify-center rounded-full bg-[var(--color-brand-green)] text-[var(--color-brand-card)] shadow-[var(--shadow-md)]"><Check className="size-9" strokeWidth={3} aria-hidden /></span>
-      <Badge variant="positive" className="px-3 py-1 text-[0.8125rem]">{g.automationActive}</Badge>
+      <span className={cn('flex size-[72px] items-center justify-center rounded-full shadow-[var(--shadow-md)]', verified ? 'bg-[var(--color-brand-green)] text-[var(--color-brand-card)]' : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]')}><Check className="size-9" strokeWidth={3} aria-hidden /></span>
+      {verified
+        ? <Badge variant="positive" className="px-3 py-1 text-[0.8125rem]">{g.confirmed}</Badge>
+        : <>
+            <Badge className="px-3 py-1 text-[0.8125rem]">{g.notConfirmed}</Badge>
+            <p className="max-w-[260px] text-center text-xs text-[var(--color-brand-text-muted)]">{g.notConfirmedHint}</p>
+          </>}
     </div>
   )
 }
 
 export type SmsTrackingGuideProps = {
   onClose?: () => void
-  /** Fired when the user taps "Finish" (setup complete), before closing. Distinct from cancel/X. */
-  onComplete?: () => void
+  /**
+   * Fired on "Finish" or a confirmed "Skip guide" (records the setup claim), before closing. Distinct from cancel/X.
+   * Resolving false (the claim could not be recorded) keeps the guide open; show the reason through `error`.
+   */
+  onComplete?: () => Promise<boolean> | boolean | void
+  /** An SMS from this phone has reached the server. */
+  verified?: boolean
+  error?: string | null
 }
 
-export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGuideProps) {
+export default function SmsTrackingGuide({ onClose, onComplete, verified = false, error = null }: SmsTrackingGuideProps) {
   const g = useT().smsTracking.guide
+  const confirm = useConfirm()
+  const [busy, setBusy] = useState(false)
   const [phase, setPhase] = useState<'intro' | 'steps'>('intro')
   const [index, setIndex] = useState(0)
   const [copied, setCopied] = useState<string | null>(null)
@@ -169,19 +184,28 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
     copyTimer.current = setTimeout(() => setCopied(null), 1500)
   }, [])
   const close = useCallback(() => (onClose ? onClose() : window.history.back()), [onClose])
-  const finish = useCallback(() => { onComplete?.(); close() }, [onComplete, close])
+  const finish = useCallback(async () => {
+    setBusy(true)
+    const ok = await onComplete?.()
+    setBusy(false)
+    if (ok !== false) close()
+  }, [onComplete, close])
+  const skip = async () => {
+    if (await confirm({ title: g.skipConfirmTitle, body: g.skipConfirmBody, confirmLabel: g.skipConfirmCta, cancelLabel: g.skipConfirmCancel })) void finish()
+  }
+  const closeButton = <IconButton onClick={close} aria-label={g.ariaClose} variant="outlined" size="sm" shape="round" className="ms-auto"><X /></IconButton>
+  const errorLine = error ? <p role="alert" className="mt-2 text-center text-xs text-[var(--color-brand-amber)]">{error}</p> : null
   const restart = () => { setUsed((u) => [...u, keyword]); setPicked(null); setIndex(0) }
 
   return (
     <div className="fixed inset-0 z-[var(--z-dialog)] flex items-center justify-center bg-[var(--color-brand-bg)]">
       <div className="relative flex h-full max-h-[844px] w-full max-w-[390px] flex-col overflow-hidden bg-[var(--color-brand-bg)] safe-area-top safe-area-bottom">
-        <IconButton onClick={close} aria-label={g.ariaClose} variant="outlined" size="sm" shape="round" className="absolute end-4 top-4 z-10"><X /></IconButton>
-
         {phase === 'intro' ? (
           <section className="flex min-h-0 flex-1 flex-col px-6 pb-6 pt-5" aria-label={g.brand}>
             <div className="flex items-center gap-2.5">
               <span className="flex size-8 items-center justify-center rounded-[10px] bg-[var(--color-brand-primary)] text-base font-extrabold text-[var(--color-brand-on-primary)]" aria-hidden>B</span>
               <span className="text-base font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{g.brand}</span>
+              {closeButton}
             </div>
             <div className="flex min-h-0 flex-1 items-center py-4"><Hero /></div>
             <h1 className="text-[29px] font-bold leading-[1.15] tracking-[-0.03em] text-[var(--color-brand-text-primary)]">{g.introTitle1}<br />{g.introTitle2}</h1>
@@ -189,12 +213,15 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
             <p className="mt-4 flex items-start gap-2 text-xs leading-snug text-[var(--color-brand-text-muted)]"><ShieldCheck className="mt-px size-4 shrink-0 text-[var(--color-brand-green)]" aria-hidden />{g.trust}</p>
             <Button size="cta-block" className="mt-4 font-bold" onClick={() => { setPhase('steps'); setIndex(0) }}>{g.cta}</Button>
             <p className="mt-2.5 text-center text-xs text-[var(--color-brand-text-muted)]">{g.ctaCaption}</p>
+            <Button variant="ghost" size="touch" className="mt-1 w-full" onClick={() => void skip()} loading={busy}>{g.skipGuide}</Button>
+            {errorLine}
           </section>
         ) : (
           <section className="flex min-h-0 flex-1 flex-col px-5 pb-5 pt-4" aria-label={g.setupTitle}>
-            <div className="flex items-center gap-2 pe-12">
+            <div className="flex items-center gap-2">
               <IconButton onClick={() => (index === 0 ? setPhase('intro') : setIndex((i) => i - 1))} aria-label={g.ariaBack} variant="outlined" size="sm" shape="round"><ChevronLeft /></IconButton>
               <span className="text-[0.9375rem] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{g.setupTitle}</span>
+              {closeButton}
             </div>
             <div className="mt-3 flex gap-1" role="progressbar" aria-valuemin={1} aria-valuemax={total} aria-valuenow={index + 1} aria-label={g.stepOf(index + 1, total)}>
               {STEPS.map((_, i) => <span key={i} className={cn('h-1 flex-1 rounded-full transition-colors', i <= index ? 'bg-[var(--color-brand-primary)]' : 'bg-[var(--color-brand-sunken)]')} />)}
@@ -202,7 +229,7 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
             <p className="mt-2 text-[0.6875rem] font-semibold tabular-nums text-[var(--color-brand-text-muted)]">{g.stepOf(index + 1, total)}</p>
 
             <div className="flex min-h-0 flex-1 items-center justify-center py-3" key={index}>
-              {cur.test ? <TestScreen keyword={keyword} onCopy={onCopy} /> : cur.done ? <DoneScene /> : <ShortcutsScene id={cur.scene!} keyword={keyword} />}
+              {cur.test ? <TestScreen keyword={keyword} onCopy={onCopy} /> : cur.done ? <DoneScene verified={verified} /> : <ShortcutsScene id={cur.scene!} keyword={keyword} />}
             </div>
             {cur.scene === 'messageContains' ? (
               <KeywordChips words={allGuideKeywords(baseCurrency)} active={keyword} onPick={(k) => { setPicked(k); onCopy(k) }} />
@@ -217,7 +244,7 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
               {cur.done ? (
                 <>
                   <Button size="cta" onClick={restart} className="flex-1 font-bold"><Plus className="size-4" aria-hidden />{g.addKeyword}</Button>
-                  <Button variant="outline" size="cta" onClick={finish} className="flex-1 font-bold">{g.finish}</Button>
+                  <Button variant="outline" size="cta" onClick={() => void finish()} loading={busy} className="flex-1 font-bold">{g.finish}</Button>
                 </>
               ) : (
                 <>
@@ -226,6 +253,7 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
                 </>
               )}
             </div>
+            {errorLine}
           </section>
         )}
 

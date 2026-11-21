@@ -12,6 +12,7 @@ import { registerPushNotifications } from '@/lib/native/pushNotifications'
 import { navigate } from '@/lib/navigation/navigate'
 import { trackOnboarding } from '@/lib/onboarding/track'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useT } from '@/lib/i18n'
 import { stepLead, stepTitle } from './BuddgyHead'
 import type { StepChrome } from './chrome'
 import { JourneyFrame } from './JourneyFrame'
@@ -24,7 +25,11 @@ type Sheet = 'android' | 'ios' | null
 /** Step 5 (apps only): bank-text capture and reminders, each shown working before it asks for anything. */
 export function StepAutomate({ chrome }: { chrome: StepChrome }) {
   const c = useOnboardingCopy()
-  const sms = useSmsTracking()
+  const sms = useSmsTracking({ withDeviceSms: true })
+  const guide = useT().smsTracking.guide
+  // iPhone: the same facts as Settings (BDG-008). Armed but no SMS from this phone yet is "Not confirmed yet", not done.
+  const smsDone = isIOS() ? sms.isEnabled && sms.setup.verified : sms.isEnabled
+  const smsUnconfirmed = isIOS() && sms.isEnabled && !sms.setup.verified
   const { record, patch } = useOnboarding()
   const language = useFinanceStore((s) => s.settings.language)
   const [sheet, setSheet] = useState<Sheet>(null)
@@ -90,8 +95,10 @@ export function StepAutomate({ chrome }: { chrome: StepChrome }) {
             <span className="font-mono-numbers text-[0.9375rem]" dir="ltr">−245.00</span>
           </div>
         </div>
-        {sms.isEnabled ? (
+        {smsDone ? (
           <p className="flex min-h-11 items-center gap-2 text-sm font-semibold text-[var(--color-brand-green)]"><Check className="size-4" aria-hidden />{c.automate.done}</p>
+        ) : smsUnconfirmed ? (
+          <p className="flex min-h-11 items-center text-sm font-semibold text-[var(--color-brand-text-muted)]">{guide.notConfirmed}</p>
         ) : (
           <div className="flex gap-2">
             <Button size="touch" className="flex-[1.4]" onClick={askSms} loading={sms.loading}>{c.automate.turnOn}</Button>

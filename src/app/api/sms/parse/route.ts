@@ -804,7 +804,13 @@ export async function POST(request: Request) {
     }
   }
 
-  if (logRow && deviceId) await service.from('user_devices').update({ last_sms_at: nowIso }).eq('user_id', userId).eq('device_id', deviceId)
+  if (logRow && deviceId) {
+    // first_sms_at is the "verified" fact (BDG-008): set once, never moved.
+    await Promise.all([
+      service.from('user_devices').update({ last_sms_at: nowIso }).eq('user_id', userId).eq('device_id', deviceId),
+      service.from('user_devices').update({ first_sms_at: nowIso }).eq('user_id', userId).eq('device_id', deviceId).is('first_sms_at', null),
+    ])
+  }
 
   if (!logRow) {
     // Concurrent duplicate: two shortcuts with different keywords matched the same SMS

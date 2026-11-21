@@ -780,3 +780,45 @@ Owner actions:
 | `src/app/api/billing/sync/route.test.ts` (new; rewritten for v2 with a fixture in the v2 Subscription shape) | The v1 version passed in runner job 6. The v2 version covers: 401 without a session; 503 without the key; reads only the signed-in customer's v2 subscriptions in the project with the Bearer key; event at the period start, typed `SYNC_PURCHASE`, access and country only (no Sparks, no trial end, no price); store id from the entitlement products, else the catalogue map; a repeat tap is the same id; nothing written for no access, promotional, a Sparks product, an unknown product, or a 404; `will_not_renew` and grace period kept under their own ids; sandbox from `environment`; 429, 502, billing off | passed (runner job 1.4-B, 10 of 10) |
 
 Checked on the Mac (no test runner): `tsc --noEmit` clean and `eslint` clean on the changed folders. Runner job 6: the 7 billing files passed 75 of 75, and `npm run verify` was green.
+
+## Step 1.5: SMS setup and device state, BDG-008 (2026-11-20)
+
+Branch `claude/nervous-williamson-065d73` (commits `5884c3d7` and later). Owner decision taken before building: a Shortcut run on this phone shows the switch, as a claim does (Council view).
+
+The model is now five separate facts, derived in one place (`src/lib/sms/setupState.ts`): preference (account), claimed (Finish or confirmed skip, on this phone), run seen (the Catch Bank SMS action ran here), verified (`user_devices.first_sms_at`), health (time since this phone's `last_sms_at`; quiet after 7 days). A stored token counts as none of them, and that includes the start-up arming in `AppShell`.
+
+| Item | What changed | Files | Status |
+|---|---|---|---|
+| Migration 0339 | `user_devices.first_sms_at`. Backfilled from `sms_parse_log`: the earliest row per `(user_id, device_id)`, refusal rows excluded, keyset batches of 500, `statement_timeout` 15s. `EXPLAIN` on live first: one index scan on `sms_parse_log_device_idx` per phone. Applied with `execute_sql`; `database.types.ts` regenerated from live; it also carries 0338 (Buddgy per-turn charging: `ai_turns`, `turn_id` columns), kept on the parent session's instruction. | `supabase/migrations/0339_sms_device_first_sms.sql`, `database.types.ts` | **Automated verification** (SQL checks on live, not a test suite): 15 phones, 7 with `first_sms_at`, 0 with a last SMS but no first, 0 with first after last. The 2 collecting iPhones that never delivered are exactly the 2 unverified ones. Number 0338 was skipped because an uncommitted file in another worktree holds it. `get_advisors` after the apply: nothing new. |
+| Parse route | Sets `first_sms_at` once, next to `last_sms_at`, with a second update filtered `first_sms_at is null`. It never moves. | `src/app/api/sms/parse/route.ts` | **Automated verification** (runner job 5 passed) (tests written: `route.capture.test.ts`, `e2e/sms/first-sms.mjs`). |
+| New device row | A heartbeat's `collects` (the armed flag, false on every fresh install) no longer decides a new row. The row takes the account preference unless the user's own switch (`collectsSms`) was sent. Installed builds benefit as soon as the server deploys. Side effect: an unset iPhone on an account with tracking on now counts as collecting, which `nextMain` prefers. It arms only after a claim or a run. | `src/lib/server/devices/registry.ts` | **Automated verification** (runner job 5 passed) (`registry.cap.test.ts`). Reinstall on device: **Native verification required**. |
+| Settings and onboarding | One derivation. Settings shows the switch on a claim or a run. Onboarding's green "done" now needs a verified phone; armed but unverified reads "Not confirmed yet". | `useSmsTracking.ts`, `SmsCard.tsx` (unchanged, reads `isSetup`), `StepAutomate.tsx`, `AppShell.tsx` | **Automated verification** (runner job 5 passed) (`setupState.test.ts`). |
+| Guide | Done screen says "Not confirmed yet" until this phone is verified, and never "Automation active". Finish and the new "Shortcuts already exist? Skip guide" (with a confirm dialog, `useConfirm`) both record the claim only after the token is issued and stored for this user. Otherwise the guide stays open with "Setup could not finish". The X is inside the header row on both screens. | `SmsTrackingGuide.tsx`, `claimIosSetup` in `useSmsTracking.ts`, copy in `en.ts`, `ar.ts`, `types.ts`, `settingsHubCopy.ts` | Rules: **Automated verification** (runner job 5 passed) (`claimIosSetup.test.ts`, `smsGuide.render.test.ts`). Look and copy: **Manual verification required** (the plan specified the copy and layout, so no mockup was made). |
+| Pill | Reads this phone's `last_sms_at` (new `thisDeviceSms` on `GET /api/devices`). The fallback to the newest account SMS with no device id (an older token) applies only to a phone with no SMS of its own, no active token bound to it (the server checks this, using an index on `sms_ingest_tokens`), and a Shortcut run seen on it. It feeds the pill only and never counts as verified. Live check before this rule: 1 never-delivered iPhone would otherwise have read as verified from device-less rows. The fallback query is an index scan on `sms_parse_log_user_received_idx`, checked with `EXPLAIN`. Known ceiling: another phone on an old token can still feed that pill until old tokens are retired. Copy is neutral: "No bank SMS from this iPhone for N days…", never "deleted". | `SmsIosSetupCard.tsx`, `SettingsSmsTrackingSection.tsx`, `devices/route.ts`, `devices/client.ts` | **Automated verification** (runner job 5 passed) (`setupState.test.ts`, incl. `needsLegacyReading`). On device: **Native verification required**. |
+
+Tests (runner job 5 on `114e773c`, all passed):
+
+| File | Cases |
+|---|---|
+| `src/lib/sms/setupState.test.ts` | never set up, token alone, exit midway before and after a run, finished or skip, token failure, first SMS, second phone, account switch, quiet for 9 days, old token keeps the account reading only after a run and is never verified, own reading beats legacy; `needsLegacyReading` only without own SMS and without a bound token |
+| `src/hooks/claimIosSetup.test.ts` | claim and arm only after the token is stored for this user; nothing on a failed request, offline, a token not stored, another account's token, or no user |
+| `src/components/onboarding/smsGuide.render.test.ts` | Skip guide offered; X inside the header row; done screen "Not confirmed yet" until verified, never "Automation active" |
+| `src/lib/server/devices/registry.cap.test.ts` | new row: `collects=false` takes the account preference on; stays off when the account is off; the explicit switch wins |
+| `src/app/api/sms/parse/route.capture.test.ts` | first SMS sets `first_sms_at`, a second moves only `last_sms_at`, another phone is untouched; a device-less token writes no device row |
+| `e2e/sms/first-sms.mjs` (listed in `e2e/README.md`) | the same against the real route on the 3100 server, own synthetic user, deleted at the end |
+
+**Native verification required** (owner, next build; see `10-native-test-requirements.md` BDG-008 rows): "Set up" before any run, the switch after a run, "Not confirmed yet" turning into confirmed after the first bank SMS, the pill showing this phone's last SMS, reinstall not silently off against the account preference, two iPhones each with their own reading, the X position on a notched iPhone and an SE.
+
+The test plan's journey row (`a-onboarding.spec.ts` plus Settings) is not written: the guide and the iPhone states render only in the native iOS shell (`/settings/sms` redirects elsewhere), so a browser journey cannot reach them. It moves to **Native verification required**.
+
+To do after deploy: re-run the DO block of 0339 once. It is idempotent and catches phones that delivered between the apply and the deploy. Not changed: the notifications page still shows the account-level last SMS. Android is unchanged.
+
+Runner job 5 (`114e773c`): `npm run verify` passed (lint 0 errors, types OK, 6687 tests passed and 0 failed in Cairo and New York, migration check OK, audit OK, build OK). The five BDG-008 files: 59 of 59 passed. `node e2e/sms/first-sms.mjs` on the 3100 server: 9 ok, 0 FAIL, 0 synthetic rows left. `qa-e2e-%` users left on live: 0.
+
+
+## Merge Keep Pro and SMS into branch (2026-11-21)
+
+- `claude/heuristic-williamson-2cfe0c` (BDG-019, step 1.4) and `claude/nervous-williamson-065d73` (BDG-008, step 1.5) merged in. Only docs conflicted (this report, `e2e/README.md`); code merged on its own.
+- `database.types.ts`: both sides had generated `ai_turns` and `ai_turn_close_charged`. Kept one of each, the 0338 shape with `rerun_open`/`rerun_seen` (matches live).
+- Migrations: SMS brings 0339 (`sms_device_first_sms`), filling the gap; no clash.
+- `tsc` clean, eslint 0 errors on the merged `src` files. Tests: runner job 20.
