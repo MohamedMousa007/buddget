@@ -10,6 +10,15 @@
 - **Copy:** `copywriting` + `copy-editing` skills installed from coreyhaines31/marketingskills (61.8k stars, MIT, read in full before install). Store copy v3 in `STORE_COPY_V3.md`. Every Arabic string in the app, site, emails and legal pages now uses بادجت / بادجي / برو / شرارات (commit `a41e71ae`).
 - **Version reset (commit `35a4d72e`):** iOS marketing 1.0.0 (build numbers keep counting, next 148, because Apple refuses reused numbers), Android versionName 1.0.0 and versionCode restarts at 1 (Play never received a bundle), `APP_CLIENT_VERSION` 1.0.0 (no minimum is set on the server, so nothing is blocked).
 
+## Later in the night
+
+- **Tests moved local** (owner, 2026-11-21: "You can run them local instead"). Job 21 also passed in the cloud (verify, 183 targeted tests, Arabic sweep: no overflow or broken joining, R11 + g-buddgy, 0 users left). Local `npm run verify` green twice (6,996 then 6,999 tests).
+- **iPhone SMS settings were not as agreed** (owner noticed). BDG-008 had shipped the guide's guards and the facts, but the Settings row was a link to the guide, and once set up the guide sat on a separate row. Now per `findings/B-sms-setup.md`: a "Set up" button and no switch until this phone has a setup claim or a Shortcut run; then the switch, "View guide" beside it, and this phone's status ("Not confirmed yet", "The Shortcut ran", "Connected · last SMS 2 hours ago", or the quiet note). Status times are in the page language.
+- **Real bug found by the Playwright test:** the SMS plugin loader let a second caller during the first import get `null`, so on a cold start Settings could show "Set up" on a phone that is set up. Fixed with one shared load; unit test fails on the old code, passes now.
+- **New Playwright spec** `e2e/journeys/specs/round2/ios-sms-settings.spec.ts`: a fake iOS bridge makes the browser act as the iPhone app. 4/4 green against a production build (never set up, claimed, run seen, Skip-guide confirm).
+- **App Store shot 02** replaced with the iPhone view ("Set up" button) instead of the web switch. Play keeps the Android switch shot, which is correct there.
+- **Builds:** main/dev `9f6cc604`. iOS 148 and Android vc1 went out before the SMS fix; iOS 149 / Android vc2 carry it (see the end of this file).
+
 ## Waiting on you (in order)
 
 1. **Start the "QA runner: job 21" card** (tests for the Arabic copy and the version reset). Nothing can go to main or be rebuilt until it is green. When it lands I push to dev and main, build iOS 1.0.0 (148) and Android vc1, attach build 148 to the App Store version, and retire the old TestFlight builds.
