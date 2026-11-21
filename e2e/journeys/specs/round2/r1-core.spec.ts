@@ -194,7 +194,8 @@ test('R09 feedback: sheet opens and posts one request (mocked, nothing stored)',
     if (route.request().method() === 'POST') { posts.push(route.request().postDataJSON()); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) }) }
     return route.continue()
   })
-  await goto(page, '/settings')
+  // Send feedback lives on Settings > Help & feedback since the grouped Settings redesign (b69d8b3a).
+  await goto(page, '/settings/help')
   await page.getByRole('button', { name: /^Send feedback/ }).click()
   const d = page.getByRole('dialog').last()
   await expect(d).toBeVisible()
@@ -255,8 +256,10 @@ test('R13 sign out with an unsent edit asks before wiping (QA-65)', async ({ pag
   await context.setOffline(true)
   await addExpense(page, { amount: 40, description: 'QA R13 unsent', category: 'Food', method: /QNB/ })
   await localWait(page, (s) => s.expenses.find((x: any) => x.description === 'QA R13 unsent'))
+  // Sign out is the last row of the Settings hub since the profile menu redesign (b69d8b3a); reached in-app, the page is offline.
   await page.getByRole('button', { name: /^Profile menu/ }).click()
-  await page.getByRole('menuitem', { name: 'Sign out' }).click()
+  await page.getByRole('menuitem', { name: 'Settings', exact: true }).click()
+  await page.getByRole('button', { name: 'Sign out', exact: true }).first().click()
   const seen: string[] = []
   for (let i = 0; i < 16; i++) {
     const dlg = page.getByRole('alertdialog').or(page.getByRole('dialog')).last()
