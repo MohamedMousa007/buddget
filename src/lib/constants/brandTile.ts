@@ -6,17 +6,10 @@ import { inkFor } from '@/lib/ui/contrast'
  * so each one reads as its service and none repeats: the first letters of the two words that
  * identify it (YouTube Music → YM, Apple TV → AT), or a distinctive pair for a single word
  * (Strava → SR, so it does not collide with stc → SC). Always capitals, the convention for
- * monograms. `brandTile.test.ts` fails if two brands share a mark.
+ * monograms. `brandTile.test.ts` fails if two brands share a mark. Empty since 2026-11-21, when
+ * every catalogue brand got a logo; add a mark here when a brand goes back to initials.
  */
-export const BRAND_INITIALS: Record<string, string> = {
-  golds_gym: 'GG',
-  stc: 'SC', stc_tv: 'TV',
-  stc_home: 'SH', mobily: 'MO', mobily_home: 'MH', zain_ksa: 'ZK', zain_home: 'ZH',
-  fitness_time: 'FT', anytime_fitness: 'AY', fitness_first: 'FF',
-  gymnation: 'GN', classpass: 'CL',
-  jahez: 'JA', hungerstation: 'HG', deliveroo_plus: 'DR', salam_ksa: 'SA', virgin_ksa: 'VK',
-  virgin_uae: 'VU', lebara_ksa: 'LB',
-}
+export const BRAND_INITIALS: Record<string, string> = {}
 
 /** Monogram for any service: the curated mark, else the first letters of its first two words (or first two letters), in capitals. */
 export function brandInitials(brandKey: string | null | undefined, name: string): string {

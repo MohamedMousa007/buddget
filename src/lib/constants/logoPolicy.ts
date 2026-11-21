@@ -85,7 +85,7 @@ export const LOGO_POLICY: Record<string, LogoPolicy> = {
   fortnite_crew: 'logo', // YELLOW owner decision 2026-11-19: real logo
   github_copilot: 'logo', // YELLOW owner decision 2026-11-19: real logo
   godaddy: 'logo', // RED owner decision 2026-11-19: real logo
-  golds_gym: 'initials', // YELLOW USE_INITIALS
+  golds_gym: 'logo', // YELLOW USE_INITIALS, owner request 2026-11-21: real logo for every service
   google_gemini: 'logo', // RED owner decision 2026-11-19: real logo
   google_one: 'logo', // RED owner decision 2026-11-19: real logo
   google_play_pass: 'logo', // RED owner decision 2026-11-19: real logo
@@ -132,6 +132,25 @@ export const LOGO_POLICY: Record<string, LogoPolicy> = {
   youtube_music: 'logo', // YELLOW owner decision 2026-11-19: real logo
   youtube_premium: 'logo', // RED owner decision 2026-11-19: real logo
   zoom_pro: 'logo', // RED owner decision 2026-11-19: real logo
+  anytime_fitness: 'logo', // UNASSESSED owner request 2026-11-21: real logo
+  classpass: 'logo', // UNASSESSED owner request 2026-11-21: real logo
+  deliveroo_plus: 'logo', // UNASSESSED owner request 2026-11-21: real logo
+  fitness_first: 'logo', // UNASSESSED owner request 2026-11-21: real logo
+  fitness_time: 'logo', // UNASSESSED owner request 2026-11-21: real logo
+  gymnation: 'logo', // UNASSESSED owner request 2026-11-21: real logo
+  hungerstation: 'logo', // UNASSESSED owner request 2026-11-21: real logo
+  jahez: 'logo', // UNASSESSED owner request 2026-11-21: real logo
+  lebara_ksa: 'logo', // UNASSESSED owner request 2026-11-21: real logo
+  mobily: 'logo', // UNASSESSED owner request 2026-11-21: real logo
+  mobily_home: 'logo', // UNASSESSED owner request 2026-11-21: real logo
+  salam_ksa: 'logo', // UNASSESSED owner request 2026-11-21: real logo
+  stc: 'logo', // UNASSESSED owner request 2026-11-21: real logo
+  stc_home: 'logo', // UNASSESSED owner request 2026-11-21: real logo
+  stc_tv: 'logo', // UNASSESSED owner request 2026-11-21: real logo
+  virgin_ksa: 'logo', // UNASSESSED owner request 2026-11-21: real logo
+  virgin_uae: 'logo', // UNASSESSED owner request 2026-11-21: real logo
+  zain_home: 'logo', // UNASSESSED owner request 2026-11-21: real logo
+  zain_ksa: 'logo', // UNASSESSED owner request 2026-11-21: real logo
 }
 
 export function logoAllowed(brandKey: string | null | undefined): boolean {

@@ -601,3 +601,41 @@ The owner supplied logo files in two batches and asked for Zand to be removed. *
 | The map matches the folder, deduped. adibeg shares adib's file. Every owner-supplied id resolves by id and by name. Zand is out of the catalogue and gets no logo and no brand. | `bankLogos.ts`, `bankLogos.test.ts` | Tests written, not run on the Mac (cloud runner job pending). tsc and eslint pass. The SVG and PNG checks were desk-checked against all 51 files. |
 | The resolver keeps ENBD, ADCB, DIB, ADIB, ADIB Egypt, Faisal and BisB. The six new brands resolve. Zand resolves to null. | `paymentMethodDefaults.ts`, `__tests__/paymentBrandCatalog.test.ts` | Tests written, not run on the Mac (cloud runner job pending). |
 | How the new tiles look at 32 to 44 pt, especially the rakbank and emiratesislamic crops, Liv's yellow on white, Mashreq's flag-ribbon art, and the wide gulfbank, cbd, bankmuscat, DIB, Doha and Al Hilal lockups. | `public/logos/banks/*` | **Manual verification required** (runner screenshot, then owner review). |
+
+## Step 19: crisp subscription service logos
+
+The owner asked for high-quality, crisp logos for every service on the Subscriptions page. Sources and sizes for each file are in `subscription-icons.md`.
+
+**Coverage before:** 115 WebPs. 7 were low resolution and had been upscaled from tiny sources:
+- du_home and du_mobile: 57 px
+- etisalat_uae: 48 px
+- gym: 128 px, a letter placeholder
+- hulu: 180 px
+- paramount_plus: 256 px
+- peacock: 128 px
+
+20 catalogue services had no file and showed initials: anytime_fitness, classpass, deliveroo_plus, fitness_first, fitness_time, golds_gym, gymnation, hungerstation, jahez, lebara_ksa, mobily, mobily_home, salam_ksa, stc, stc_home, stc_tv, virgin_ksa, virgin_uae, zain_home and zain_ksa.
+
+**Done:**
+- The 7 low-res files were replaced and the 20 missing ones added. They are 512×512 WebPs taken from each service's own App Store icon (1024 px) or Google Play icon (512 px). None was upscaled.
+- Where the current icon carries a Saudi National Day flag band:
+  - stc: the purple wordmark band was kept and squared.
+  - Mobily: rebuilt from the official vector glyph in the icon's own colours.
+  - Zain: the Play icon has no flag band, so it was used instead.
+- gym: now the app's lucide `Dumbbell` glyph on the catalogue purple.
+- `LOGO_POLICY` lists the 19 new brands as `logo`. golds_gym was flipped from `initials`, which the owner can revert.
+- `BRAND_INITIALS` is now empty, since no catalogue brand shows initials any more.
+- The 7 superseded source PNGs in `assets/restricted-subscription-icons/` were overwritten with the new tiles.
+
+**Rendering:**
+- No blur source was found. There are no filters or transforms, and tiles use `object-contain` with padding.
+- The largest mark is 42 pt (126 px at @3x), and 512 px covers it.
+- Native builds serve the file as is (`unoptimized`).
+- On web, `next/image` serves a 96 px image for the 48 pt tile, whose mark is 108 px at @3x. That gap is small, so no code change was made.
+
+**Spot-check:** all 108 existing 512 px files were viewed at 1:1. None showed heavy artefacts or a tiny mark, and none was re-exported.
+
+| Item | Files | Status |
+|---|---|---|
+| Every logo key resolves to a square WebP of at least 512 px, read from the VP8, VP8L or VP8X header. Every catalogue service has a logo. | `logoPolicy.test.ts`, `logoPolicy.ts`, `brandTile.ts` | Tests written, not run on the Mac (cloud runner job pending). tsc and eslint pass. The header parser was checked with node against all 135 files and against VP8L and VP8X samples. |
+| How the 27 new tiles look in the 40, 48 and 56 pt tiles | `public/subscription-icons/*` | **Manual verification required** (runner screenshot, then owner review). |
