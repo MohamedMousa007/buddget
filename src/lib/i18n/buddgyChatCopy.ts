@@ -166,7 +166,7 @@ const ar: BuddgyChatCopy = {
   retry: 'حاول مرة أخرى',
   keepGoing: 'كمّل',
   advisorFree: 'تستخدم إجابة المستشار المجانية لهذا الشهر.',
-  advisorLocked: 'المستشار ضمن Pro. هذه الإجابة من النموذج السريع.',
+  advisorLocked: 'المستشار ضمن برو. هذه الإجابة من النموذج السريع.',
   longChat: 'هذه المحادثة طالت. المحادثة الجديدة أسرع في الرد.',
   checking: (what) => `أراجع ${what}…`,
   checked: 'راجعت',

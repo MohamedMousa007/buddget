@@ -37,6 +37,6 @@ describe('floating Buddgy button label (QA-64)', () => {
     const { en } = await import('./dictionaries/en')
     const { ar } = await import('./dictionaries/ar')
     expect(en.modals.fabAskAi).toContain('Buddgy')
-    expect(ar.modals.fabAskAi).toContain('Buddgy')
+    expect(ar.modals.fabAskAi).toContain('بادجي')
   })
 })

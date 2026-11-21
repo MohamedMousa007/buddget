@@ -16,9 +16,9 @@ export const UPDATE_GATE_COPY: Record<Locale, UpdateGateCopy> = {
     noLink: 'Open your buddget download link (TestFlight on iPhone, the download link on Android) and install the latest version.',
   },
   ar: {
-    title: 'حدّث buddget للمتابعة',
+    title: 'حدّث بادجت للمتابعة',
     body: 'هذا الإصدار قديم ولم يعد قادرًا على الاتصال. بياناتك بأمان وستجدها فور التحديث.',
     cta: 'حدّث الآن',
-    noLink: 'افتح رابط تحميل buddget (TestFlight على الآيفون، ورابط التحميل على أندرويد) وثبّت أحدث إصدار.',
+    noLink: 'افتح رابط تحميل بادجت (TestFlight على الآيفون، ورابط التحميل على أندرويد) وثبّت أحدث إصدار.',
   },
 }

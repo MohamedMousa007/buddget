@@ -160,7 +160,7 @@ export const voiceCopyAr: VoiceCopy = {
   micRequired: ' (يلزم السماح بالوصول إلى الميكروفون.)',
   cancel: 'إلغاء',
   micNeededTitle: 'نحتاج إلى الوصول إلى الميكروفون',
-  micNeededBody: 'اسمح بالوصول إلى الميكروفون ليتمكن buddget من سماع مصروفك.',
+  micNeededBody: 'اسمح بالوصول إلى الميكروفون ليتمكن بادجت من سماع مصروفك.',
   allowMic: 'السماح بالميكروفون',
   transcribing: 'جارٍ تفريغ صوتك…',
   transcribingShort: 'جارٍ التفريغ…',

@@ -277,7 +277,7 @@ export const onboardingCopyAr: OnboardingCopy = {
   leaveGo: 'غادر الإعداد',
   about: {
     badge: 'حوالي دقيقتين',
-    title: 'أهلًا، أنا Buddgy. ماذا أناديك؟',
+    title: 'أهلًا، أنا بادجي. ماذا أناديك؟',
     nameLabel: 'اسمك',
     namePlaceholder: 'اسمك الأول',
     countryLabel: 'أين تعيش؟',
@@ -342,7 +342,7 @@ export const onboardingCopyAr: OnboardingCopy = {
   },
   automate: {
     title: 'دع رسائلك تكتب عنك',
-    lead: 'شيئان يجعلان buddget يعمل وحده. كلاهما اختياري ويمكنك تفعيلهما لاحقًا.',
+    lead: 'شيئان يجعلان بادجت يعمل وحده. كلاهما اختياري ويمكنك تفعيلهما لاحقًا.',
     smsTitle: 'التقاط رسائل البنك',
     smsSub: 'كل عملية شراء تُسجَّل وحدها',
     smsExample: 'CIB: EGP 245.00 spent at Carrefour. Available balance EGP 13,955.00',
@@ -355,10 +355,10 @@ export const onboardingCopyAr: OnboardingCopy = {
     pushSub: 'تنبيه عندما يهم، بلا إزعاج',
     pushAllow: 'اسمح بالتذكيرات',
     done: 'تم',
-    webNote: 'التقاط رسائل البنك والتذكيرات متوفران في تطبيق buddget للآيفون والأندرويد.',
+    webNote: 'التقاط رسائل البنك والتذكيرات متوفران في تطبيق بادجت للآيفون والأندرويد.',
   },
   android: {
-    title: 'اسمح لـ buddget بقراءة رسائل البنك',
+    title: 'اسمح لبادجت بقراءة رسائل البنك',
     bullets: [
       'تُستخدم رسائل البنوك والمحافظ فقط. المحادثات الشخصية تُتجاهل.',
       'كل رسالة تصبح معاملة بمبلغها والتاجر والرصيد.',
@@ -370,7 +370,7 @@ export const onboardingCopyAr: OnboardingCopy = {
   },
   ios: {
     title: 'شاهدها أولًا. أعدّها في دقيقتين، مرة واحدة.',
-    lead: 'على الآيفون يمرر اختصار واحد رسائل البنك إلى buddget. سأرافقك خطوة بخطوة.',
+    lead: 'على الآيفون يمرر اختصار واحد رسائل البنك إلى بادجت. سأرافقك خطوة بخطوة.',
     steps: ['تصل رسالة البنك', 'يعمل الاختصار وحده', 'تظهر المعاملة'],
     setup: 'أعدّها الآن، نحو دقيقتين',
     later: 'لاحقًا',
@@ -407,7 +407,7 @@ export const onboardingCopyAr: OnboardingCopy = {
     accountsRow: { title: 'حساباتك', sub: 'البنك والمحفظة والنقد لتكون الأرصدة حقيقية' },
     smsRow: { title: 'التقاط رسائل البنك', sub: 'المشتريات تُسجَّل وحدها' },
     paydayRow: { title: 'الدخل والراتب', sub: 'لأعدّ لك الأيام' },
-    budgetRow: { title: 'ميزانيتك', sub: 'نحو دقيقتين مع Buddgy' },
+    budgetRow: { title: 'ميزانيتك', sub: 'نحو دقيقتين مع بادجي' },
     expenseRow: { title: 'تتبّع أول مصروف', sub: 'اضغط + في أي وقت' },
   },
 }

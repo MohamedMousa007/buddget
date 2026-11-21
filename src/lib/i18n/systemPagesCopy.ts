@@ -47,7 +47,7 @@ export const systemPagesCopyAr: SystemPagesCopy = {
   routeError: { title: 'حدث خطأ ما', retry: 'حاول مرة أخرى', report: (id) => `البلاغ ${id}` },
   notFound: { title: 'الصفحة غير موجودة', body: 'هذه الصفحة غير موجودة أو تم نقلها.', back: 'العودة إلى المعاملات' },
   rootError: {
-    title: 'واجه buddget مشكلة',
+    title: 'واجه بادجت مشكلة',
     body: 'بياناتك بأمان. حاول مرة أخرى، وإذا تكرر الأمر فاذكر رقم البلاغ للدعم.',
     retry: 'حاول مرة أخرى',
     report: (id) => `البلاغ ${id}`,

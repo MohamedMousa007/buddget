@@ -506,7 +506,7 @@ const ar: SettingsHubCopy = {
     boardState: { published: 'مفتوح للتصويت', planned: 'مخطط له', shipped: 'نُفِّذ' },
     upvote: 'تصويت بالموافقة',
     downvote: 'تصويت بالرفض',
-    inboxHint: 'ردود فريق buddget',
+    inboxHint: 'ردود فريق بادجت',
     inboxEmpty: 'لم ترسل شيئاً بعد.',
     reply: 'إرسال',
     replyHint: 'اكتب ردك',
@@ -586,7 +586,7 @@ const ar: SettingsHubCopy = {
     privacy: { label: 'سياسة الخصوصية', keywords: 'legal data privacy خصوصية' },
     about: { label: 'حول بادجت', keywords: 'version story contact social about حول الإصدار' },
   },
-  page: { founderNote: 'يظهر هذا لك وحدك لأنك عضو في نادي المؤسسين', betaNote: 'يظهر هذا لك وحدك لأنك مختبر تجريبي', editProfile: 'تعديل الملف الشخصي', membership: 'العضوية', preferences: 'التفضيلات', tracking: 'التتبع وBuddgy', privacy: 'الخصوصية والبيانات', support: 'الدعم', appearance: 'المظهر', themeSystem: 'النظام', notifications: 'الإشعارات', buddgyAi: 'Buddgy والذكاء الاصطناعي', dataBackup: 'البيانات والنسخ الاحتياطي', dataBackupHint: 'التصدير والاستعادة وما لا يُحتسب', helpFeedback: 'المساعدة والملاحظات', aboutLegal: 'حول التطبيق والخصوصية والشروط', twoFactorOn: 'مفعّل', staff: 'فريق buddget', staffRole: 'مسؤول', openPortal: 'فتح اللوحة', cards: 'البطاقات' },
+  page: { founderNote: 'يظهر هذا لك وحدك لأنك عضو في نادي المؤسسين', betaNote: 'يظهر هذا لك وحدك لأنك مختبر تجريبي', editProfile: 'تعديل الملف الشخصي', membership: 'العضوية', preferences: 'التفضيلات', tracking: 'التتبع وبادجي', privacy: 'الخصوصية والبيانات', support: 'الدعم', appearance: 'المظهر', themeSystem: 'النظام', notifications: 'الإشعارات', buddgyAi: 'بادجي والذكاء الاصطناعي', dataBackup: 'البيانات والنسخ الاحتياطي', dataBackupHint: 'التصدير والاستعادة وما لا يُحتسب', helpFeedback: 'المساعدة والملاحظات', aboutLegal: 'حول التطبيق والخصوصية والشروط', twoFactorOn: 'مفعّل', staff: 'فريق بادجت', staffRole: 'مسؤول', openPortal: 'فتح اللوحة', cards: 'البطاقات' },
   menu: { helpFeedback: 'المساعدة والملاحظات', openSettings: 'الإعدادات', signIn: 'تسجيل الدخول', closeMenu: 'إغلاق القائمة', adminPortal: 'لوحة الإدارة', admin: 'مسؤول' },
   currency: {
     pickTitle: 'العملة الأساسية',

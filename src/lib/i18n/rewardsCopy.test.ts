@@ -22,8 +22,9 @@ describe('rewards copy', () => {
     expect(rewardsCopy.en.invite.heroSub(rewardsCopy.en.invite.rewardWeek)).toContain('a week of Pro')
     expect(rewardsCopy.en.invite.steps(rewardsCopy.en.invite.rewardSparks)[2]).toContain('500 Sparks')
   })
-  it('Arabic keeps Pro, Sparks and buddget in Latin letters', () => {
+  it('Arabic writes Pro, Sparks and buddget in Arabic letters', () => {
     const ar = flat(rewardsCopy.ar)
-    for (const word of ['Pro', 'Sparks', 'buddget']) expect(ar).toContain(word)
+    for (const word of ['برو', 'شرارات', 'بادجت']) expect(ar).toContain(word)
+    expect(ar).not.toMatch(/\b(buddget|Buddgy|Pro|Sparks?)\b/)
   })
 })
