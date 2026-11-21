@@ -686,3 +686,20 @@ Causes were found by reading code; nothing was run on the Mac. tsc and eslint pa
 | Q3 Savings tile lands on Wealth but Add money never opens | `wealth/page.tsx:110` cleared `wealthAddRequested` in an unmount cleanup. `next.config` sets `reactStrictMode: true`, so in `next dev` React runs that cleanup once on mount. The flag went false right after the first render and the sheet unmounted. The pocket picker (`1334b30e`) is not the cause: `PocketPickerField` with 0 pockets shows the "Choose pocket" placeholder, and its picker offers Add pocket; `AddHoldingSheet`/`ProviderPickerSheet` render nothing while closed. Why earlier Q3 runs passed with the same cleanup is not explained. | The unmount cleanup is removed. The request stays in the store until the sheet closes (`onClose`, which the back guard and Save both call, clears it), so it survives StrictMode and any remount. Leaving and coming back does not reopen it. A unit test was not added: the repo has no effect-capable test renderer (vitest runs in `node`, no testing-library or jsdom). Q3 is the coverage. | Q3 journey to rerun (runner job pending) |
 
 Note: this branch is 55 commits behind `origin/main`, including the sync fix branch (`claude/ecstatic-shamir-e2f695`: R14, R17, D-4 to D-9). Only D-2 was ported here. A merge of main would bring the rest.
+
+## Merge main into branch
+
+`origin/main` (50927050, 55 commits: the sync fix branch `claude/ecstatic-shamir-e2f695` with R14, R17, D-4 to D-9, S-1 to S-7, S-2 held-pocket exits, S8a/S8b/S9 fixes) merged into this branch with a merge commit (f3bd26aa). Nothing was rebased or force-pushed. tsc passes; eslint on the conflicted files: 0 errors (one old warning, `uid` unused in `r1-core.spec.ts:325`).
+
+Migrations: main ends at 0336, this branch adds 0337, 0338, 0340-0343. No new duplicate numbers or file names (the duplicates that exist, 0065 to 0210, are old and on both sides). No SQL applied.
+
+D-2 sign-out flush: the cherry-picked `cc5043f7` files (`signOutFlush.ts`, `SupabaseFinanceSync.ts`, their tests) now equal main's version. `AuthProvider.tsx` differs from main only by this branch's `isAuthGateBypassRoute` (`/i/` landing). Shell routes keep `/settings/privacy`; the auth gate keeps `/reset-password`, `/auth/callback`, `/legal`, `/i/`.
+
+| Conflicted file | Resolution |
+|---|---|
+| `e2e/README.md` | Union. The d-pockets row lists D, D2, main's D3 [S-2] and this branch's picker case (now D4); the pro-rewards row keeps main's S8a H8/X6/X-4 notes and this branch's invite landing (0343) I1/I2; the `buddgy-turns` row and the `/i/` landing journey note stay. |
+| `e2e/journeys/specs/d-pockets.spec.ts` | Imports union (`addBorrow`, `pickPocket`). D uses the branch's `pickPocket` (the radio list it replaced is gone). Main's D3 [S-2] held-pocket journey kept, with its From pick moved to `pickPocket`; to pick by name it now creates its pocket as `QA Held Pocket` (main picked by `pocket.name` and filtered out Monthly Savings). The branch's Add pocket case is renamed D4 (both were D3). |
+| `e2e/journeys/specs/round2/r1-core.spec.ts` | R13 takes main's version: it loads `/settings` while online, goes offline, adds the expense, then taps Sign out there. The branch's Profile menu > Settings step is dropped; both meant "sign out from Settings", and main's avoids an in-app route change while offline. The branch's R02 `pickPocket`, R09 `/settings/help` and R11 landing changes merged cleanly. |
+| `src/components/sync/financeSync.test.ts` | Main's `saveFingerprint` mock and its S8d-6 and S-1 cases added next to the branch's D-2 cases (same `h.online` switch). |
+
+Runner focus: `financeSync.test.ts`, `signOutFlush.test.ts`, `signOutOrdering.test.ts` and the full `npm run verify`; d-pockets D to D4 (the picker meets main's first-pocket-with-money default in `WithdrawSheetV3`, and D3 now names its pocket); r1-core R02, R09, R11, R13, R14, R17; Q3; the sync suite; pro-rewards API (H8, X6, I1, I2).
