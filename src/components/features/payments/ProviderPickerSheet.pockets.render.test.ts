@@ -7,7 +7,7 @@ import { ProviderPickerSheet, filterPickerItems, type ProviderPickerItem } from 
 import { BANK_LOGO_FILES } from '@/lib/payment/bankLogos'
 
 // ModalShell portals into document.body; render its panel inline for the static render.
-vi.mock('@/components/modals/ModalShell', () => ({ ModalShell: ({ children }: { children: ReactNode }) => children }))
+vi.mock('@/components/modals/ModalShell', () => ({ ModalShell: ({ children }: { children: ReactNode }) => children, useModalTitleId: () => 'modal-title' }))
 
 const pockets: ProviderPickerItem[] = [
   { id: 'p1', name: 'Monthly Savings', subtitle: 'Vault', glyph: h('i', { id: 'g-p1' }), trailing: h('span', null, '1,250') },
