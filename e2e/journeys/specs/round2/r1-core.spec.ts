@@ -232,10 +232,9 @@ test('R11 invite link /i/<code> shows the guest pass, saves the code in the 30-d
   await page.getByRole('button', { name: 'Create your account' }).click()
   await expect(page).toHaveURL(/\/flow/)
   await page.context().clearCookies()
-  const bad = await page.request.get('/i/!!', { maxRedirects: 0 })
-  expect(bad.status()).toBe(307)
-  expect(bad.headers()['location']).not.toMatch(/\/flow\?next/)
-  expect(bad.headers()['set-cookie'] ?? '').not.toMatch(/invite/i)
+  await page.goto('/i/!!')
+  await expect.poll(() => new URL(page.url()).pathname).toBe('/')
+  expect((await page.context().cookies()).some((c) => c.name === 'buddget_invite')).toBe(false)
 })
 
 test('R12 Quick add lists its entries; scan receipt and voice entry reachable on web (recorded)', async ({ page, user }) => {

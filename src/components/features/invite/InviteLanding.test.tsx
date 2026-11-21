@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createElement, isValidElement } from 'react'
+import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 const locale = { current: 'en' as 'en' | 'ar' }
@@ -8,14 +8,10 @@ vi.mock('next/font/google', () => ({
   Pinyon_Script: () => ({ variable: 'font-signature-var', className: '' }),
   Aref_Ruqaa: () => ({ variable: 'font-signature-ar-var', className: '' }),
 }))
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn() }),
-  redirect: vi.fn((to: string) => { throw new Error(`redirect:${to}`) }),
-}))
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }))
 vi.mock('@/lib/referrals/referralsApi', () => ({ fetchInviterFirstName: vi.fn(async () => 'Mohamed') }))
 
 import { rewardsCopy } from '@/lib/i18n/rewardsCopy'
-import InviteLinkPage from '@/app/(app)/i/[code]/page'
 import { InviteLanding } from './InviteLanding'
 import { INVITE_COOKIE, readRememberedInvite, saveInviteFromLink } from './inviteCode'
 
@@ -50,11 +46,6 @@ describe('the /i/<code> landing page (BDG-005)', () => {
     expect(out).toContain('You’ve got a guest pass')
   })
 
-  it('the page renders the landing for a code and opens the app for anything else', async () => {
-    const el = await InviteLinkPage({ params: Promise.resolve({ code: 'mohame-7k2' }) })
-    expect(isValidElement(el) && (el.props as { code: string }).code).toBe('MOHAME-7K2')
-    await expect(InviteLinkPage({ params: Promise.resolve({ code: '!!' }) })).rejects.toThrow('redirect:/')
-  })
 })
 
 describe('the code is kept for sign-up, as the old link route did', () => {

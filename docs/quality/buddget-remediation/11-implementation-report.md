@@ -480,7 +480,11 @@ Boards: S004-top-after, S004-friends-after, S004-ar-after and S005-after, all ap
   - Unknown, junk and null codes returned null.
   - The ACL was `{postgres, anon, authenticated}`, with no PUBLIC execute.
   - The anon call ran.
-  - The summary still ran and returned the `held` key.
+- A second rolled-back proof inserted three referrals for one inviter: activated/`awaiting_native`, activated/`review` and rejected/`device_used`.
+  - The summary returned `held` = `awaiting_native` once and `review` once.
+  - The rejected row had `held` null.
+  - No friend carried a raw `reason`.
+  - Afterwards, 0 new referral rows were left.
 - After the rollback was confirmed, it was applied. The in-migration asserts passed.
 - EXPLAIN: the lookup uses the unique index `referral_codes_code_key` (the table has 51 rows, so the planner seq-scans it today), joined to `profiles_pkey`.
 - `get_advisors` flags the new function as anon-callable SECURITY DEFINER. That is intended.
@@ -490,8 +494,8 @@ Boards: S004-top-after, S004-friends-after, S004-ar-after and S005-after, all ap
 |---|---|---|
 | Signature renders the name, sits left in RTL, absent without a name | `GuestPassCard.tsx`, `membershipComponents.test.tsx` | **Automated verification (runner job pending)**: written, not run on the Mac. |
 | Held-reason labels (en, ar) and the entries count | `inviteCode.ts`, `inviteCode.test.ts` | **Automated verification (runner job pending)**: written, not run on the Mac. |
-| Landing renders the card, keeps the cookie, shows no expiry; junk code opens the app | `InviteLanding.tsx`, `InviteLanding.test.tsx`, e2e I1, R11, J5 | **Automated verification (runner job pending)**: written, not run on the Mac. |
-| SQL contract: grants anon + authenticated only, first word only | `inviteLandingSql.test.ts`, e2e I2, live proof | **Automated verification**: proved on live. Unit and e2e are pending on the runner. |
+| Landing renders the card, keeps the cookie, shows no expiry; junk code opens the app | `InviteLanding.tsx`, `InviteLanding.test.tsx`, `(app)/i/[code]/page.test.tsx`, e2e I1, R11, J5 | **Automated verification (runner job pending)**: written, not run on the Mac. |
+| SQL contract: grants anon + authenticated only, first word only | `inviteLandingSql.test.ts`, e2e I2 | **Automated verification (runner job pending)**: written, not run on the Mac. The rolled-back live proofs above passed. |
 | Look of the pass, the invite screen and the landing in en and ar, light and dark | `cards.module.css`, `InviteView.tsx`, `InviteLanding.tsx` | **Manual verification required** (runner screenshot, then owner review). |
 | Universal link on a phone with the app installed (it opens the app and does not show the landing) | `src/lib/native/inviteLinks.ts` (unchanged) | **Native verification required**. |
 
@@ -500,4 +504,6 @@ Differences from the boards:
 - The held detail reads "counts once they sign in on a phone", not "she". The app does not know the friend's gender.
 - The cookie is now written by the page script, not by a server `Set-Cookie`. The name, lifetime, path and SameSite are the same.
 - Until the name arrives, or when there is none, the landing title reads "You’ve got a guest pass" and the pass is unsigned.
-- The landing uses the in-app pass (`GuestPassCard` on `CardSpotlight`) and an `AppShell` bare page, not a separate site layout.
+- The landing reuses `GuestPassCard` on `CardSpotlight`, `MembershipPanel`, `Badge` (positive), `Button` (cta-block, outline), `Sub` and `Fine`, on an `AppShell` bare page.
+- The landing hero is hand-built from the hero tokens (`--color-hero-from`/`--color-hero-to`), not `HeroBand`: `HeroBand` is Flow's numbers band and has no slot for a title and line.
+- A junk code may reach `/` through a streamed refresh rather than a 307, because `(app)` has a loading boundary. I1 and R11 assert the outcome: it ends at `/` with no cookie.
