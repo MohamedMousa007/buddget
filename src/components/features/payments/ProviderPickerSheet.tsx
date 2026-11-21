@@ -1,7 +1,7 @@
 'use client'
 
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { Search, Check, Plus } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
@@ -17,21 +17,50 @@ import { SelectableCard } from '@/components/ui/SelectableCard'
  * sections, custom-provider CTA. Filter to a single money-holding type with `issuesType`
  * (e.g. `bank_account` for a savings pocket hides wallets/rails). Shared by payment-method setup
  * and savings-pocket creation so there is ONE provider pool, not per-surface hardcoded lists.
+ *
+ * Pass `items` to list your own options (the pocket picker) instead of the catalogue: same sheet,
+ * search over the item names, no Popular/All sections. Without `items` nothing changes.
  */
+export interface ProviderPickerItem {
+  id: string
+  name: string
+  subtitle?: string
+  /** The leading tile: an icon in the option's colour. */
+  glyph: ReactNode
+  /** End-aligned value, e.g. the current balance. */
+  trailing?: ReactNode
+}
+
 export interface ProviderPickerSheetProps {
   open: boolean
   selectedId: string | null
-  popularIds: string[]
+  /** Catalogue mode only. */
+  popularIds?: string[]
   onPick: (id: string) => void
-  onCustom: (term: string) => void
+  /** The pinned CTA ("Add custom", or `customLabel`). Omit to hide it. */
+  onCustom?: (term: string) => void
   onClose: () => void
   /** Locked context: only show providers that issue this type. */
   issuesType?: PaymentMethodType
   zIndexClassName?: string
+  /** Options to list instead of the brand catalogue. */
+  items?: ProviderPickerItem[]
+  title?: string
+  searchPlaceholder?: string
+  /** Replaces the CTA label. */
+  customLabel?: string
+}
+
+/** Items whose name or subtitle contains the query (case-insensitive); all of them for an empty query. */
+export function filterPickerItems(items: readonly ProviderPickerItem[], query: string): ProviderPickerItem[] {
+  const q = query.trim().toLowerCase()
+  if (!q) return [...items]
+  return items.filter((i) => `${i.name} ${i.subtitle ?? ''}`.toLowerCase().includes(q))
 }
 
 export function ProviderPickerSheet({
-  open, selectedId, popularIds, onPick, onCustom, onClose, issuesType, zIndexClassName,
+  open, selectedId, popularIds = [], onPick, onCustom, onClose, issuesType, zIndexClassName,
+  items, title, searchPlaceholder, customLabel: customLabelOverride,
 }: ProviderPickerSheetProps) {
   const t = useT()
   const [query, setQuery] = useState('')
@@ -60,22 +89,41 @@ export function ProviderPickerSheet({
     ]
   }, [query, popularIds, t, issuesType])
 
-  const customLabel = query.trim()
+  const customLabel = customLabelOverride ?? (query.trim()
     ? t.paymentMethods.addCustomNamed.replace('{q}', query.trim())
-    : t.paymentMethods.addCustom
+    : t.paymentMethods.addCustom)
+  const shownItems = useMemo(() => (items ? filterPickerItems(items, query) : null), [items, query])
 
   return (
     <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={zIndexClassName} panelClassName="h-[64dvh] md:w-[420px]">
       <div className="flex min-h-0 flex-1 flex-col px-4 pb-4">
-        <V3SheetHeader title={t.paymentMethods.chooseProvider} onClose={onClose} />
+        <V3SheetHeader title={title ?? t.paymentMethods.chooseProvider} onClose={onClose} />
         <div className="relative mb-2.5 shrink-0">
           <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-brand-text-muted)]" />
           <Input
             value={query} onChange={(e) => setQuery(e.target.value)}
-            placeholder={t.paymentMethods.searchProviderPlaceholder}
+            placeholder={searchPlaceholder ?? t.paymentMethods.searchProviderPlaceholder}
             className="h-12 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-bg)] ps-10 pe-3 text-[0.9375rem] text-[var(--color-brand-text-primary)] text-start"
           />
         </div>
+        {shownItems ? (
+          <div role="radiogroup" aria-label={title} className="native-scroll -mx-1 flex max-h-[52dvh] min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-1">
+            {shownItems.map((it) => {
+              const sel = selectedId === it.id
+              return (
+                <SelectableCard key={it.id} selected={sel} onClick={() => onPick(it.id)} className="min-h-14 gap-3 rounded-[14px] px-3 py-2">
+                  <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[11px]">{it.glyph}</span>
+                  <span className="min-w-0 flex-1 text-start">
+                    <span dir="auto" className="block truncate text-[0.90625rem] font-semibold text-[var(--color-brand-text-primary)]">{it.name}</span>
+                    {it.subtitle ? <span className="block truncate text-[0.6875rem] font-medium text-[var(--color-brand-text-muted)]">{it.subtitle}</span> : null}
+                  </span>
+                  {it.trailing}
+                  {sel && <Check className="h-[18px] w-[18px] shrink-0 text-[var(--color-brand-primary-ink)]" />}
+                </SelectableCard>
+              )
+            })}
+          </div>
+        ) : (
         <div className="native-scroll -mx-1 flex max-h-[52dvh] min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-1">
           {rows.map((r, i) => {
             if (r.kind === 'header') {
@@ -112,6 +160,8 @@ export function ProviderPickerSheet({
             )
           })}
         </div>
+        )}
+        {onCustom ? (
         <Button
           variant="ghost" size="cta-block" onClick={() => onCustom(query)}
           className="sheet-cta mt-2.5 shrink-0 border-[var(--color-brand-primary)]/30 bg-[var(--color-brand-primary)]/10 text-sm font-semibold text-[var(--color-brand-primary-ink)]"
@@ -119,6 +169,7 @@ export function ProviderPickerSheet({
           <Plus className="h-[18px] w-[18px]" />
           {customLabel}
         </Button>
+        ) : null}
       </div>
     </ModalShell>
   )

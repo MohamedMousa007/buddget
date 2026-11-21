@@ -3402,6 +3402,8 @@ export const en: Dictionary = {
       moveFailed: 'Couldn\u2019t move the money: no exchange rate for that currency right now. Nothing was changed.',
       addCta: (amount: string, pocket: string) => (amount ? `Add ${amount} to ${pocket}` : `Add to ${pocket}`),
       choosePocket: 'Choose a pocket',
+      searchPockets: 'Search pockets',
+      addPocket: 'Add pocket',
       withdrawCta: (verb: string, amount: string, pocket: string) => `${verb}${amount ? ` ${amount}` : ''} from ${pocket}`,
       purpose: 'What is it for?',
       spend: 'Spending',

@@ -1,53 +1,97 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
 import { Input } from '@/components/ui/input'
 import { AmountField } from '@/components/ui/AmountField'
 import { CurrencyField } from '@/components/ui/CurrencyField'
-import { SelectableCard } from '@/components/ui/SelectableCard'
+import { FieldButton } from '@/components/ui/FieldButton'
 import { AccountPicker } from '@/components/features/accounts/AccountPicker'
+import { ProviderPickerSheet, type ProviderPickerItem } from '@/components/features/payments/ProviderPickerSheet'
 import type { LegAccount } from '@/components/features/savings-v3/useLegAccount'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { pocketColor, pocketDisplayName, pocketIdentity } from '@/lib/savings/pocketIdentity'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { micro } from '@/lib/ui/microLabelStyle'
 import type { PocketVM } from '@/components/features/savings-v3/types'
-import type { Currency } from '@/lib/store/types'
+import type { Currency, SavingsAccount } from '@/lib/store/types'
 import { useLocale, useT } from '@/lib/i18n'
 
 /** A translucent wash of a (CSS-variable or hex) colour. */
 export const tint = (color: string, pct: number) => `color-mix(in oklab, ${color} ${pct}%, transparent)`
 
-/** One-of-many pocket choice shared by Add money (Into) and Withdraw (From). */
-export function PocketRadioList({ pockets, value, onChange, label }: {
+function PocketTile({ account, className }: { account: SavingsAccount; className: string }) {
+  const color = pocketColor(account)
+  return (
+    <span className={`flex shrink-0 items-center justify-center ${className}`} style={{ background: tint(color, 14), color }}>
+      <SavingsAccountIcon account={account} className="size-5" />
+    </span>
+  )
+}
+
+const balanceClass = 'shrink-0 font-mono-numbers text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]'
+
+/**
+ * The pocket choice of Add money (Into) and Withdraw (From): one field row showing the chosen
+ * pocket, opening the provider picker over the pockets (search, balances). `onAdd` adds the
+ * picker's "Add pocket" action; the caller opens the create flow above its own sheet.
+ */
+export function PocketPickerField({ pockets, value, onChange, label, onAdd }: {
   pockets: PocketVM[]
   value: string | null
   onChange: (id: string) => void
   label: string
+  onAdd?: () => void
 }) {
-  const sf = useT().savingsForms
+  const t = useT()
+  const sf = t.savingsForms
+  const m = t.wealthSheets.money
   const { locale } = useLocale()
+  const [open, setOpen] = useState(false)
+
+  const items: ProviderPickerItem[] = pockets.map(({ account }) => ({
+    id: account.id,
+    name: pocketDisplayName(account, sf.systemNames),
+    subtitle: pocketIdentity(account, sf.identity, locale),
+    glyph: <PocketTile account={account} className="size-full rounded-[11px]" />,
+    trailing: <span className={balanceClass}>{fmtNum(account.currentBalance)}</span>,
+  }))
+  const sel = pockets.find((p) => p.account.id === value)?.account
+  const selName = sel ? pocketDisplayName(sel, sf.systemNames) : ''
+
   return (
-    <div role="radiogroup" aria-label={label} className="space-y-2">
-      {pockets.map(({ account }) => {
-        const color = pocketColor(account)
-        return (
-          <SelectableCard key={account.id} selected={value === account.id} onClick={() => onChange(account.id)}>
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl" style={{ background: tint(color, 14), color }}>
-              <SavingsAccountIcon account={account} className="size-5" />
+    <>
+      <FieldButton
+        size="lg"
+        onClick={() => setOpen(true)}
+        aria-label={sel ? `${label}: ${selName}` : label}
+        placeholder={m.choosePocket}
+        className="h-auto min-h-[64px] rounded-[14px] bg-[var(--color-brand-elevated)] py-2 ps-2 pe-3"
+        value={sel ? (
+          <span className="flex min-w-0 items-center gap-3">
+            <PocketTile account={sel} className="size-10 rounded-xl" />
+            <span className="min-w-0 flex-1">
+              <span dir="auto" className="block truncate text-[0.9375rem] font-semibold">{selName}</span>
+              <span className="block truncate text-xs text-[var(--color-brand-text-muted)]">{pocketIdentity(sel, sf.identity, locale)}</span>
             </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{pocketDisplayName(account, sf.systemNames)}</p>
-              <p className="truncate text-xs text-[var(--color-brand-text-muted)]">{pocketIdentity(account, sf.identity, locale)}</p>
-            </div>
-            <span className="font-mono-numbers text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{fmtNum(account.currentBalance)}</span>
-          </SelectableCard>
-        )
-      })}
-    </div>
+            <span className={balanceClass}>{fmtNum(sel.currentBalance)}</span>
+          </span>
+        ) : undefined}
+      />
+      <ProviderPickerSheet
+        open={open}
+        selectedId={value}
+        items={items}
+        title={m.choosePocket}
+        searchPlaceholder={m.searchPockets}
+        customLabel={m.addPocket}
+        onPick={(id) => { setOpen(false); onChange(id) }}
+        onCustom={onAdd ? () => { setOpen(false); onAdd() } : undefined}
+        onClose={() => setOpen(false)}
+      />
+    </>
   )
 }
 

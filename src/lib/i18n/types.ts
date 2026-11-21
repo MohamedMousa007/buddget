@@ -3259,6 +3259,8 @@ export interface Dictionary {
       moveFailed: string
       addCta: (amount: string, pocket: string) => string
       choosePocket: string
+      searchPockets: string
+      addPocket: string
       withdrawCta: (verb: string, amount: string, pocket: string) => string
       purpose: string
       spend: string

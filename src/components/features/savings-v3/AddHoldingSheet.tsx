@@ -15,7 +15,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { POCKET_KINDS, type PocketKind, type PocketKindDef } from '@/lib/savings/pocketKinds'
 import { micro as label } from '@/lib/ui/microLabelStyle'
-import type { InvestmentAssetType, PaymentMethod, SavingsType } from '@/lib/store/types'
+import type { Currency, InvestmentAssetType, PaymentMethod, SavingsType } from '@/lib/store/types'
 
 type Tab = 'pocket' | 'investment'
 
@@ -40,6 +40,10 @@ export interface AddHoldingSheetProps {
   initialTab?: Tab
   /** Opens straight into this asset's form (e.g. a per-type Add button). */
   presetAssetType?: InvestmentAssetType | null
+  /** Pockets only: hides the Investment tab (opened from a money sheet's "Add pocket"). */
+  pocketOnly?: boolean
+  /** Called with the new pocket before the flow closes. */
+  onPocketCreated?: (id: string, currency: Currency) => void
 }
 
 export function AddHoldingSheet({ open, ...rest }: AddHoldingSheetProps) {
@@ -47,7 +51,7 @@ export function AddHoldingSheet({ open, ...rest }: AddHoldingSheetProps) {
   return <AddHoldingBody {...rest} />
 }
 
-function AddHoldingBody({ onClose, initialTab, presetAssetType }: Omit<AddHoldingSheetProps, 'open'>) {
+function AddHoldingBody({ onClose, initialTab, presetAssetType, pocketOnly, onPocketCreated }: Omit<AddHoldingSheetProps, 'open'>) {
   const t = useT().addHolding
   const sf = useT().savingsForms
   const paymentMethods = useFinanceStore((s) => s.paymentMethods)
@@ -55,7 +59,7 @@ function AddHoldingBody({ onClose, initialTab, presetAssetType }: Omit<AddHoldin
   const wealthGoldStrip = useFinanceStore((s) => s.settings.wealthGoldStrip)
   const updateSettings = useFinanceStore((s) => s.updateSettings)
 
-  const [tab, setTab] = useState<Tab>(presetAssetType ? 'investment' : (initialTab ?? 'pocket'))
+  const [tab, setTab] = useState<Tab>(pocketOnly ? 'pocket' : presetAssetType ? 'investment' : (initialTab ?? 'pocket'))
   const [kind, setKind] = useState<PocketKind | null>('bank')
   const [method, setMethod] = useState<PaymentMethod | null>(null)
   const [formDef, setFormDef] = useState<{ def: PocketKindDef; method: PaymentMethod | null } | null>(null)
@@ -83,12 +87,14 @@ function AddHoldingBody({ onClose, initialTab, presetAssetType }: Omit<AddHoldin
           </V3SheetHeader>
 
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 pb-4 pt-3">
-            <SegmentedControl<Tab>
-              ariaLabel={t.tabsAria}
-              value={tab}
-              onChange={setTab}
-              options={[{ value: 'pocket', label: t.tabPocket }, { value: 'investment', label: t.tabInvestment }]}
-            />
+            {pocketOnly ? null : (
+              <SegmentedControl<Tab>
+                ariaLabel={t.tabsAria}
+                value={tab}
+                onChange={setTab}
+                options={[{ value: 'pocket', label: t.tabPocket }, { value: 'investment', label: t.tabInvestment }]}
+              />
+            )}
 
             {tab === 'pocket' ? (
               <>
@@ -177,6 +183,7 @@ function AddHoldingBody({ onClose, initialTab, presetAssetType }: Omit<AddHoldin
           def={formDef.def}
           linkedMethod={formDef.method}
           onClose={() => setFormDef(null)}
+          onCreated={onPocketCreated}
           onDone={() => { setFormDef(null); onClose() }}
         />
       )}

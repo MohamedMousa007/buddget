@@ -34,9 +34,11 @@ export interface PocketFormSheetProps {
   def: PocketKindDef
   /** Prefill + link when created from an existing payment method. */
   linkedMethod?: PaymentMethod | null
+  /** Hands back the new pocket, so a sheet that opened this flow can select it. */
+  onCreated?: (id: string, currency: Currency) => void
 }
 
-export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: PocketFormSheetProps) {
+export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod, onCreated }: PocketFormSheetProps) {
   const t = useT()
   const sf = t.savingsForms
   const pf = sf.pocket
@@ -79,7 +81,7 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
 
   const create = () => {
     if (overFree) return
-    addSavingsAccount({
+    const id = addSavingsAccount({
       name: name.trim() || kindLabel,
       category: 'savings',
       type: def.savingsType,
@@ -93,6 +95,7 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
       ...(linkedMethod ? { linkedPaymentMethodId: linkedMethod.id } : {}),
       ...(holderId ? { heldInPaymentMethodId: holderId } : {}),
     } as never)
+    onCreated?.(id, currency)
     ;(onDone ?? onClose)()
   }
 

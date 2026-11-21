@@ -16,7 +16,7 @@ import { convertCurrency, tryConvertWithGold } from '@/lib/utils/currency'
 import { debtPaymentForWithdrawal } from '@/lib/debts/withdrawalPayment'
 import { investTopUpPatch } from '@/lib/savings/investTopUp'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
-import { AccountLegRow, AmountCurrencyRow, LabeledBlock, NoteField, PocketRadioList, SheetBody, SheetFooter, tint } from '@/components/features/savings-v3/MoneySheetParts'
+import { AccountLegRow, AmountCurrencyRow, LabeledBlock, NoteField, PocketPickerField, SheetBody, SheetFooter, tint } from '@/components/features/savings-v3/MoneySheetParts'
 import { useLegAccount } from '@/components/features/savings-v3/useLegAccount'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { localTodayISO } from '@/lib/utils/localDate'
@@ -222,7 +222,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
 
         <SheetBody>
           <LabeledBlock label={t.from}>
-            <PocketRadioList pockets={pockets} value={fromId} onChange={pickFrom} label={t.from} />
+            <PocketPickerField pockets={pockets} value={fromId} onChange={pickFrom} label={t.from} />
           </LabeledBlock>
 
           <AmountCurrencyRow

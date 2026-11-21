@@ -7,10 +7,11 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
-import { AccountLegRow, AmountCurrencyRow, LabeledBlock, NoteField, PocketRadioList, SheetBody, SheetFooter } from '@/components/features/savings-v3/MoneySheetParts'
+import { AccountLegRow, AmountCurrencyRow, LabeledBlock, NoteField, PocketPickerField, SheetBody, SheetFooter } from '@/components/features/savings-v3/MoneySheetParts'
+import { AddHoldingSheet } from '@/components/features/savings-v3/AddHoldingSheet'
 import { useLegAccount } from '@/components/features/savings-v3/useLegAccount'
 import type { PocketVM } from '@/components/features/savings-v3/types'
-import { selectedPocket } from '@/components/features/savings-v3/selectedPocket'
+import { pocketCurrency, selectedPocket } from '@/components/features/savings-v3/selectedPocket'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 import { pocketDisplayName } from '@/lib/savings/pocketIdentity'
@@ -37,11 +38,12 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
   const [currency, setCurrency] = useState<Currency>(
     () => pockets.find((p) => p.account.id === selectedId)?.account.currency ?? baseCurrency,
   )
-  const pickPocket = (id: string | null) => {
+  const pickPocket = (id: string | null, created?: Currency) => {
     setSelectedId(id)
-    const c = pockets.find((p) => p.account.id === id)?.account.currency
+    const c = pocketCurrency(pockets, id, created)
     if (c) setCurrency(c)
   }
+  const [addingPocket, setAddingPocket] = useState(false)
   const [source, setSource] = useState<'budget' | 'had'>('budget')
   const [noteOpen, setNoteOpen] = useState(false)
   const [note, setNote] = useState('')
@@ -64,6 +66,7 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
   if (!open) return null
 
   return (
+    <>
     <ModalShell open={open} onBackdropClick={onClose} scrollChild>
       <div className="flex min-h-0 flex-1 flex-col">
         <V3SheetHeader onClose={onClose}>
@@ -73,7 +76,7 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
 
         <SheetBody>
           <LabeledBlock label={t.into}>
-            <PocketRadioList pockets={pockets} value={selected?.account.id ?? null} onChange={pickPocket} label={t.into} />
+            <PocketPickerField pockets={pockets} value={selected?.account.id ?? null} onChange={pickPocket} label={t.into} onAdd={() => setAddingPocket(true)} />
           </LabeledBlock>
 
           <AmountCurrencyRow
@@ -107,5 +110,8 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
         </SheetFooter>
       </div>
     </ModalShell>
+    {/* A sibling sheet above this one, so the typed amount survives creating a pocket. */}
+    <AddHoldingSheet open={addingPocket} pocketOnly onClose={() => setAddingPocket(false)} onPocketCreated={pickPocket} />
+    </>
   )
 }

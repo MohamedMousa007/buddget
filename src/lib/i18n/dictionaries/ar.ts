@@ -3412,6 +3412,8 @@ export const ar: Dictionary = {
       moveFailed: 'تعذّر نقل المال: لا يوجد سعر صرف لهذه العملة حاليًا. لم يتغيّر شيء.',
       addCta: (amount: string, pocket: string) => (amount ? `أضف ${amount} إلى ${pocket}` : `أضف إلى ${pocket}`),
       choosePocket: 'اختر جيبًا',
+      searchPockets: 'ابحث في الجيوب',
+      addPocket: 'أضف جيبًا',
       withdrawCta: (verb: string, amount: string, pocket: string) => `${verb}${amount ? ` ${amount}` : ''} من ${pocket}`,
       purpose: 'لأي غرض؟',
       spend: 'إنفاق',
