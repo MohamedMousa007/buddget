@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
-vi.mock('next/font/google', () => ({ Pinyon_Script: () => ({ variable: 'font-signature-var', className: 'font-signature' }) }))
+vi.mock('next/font/google', () => ({
+  Pinyon_Script: () => ({ variable: 'font-signature-var', className: 'font-signature' }),
+  Aref_Ruqaa: () => ({ variable: 'font-signature-ar-var', className: 'font-signature-ar' }),
+}))
 
 import { initialRig, pointerTilt, rigFrame, stepRig, toggleTarget } from './flipPhysics'
 import { CardFace, FlipCardRig } from './FlipCardRig'
@@ -13,6 +16,7 @@ import { MemberCard } from './MemberCard'
 import { ProMark } from './ProMark'
 import { LetterpressTierCard } from './LetterpressTierCard'
 import { FounderSignatureFront } from './FounderSignatureCard'
+import { GuestPassCardFront } from './GuestPassCard'
 import { needsAppFont } from './cardParts'
 import { HotStreakCard, streakCellLook, streakCells } from './HotStreakCard'
 import { TierLadder } from './TierLadder'
@@ -173,6 +177,37 @@ describe('FounderSignatureCard', () => {
     const out = front('ليلى حسن')
     expect(out).toContain('data-signature="plain"')
     expect(out).not.toContain('font-signature-var')
+  })
+})
+
+describe('GuestPassCard signature', () => {
+  const front = (from?: string) => html(createElement(GuestPassCardFront, {
+    mark: 'GUEST PASS', title: '37 Days of Pro', subtitle: 'No card needed · for new accounts', from,
+    facts: [{ label: 'Invite code', value: 'MOHAME-7K2', code: true }, { label: 'Friend gets', value: '30 + 7 DAYS' }, { label: 'You get', value: '1 WEEK' }],
+  }))
+  it('signs "from <name>" on the right in the script face', () => {
+    const out = front('from Mohamed')
+    expect(out).toContain('from Mohamed')
+    expect(out).toContain('data-side="right"')
+    expect(out).toContain('dir="ltr"')
+    expect(out).toContain('font-signature-var')
+  })
+  it('sets the Arabic line on the left, right to left, with the Arabic face loaded', () => {
+    const out = front('من محمد')
+    expect(out).toContain('من محمد')
+    expect(out).toContain('data-side="left"')
+    expect(out).toContain('dir="rtl"')
+    expect(out).toContain('font-signature-ar-var')
+  })
+  it('a Latin line keeps its side even when the name is Arabic', () => {
+    expect(front('from محمد')).toContain('data-side="right"')
+  })
+  it('draws no signature when the name is unknown', () => {
+    for (const out of [front(), front(''), front('   ')]) {
+      expect(out).not.toContain('data-side')
+      expect(out).not.toContain('font-signature-var')
+      expect(out).toContain('37 Days of Pro')
+    }
   })
 })
 

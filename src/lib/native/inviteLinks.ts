@@ -5,7 +5,7 @@ import { isNative } from '@/lib/native/isNative'
 import { normalizeInviteCode, rememberInvite } from '@/components/features/invite/inviteCode'
 
 /** Where the app opens after an invite link: same as the web `/i/<code>` route (signed out, `?next=` opens the sign-up sheet). */
-const INVITE_TARGET = '/flow?next=%2Fflow'
+export const INVITE_TARGET = '/flow?next=%2Fflow'
 /** getLaunchUrl keeps returning the launch link for the life of the process: handle it once, not on every reload. */
 const LAUNCH_HANDLED_KEY = 'buddget:launch-url-handled'
 

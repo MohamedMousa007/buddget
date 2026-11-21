@@ -291,7 +291,7 @@ interface AppShellProps {
   children: React.ReactNode
 }
 
-const BARE_ROUTES = ['/reset-password', '/legal', '/offline', '/install', '/admin']
+const BARE_ROUTES = ['/reset-password', '/legal', '/offline', '/install', '/admin', '/i']
 
 /** Routes that render without sidebar, headers, FAB or bottom nav. */
 function isBareAuthRoute(pathname: string | null) {

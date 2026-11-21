@@ -446,3 +446,58 @@ Differences from the boards:
 - The lock note says "Face ID or fingerprint" so that it is also true on Android.
 - There is no "NEW" tag on the hub row (the board marks it optional).
 - Hide balances has no setting id, so search and Buddgy cannot open it directly. Adding one would widen Buddgy's `open_setting` list.
+
+## Step 16: invite, guest pass and landing
+
+Boards: S004-top-after, S004-friends-after, S004-ar-after and S005-after, all approved by the owner.
+
+**Guest pass signature.** `GuestPassCardFront` has a new optional `from` prop, and `GuestPassSignature` draws it. It is absent when the name is unknown.
+- "from <first name>" is set in Pinyon Script, gilt (`--gold-mid`), right-aligned and tilted -4°.
+- An Arabic line ("من <name>") is set right to left, on the left, tilted 3° as drawn, in Aref Ruqaa 700. The font is loaded in `signatureFont.ts` the same way as Pinyon, with `preload: false`.
+- Both faces are in the font stack, so a Latin line with an Arabic name still has glyphs.
+
+**Invite screen (BDG-004/006).** All copy is in `rewardsCopy.ts`:
+- "37 Days of Pro", with the truthful hero subtitle, steps and fine print ("for new accounts", 7 days, the web friend counts after a phone sign-in).
+- The Arabic pass labels are translated: بطاقة ضيف, 30 + 7 أيام, أسبوع, 500 Sparks, ما يحصل عليه صديقك.
+- The sign-up placeholder is NOUR-7K2, and the hint adds "for new accounts".
+
+**Friend status.** Held friends show "Waiting for a phone sign-in" or "Being checked" instead of "On its way".
+- The reason comes from the new `held` field of `referral_my_summary`. Only `awaiting_native` and `review` on activated rows are exposed.
+- Pending rows now also show "· 4 of 5 entries", since `transactions` was already in the payload.
+
+**Landing `/i/<code>` (BDG-005).** The route handler is replaced by a bare page, `src/app/(app)/i/[code]/page.tsx` plus `InviteLanding.tsx`:
+- It shows the hero, the signed guest pass, "Tap the pass to see what you get", the "Code saved for sign-up" pill (drawn after the save runs), the benefits, "Create your account" / "I already have buddget" (both go to the sign-up/sign-in sheet as before) and the footer. There is no expiry anywhere.
+- The code is saved on open: localStorage, plus the same `buddget_invite` cookie (30 days, `Path=/`, `SameSite=Lax`, `Secure` on https), written client-side.
+- A junk code still opens `/`.
+- The page is `noindex`.
+- `/i` is a bare route in `AppShell`, and the native build stashes `src/app/(app)/i`.
+
+**Migration 0343** (`0343_invite_held_reason_inviter_name.sql`):
+- `referral_my_summary` gains `held`. Same signature; the grants are kept and asserted.
+- New `referral_inviter_first_name(p_code)`: SECURITY DEFINER, `search_path ''`. It returns the first word of the inviter's display name, capped at 40 characters, or null for an invalid code, an unknown code or referrals off. EXECUTE is granted to `anon` and `authenticated` only.
+- Proved on live in a rolled-back transaction:
+  - A real two-word name returned its first word only, with no space.
+  - Unknown, junk and null codes returned null.
+  - The ACL was `{postgres, anon, authenticated}`, with no PUBLIC execute.
+  - The anon call ran.
+  - The summary still ran and returned the `held` key.
+- After the rollback was confirmed, it was applied. The in-migration asserts passed.
+- EXPLAIN: the lookup uses the unique index `referral_codes_code_key` (the table has 51 rows, so the planner seq-scans it today), joined to `profiles_pkey`.
+- `get_advisors` flags the new function as anon-callable SECURITY DEFINER. That is intended.
+- `database.types.ts` was patched by hand.
+
+| Item | Files | Status |
+|---|---|---|
+| Signature renders the name, sits left in RTL, absent without a name | `GuestPassCard.tsx`, `membershipComponents.test.tsx` | **Automated verification (runner job pending)**: written, not run on the Mac. |
+| Held-reason labels (en, ar) and the entries count | `inviteCode.ts`, `inviteCode.test.ts` | **Automated verification (runner job pending)**: written, not run on the Mac. |
+| Landing renders the card, keeps the cookie, shows no expiry; junk code opens the app | `InviteLanding.tsx`, `InviteLanding.test.tsx`, e2e I1, R11, J5 | **Automated verification (runner job pending)**: written, not run on the Mac. |
+| SQL contract: grants anon + authenticated only, first word only | `inviteLandingSql.test.ts`, e2e I2, live proof | **Automated verification**: proved on live. Unit and e2e are pending on the runner. |
+| Look of the pass, the invite screen and the landing in en and ar, light and dark | `cards.module.css`, `InviteView.tsx`, `InviteLanding.tsx` | **Manual verification required** (runner screenshot, then owner review). |
+| Universal link on a phone with the app installed (it opens the app and does not show the landing) | `src/lib/native/inviteLinks.ts` (unchanged) | **Native verification required**. |
+
+Differences from the boards:
+- The landing's third fact reads "<Name> gets 1 WEEK", as drawn. An inviter who is a paying store subscriber earns 500 Sparks instead. The landing cannot know which, because the function returns only the first name.
+- The held detail reads "counts once they sign in on a phone", not "she". The app does not know the friend's gender.
+- The cookie is now written by the page script, not by a server `Set-Cookie`. The name, lifetime, path and SameSite are the same.
+- Until the name arrives, or when there is none, the landing title reads "You’ve got a guest pass" and the pass is unsigned.
+- The landing uses the in-app pass (`GuestPassCard` on `CardSpotlight`) and an `AppShell` bare page, not a separate site layout.

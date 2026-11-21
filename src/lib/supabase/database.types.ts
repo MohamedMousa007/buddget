@@ -6803,6 +6803,7 @@ export type Database = {
         Args: { p_invitee?: string; p_limit?: number }
         Returns: number
       }
+      referral_inviter_first_name: { Args: { p_code: string }; Returns: string }
       referral_my_summary: { Args: never; Returns: Json }
       referral_redeem: {
         Args: {

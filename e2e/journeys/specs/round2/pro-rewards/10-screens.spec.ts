@@ -77,8 +77,10 @@ test('J5 @desktop invite: Copy link copies the link and says Copied; Share hands
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: 'http://localhost:3100' })
   await page.addInitScript(() => { (window as unknown as { __shared: unknown[] }).__shared = []; (navigator as unknown as { share: unknown }).share = async (d: unknown) => { (window as unknown as { __shared: unknown[] }).__shared.push(d) } })
   // Deep link first, signed out: the code waits in a cookie until the account exists.
-  const r = await page.goto(`/i/${code.toLowerCase()}`)
-  expect(r?.url()).toContain('/flow')
+  await page.goto(`/i/${code.toLowerCase()}`)
+  await expect(page.getByText('Code saved for sign-up')).toBeVisible()
+  await page.getByRole('button', { name: 'Create your account' }).click()
+  await expect(page).toHaveURL(/\/flow/)
   await signInUi(page, friend.email)
   await expect.poll(async () => (await svc(`referrals?invitee_id=eq.${friend.id}&select=inviter_id`)).json?.[0]?.inviter_id ?? null, { timeout: 60_000 }).toBe(inviter.id)
   await openLoaded(page, '/settings/invite')

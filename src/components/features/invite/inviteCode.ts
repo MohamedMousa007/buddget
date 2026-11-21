@@ -7,8 +7,9 @@ import { INVITER_PRO_DAYS } from '@/lib/referrals/rules'
 
 /** Where a code from an invite link or the sign-up field waits until the account exists. */
 export const INVITE_STORAGE_KEY = 'buddget:invite-code'
-/** Set by the `/i/<code>` route, read once by the app and copied into storage. */
+/** Set by the `/i/<code>` page, read once by the app and copied into storage. */
 export const INVITE_COOKIE = 'buddget_invite'
+const INVITE_COOKIE_MAX_AGE = 60 * 60 * 24 * 30
 
 /** A code as the server stores it ("LAYLA-7K2", "AB-7K2"): upper case, letters and digits around one hyphen. Null when it cannot be one. */
 export function normalizeInviteCode(raw: string | null | undefined): string | null {
@@ -24,6 +25,14 @@ function readCookie(): string | null {
 
 export function rememberInvite(code: string): void {
   try { window.localStorage.setItem(INVITE_STORAGE_KEY, code) } catch { /* private mode: the cookie from the link still carries it */ }
+}
+
+/** What the invite link page does on open: keeps the code for sign-up, in storage and in the 30-day cookie the old link route set. */
+export function saveInviteFromLink(code: string): void {
+  rememberInvite(code)
+  if (typeof document === 'undefined') return
+  const secure = window.location.protocol === 'https:' ? '; Secure' : ''
+  document.cookie = `${INVITE_COOKIE}=${encodeURIComponent(code)}; Max-Age=${INVITE_COOKIE_MAX_AGE}; Path=/; SameSite=Lax${secure}`
 }
 
 /** The remembered code: the one typed or stored earlier, else the one the invite link left in its cookie. */
@@ -74,12 +83,14 @@ export function friendRow(friend: ReferralFriend, f: RewardsCopy['invite']['frie
     case 'rewarded':
       return { ...base, status: 'done', detail: f.joinedStuck(joined), statusLabel: friend.reward_kind === 'sparks' ? f.plusSparks : f.plusWeek }
     case 'activated':
+      if (friend.held === 'awaiting_native') return { ...base, status: 'almost', detail: f.joinedNative(joined), statusLabel: f.heldNative }
+      if (friend.held === 'review') return { ...base, status: 'almost', detail: f.joinedStuck(joined), statusLabel: f.heldReview }
       return { ...base, status: 'done', detail: f.joinedStuck(joined), statusLabel: f.onItsWay }
     case 'capped':
       return { ...base, status: 'almost', detail: f.joinedStuck(joined), statusLabel: f.overCap }
     case 'pending': {
       const days = Math.min(friend.active_days, friend.active_days_needed)
-      return { ...base, status: 'almost', detail: f.active(days, friend.active_days_needed), statusLabel: days > 0 ? f.almost : f.justJoined, progress: { done: days, total: friend.active_days_needed } }
+      return { ...base, status: 'almost', detail: f.active(days, friend.active_days_needed, Math.min(friend.transactions, friend.transactions_needed), friend.transactions_needed), statusLabel: days > 0 ? f.almost : f.justJoined, progress: { done: days, total: friend.active_days_needed } }
     }
     case 'expired':
       return { ...base, status: 'almost', detail: f.joined(joined), statusLabel: f.didNotStick }

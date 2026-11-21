@@ -100,21 +100,34 @@ test('R3 IDOR: user RPCs act on auth.uid() only (no user argument reaches anothe
   expect(mine.json.code).not.toBe(theirs.json.code)
 })
 
-test('I1 /i/<code>: a valid code sets the cookie and 307s to /flow; junk and injection-shaped codes just open the app', async () => {
+test('I1 /i/<code>: a valid code serves the noindex guest pass page (the page saves the code, see R11); junk and injection-shaped codes just open the app', async () => {
   const ok = await app('/i/layla-7k2')
-  expect(ok.status).toBe(307)
-  expect(ok.headers.get('location')).toContain('/flow')
-  const cookie = ok.headers.get('set-cookie') ?? ''
-  expect(cookie).toContain('buddget_invite=LAYLA-7K2')
-  expect(cookie.toLowerCase()).toContain('max-age=2592000')
-  expect(cookie.toLowerCase()).toContain('samesite=lax')
-  expect(ok.headers.get('cache-control')).toContain('no-store')
-  expect(ok.headers.get('x-robots-tag')).toBe('noindex')
+  expect(ok.status).toBe(200)
+  expect(ok.text).toMatch(/<meta name="robots" content="noindex, nofollow"/)
+  expect(ok.text).toContain('LAYLA-7K2')
+  expect(ok.text).not.toMatch(/expir|valid until/i)
   for (const bad of ['nocode', '%3Cscript%3E-123', 'A-B', 'AAAAAAAAAAAAA-123', 'AB-123%0d%0aSet-Cookie:%20x=1', '..%2F..%2Fadmin', 'AB-123;x=1']) {
     const r = await app(`/i/${bad}`)
     expect.soft(r.status, bad).toBe(307)
     expect.soft(r.headers.get('set-cookie') ?? '', bad).not.toContain('buddget_invite')
     expect.soft(new URL(r.headers.get('location') ?? '/', 'http://x').pathname, bad).toBe('/')
+  }
+})
+
+test('I2 referral_inviter_first_name: anon gets one word or null, never more', async () => {
+  for (const code of ['ZZZZZZ-000', 'junk', '', 'AB-123;select']) {
+    const r = await rpc(null, 'referral_inviter_first_name', { p_code: code })
+    expect.soft(r.status, code).toBe(200)
+    expect.soft(r.json, code).toBeNull()
+  }
+  const inviter = await makeUser('i2')
+  try {
+    const code = (await rpc(inviter.token, 'referral_my_summary')).json.code as string
+    const r = await rpc(null, 'referral_inviter_first_name', { p_code: code.toLowerCase() })
+    expect(r.status).toBe(200)
+    if (r.json !== null) expect(r.json).toMatch(/^\S{1,40}$/)
+  } finally {
+    await dropUser(inviter)
   }
 })
 

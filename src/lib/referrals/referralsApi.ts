@@ -14,6 +14,8 @@ export interface ReferralFriend {
   transactions_needed: 5
   window_ends_at: string
   reward_kind: 'pro_week' | 'sparks' | null
+  /** Why an activated friend is not paid yet: joined on the web and waiting for a phone sign-in, or held for a manual check. */
+  held?: 'awaiting_native' | 'review' | null
 }
 
 export interface ReferralSummary {
@@ -35,6 +37,16 @@ export type RedeemStatus =
 export async function fetchReferralSummary(): Promise<ReferralSummary | null> {
   const { data, error } = await createClient().rpc('referral_my_summary')
   return error || !data ? null : (data as unknown as ReferralSummary)
+}
+
+/** The first word of the inviter's name behind an invite code, for the /i/<code> page (callable signed out). Null when unknown. */
+export async function fetchInviterFirstName(code: string): Promise<string | null> {
+  try {
+    const { data, error } = await createClient().rpc('referral_inviter_first_name', { p_code: code })
+    return error || typeof data !== 'string' ? null : data.trim() || null
+  } catch {
+    return null
+  }
 }
 
 /**

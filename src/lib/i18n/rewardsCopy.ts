@@ -210,8 +210,9 @@ export interface RewardsCopy {
     pass: {
       flip: string
       mark: string
-      title: (first: string) => string
-      titleNoName: string
+      title: string
+      /** The signature under the title: "from Mohamed". */
+      from: (first: string) => string
       sub: string
       code: string
       friendGets: string
@@ -235,7 +236,10 @@ export interface RewardsCopy {
       unnamed: string
       joinedStuck: (date: string) => string
       joined: (date: string) => string
-      active: (days: number, total: number) => string
+      active: (days: number, total: number, entries: number, entriesTotal: number) => string
+      joinedNative: (date: string) => string
+      heldNative: string
+      heldReview: string
       plusWeek: string
       plusSparks: string
       onItsWay: string
@@ -259,6 +263,23 @@ export interface RewardsCopy {
     paused: string
     loadError: string
     tryAgain: string
+  }
+  /** The /i/<code> page a friend opens from an invite link. */
+  landing: {
+    title: (first: string) => string
+    titleNoName: string
+    sub: string
+    flip: string
+    youGet: string
+    inviterGets: (first: string) => string
+    inviterGetsNoName: string
+    backMark: string
+    benefits: [string, string, string]
+    tap: string
+    saved: string
+    create: string
+    signIn: string
+    foot: string
   }
   profile: { proTag: string; free: string; trial: string; pro: string; founder: (n: string) => string }
   signup: { haveCode: string; label: string; placeholder: string; hint: string; saved: string; invalid: string }
@@ -509,19 +530,19 @@ const en: RewardsCopy = {
     title: 'Invite friends',
     pill: 'Free for both of you',
     heroGive: 'Give {b}.',
-    heroGiveBold: '37 days of Pro',
+    heroGiveBold: '37 Days of Pro',
     heroGet: 'Get {b} each time.',
     heroWeek: 'a week',
     heroSparks: '500 Sparks',
-    heroSub: (reward) => `Your friend gets the 30-day trial plus an extra week. You get ${reward} when they stick with it.`,
+    heroSub: (reward) => `Your friend gets 37 days of Pro on a new account. You get ${reward} when they stick with buddget.`,
     rewardWeek: 'a week of Pro',
     rewardSparks: '500 Sparks',
     pass: {
       flip: 'Your invite pass. Tap to flip',
       mark: 'GUEST PASS',
-      title: (first) => `37 days of Pro, on ${first}`,
-      titleNoName: '37 days of Pro, on me',
-      sub: 'No card needed · For a new buddget account',
+      title: '37 Days of Pro',
+      from: (first) => `from ${first}`,
+      sub: 'No card needed · for new accounts',
       code: 'Invite code',
       friendGets: 'Friend gets',
       friendValue: '30 + 7 DAYS',
@@ -551,7 +572,10 @@ const en: RewardsCopy = {
       unnamed: 'A friend',
       joinedStuck: (date) => `Joined ${date} · stuck with it`,
       joined: (date) => `Joined ${date}`,
-      active: (days, total) => `Active ${days} of ${total} days`,
+      active: (days, total, entries, entriesTotal) => `Active ${days} of ${total} days · ${entries} of ${entriesTotal} entries`,
+      joinedNative: (date) => `Joined ${date} · counts once they sign in on a phone`,
+      heldNative: 'Waiting for a phone sign-in',
+      heldReview: 'Being checked',
       plusWeek: '+1 week',
       plusSparks: '+500 Sparks',
       onItsWay: 'On its way',
@@ -566,22 +590,38 @@ const en: RewardsCopy = {
     remind: (name) => `Remind ${name}`,
     remindText: (link) => `A few more days on buddget and your 37 days of Pro are well used. Open it here: ${link}`,
     howTitle: 'How it works',
-    steps: (reward) => ['Share your link or code', 'Your friend joins and gets 37 days of Pro, no card', `They use buddget on 3 days in their first 2 weeks: you get ${reward}`],
+    steps: (reward) => ['Share your link or code', 'Your friend makes a new account and gets 37 days of Pro, no card', `In their first 14 days they use buddget on 3 days and log 5 entries: you get ${reward}`],
     milestonesTitle: 'Invite milestones',
     ms: { friends: (n) => `${n} friends`, pts: (n) => `+${n} pts`, connector: 'The Connector card finish', reached: 'Reached' },
-    fine: 'Up to 4 rewards a month and 12 a year. A friend counts once they have used buddget on 3 separate days and logged 5 transactions in their first 14 days. New accounts on a new phone only.',
+    fine: 'Up to 4 rewards a month and 12 a year. For new accounts only, made in the last 7 days. A friend who joins on the web counts once they sign in on a phone.',
     cta: { title: 'Give 37 days of Pro, get a week', titleSparks: 'Give 37 days of Pro, get 500 Sparks', sub: 'For every friend who sticks with buddget', action: 'Invite ›' },
     billingLine: 'Not ready to pay? Invite a friend and keep Pro another week',
     paused: 'Invites are paused for now. What you have earned stays yours.',
     loadError: 'Couldn’t load your invites. Try again.',
     tryAgain: 'Try again',
   },
+  landing: {
+    title: (first) => `${first} sent you a guest pass`,
+    titleNoName: 'You’ve got a guest pass',
+    sub: '37 Days of Pro on a new account. No card needed.',
+    flip: 'Your guest pass. Tap to flip',
+    youGet: 'You get',
+    inviterGets: (first) => `${first} gets`,
+    inviterGetsNoName: 'Your friend gets',
+    backMark: 'WHAT YOU GET',
+    benefits: ['Bank texts tracked automatically', 'About 10x the AI, and the Advisor', '37 days free, then Free or Pro: your choice'],
+    tap: 'Tap the pass to see what you get',
+    saved: 'Code saved for sign-up',
+    create: 'Create your account',
+    signIn: 'I already have buddget',
+    foot: 'Works on iPhone, Android and the web. A friend who joins on the web counts once they sign in on a phone.',
+  },
   profile: { proTag: 'PRO', free: 'Free', trial: 'Pro trial', pro: 'buddget Pro', founder: (n) => `Founder ${n}` },
   signup: {
     haveCode: 'Have an invite code?',
     label: 'Invite code',
-    placeholder: 'LAYLA-7K2',
-    hint: 'A friend’s code gives you 37 days of Pro, no card.',
+    placeholder: 'NOUR-7K2',
+    hint: 'A friend’s code gives you 37 days of Pro, no card, for new accounts.',
     saved: 'Code saved. It applies when your account is ready.',
     invalid: 'That code doesn’t look right. Check it and try again.',
   },
@@ -836,22 +876,22 @@ const ar: RewardsCopy = {
     heroGet: 'واحصل على {b} في كل مرة.',
     heroWeek: 'أسبوع',
     heroSparks: '500 Sparks',
-    heroSub: (reward) => `يحصل صديقك على تجربة 30 يوماً وأسبوع إضافي. وتحصل أنت على ${reward} حين يستمر.`,
+    heroSub: (reward) => `يحصل صديقك على 37 يوماً من Pro على حساب جديد. وتحصل أنت على ${reward} حين يستمر مع buddget.`,
     rewardWeek: 'أسبوع من Pro',
     rewardSparks: '500 Sparks',
     pass: {
       flip: 'بطاقة دعوتك. اضغط لقلبها',
-      mark: 'GUEST PASS',
-      title: (first) => `37 يوماً من Pro، هدية من ${first}`,
-      titleNoName: '37 يوماً من Pro، هدية مني',
-      sub: 'بلا بطاقة · لحساب buddget جديد',
+      mark: 'بطاقة ضيف',
+      title: '37 يوماً من Pro',
+      from: (first) => `من ${first}`,
+      sub: 'بلا بطاقة · للحسابات الجديدة',
       code: 'رمز الدعوة',
       friendGets: 'للصديق',
-      friendValue: '30 + 7 DAYS',
+      friendValue: '30 + 7 أيام',
       youGet: 'لك',
-      youWeek: '1 WEEK',
-      youSparks: '500 SPARKS',
-      backMark: 'WHAT THEY GET',
+      youWeek: 'أسبوع',
+      youSparks: '500 Sparks',
+      backMark: 'ما يحصل عليه صديقك',
       benefits: ['تتبّع رسائل البنك تلقائياً', 'حوالي 10 أضعاف الذكاء الاصطناعي، والمستشار', '37 يوماً مجاناً، ثم المجاني أو Pro: الخيار لهم'],
       codeLine: (code) => `الرمز ${code}`,
       noCharge: 'بلا بطاقة، بلا خصم',
@@ -874,7 +914,10 @@ const ar: RewardsCopy = {
       unnamed: 'صديق',
       joinedStuck: (date) => `انضم ${date} · واستمر`,
       joined: (date) => `انضم ${date}`,
-      active: (days, total) => `نشط ${days} من ${total} أيام`,
+      active: (days, total, entries, entriesTotal) => `نشط ${days} من ${total} أيام · ${entries} من ${entriesTotal} إدخالات`,
+      joinedNative: (date) => `انضم ${date} · يُحتسب بعد تسجيل الدخول من هاتف`,
+      heldNative: 'بانتظار تسجيل الدخول من هاتف',
+      heldReview: 'قيد المراجعة',
       plusWeek: '+أسبوع',
       plusSparks: '+500 Sparks',
       onItsWay: 'في الطريق',
@@ -889,22 +932,38 @@ const ar: RewardsCopy = {
     remind: (name) => `ذكّر ${name}`,
     remindText: (link) => `أيام قليلة أخرى على buddget وتستفيد من أيام Pro الـ 37 كاملة. افتحه من هنا: ${link}`,
     howTitle: 'كيف تعمل',
-    steps: (reward) => ['شارك رابطك أو رمزك', 'ينضم صديقك ويحصل على 37 يوماً من Pro بلا بطاقة', `يستخدم buddget في 3 أيام خلال أول أسبوعين: تحصل على ${reward}`],
+    steps: (reward) => ['شارك رابطك أو رمزك', 'ينشئ صديقك حساباً جديداً ويحصل على 37 يوماً من Pro بلا بطاقة', `خلال أول 14 يوماً يستخدم buddget في 3 أيام ويسجل 5 إدخالات: تحصل على ${reward}`],
     milestonesTitle: 'محطات الدعوات',
     ms: { friends: (n) => (n <= 10 ? `${n} أصدقاء` : `${n} صديقاً`), pts: (n) => `+${n} نقطة`, connector: 'تشطيب البطاقة Connector', reached: 'تحقق' },
-    fine: 'حتى 4 مكافآت في الشهر و12 في السنة. يُحتسب الصديق بعد أن يستخدم buddget في 3 أيام مختلفة ويسجل 5 معاملات خلال أول 14 يوماً. للحسابات الجديدة على هاتف جديد فقط.',
+    fine: 'حتى 4 مكافآت في الشهر و12 في السنة. للحسابات الجديدة فقط، المُنشأة خلال آخر 7 أيام. الصديق الذي ينضم من الويب يُحتسب بعد تسجيل دخوله من هاتف.',
     cta: { title: 'أهدِ 37 يوماً من Pro واحصل على أسبوع', titleSparks: 'أهدِ 37 يوماً من Pro واحصل على 500 Sparks', sub: 'عن كل صديق يستمر مع buddget', action: 'ادعُ ‹' },
     billingLine: 'لست مستعداً للدفع؟ ادعُ صديقاً واحتفظ بـ Pro أسبوعاً آخر',
     paused: 'الدعوات متوقفة مؤقتاً. ما كسبته يبقى لك.',
     loadError: 'تعذّر تحميل دعواتك. حاول مرة أخرى.',
     tryAgain: 'حاول مرة أخرى',
   },
+  landing: {
+    title: (first) => `أرسل لك ${first} بطاقة ضيف`,
+    titleNoName: 'وصلتك بطاقة ضيف',
+    sub: '37 يوماً من Pro على حساب جديد. بلا بطاقة.',
+    flip: 'بطاقة الضيف. اضغط لقلبها',
+    youGet: 'لك',
+    inviterGets: (first) => `لـ ${first}`,
+    inviterGetsNoName: 'لصديقك',
+    backMark: 'ما تحصل عليه',
+    benefits: ['تتبّع رسائل البنك تلقائياً', 'حوالي 10 أضعاف الذكاء الاصطناعي، والمستشار', '37 يوماً مجاناً، ثم المجاني أو Pro: الخيار لك'],
+    tap: 'اضغط على البطاقة لترى ما تحصل عليه',
+    saved: 'حُفظ الرمز للتسجيل',
+    create: 'أنشئ حسابك',
+    signIn: 'لدي buddget بالفعل',
+    foot: 'يعمل على iPhone وAndroid والويب. الصديق الذي ينضم من الويب يُحتسب بعد تسجيل دخوله من هاتف.',
+  },
   profile: { proTag: 'PRO', free: 'المجاني', trial: 'تجربة Pro', pro: 'buddget Pro', founder: (n) => `المؤسس رقم ${String(n).replace('#', '')}` },
   signup: {
     haveCode: 'لديك رمز دعوة؟',
     label: 'رمز الدعوة',
-    placeholder: 'LAYLA-7K2',
-    hint: 'رمز صديقك يمنحك 37 يوماً من Pro بلا بطاقة.',
+    placeholder: 'NOUR-7K2',
+    hint: 'رمز صديقك يمنحك 37 يوماً من Pro بلا بطاقة، للحسابات الجديدة.',
     saved: 'حُفظ الرمز. يُطبَّق عند جاهزية حسابك.',
     invalid: 'هذا الرمز لا يبدو صحيحاً. تحقق منه وحاول مرة أخرى.',
   },

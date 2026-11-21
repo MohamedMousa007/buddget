@@ -84,13 +84,23 @@ describe('a friend in the list', () => {
   const f = rewardsCopy.en.invite.friend
   const friend = (over: Partial<ReferralFriend>): ReferralFriend => ({ id: 1, name: 'Sara', joined_at: '2026-11-03T10:00:00Z', status: 'pending', active_days: 2, active_days_needed: 3, transactions: 3, transactions_needed: 5, window_ends_at: '2026-11-17T10:00:00Z', reward_kind: null, ...over })
   const date = () => '3 Nov'
-  it('still in their window: progress out of 3 days', () => {
-    expect(friendRow(friend({}), f, date)).toMatchObject({ status: 'almost', name: 'Sara', initials: 'SA', detail: 'Active 2 of 3 days', statusLabel: 'Almost there', progress: { done: 2, total: 3 } })
+  it('still in their window: progress out of 3 days and 5 entries', () => {
+    expect(friendRow(friend({}), f, date)).toMatchObject({ status: 'almost', name: 'Sara', initials: 'SA', detail: 'Active 2 of 3 days · 3 of 5 entries', statusLabel: 'Almost there', progress: { done: 2, total: 3 } })
+    expect(friendRow(friend({ active_days: 5, transactions: 9 }), f, date).detail).toBe('Active 3 of 3 days · 5 of 5 entries')
     expect(friendRow(friend({ active_days: 0 }), f, date).statusLabel).toBe('Just joined')
   })
   it('rewarded: what it paid, by the kind the server recorded', () => {
     expect(friendRow(friend({ status: 'rewarded', reward_kind: 'pro_week' }), f, date)).toMatchObject({ status: 'done', detail: 'Joined 3 Nov · stuck with it', statusLabel: '+1 week' })
     expect(friendRow(friend({ status: 'rewarded', reward_kind: 'sparks' }), f, date).statusLabel).toBe('+500 Sparks')
+  })
+  it('held friends say why instead of "On its way" (BDG-006)', () => {
+    expect(friendRow(friend({ status: 'activated', held: 'awaiting_native' }), f, date)).toMatchObject({ status: 'almost', detail: 'Joined 3 Nov · counts once they sign in on a phone', statusLabel: 'Waiting for a phone sign-in' })
+    expect(friendRow(friend({ status: 'activated', held: 'review' }), f, date)).toMatchObject({ status: 'almost', detail: 'Joined 3 Nov · stuck with it', statusLabel: 'Being checked' })
+    expect(friendRow(friend({ status: 'activated', held: null }), f, date)).toMatchObject({ status: 'done', statusLabel: 'On its way' })
+    expect(friendRow(friend({ status: 'activated' }), f, date).statusLabel).toBe('On its way')
+    const ar = rewardsCopy.ar.invite.friend
+    expect(friendRow(friend({ status: 'activated', held: 'awaiting_native' }), ar, date).statusLabel).toBe('بانتظار تسجيل الدخول من هاتف')
+    expect(friendRow(friend({ status: 'activated', held: 'review' }), ar, date).statusLabel).toBe('قيد المراجعة')
   })
   it('the quiet endings carry no reward', () => {
     expect(friendRow(friend({ status: 'expired' }), f, date).statusLabel).toBe('Didn’t stick')

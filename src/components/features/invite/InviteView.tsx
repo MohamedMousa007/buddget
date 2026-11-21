@@ -91,7 +91,8 @@ export function InviteView({ me }: { me: BillingMe }) {
           flipLabel={c.pass.flip}
           front={{
             mark: c.pass.mark,
-            title: first ? c.pass.title(first) : c.pass.titleNoName,
+            title: c.pass.title,
+            from: first ? c.pass.from(first) : undefined,
             subtitle: c.pass.sub,
             facts: [{ label: c.pass.code, value: code, code: true }, { label: c.pass.friendGets, value: c.pass.friendValue }, { label: c.pass.youGet, value: sparks ? c.pass.youSparks : c.pass.youWeek }],
           }}
