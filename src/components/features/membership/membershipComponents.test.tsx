@@ -2,9 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
+// Real next/font class names are hashed (__variable_xxx); names shaped like Tailwind's font-* utilities would be collapsed by tailwind-merge in cn().
 vi.mock('next/font/google', () => ({
-  Pinyon_Script: () => ({ variable: 'font-signature-var', className: 'font-signature' }),
-  Aref_Ruqaa: () => ({ variable: 'font-signature-ar-var', className: 'font-signature-ar' }),
+  Pinyon_Script: () => ({ variable: '__variable_pinyon', className: '__className_pinyon' }),
+  Aref_Ruqaa: () => ({ variable: '__variable_aref', className: '__className_aref' }),
 }))
 
 import { initialRig, pointerTilt, rigFrame, stepRig, toggleTarget } from './flipPhysics'
@@ -170,13 +171,13 @@ describe('FounderSignatureCard', () => {
     expect(needsAppFont('Layla Hassan')).toBe(false)
     expect(needsAppFont("Zoë O'Neil-Çelik")).toBe(false)
     expect(front('Layla Hassan')).toContain('data-signature="script"')
-    expect(front('Layla Hassan')).toContain('font-signature-var')
+    expect(front('Layla Hassan')).toContain('__variable_pinyon')
   })
   it('sets an Arabic name in the app font: the script has no Arabic glyphs', () => {
     expect(needsAppFont('ليلى حسن')).toBe(true)
     const out = front('ليلى حسن')
     expect(out).toContain('data-signature="plain"')
-    expect(out).not.toContain('font-signature-var')
+    expect(out).not.toContain('__variable_pinyon')
   })
 })
 
@@ -190,14 +191,14 @@ describe('GuestPassCard signature', () => {
     expect(out).toContain('from Mohamed')
     expect(out).toContain('data-side="right"')
     expect(out).toContain('dir="ltr"')
-    expect(out).toContain('font-signature-var')
+    expect(out).toContain('__variable_pinyon')
   })
   it('sets the Arabic line on the left, right to left, with the Arabic face loaded', () => {
     const out = front('من محمد')
     expect(out).toContain('من محمد')
     expect(out).toContain('data-side="left"')
     expect(out).toContain('dir="rtl"')
-    expect(out).toContain('font-signature-ar-var')
+    expect(out).toContain('__variable_aref')
   })
   it('a Latin line keeps its side even when the name is Arabic', () => {
     expect(front('from محمد')).toContain('data-side="right"')
@@ -205,7 +206,7 @@ describe('GuestPassCard signature', () => {
   it('draws no signature when the name is unknown', () => {
     for (const out of [front(), front(''), front('   ')]) {
       expect(out).not.toContain('data-side')
-      expect(out).not.toContain('font-signature-var')
+      expect(out).not.toContain('__variable_pinyon')
       expect(out).toContain('37 Days of Pro')
     }
   })
