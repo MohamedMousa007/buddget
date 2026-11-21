@@ -474,3 +474,14 @@ describe('P2-28 token revoke', () => {
     expect(JSON.parse(pending()!)).toEqual(['user-1'])
   })
 })
+
+describe('plugin load', () => {
+  it('concurrent first calls all reach the plugin; none falls back to null while the import is in flight (BDG-008)', async () => {
+    const status = { tokenSaved: false, enabled: false, setupCompleted: true, wired: true, permission: true }
+    mocks.getStatus.mockResolvedValue(status)
+    const sms = await freshModule()
+    const [a, b, c] = await Promise.all([sms.getSmsBridgeStatus(), sms.getSmsBridgeStatus(), sms.getSmsBridgeStatus()])
+    expect([a, b, c]).toEqual([status, status, status])
+    expect(mocks.getStatus).toHaveBeenCalledTimes(3)
+  })
+})

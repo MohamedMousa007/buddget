@@ -135,20 +135,23 @@ async function callNative<T>(op: string, call: (plugin: SmsCapacitorPlugin) => P
 // causing "SmsCapacitorPlugin.then() is not implemented on android" and
 // silently aborting the entire permission flow.
 let _plugin: SmsCapacitorPlugin | null = null
-let _pluginLoaded = false
+// One shared load: concurrent first callers (AppShell, Settings, the armed hook at start-up) all wait for the same import.
+// A plain "loaded" flag let a caller that arrived during the import read _plugin as null and fall back silently.
+let _pluginLoad: Promise<boolean> | null = null
 
-async function ensurePlugin(): Promise<boolean> {
-  if (_pluginLoaded) return _plugin !== null
-  _pluginLoaded = true
-  if (!isNative()) return false
-  try {
-    const { registerPlugin } = await import('@capacitor/core')
-    // Store in module var — never return the proxy itself from an async function.
-    _plugin = registerPlugin<SmsCapacitorPlugin>('SmsCapacitorPlugin')
-    return true
-  } catch {
-    return false
-  }
+function ensurePlugin(): Promise<boolean> {
+  _pluginLoad ??= (async () => {
+    if (!isNative()) return false
+    try {
+      const { registerPlugin } = await import('@capacitor/core')
+      // Store in module var — never return the proxy itself from an async function.
+      _plugin = registerPlugin<SmsCapacitorPlugin>('SmsCapacitorPlugin')
+      return true
+    } catch {
+      return false
+    }
+  })()
+  return _pluginLoad
 }
 
 export async function checkSmsPermission(): Promise<boolean> {

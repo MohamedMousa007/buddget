@@ -14,18 +14,19 @@ interface Props {
   error?: string | null
 }
 
+/** "5 minutes ago" / "منذ ٥ دقائق", in the page language, so no English words land inside an Arabic sentence. */
 function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime()
-  const mins = Math.round(diff / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
+  const lang = typeof document !== 'undefined' && document.documentElement.lang ? document.documentElement.lang : 'en'
+  const rtf = new Intl.RelativeTimeFormat(lang, { numeric: 'auto' })
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000)
+  if (mins < 60) return rtf.format(-Math.max(0, mins), 'minute')
   const hrs = Math.round(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  return `${Math.round(hrs / 24)}d ago`
+  if (hrs < 24) return rtf.format(-hrs, 'hour')
+  return rtf.format(-Math.round(hrs / 24), 'day')
 }
 
 /** This phone's status, from what a run or an SMS proved (BDG-008); it never says a Shortcut exists or was deleted. */
-function statusLabel(t: ReturnType<typeof useT>['smsTracking'], s: SmsSetupState): string {
+export function statusLabel(t: ReturnType<typeof useT>['smsTracking'], s: SmsSetupState): string {
   if (s.health === 'receiving') return t.iosStatusConnected(timeAgo(s.lastSmsAt!))
   if (s.health === 'quiet') return t.iosStatusQuiet(s.quietDays)
   if (s.runSeen) return t.iosStatusRunSeen

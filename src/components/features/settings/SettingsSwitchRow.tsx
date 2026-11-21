@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { Switch } from '@/components/ui/switch'
 import { SettingsChip, type RowTone } from '@/components/features/settings/SettingsRow'
 import { SETTING_ICONS } from '@/components/features/settings/settingIcons'
@@ -19,10 +20,12 @@ interface SettingsSwitchRowProps {
   checked: boolean
   onChange: (next: boolean) => void
   disabled?: boolean
+  /** An action shown just before the switch, e.g. "View guide". Interactive content, so tapping it never flips the switch. */
+  accessory?: ReactNode
 }
 
 /** A whole-row switch for settings whose state does not live in a plain store field (SMS, notifications, 2-step). */
-export function SettingsSwitchRow({ id, label, tone = 'neutral', solid = false, hint, tag, checked, onChange, disabled }: SettingsSwitchRowProps) {
+export function SettingsSwitchRow({ id, label, tone = 'neutral', solid = false, hint, tag, checked, onChange, disabled, accessory }: SettingsSwitchRowProps) {
   const Icon = id ? SETTING_ICONS[SETTING_BY_ID[id].icon] : null
   return (
     <label
@@ -38,6 +41,7 @@ export function SettingsSwitchRow({ id, label, tone = 'neutral', solid = false, 
         {hint ? <span dir="auto" className="mt-0.5 block text-xs leading-snug text-[var(--color-brand-text-muted)]">{hint}</span> : null}
         {tag ? <span className="mt-0.5 block text-[0.625rem] font-medium uppercase tracking-wider text-[var(--color-brand-text-muted)]">{tag}</span> : null}
       </span>
+      {accessory}
       <Switch size="touch" aria-label={label} checked={checked} onCheckedChange={onChange} disabled={disabled} />
     </label>
   )

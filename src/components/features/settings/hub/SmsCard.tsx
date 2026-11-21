@@ -5,31 +5,64 @@ import { AlertTriangle } from 'lucide-react'
 import { SettingsRow } from '@/components/features/settings/SettingsRow'
 import { SettingsSection } from '@/components/features/settings/SettingsSection'
 import { SettingsSwitchRow } from '@/components/features/settings/SettingsSwitchRow'
+import { statusLabel } from '@/components/features/settings/SmsIosSetupCard'
 import { SETTING_ICONS } from '@/components/features/settings/settingIcons'
 import { GROUP_TONE } from '@/components/features/settings/groupMeta'
+import { AppLink } from '@/components/ui/AppLink'
+import { buttonVariants } from '@/components/ui/buttonVariants'
 import { useSmsTracking } from '@/hooks/useSmsTracking'
+import { useT } from '@/lib/i18n'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 import { isIOS, isNative } from '@/lib/native/isNative'
+import { cn } from '@/lib/utils'
 
-/** SMS tracking as one switch on the settings page; `children` are more rows of the same group. An iPhone opens the Shortcut guide first, and keeps a row back to it once set up. */
+/**
+ * SMS tracking on the settings page (BDG-008, findings/B-sms-setup.md). An iPhone that never set up on this phone gets a
+ * "Set up" button and no switch; once it has a setup claim or a Shortcut run here, the switch with "View guide" before it
+ * and this phone's status. Android and web: the switch alone. `children` are more rows of the same group.
+ */
 export function SmsCard({ title, vivid = false, children }: { title?: string; vivid?: boolean; children?: ReactNode }) {
   const copy = useSettingsHubCopy()
-  const { isEnabled, isSetup, toggle, loading, error, permission } = useSmsTracking()
+  const t = useT()
   const iosGuide = isNative() && isIOS()
+  const { isEnabled, isSetup, toggle, loading, error, permission, setup } = useSmsTracking({ withDeviceSms: iosGuide })
   const needsGuide = iosGuide && !isSetup
   const notice = error ?? (isEnabled && permission === false ? copy.sms.permissionOff : null)
   const tone = vivid ? 1 : GROUP_TONE.autoTrack
+  const hint = iosGuide && isEnabled ? statusLabel(t.smsTracking, setup) : isEnabled ? copy.sms.on : copy.sms.hint
 
   return (
     <SettingsSection title={title ?? copy.groupName.autoTrack}>
       {needsGuide ? (
-        <SettingsRow icon={SETTING_ICONS.message} tone={tone} solid={vivid} title={copy.sms.title} subtitle={copy.sms.iosHint} value={copy.sms.guide} href="/settings/sms" settingId="sms" />
+        <SettingsRow
+          icon={SETTING_ICONS.message}
+          tone={tone}
+          solid={vivid}
+          title={copy.sms.title}
+          subtitle={copy.sms.iosHint}
+          href="/settings/sms"
+          settingId="sms"
+          trailing={<span data-testid="sms-setup-button" className={buttonVariants({ size: 'touch' })}>{copy.sms.guide}</span>}
+        />
       ) : (
-        <SettingsSwitchRow id="sms" label={copy.sms.title} tone={tone} solid={vivid} hint={isEnabled ? copy.sms.on : copy.sms.hint} checked={isEnabled} onChange={(next) => void toggle(next)} disabled={loading} />
+        <SettingsSwitchRow
+          id="sms"
+          label={copy.sms.title}
+          tone={tone}
+          solid={vivid}
+          hint={hint}
+          checked={isEnabled}
+          onChange={(next) => void toggle(next)}
+          disabled={loading}
+          accessory={
+            iosGuide ? (
+              <AppLink href="/settings/sms" data-testid="sms-view-guide" className={cn(buttonVariants({ variant: 'ghost', size: 'touch' }), 'px-3 text-[var(--color-brand-primary-ink)]')}>
+                {copy.sms.viewGuide}
+              </AppLink>
+            ) : undefined
+          }
+        />
       )}
-      {iosGuide && !needsGuide ? (
-        <SettingsRow icon={SETTING_ICONS.message} tone={tone} solid={vivid} title={copy.sms.guideRow} subtitle={copy.sms.guideRowHint} href="/settings/sms" settingId="sms-guide" />
-      ) : null}
       {notice ? (
         <p className="flex items-start gap-2 px-4 py-3 text-xs text-[var(--color-brand-amber)]">
           <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
