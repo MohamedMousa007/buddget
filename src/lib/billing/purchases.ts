@@ -40,23 +40,63 @@ async function sdk() {
 // The SDK is configured once per app run; later users switch with logIn. Calling configure again replaces the shared instance.
 let configured = false
 let configuredFor: string | null = null
+let wanted: string | null = null
 
-/** Starts the SDK as the Supabase user, or switches the open session to them. Callers gate on `billingEnabled` first. */
+/** Where the store SDK stands: `starting` until configure or logIn settles, `failed` when it threw. Screens wait on `ready`. */
+export type PurchasesStatus = 'idle' | 'starting' | 'ready' | 'failed'
+let status: PurchasesStatus = 'idle'
+const listeners = new Set<() => void>()
+/** A store call that never answers ends as a failure, so no button spins forever. */
+async function within<T>(work: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([work, new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('store timeout')), ms) })])
+  } finally {
+    clearTimeout(timer)
+  }
+}
+const setStatus = (next: PurchasesStatus) => {
+  status = next
+  listeners.forEach((fn) => fn())
+}
+export const purchasesStatus = (): PurchasesStatus => status
+export function onPurchasesChange(fn: () => void): () => void {
+  listeners.add(fn)
+  return () => { listeners.delete(fn) }
+}
+
+/** Starts the SDK as the Supabase user, or switches the open session to them. Callers gate on `billingEnabled` first. Throws when the SDK refuses. */
 export async function startPurchases(userId: string): Promise<boolean> {
   const key = apiKey()
   if (!isNative() || !key) return false
-  const purchases = await sdk()
-  if (!configured) {
-    await purchases.configure({ apiKey: key, appUserID: userId })
-    configured = true
-  } else if (configuredFor !== userId) {
-    await purchases.logIn({ appUserID: userId })
+  wanted = userId
+  if (configured && configuredFor === userId && status === 'ready') return true
+  setStatus('starting')
+  try {
+    const purchases = await sdk()
+    if (!configured) {
+      await within(purchases.configure({ apiKey: key, appUserID: userId }), 20_000)
+      configured = true
+    } else if (configuredFor !== userId) {
+      await within(purchases.logIn({ appUserID: userId }), 20_000)
+    }
+    configuredFor = userId
+    setStatus('ready')
+    return true
+  } catch (e) {
+    setStatus('failed')
+    throw e
   }
-  configuredFor = userId
-  return true
+}
+
+/** Runs the last start again, after a failure the screen offered Retry for. */
+export async function retryPurchases(): Promise<boolean> {
+  return wanted ? startPurchases(wanted).catch(() => false) : false
 }
 
 export async function stopPurchases(): Promise<void> {
+  wanted = null
+  setStatus('idle')
   if (configuredFor === null) return
   configuredFor = null
   try {
@@ -66,10 +106,22 @@ export async function stopPurchases(): Promise<void> {
   }
 }
 
-export async function loadPackages(): Promise<PurchasesPackage[]> {
-  if (configuredFor === null) return []
-  const offerings = await (await sdk()).getOfferings()
-  return offerings.current?.availablePackages ?? []
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/** The current offering's packages. StoreKit can answer empty or throw on a cold start, so a miss is asked again before giving up. */
+export async function loadPackages(attempts = 3, delayMs = 1500): Promise<PurchasesPackage[]> {
+  for (let i = 0; i < attempts; i++) {
+    if (configuredFor === null) return []
+    try {
+      const offerings = await within((await sdk()).getOfferings(), 12_000)
+      const found = offerings.current?.availablePackages ?? []
+      if (found.length > 0) return found
+    } catch (e) {
+      if (i === attempts - 1) throw e
+    }
+    if (i < attempts - 1) await sleep(delayMs * (i + 1))
+  }
+  return []
 }
 
 export async function purchasePackage(aPackage: PurchasesPackage): Promise<PurchaseOutcome> {

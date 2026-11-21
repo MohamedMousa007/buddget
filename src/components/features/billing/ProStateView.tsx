@@ -37,7 +37,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useUsageStore } from '@/lib/usage/usageStore'
 import { BillingHistory, historyPrice } from './BillingHistory'
 import { PlansBlock } from './PlansBlock'
-import { StoreLinks, usePlanChoice } from './PlansView'
+import { BuyLine, StoreLinks, usePlanChoice } from './PlansView'
 import { monthView, multipleLabel } from './planBilling'
 
 /** Welcome to Pro: shown once after a first purchase, "Welcome back" after a restore. The card, three facts of the plan, one button. */
@@ -49,7 +49,7 @@ export function WelcomeToPro({ me, back, onDone }: { me: BillingMe; back: boolea
   return (
     <div className="space-y-5">
       <MembershipHero tone="pro">
-        <MemberCard kind="pro" mark={c.mark} facts={[{ label: c.state.memberSince, value: date(view.memberSince) }, { label: c.state.renews, value: date(view.until) }]} />
+        <MemberCard kind="pro" mark={c.mark} facts={view.memberSince ? [{ label: c.state.memberSince, value: date(view.memberSince) }, { label: c.state.renews, value: date(view.until) }] : [{ label: c.state.renews, value: date(view.until) }]} />
         <h1 dir="auto" className="text-2xl font-extrabold leading-tight tracking-tight rtl:font-bold rtl:tracking-normal">{back ? c.welcome.back : c.welcome.title}</h1>
       </MembershipHero>
       <Card padding="md" className="space-y-3">
@@ -86,13 +86,15 @@ export function ProStateView({ me }: { me: BillingMe }) {
   const { user } = useAuth()
   const view: SubscriptionView = subscriptionView(me)
   const trial = view.kind === 'trial'
-  const { plans, chosen, picked, setPicked, busy, note, setNote, buy, restore } = usePlanChoice()
+  const { plans, chosen, picked, setPicked, busy, setNote, restore, shelf, line, purchaseChosen } = usePlanChoice()
   const name = useFinanceStore((st) => st.profile.name) || t.common.user
   const [sheet, setSheet] = useState<Sheet>(null)
   const [cancelOpen, setCancelOpen] = useState(false)
   const [stay, setStay] = useState<Extract<StayOfferAnswer, { eligible: true }> | null>(null)
   const [stayBusy, setStayBusy] = useState(false)
   const [stayNote, setStayNote] = useState<string | null>(null)
+  /** Restore and stay-offer results, drawn under the manage bar that started them; purchase notes sit under the buy button. */
+  const [barNote, setBarNote] = useState<string | null>(null)
   const keepRef = useRef<HTMLDivElement>(null)
 
   const rewards = me.rewards ?? null
@@ -113,12 +115,15 @@ export function ProStateView({ me }: { me: BillingMe }) {
   const ending = view.kind === 'canceled' || view.kind === 'issue'
 
   const purchase = async () => {
-    if (!store || !chosen.option) return setNote(p.notYet)
-    if (await buy(chosen.option)) { setSheet(null); useUsageStore.getState().setWelcome('new') }
+    if (await purchaseChosen()) { setSheet(null); useUsageStore.getState().setWelcome('new') }
   }
   const bringBack = async () => {
-    if (!store) return setNote(p.notYet)
-    setNote((await restore()) ? s.restored : s.restoreNothing)
+    if (!store) return setBarNote(p.notYet)
+    const said = (await restore()) ? s.restored : s.restoreNothing
+    // In the plans sheet the answer sits under its buy button, next to Restore; on the page, under the manage bar.
+    if (sheet === 'plans') return setNote(said)
+    setNote(null)
+    setBarNote(said)
   }
 
   // "How to cancel": on iOS a store member is shown the stay offer first, once (the server decides); everyone else gets the steps.
@@ -143,7 +148,7 @@ export function ProStateView({ me }: { me: BillingMe }) {
     void useBillingStore.getState().refresh()
     setStay(null)
     setSheet(null)
-    setNote(b.stay.done)
+    setBarNote(b.stay.done)
   }
 
   const actions: ManageAction[] = [
@@ -189,7 +194,8 @@ export function ProStateView({ me }: { me: BillingMe }) {
   const plansChoice = (
     <>
       <PlansBlock plans={plans} selected={picked} onSelect={setPicked} disabled={busy} label={p.manage.plansTitle} />
-      <Button size="cta-block" loading={busy} onClick={() => void purchase()} className="font-bold">{trial ? p.keep.cta : chosen.kind === 'annual' ? p.continueYearly : p.continueMonthly}</Button>
+      <Button size="cta-block" loading={busy || shelf === 'loading'} onClick={() => void purchase()} className="font-bold">{trial ? p.keep.cta : chosen.kind === 'annual' ? p.continueYearly : p.continueMonthly}</Button>
+      <BuyLine line={line} busy={busy} />
     </>
   )
 
@@ -234,7 +240,7 @@ export function ProStateView({ me }: { me: BillingMe }) {
       ) : null}
 
       <ManageBar label={p.manage.group} status={status} pill={pill} actions={actions} />
-      {note && sheet === null ? <p role="status" dir="auto" className="-mt-3 px-1 text-xs text-[var(--color-brand-text-secondary)]">{note}</p> : null}
+      {barNote && sheet === null ? <p role="status" dir="auto" className="-mt-3 px-1 text-xs text-[var(--color-brand-text-secondary)]">{barNote}</p> : null}
 
       {trial ? (
         <MembershipPanel className="grid gap-3.5 p-4">
@@ -269,7 +275,6 @@ export function ProStateView({ me }: { me: BillingMe }) {
               {sheet === 'plans' ? (
                 <>
                   <div className="grid gap-3.5 pt-2">{plansChoice}</div>
-                  {note ? <p role="status" dir="auto" className="text-center text-xs text-[var(--color-brand-text-secondary)]">{note}</p> : null}
                   <Fine>{android ? p.storeFine.android : p.storeFine.ios}</Fine>
                   <StoreLinks onRestore={() => void bringBack()} disabled={busy} />
                 </>

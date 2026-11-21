@@ -9,7 +9,7 @@ import { ProMark } from '@/components/features/membership/ProMark'
 import { SettingsRow } from '@/components/features/settings/SettingsRow'
 import { SettingsSection } from '@/components/features/settings/SettingsSection'
 import { SettingsSubPageShell } from '@/components/features/settings/SettingsSubPageShell'
-import { billingOn, useBillingStore } from '@/lib/billing/billingStore'
+import { billingOn, storeConfirmed, useBillingStore } from '@/lib/billing/billingStore'
 import { subscriptionView } from '@/lib/billing/subscriptionView'
 import { planPageStateOf } from '@/components/features/billing/planBilling'
 import { Gauge } from 'lucide-react'
@@ -33,7 +33,7 @@ export default function ProPage() {
   if (me && !on) return null
   return (
     <SettingsSubPageShell title={c.state.title} lead={<ProMark size="lg" faded={me ? subscriptionView(me).kind === 'expired' : false} className="me-2" />}>
-      {!me ? <PlanPending rows={3} /> : welcome && subscriptionView(me).proActive ? <WelcomeToPro me={me} back={welcome === 'back'} onDone={() => setWelcome(null)} /> : planPageStateOf(me) === 'free' ? <PlansView /> : <ProStateView me={me} />}
+      {!me ? <PlanPending rows={3} /> : welcome && storeConfirmed(me) ? <WelcomeToPro me={me} back={welcome === 'back'} onDone={() => setWelcome(null)} /> : planPageStateOf(me) === 'free' ? <PlansView /> : <ProStateView me={me} />}
       {me ? <SettingsSection><SettingsRow icon={Gauge} tone={2} title={usage.page.title} href="/settings/pro/usage" settingId="usage" /></SettingsSection> : null}
     </SettingsSubPageShell>
   )

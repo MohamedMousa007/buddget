@@ -3412,7 +3412,8 @@ export interface Dictionary {
     loading: string
     unavailable: string
     purchaseFailed: string
-    waitingForStore: string
+    confirming: string
+    checkAgain: string
     notYet: string
     close: string
   }
