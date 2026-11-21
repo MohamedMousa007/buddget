@@ -639,3 +639,21 @@ The owner asked for high-quality, crisp logos for every service on the Subscript
 |---|---|---|
 | Every logo key resolves to a square WebP of at least 512 px, read from the VP8, VP8L or VP8X header. Every catalogue service has a logo. | `logoPolicy.test.ts`, `logoPolicy.ts`, `brandTile.ts` | Tests written, not run on the Mac (cloud runner job pending). tsc and eslint pass. The header parser was checked with node against all 135 files and against VP8L and VP8X samples. |
 | How the 27 new tiles look in the 40, 48 and 56 pt tiles | `public/subscription-icons/*` | **Manual verification required** (runner screenshot, then owner review). |
+
+## Step 18c: official RAKBANK packs, RAKBANK Islamic, Emirates Islamic narrow, Weyay on a dark tile
+
+**All 54 catalogue banks now show a logo**, from 53 files (ADIB Egypt still shares `adib.png`). Rows in `bank-logos.md` say "Supplied by the owner (official media hub)".
+
+- **RAKBANK:** `rakbank.png` is replaced by `rakbank.svg`, a vector emblem taken from the official coloured lockup (`RAKBANK_LOCKUP_01_RGB.svg`). The pack has no square or stacked version, and the trimmed lockup is 6.5:1, too wide for the tile. The mark is still emblem-only.
+- **RAKBANK Islamic (new brand `rakbankislamic`):** AE `bank_account`, aliases "rak islamic", "rakbank amal" and "rakbank islamic bank", colours `#00CD52` / `#013315` from the logo. Its file is the green emblem from `RAKBANK_ISLAMIC_HORIZONTAL_01_RGB.svg`. The vertical lockup (4.2:1) was checked, but its "Islamic" line would be 1 to 2 px tall in the tile.
+- **Emirates Islamic:** now uses the narrow logo. It is the same "EI" emblem as before with a tighter viewBox, so it looks unchanged.
+- **Weyay:** the owner's cream-and-mint `weyay.svg` draws on a `#11042A` tile. `BANK_LOGO_BG` maps brand to tile colour, and `bankLogoBg(src)` reads it. `BrandMark` has a new additive prop, `logoBg`. When the prop is left out, `BrandMark` looks up the bank's own colour, so no call site changed. Dark tiles get a `ring-white/20` ring so the edge reads in dark mode. The default white tile with its `--color-brand-border` ring is unchanged. `#11042A` comes from the brief; the file has no background to measure.
+- **SVGs:** every SVG was parsed, rebuilt from its paths with explicit fills and minified. No prolog, comments, editor namespaces, scripts, images or external references remain. No rasters were added.
+- **Resolver note:** a bare "RAK" is now a word of both RAK brands, so it resolves to neither and keeps the monogram. "RAKBANK", "RAK Bank" and "RAKBANK ••1234" still resolve to `rakbank`.
+
+| Item | Files | Status |
+|---|---|---|
+| Map and folder parity (53 files). RAKBANK, RAKBANK Islamic and Weyay resolve by id and name. Weyay maps to `#11042A`; every other logo maps to no background. | `bankLogos.ts`, `bankLogos.test.ts` | Tests written, not run on the Mac (cloud runner job pending). tsc and eslint pass. Parity and the SVG safety regexes were desk-checked against the 4 new files. |
+| RAKBANK Islamic is its own brand, and RAKBANK keeps its names. | `paymentMethodDefaults.ts`, `__tests__/paymentBrandCatalog.test.ts` | Tests written, not run on the Mac (cloud runner job pending). |
+| `BrandMark` with `logoBg` draws that colour and keeps the alert badge. Weyay gets its tile without the prop. CIB stays white with no inline background. | `BrandMark.tsx`, `accounts.render.test.ts` | Tests written, not run on the Mac (cloud runner job pending). |
+| How the RAKBANK, RAKBANK Islamic and Weyay tiles look at 32 to 44 pt in light and dark. Weyay is a 4.5:1 wordmark. | `public/logos/banks/*` | **Manual verification required** (runner screenshot, then owner review). |

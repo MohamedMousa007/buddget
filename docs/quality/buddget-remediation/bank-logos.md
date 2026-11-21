@@ -5,6 +5,7 @@ The files are in `public/logos/banks/<catalogue-id>.svg|png`; `src/lib/payment/b
 
 How they were sourced (2026-11-21):
 
+- Step 18c: the owner supplied official RAKBANK and RAKBANK Islamic packs from the bank's media hub and the Emirates Islamic narrow logo, and asked for Weyay's light logo on a dark tile. `rakbankislamic` is a new catalogue brand. Rows say "Supplied by the owner (official media hub)".
 - Step 18b: the owner supplied files for 20 existing banks and six new UAE catalogue brands (`sib`, `emiratesislamic`, `ajman`, `nbf`, `emiratesinvestment`, `alhilal`). Their rows say "Supplied by the owner". They went through the same sanitiser and tile check; three were cropped to the emblem or pruned as noted.
 - Three files come from the banks' own websites (`aaib`, `aalex`, `ilabank`).
 - The rest come from each bank's English Wikipedia infobox logo or from a Wikimedia Commons search.
@@ -60,14 +61,16 @@ How they were sourced (2026-11-21):
 | `bisb` | `bisb.png` | 31177 | Bahrain Islamic Bank (BisB).png | — | Supplied by the owner (2026-11-21) | 1024 px PNG resized to 512 px. |
 | `dib` | `dib.png` | 24116 | DIB.png | — | Supplied by the owner (2026-11-21) | 270×88, kept as supplied (3.1:1). |
 | `dohabank` | `dohabank.png` | 15564 | Doha bank.png | — | Supplied by the owner (2026-11-21) | 300×84, kept as supplied (3.6:1). |
-| `emiratesislamic` | `emiratesislamic.svg` | 901 | emiarates islamic bank.svg | — | Supplied by the owner (2026-11-21) | New catalogue brand. Cropped to the "EI" emblem: the full lockup is 6.2:1 and cannot be read in the tile. |
+| `emiratesislamic` | `emiratesislamic.svg` | 637 | emirates islamic narrow logo.zip → Emiratesislamic_idytqzrGqF_0.svg | — | Supplied by the owner (official media hub) | Step 18c: the narrow logo is the "EI" emblem, the same four paths as the step 18b crop with a tighter viewBox (74.4 vs 75.2). Sanitised and minified; it looks the same as before. |
 | `enbd` | `enbd.svg` | 4483 | NBD UAE.zip → Emirates_NBD_id2C-FiT09_0.svg | — | Supplied by the owner (2026-11-21) | Replaces `enbd.png`. The zip also held an 800×210 PNG of the same mark; the SVG was used. |
 | `fab` | `fab.svg` | 29410 | FAB UAE .svg | — | Supplied by the owner (2026-11-21) | Replaces the Commons file. 248 of 251 unreferenced glyph `<symbol>`s pruned (199 KB → 29 KB). |
 | `faisaleg` | `faisaleg.svg` | 35043 | Faisal islamic bank logo.svg | — | Supplied by the owner (2026-11-21) |  |
 | `liv` | `liv.png` | 37797 | liv-logo-festivel.png | — | Supplied by the owner (2026-11-21) | 773×540 PNG resized to 512 px. Yellow on white: check legibility on device. |
 | `mashreq` | `mashreq.png` | 47623 | MAshreq.jpeg | — | Supplied by the owner (2026-11-21) | 400 px JPEG saved as PNG, resized to 256 px. The supplied image carries a UAE flag ribbon (national-day art). |
 | `nbo` | `nbo.png` | 39485 | NBO.jpeg | — | Supplied by the owner (2026-11-21) | 400 px JPEG saved as PNG, resized to 256 px. |
-| `rakbank` | `rakbank.png` | 1906 | RAKbank.png | — | Supplied by the owner (2026-11-21) | Cropped to the red emblem (243×243): the wordmark is white on transparent (invisible on the white tile) and the lockup is 6.5:1. |
+| `rakbank` | `rakbank.svg` | 619 | Rakbank logo official.zip → Master_logo/_RGB/_SVG/RAKBANK_LOCKUP_01_RGB.svg | — | Supplied by the owner (official media hub) | Step 18c: replaces the cropped `rakbank.png`. The pack has only the horizontal lockup (three colourways, 6.5:1 after trimming) and no square or stacked version, so the emblem group (`#9D1200`, `#FF2E00`) was taken as vector from the coloured RGB lockup, viewBox fitted to it. |
+| `rakbankislamic` | `rakbankislamic.svg` | 619 | Rakbank_Islamic_Logo.zip → _RGB/_SVG/RAKBANK_ISLAMIC_HORIZONTAL_01_RGB.svg | — | Supplied by the owner (official media hub) | Step 18c, new catalogue brand. Horizontal is 9.3:1 and vertical 4.2:1 (the "Islamic" line is 1 to 2 px tall in the tile), so the emblem (`#00CD52`, `#013315`) was taken as vector, the same treatment as RAKBANK. |
+| `weyay` | `weyay.svg` | 5454 | weyay-logo-new-en-resized.svg | — | Supplied by the owner (2026-11-21) | Step 18c: cream wordmark (`#EEEBE5`) and mint emblem on transparent, drawn on a `#11042A` tile (`BANK_LOGO_BG`) at the owner's request. The file has no background of its own; `#11042A` is the brief's Weyay dark, not measured. 4.5:1 (wide). Inkscape metadata and namespaces stripped. |
 | `sib` | `sib.png` | 59226 | Sharjah islamic bank.jpeg | — | Supplied by the owner (2026-11-21) | New catalogue brand. 400 px JPEG saved as PNG, resized to 256 px. |
 | `wio` | `wio.png` | 6932 | Wio Bank.png | — | Supplied by the owner (2026-11-21) | 300 px, kept as supplied. |
 | `gulfbank` | `gulfbank.png` | 27082 | Gulf bank.png | — | Supplied by the owner (2026-11-21) | 600 px square JPEG-in-PNG; white margins trimmed, 512×107 (4.8:1, wide). |
@@ -86,14 +89,13 @@ None left: the owner supplied files for all five in step 18b (rows above). Gulf 
 
 ## Skipped (no usable file; these keep today's monogram)
 
-| Catalogue id | Bank | Why |
-|---|---|---|
-| `weyay` | Weyay | The owner supplied `weyay-logo-new-en-resized.svg` (step 18b), but it is the light-on-dark variant: wordmark `#eeebe5` and part of the emblem are near-invisible on the white tile, and recolouring is not allowed. Needs a dark-on-light file. |
+None: every catalogue `bank_account` brand has a logo after step 18c. Weyay, the last one, now draws its light logo on its dark brand tile.
 
-Wallets, BNPL brands and card schemes are catalogue brands, so they are in scope. This pass did not cover them; it covered the `bank_account` brands (53 after step 18b; Zand was removed from the catalogue). BNPL provider logos already live in `public/providers/` (`ProviderBadge`).
+Wallets, BNPL brands and card schemes are catalogue brands, so they are in scope. This pass did not cover them; it covered the `bank_account` brands (54 after step 18c; Zand was removed in step 18b). BNPL provider logos already live in `public/providers/` (`ProviderBadge`).
 
 To add a bank:
 1. Put an official SVG, or a PNG of at least 512 px, at `public/logos/banks/<id>.svg|png`.
 2. Sanitise it as described above.
 3. Add the id to `BANK_LOGO_FILES`.
 4. Add a row to this file.
+5. A light-on-dark logo also gets its tile colour in `BANK_LOGO_BG`.

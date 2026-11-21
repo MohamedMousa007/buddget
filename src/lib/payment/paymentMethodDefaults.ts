@@ -262,6 +262,7 @@ const CAT_RAW: Record<string, CatEntry> = {
   mashreq: { name: 'Mashreq', type: 'bank_account', country: 'AE', aliases: ['mashreq neo', 'mashreq bank'] },
   adib: { name: 'ADIB', full: 'Abu Dhabi Islamic Bank', type: 'bank_account', country: 'AE' },
   rakbank: { name: 'RAKBANK', type: 'bank_account', country: 'AE', aliases: ['rak bank'] },
+  rakbankislamic: { name: 'RAKBANK Islamic', type: 'bank_account', colors: ['#00CD52', '#013315'], country: 'AE', aliases: ['rak islamic', 'rakbank amal', 'rakbank islamic bank'] },
   cbd: { name: 'CBD', full: 'Commercial Bank of Dubai', type: 'bank_account', country: 'AE' },
   liv: { name: 'Liv', type: 'bank_account', country: 'AE', aliases: ['liv bank', 'liv by enbd'] },
   wio: { name: 'Wio', type: 'bank_account', country: 'AE', aliases: ['wio bank'] },

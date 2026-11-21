@@ -82,4 +82,18 @@ describe('BrandMark logo variant (BDG-024)', () => {
     expect(html).toContain('>NC<')
     expect(html).toContain('background:#1E4E9B')
   })
+  it('a logo with logoBg draws on that colour, without the white tile, and keeps the alert badge', () => {
+    const html = renderToStaticMarkup(h(BrandMark, { name: 'Weyay', color: '#1E4E9B', logo: '/logos/banks/weyay.svg', logoBg: '#11042A', alert: true }))
+    expect(html).toContain('src="/logos/banks/weyay.svg"')
+    expect(html).toContain('background:#11042A')
+    expect(html).not.toContain('bg-white')
+    expect(html).toContain('>!</span>')
+  })
+  it('Weyay picks up its brand tile without the prop; other logos stay white with no inline background', () => {
+    const weyay = renderToStaticMarkup(h(BrandMark, { name: 'Weyay', color: '#1E4E9B', logo: '/logos/banks/weyay.svg' }))
+    expect(weyay).toContain('background:#11042A')
+    const cib = renderToStaticMarkup(h(BrandMark, { name: 'CIB', color: '#1E4E9B', logo: '/logos/banks/cib.svg' }))
+    expect(cib).toContain('bg-white')
+    expect(cib).not.toContain('background:')
+  })
 })

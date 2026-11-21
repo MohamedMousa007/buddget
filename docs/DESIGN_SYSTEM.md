@@ -398,7 +398,7 @@ New for the Accounts tab; everything else on those screens reuses existing primi
 
 | Component | What it is | Rules |
 |---|---|---|
-| `BrandMark` | Squircle monogram for a bank, wallet or cash (radius = 32% of size), optional amber `!` alert badge; optional `logo` shows the bank's official logo padded on a white tile (BDG-024) | Fill is the method colour; text colour comes from `inkOn()`, never hardcoded. The logo tile is white in both themes with a `--color-brand-border` ring; pass `bankLogoForName(name)`, which returns null when there is no file |
+| `BrandMark` | Squircle monogram for a bank, wallet or cash (radius = 32% of size), optional amber `!` alert badge; optional `logo` shows the bank's official logo padded on a white tile (BDG-024) | Fill is the method colour; text colour comes from `inkOn()`, never hardcoded. The logo tile is white in both themes with a `--color-brand-border` ring; pass `bankLogoForName(name)`, which returns null when there is no file. A light-on-dark logo (Weyay) gets its brand colour from `BANK_LOGO_BG` (or the additive `logoBg` prop) and a translucent white ring |
 | `CardFaceChip` | 70x44 card face: network, type, last 4. Small sibling of the carousel face | Gradient from `cardGradient(color)`, same as the large face |
 | `CardStrip` | Up to two `CardFaceChip`, "+N" beyond that, dashed add slot with none | Always `dir="ltr"`; tap target 44px high |
 | `AccountRow` | 72px row: mark, title, subtitle, balance (decimals dimmed), "free" line, strip under it | Only exceptions get colour (amber for a gap); amounts mask via `useMask('lists')` |

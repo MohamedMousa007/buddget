@@ -52,18 +52,35 @@ export const BANK_LOGO_FILES: Record<string, string> = {
   qib: 'qib.svg',
   qnb: 'qnb.svg',
   qnbeg: 'qnbeg.svg',
-  rakbank: 'rakbank.png',
+  rakbank: 'rakbank.svg',
+  rakbankislamic: 'rakbankislamic.svg',
   riyadbank: 'riyadbank.svg',
   sabb: 'sabb.svg',
   sib: 'sib.png',
   snb: 'snb.svg',
+  weyay: 'weyay.svg',
   wio: 'wio.png',
+}
+
+/**
+ * Tile colour for a logo drawn light-on-dark (brand id -> the brand's own background).
+ * Absent = the default white tile.
+ */
+export const BANK_LOGO_BG: Record<string, string> = {
+  weyay: '#11042A',
 }
 
 /** The logo path for a catalogue id, or null when the bank has no file (callers keep the monogram). */
 export function bankLogoSrc(brandId: string | null | undefined): string | null {
   const file = brandId ? BANK_LOGO_FILES[brandId] : undefined
   return file ? `/logos/banks/${file}` : null
+}
+
+const bgBySrc = new Map(Object.entries(BANK_LOGO_BG).map(([id, bg]) => [bankLogoSrc(id), bg]))
+
+/** The tile colour for a logo path from {@link bankLogoSrc}, or null for the default white tile. */
+export function bankLogoBg(src: string | null | undefined): string | null {
+  return (src && bgBySrc.get(src)) || null
 }
 
 const byName = new Map<string, string | null>()

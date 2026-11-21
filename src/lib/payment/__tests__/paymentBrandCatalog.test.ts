@@ -48,6 +48,16 @@ describe('resolvePaymentBrandKey', () => {
     expect(resolvePaymentBrandKey('Zand')).toBeNull()
   })
 
+  it('RAKBANK Islamic is its own brand and RAKBANK keeps its names (step 18c)', () => {
+    expect(resolvePaymentBrandKey('RAKBANK Islamic')).toBe('rakbankislamic')
+    expect(resolvePaymentBrandKey('RAK Islamic')).toBe('rakbankislamic')
+    expect(resolvePaymentBrandKey('RAKBANK Amal')).toBe('rakbankislamic')
+    expect(resolvePaymentBrandKey('RAKBANK Islamic ••4421')).toBe('rakbankislamic')
+    expect(resolvePaymentBrandKey('RAKBANK')).toBe('rakbank')
+    expect(resolvePaymentBrandKey('RAK Bank')).toBe('rakbank')
+    expect(resolvePaymentBrandKey('RAKBANK ••4421')).toBe('rakbank')
+  })
+
   it('resolves short sender IDs that are a word of the brand name', () => {
     expect(resolvePaymentBrandKey('NBD')).toBe('enbd')
     expect(resolvePaymentBrandKey('MISR')).toBe('banquemisr')

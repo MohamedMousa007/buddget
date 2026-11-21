@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { PAYMENT_BRANDS, resolvePaymentBrandKey } from './paymentMethodDefaults'
-import { BANK_LOGO_FILES, bankLogoForName, bankLogoSrc } from './bankLogos'
+import { BANK_LOGO_BG, BANK_LOGO_FILES, bankLogoBg, bankLogoForName, bankLogoSrc } from './bankLogos'
 
 const DIR = join(__dirname, '../../../public/logos/banks')
 const files = readdirSync(DIR).filter((f) => !f.startsWith('.'))
@@ -29,7 +29,7 @@ describe('bank logos (BDG-024)', () => {
     const expected: Record<string, string> = {
       adcb: 'adcb.svg', adib: 'adib.png', bisb: 'bisb.png', dib: 'dib.png', dohabank: 'dohabank.png',
       emiratesislamic: 'emiratesislamic.svg', enbd: 'enbd.svg', fab: 'fab.svg', faisaleg: 'faisaleg.svg',
-      liv: 'liv.png', mashreq: 'mashreq.png', nbo: 'nbo.png', rakbank: 'rakbank.png', sib: 'sib.png', wio: 'wio.png',
+      liv: 'liv.png', mashreq: 'mashreq.png', nbo: 'nbo.png', rakbank: 'rakbank.svg', sib: 'sib.png', wio: 'wio.png',
       gulfbank: 'gulfbank.png', cbd: 'cbd.png', aljazira: 'aljazira.png', banqueducaire: 'banqueducaire.png', bankmuscat: 'bankmuscat.svg',
       ajman: 'ajman.png', nbf: 'nbf.png', emiratesinvestment: 'emiratesinvestment.png', alhilal: 'alhilal.png',
     }
@@ -41,6 +41,24 @@ describe('bank logos (BDG-024)', () => {
     expect(bankLogoForName('Al Hilal Bank')).toBe('/logos/banks/alhilal.png')
     expect(bankLogoForName('Ajman Bank')).toBe('/logos/banks/ajman.png')
     expect(bankLogoForName('Emirates NBD ••1234')).toBe('/logos/banks/enbd.svg')
+  })
+
+  it('step 18c: RAKBANK Islamic and Weyay resolve; RAKBANK is the official vector', () => {
+    expect(bankLogoSrc('rakbank')).toBe('/logos/banks/rakbank.svg')
+    expect(bankLogoSrc('rakbankislamic')).toBe('/logos/banks/rakbankislamic.svg')
+    expect(bankLogoForName('RAKBANK Islamic')).toBe('/logos/banks/rakbankislamic.svg')
+    expect(bankLogoForName('RAK Islamic')).toBe('/logos/banks/rakbankislamic.svg')
+    expect(bankLogoForName('RAKBANK')).toBe('/logos/banks/rakbank.svg')
+    expect(bankLogoSrc('weyay')).toBe('/logos/banks/weyay.svg')
+    expect(bankLogoForName('Weyay')).toBe('/logos/banks/weyay.svg')
+  })
+
+  it('Weyay draws on its dark brand tile; every other logo keeps the white tile', () => {
+    expect(bankLogoBg(bankLogoSrc('weyay'))).toBe('#11042A')
+    for (const id of Object.keys(BANK_LOGO_BG)) expect(BANK_LOGO_FILES[id], id).toBeDefined()
+    for (const id of ids.filter((x) => !BANK_LOGO_BG[x])) expect(bankLogoBg(bankLogoSrc(id)), id).toBeNull()
+    expect(bankLogoBg(null)).toBeNull()
+    expect(bankLogoBg('/logos/banks/no-such.svg')).toBeNull()
   })
 
   it('Zand is gone from the catalogue; a method still named Zand keeps the monogram', () => {
