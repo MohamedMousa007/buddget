@@ -28,6 +28,26 @@ describe('resolvePaymentBrandKey', () => {
     expect(resolvePaymentBrandKey('Al Rajhi Bank')).toBe('alrajhi')
   })
 
+  it('the Islamic and Emirates names keep their banks after the step 18b UAE banks joined', () => {
+    expect(resolvePaymentBrandKey('Sharjah Islamic Bank')).toBe('sib')
+    expect(resolvePaymentBrandKey('SIB')).toBe('sib')
+    expect(resolvePaymentBrandKey('Emirates Islamic')).toBe('emiratesislamic')
+    expect(resolvePaymentBrandKey('Emirates Islamic Bank')).toBe('emiratesislamic')
+    expect(resolvePaymentBrandKey('Emirates NBD')).toBe('enbd')
+    expect(resolvePaymentBrandKey('EmiratesNBD')).toBe('enbd')
+    expect(resolvePaymentBrandKey('Dubai Islamic Bank')).toBe('dib')
+    expect(resolvePaymentBrandKey('ADIB')).toBe('adib')
+    expect(resolvePaymentBrandKey('ADIB Egypt')).toBe('adibeg')
+    expect(resolvePaymentBrandKey('Faisal Islamic Bank')).toBe('faisaleg')
+    expect(resolvePaymentBrandKey('Bahrain Islamic Bank')).toBe('bisb')
+    expect(resolvePaymentBrandKey('Emirates Investment Bank')).toBe('emiratesinvestment')
+    expect(resolvePaymentBrandKey('National Bank of Fujairah')).toBe('nbf')
+    expect(resolvePaymentBrandKey('Ajman Bank')).toBe('ajman')
+    expect(resolvePaymentBrandKey('Al Hilal Bank')).toBe('alhilal')
+    expect(resolvePaymentBrandKey('ADCB')).toBe('adcb')
+    expect(resolvePaymentBrandKey('Zand')).toBeNull()
+  })
+
   it('resolves short sender IDs that are a word of the brand name', () => {
     expect(resolvePaymentBrandKey('NBD')).toBe('enbd')
     expect(resolvePaymentBrandKey('MISR')).toBe('banquemisr')

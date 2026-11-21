@@ -557,3 +557,47 @@ Differences from the boards:
 | `BrandMark` logo variant keeps the alert badge. Without a logo it falls back to today's monogram. | `BrandMark.tsx`, `accounts.render.test.ts` | **Automated verification (runner job pending)**: written, not run on the Mac. |
 | A provider picker row shows the logo. A brand without one keeps its initials. | `ProviderPickerSheet.tsx`, `ProviderPickerSheet.pockets.render.test.ts` | **Automated verification (runner job pending)**: written, not run on the Mac. |
 | How the tiles look in light and dark at 32 to 44 px. Lockups near 3.5:1 (nbe, snb, riyadbank, enbd, hsbceg, qnb) read mainly by their emblem. | all call sites | **Manual verification required** (runner screenshot, then owner review). |
+
+## Step 18b: owner-supplied logos, Zand removed
+
+The owner supplied logo files in two batches and asked for Zand to be removed. **52 of the 53 catalogue banks now show a logo**, from 51 files; ADIB Egypt shares `adib.png`. Weyay is the only bank still on the monogram. In `bank-logos.md`, every row for these files says "Supplied by the owner".
+
+**Replaced:** `adcb.svg`, `fab.svg` and `enbd.png`. ENBD is now `enbd.svg`, taken from the supplied zip.
+- ADCB: the supplied file was 3.2 MB because of an unused base64 PNG in `<defs>`. The vector paths are the logo, and the file is now 24 KB.
+- FAB: 248 of 251 glyph symbols were unreferenced. Pruning them took the file from 199 KB to 29 KB.
+
+**Added for existing banks:** adib, adibeg (shared file), bisb, dib, dohabank, faisaleg, liv, mashreq, nbo, rakbank, wio, gulfbank, cbd, aljazira, banqueducaire, bankmuscat.
+- Rasters are PNGs of at most 512 px. Margins were trimmed and nothing was upscaled. The JPEG sources became 256 px PNGs.
+- Banque du Caire came as a WebP and was converted to PNG.
+
+**New catalogue brands (6, all AE `bank_account`, colours taken from the logos):**
+- `sib`: SIB (Sharjah Islamic Bank)
+- `emiratesislamic`: Emirates Islamic
+- `ajman`: Ajman Bank
+- `nbf`: NBF (National Bank of Fujairah)
+- `emiratesinvestment`: Emirates Investment Bank
+- `alhilal`: Al Hilal Bank. It is part of ADCB, and is a separate brand at the owner's request.
+
+**Cropped to the emblem:**
+- rakbank: the wordmark is white on transparent, so it disappears on the white tile.
+- emiratesislamic: the lockup is 6.2:1, past the 4:1 tile bar.
+
+**Kept although wide (owner-supplied):** gulfbank (4.8:1), cbd (4.1:1) and bankmuscat (4.1:1). They read mainly by their emblem.
+
+**Not shipped:** weyay.
+- The supplied SVG is the light-on-dark variant. Its wordmark is `#eeebe5` and half of its emblem is cream, so neither shows on the white tile.
+- Recolouring the mark is not allowed, so Weyay keeps its monogram until a dark-on-light file arrives.
+
+**Zand:**
+- The `zand` entry is gone from `paymentMethodDefaults.ts`. It never had a logo file.
+- No SMS sender list, pattern, migration, fixture or native file referenced it. On the live DB, `payment_methods` has 0 rows whose name contains "zand".
+- A method named "Zand" would still render. It resolves to no brand, so it gets the monogram and the abbreviation "ZAND", a case `cardThemes.test.ts` keeps.
+- The manifest's skip row is removed. The Step 18 text above is left as history.
+
+**Resolver change:** a bare "Emirates" no longer resolves to `enbd` through the reverse word pass, because it is now a word of several brands. "Emirates NBD" and the `EmiratesNBD` sender still resolve to `enbd`.
+
+| Item | Files | Status |
+|---|---|---|
+| The map matches the folder, deduped. adibeg shares adib's file. Every owner-supplied id resolves by id and by name. Zand is out of the catalogue and gets no logo and no brand. | `bankLogos.ts`, `bankLogos.test.ts` | Tests written, not run on the Mac (cloud runner job pending). tsc and eslint pass. The SVG and PNG checks were desk-checked against all 51 files. |
+| The resolver keeps ENBD, ADCB, DIB, ADIB, ADIB Egypt, Faisal and BisB. The six new brands resolve. Zand resolves to null. | `paymentMethodDefaults.ts`, `__tests__/paymentBrandCatalog.test.ts` | Tests written, not run on the Mac (cloud runner job pending). |
+| How the new tiles look at 32 to 44 pt, especially the rakbank and emiratesislamic crops, Liv's yellow on white, Mashreq's flag-ribbon art, and the wide gulfbank, cbd, bankmuscat, DIB, Doha and Al Hilal lockups. | `public/logos/banks/*` | **Manual verification required** (runner screenshot, then owner review). |
