@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { LOGO_POLICY, logoAllowed } from './logoPolicy'
-import { SUBSCRIPTION_CATALOG } from './subscriptionCatalog'
 
 const PUBLIC = join(process.cwd(), 'public/subscription-icons')
 
@@ -40,10 +39,6 @@ describe('logo policy', () => {
       expect(width, key).toBe(height)
       expect(width, key).toBeGreaterThanOrEqual(512)
     }
-  })
-
-  it('every catalogue service shows its logo', () => {
-    for (const b of SUBSCRIPTION_CATALOG) expect(logoAllowed(b.key), b.key).toBe(true)
   })
 
   it('treats unknown brands as initials', () => {

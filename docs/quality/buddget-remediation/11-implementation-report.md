@@ -620,9 +620,10 @@ The owner asked for high-quality, crisp logos for every service on the Subscript
 - The 7 low-res files were replaced and the 20 missing ones added. They are 512×512 WebPs taken from each service's own App Store icon (1024 px) or Google Play icon (512 px). None was upscaled.
 - Where the current icon carries a Saudi National Day flag band:
   - stc: the purple wordmark band was kept and squared.
-  - Mobily: rebuilt from the official vector glyph in the icon's own colours.
+  - Mobily: rebuilt from the Commons vector glyph in the icon's own colours, on a flat background. This is a recomposed tile, not an unmodified mark, so it is an owner decision. The sibling Business and TV apps have no plain consumer icon.
   - Zain: the Play icon has no flag band, so it was used instead.
 - gym: now the app's lucide `Dumbbell` glyph on the catalogue purple.
+- etisalat_uae: now the etisalat wordmark from the current "etisalat UAE" app (the telecom unit trades as "etisalat by e&"). It replaces the red e& group mark, so it looks close to etisalat_eg.
 - `LOGO_POLICY` lists the 19 new brands as `logo`. golds_gym was flipped from `initials`, which the owner can revert.
 - `BRAND_INITIALS` is now empty, since no catalogue brand shows initials any more.
 - The 7 superseded source PNGs in `assets/restricted-subscription-icons/` were overwritten with the new tiles.
@@ -633,11 +634,14 @@ The owner asked for high-quality, crisp logos for every service on the Subscript
 - Native builds serve the file as is (`unoptimized`).
 - On web, `next/image` serves a 96 px image for the 48 pt tile, whose mark is 108 px at @3x. That gap is small, so no code change was made.
 
-**Spot-check:** all 108 existing 512 px files were viewed at 1:1. None showed heavy artefacts or a tiny mark, and none was re-exported.
+**Spot-check:**
+- All 108 existing 512 px files were viewed on a thumbnail sheet, and about 35 at a 1:1 crop.
+- Keys with a source PNG in `assets/restricted-subscription-icons/` were confirmed to come from 512 px or larger.
+- None showed heavy artefacts or a tiny mark, and none was re-exported.
 
 | Item | Files | Status |
 |---|---|---|
-| Every logo key resolves to a square WebP of at least 512 px, read from the VP8, VP8L or VP8X header. Every catalogue service has a logo. | `logoPolicy.test.ts`, `logoPolicy.ts`, `brandTile.ts` | Tests written, not run on the Mac (cloud runner job pending). tsc and eslint pass. The header parser was checked with node against all 135 files and against VP8L and VP8X samples. |
+| Every logo key resolves to a square WebP of at least 512 px, read from the VP8, VP8L or VP8X header. | `logoPolicy.test.ts`, `logoPolicy.ts`, `brandTile.ts` | Tests written, not run on the Mac (cloud runner job pending). tsc and eslint pass. The header parser was checked with node against all 135 files and against VP8L and VP8X samples. |
 | How the 27 new tiles look in the 40, 48 and 56 pt tiles | `public/subscription-icons/*` | **Manual verification required** (runner screenshot, then owner review). |
 
 ## Step 18c: official RAKBANK packs, RAKBANK Islamic, Emirates Islamic narrow, Weyay on a dark tile
