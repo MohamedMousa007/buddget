@@ -5,6 +5,7 @@ import { DEFAULT_CASH_ID, isTracked } from './kinds'
 import { resolveAccountId } from './resolve'
 import { isOwedToUser } from '@/lib/debts/debtDirection'
 import { paidAsEntered } from '@/lib/debts/paymentAmounts'
+import { incomeEventIdForTx } from '@/lib/savings/accountLeg'
 
 export interface LedgerInput {
   paymentMethods: readonly PaymentMethod[]
@@ -34,6 +35,7 @@ export interface AccountBalance {
 
 const THREE_DECIMALS = new Set(['KWD', 'BHD', 'OMR', 'JOD'])
 const unit = (currency: string) => (THREE_DECIMALS.has(currency) ? 1000 : 100)
+export const minorUnit = unit
 const RECEIVED = new Set(['confirmed', 'late', 'partial'])
 
 /** Instant of a ledger row: its exact time, else noon of its day (rows that predate `occurredAt`). */
@@ -80,7 +82,7 @@ export function computeBalances(input: LedgerInput, asOf: number = Date.now()): 
   const settledByExpense = new Set<string>()
   for (const e of input.expenses) {
     if (e.linkedDebtPaymentId) settledByExpense.add(e.linkedDebtPaymentId)
-    if (e.refundedAt || e.fundedFromSavingsTxId) continue // a pocket-funded expense leaves no account, the pocket already lost it
+    if (e.refundedAt || e.fundedFromSavingsTxId) continue // a pocket-funded expense leaves no account of its own: the pocket withdrawal carries the holder leg
     // No funding source named: a CC payoff or an SMS the resolver could not place must not drain Cash.
     const unfunded = !e.paymentMethodId || e.paymentMethodId === DEFAULT_CASH_ID
     if (unfunded && e.category === 'CC Payoff') continue
@@ -108,17 +110,41 @@ export function computeBalances(input: LedgerInput, asOf: number = Date.now()): 
   }
 
   const pockets = new Map(input.savingsAccounts.map((s) => [s.id, s]))
+  const eventsById = new Map(input.incomeEvents.map((e) => [e.id, e]))
+  const groups = new Map<string, SavingsTransaction[]>()
   for (const t of input.savingsTransactions) {
-    if (!t.paymentMethodId) continue
+    if (!t.transferGroupId) continue
+    const g = groups.get(t.transferGroupId)
+    if (g) g.push(t)
+    else groups.set(t.transferGroupId, [t])
+  }
+  for (const t of input.savingsTransactions) {
     const pocket = pockets.get(t.accountId)
-    const target = resolveAccountId(t.paymentMethodId, pms)
     const holder = pocket?.heldInPaymentMethodId
-    if (holder && holder === target) continue
-    const leg = t.type === 'deposit' ? -t.amount : t.amount
     const at = instantOf(t.occurredAt, t.date)
-    apply(target, leg, t.currency, at)
-    // The pocket's money sits inside its holding account: a move from or to another account is a transfer between the two.
-    if (holder) apply(holder, -leg, t.currency, at)
+    const isDeposit = t.type === 'deposit'
+    if (t.paymentMethodId) { // 1: an explicit account leg
+      const target = resolveAccountId(t.paymentMethodId, pms)
+      if (holder && holder === target) continue
+      const leg = isDeposit ? -t.amount : t.amount
+      apply(target, leg, t.currency, at)
+      // The pocket's money sits inside its holding account: a move from or to another account is a transfer between the two.
+      if (holder) apply(holder, -leg, t.currency, at)
+      continue
+    }
+    if (!holder) continue // 2: standalone pocket, counted on its own
+    if (t.transferGroupId) { // 3: pocket-to-pocket move, a leg only across holders
+      const other = groups.get(t.transferGroupId)?.find((o) => o.id !== t.id)
+      if (other && pockets.get(other.accountId)?.heldInPaymentMethodId === holder) continue
+      apply(holder, isDeposit ? t.amount : -t.amount, t.currency, at)
+      continue
+    }
+    if (t.isCashFlow === false) continue // 4: opening, declared money, correction
+    if (t.source === 'carry') continue // 5: month-carry label move
+    if (isDeposit) continue // 6: earmark of money already in the holder
+    const ev = eventsById.get(incomeEventIdForTx(t.id))
+    if (ev && !ev.paymentMethodId) continue // 7: released inside the holder
+    apply(holder, -t.amount, t.currency, at) // 8: money left the holder
   }
 
   for (const j of input.adjustments) {

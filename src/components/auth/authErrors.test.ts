@@ -78,3 +78,11 @@ describe('resend neutrality', () => {
     expect(mapAuthError(unknown, 'otp', en)).toBe(en.auth.errorOtpExpired)
   })
 })
+
+describe('D-1: Send Email hook timeout on sign-up', () => {
+  it('maps the hook timeout to a clear try-again message, by message or by code', () => {
+    expect(mapAuthError(new Error('Failed to reach hook within maximum time of 5.000000 seconds'), 'signup', en)).toBe(en.auth.errorEmailHookSlow)
+    expect(mapAuthError({ code: 'hook_timeout', message: '' }, 'signup', en)).toBe(en.auth.errorEmailHookSlow)
+    expect(en.auth.errorEmailHookSlow).not.toBe(en.auth.errorFallback)
+  })
+})

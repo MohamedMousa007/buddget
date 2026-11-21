@@ -138,6 +138,13 @@ describe('maskForParse (QA-36): what the main AI parse sees', () => {
     expect(view.message).toContain('********0001')
   })
 
+  it('S8A M-2 keeps the last four of a phone-like number, so a wallet named by its mobile number keeps its real tail', () => {
+    expect(view.message).toContain('5678')
+    const wallet = maskForParse('Transfer of EGP 500.00 to wallet +20 101 234 9876 done').message
+    expect(wallet).not.toContain('101 234')
+    expect(wallet.replace(/\D/g, '').endsWith('9876')).toBe(true)
+  })
+
   it('keeps a purchase merchant and a balance readable', () => {
     const p = 'Your HSBC Account ****0001 was debited EGP 250.00 for purchase at Carrefour Egypt on 09-06-2026. Your available balance is EGP 36,183.18'
     expect(maskForParse(p).message).toBe(p)

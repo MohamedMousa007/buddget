@@ -462,6 +462,7 @@ export async function createSmsTransaction(
       sameAccount: (!!mine && !!theirs && mine === theirs) ||
         (await hasOppositeLegOnSameAccount(service, { userId: row.userId, logId: row.logId, receivedAtIso: row.receivedAtIso, amount: row.amount, accountLast4: mine, kind })),
       sameDevice: !!candidate && !!row.deviceId && !!candidate.deviceId && row.deviceId === candidate.deviceId,
+      bothOnUsersDevices: !!candidate && !!row.deviceId && !!candidate.deviceId && row.deviceId !== candidate.deviceId,
       amountsEqual: !!candidate && Math.abs(candidate.amount - row.amount) < 0.005,
       withinFee: !!candidate && Math.abs(candidate.amount - row.amount) <= transferFeeTolerance(Math.max(candidate.amount, row.amount)),
       sameReference: candidate?.sameReference ?? false,

@@ -218,6 +218,23 @@ Adopted from the cloud QA campaign: scripted Playwright specs, not click-by-clic
 | S9 | Store readiness: next native build (on the owner's word), store and iPad screenshots from the simulator, privacy labels, legal pages. Web and marketing-site screenshots can come from Playwright. | Sonnet | Local | Marketing site only |
 | S10 | Launch gate council; the full `npm run e2e` run is required evidence; Fable re-reviews the money path (webhook, entitlements, the QA sync changes). | Opus + Fable | Local, with the e2e run in the cloud | Gate evidence |
 
+### Close-out (2026-11-20)
+| Session | Outcome |
+|---|---|
+| S7a, S8a to S8d, S8f, S8g | Done; their fixes landed on dev and main in `e584d84d` (sync, S8a, S-2, UI merged as one branch). |
+| S-2 (pocket withdrawals, net worth) | Done, in `e584d84d`. |
+| S7b | Skipped by the owner. |
+| S8e, S10 | Disregarded by the owner. |
+| S9 | Closed. |
+| H: `TRIAL_CLAIM_KEY_SECRET` | Set in Vercel by the owner. |
+| B-1 | Decided: sandbox purchases stay on. |
+
+**Final gate, runner job 26 on `claude/integ-all` at `e584d84d`:** verify passed (6646 tests in both time zones); adversarial.live 12/12; R13, R14 ×3, R16 and R17 passed; D3 ×3, D, D2 and S1 passed; the full sweep (48 pages) had 0 errors, axe violations, sideways scroll or tap misses; qa-regressions 17/17 after a single rerun of QA-58, a dev-server ECONNRESET. No first-sign-in drop, no FK errors, 0 synthetic users left.
+
+**Why the QA loop repeated, and what changed:** after a password sign-in the device check failed once on a cold server, and the fail-closed path signed the user out mid-session. Random suites failed with it, so each round looked like a new bug. The check now retries 1 s, 3 s and 6 s before failing closed (`fetchWithRetry`, `src/lib/auth/signInTimeout.ts`). Branches are now gated together on one integration branch, and every suite runs in one pass that keeps going after a failure and reruns it once.
+
+**Open for the Play closed test:** an AAB build; the RevenueCat Android app and Play products (the owner uploads the Play service-account key); RevenueCat and Vercel Android keys; Play Console demo sign-in, Data safety, listing, and the 12-tester closed test.
+
 **What the cloud sessions need (owner actions, once):**
 1. Ask the finished cloud QA session to push its Playwright specs and audit reports to a branch (cloud sessions do not report back otherwise).
 2. A non-production Supabase project for tests. The Frankfurt project holds the testers' real data, so no cloud test writes to it. Claude applies the repo's migrations to the new project with the Supabase tools and seeds synthetic users.

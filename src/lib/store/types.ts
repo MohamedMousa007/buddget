@@ -661,7 +661,12 @@ export type SavingsAccountCategory = 'savings' | 'investment'
 
 /** Savings bucket with ledger balance (transfers, not expenses). */
 export interface SavingsAccount {
-  /** Earmark: this pocket sits inside that account; the account balance is unchanged, only "free" shrinks. */
+  /**
+   * Earmark: this pocket sits inside that account; the account balance is unchanged, only "free" shrinks.
+   * INVARIANT: set once at creation, never changed. computeBalances derives every past exit leg from the
+   * current holder, so a later change would move them all. A "change holder" feature must freeze balances
+   * first (see pocketCloseAdjustments).
+   */
   heldInPaymentMethodId?: string
   id: string
   name: string

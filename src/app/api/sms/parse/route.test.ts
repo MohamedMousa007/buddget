@@ -17,6 +17,8 @@ const h = vi.hoisted(() => ({
   loadReplay: vi.fn(),
   dispatch: vi.fn(),
   knownSenders: [] as Array<Record<string, unknown>>,
+  stats: vi.fn(),
+  provisional: false,
 }))
 
 vi.mock('server-only', () => ({}))
@@ -32,12 +34,12 @@ vi.mock('@/lib/sms/meteredAi', () => ({ withSmsAiQuota: async (_u: string, _n: n
 vi.mock('@/lib/sms/replayLoader', () => ({ loadReplayCases: h.loadReplay }))
 vi.mock('@/lib/sms/learnGates', () => ({ runLearnGates: h.learnGates }))
 vi.mock('@/lib/sms/promotionChecker', () => ({ checkAndAutoPromote: async () => {} }))
-vi.mock('@/lib/sms/statsOutbox', () => ({ recordSmsStats: async () => {} }))
+vi.mock('@/lib/sms/statsOutbox', () => ({ recordSmsStats: async (_s: unknown, input: unknown) => { h.stats(input) } }))
 vi.mock('@/lib/server/realtime/nudge', () => ({ nudgeUser: async () => {} }))
 vi.mock('@/lib/server/sendNativePush', () => ({ sendNativePush: async () => ({}) }))
 vi.mock('@/lib/server/emitNotification', () => ({ emitNotification: async () => {} }))
 vi.mock('@/lib/sms/dispatch', () => ({ createSmsTransaction: h.dispatch, extractIpnReference: () => null }))
-vi.mock('@/lib/sms/currencyResolver', () => ({ resolveCurrency: async () => ({ currency: 'EGP', provisional: false }) }))
+vi.mock('@/lib/sms/currencyResolver', () => ({ resolveCurrency: async () => ({ currency: 'EGP', provisional: h.provisional }) }))
 vi.mock('@/lib/sms/runAdjudication', () => ({ runAdjudication: async () => ({ adjudicated: 0, counted: 0 }) }))
 
 vi.mock('@/lib/supabase/service', () => ({
@@ -81,6 +83,7 @@ beforeEach(() => {
   h.loadReplay.mockReset().mockResolvedValue([])
   h.dispatch.mockReset().mockRejectedValue(new Error('stop here'))
   h.knownSenders = [{ sender: 'TESTBANK' }]
+  h.stats.mockReset(); h.provisional = false
   process.env.GEMINI_API_KEY = 'test-key'
   vi.spyOn(console, 'warn').mockImplementation(() => {})
   vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -333,6 +336,24 @@ describe('AI tier: reading checked against the message, money in held, held neve
     const promote = h.ops.find((o) => o.table === 'sms_parse_log' && o.op === 'update' && o.values?.failure_code === 'ai_credit_new_sender')
     expect(promote?.values).toMatchObject({ awaiting_confirmation: true, learn_status: 'skipped_held' })
     expect(templateInserts()).toHaveLength(0)
+  })
+
+  it('S8A M-1 a held credit does not make its sender known: no sender currency is recorded, so the next one is held too', async () => {
+    h.knownSenders = []
+    h.learnGates.mockReturnValue({ ok: true })
+    await run(CREDIT, income(5000))
+    expect(h.stats).toHaveBeenCalled()
+    expect(h.stats.mock.calls.every(([input]) => (input as { currency: unknown }).currency === null)).toBe(true)
+  })
+
+  it('S8A M-4 a row booked with a guessed currency (held for the currency) is not learned', async () => {
+    h.provisional = true
+    h.dispatch.mockResolvedValue({ ...BOOKED, outcome: 'income_created', kind: 'income', expenseId: null, incomeId: 'i1' })
+    h.learnGates.mockReturnValue({ ok: true })
+    await run(CREDIT, income(5000))
+    expect(h.dispatch).toHaveBeenCalled()
+    expect(templateInserts()).toHaveLength(0)
+    expect(h.ops.some((o) => o.table === 'sms_parse_log' && o.op === 'update' && o.values?.learn_status === 'skipped_held')).toBe(true)
   })
 
   it('learns from a message that settled as the second leg of a pair (booked, no row of its own)', async () => {

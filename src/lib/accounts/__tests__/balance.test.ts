@@ -3,6 +3,7 @@ import type { Expense, PaymentMethod, SavingsAccount } from '@/lib/store/types'
 import { computeBalances, type LedgerInput } from '../balance'
 import { detectGap } from '../gap'
 import { resolveAccountId } from '../resolve'
+import { incomeEventIdForTx } from '@/lib/savings/accountLeg'
 
 const OPEN = '2026-10-01T00:00:00.000Z'
 const pm = (o: Partial<PaymentMethod> & Pick<PaymentMethod, 'id' | 'type'>): PaymentMethod =>
@@ -159,5 +160,85 @@ describe('legacy gold debt payment (F7)', () => {
   })
   it('a gold payment with a recorded money amount still debits it', () => {
     expect(bal(base({ debts: [goldDebt], debtPayments: [{ ...legacy, originalAmount: 300 }] }), 'bank')?.balance).toBe(700)
+  })
+})
+
+describe('pocket exits move the holding account (S-2)', () => {
+  const held = { id: 'trip', name: 'Trip', currency: 'EGP', currentBalance: 300, heldInPaymentMethodId: 'bank' } as SavingsAccount
+  const held2 = { id: 'trip2', name: 'Trip2', currency: 'EGP', currentBalance: 0, heldInPaymentMethodId: 'bank' } as SavingsAccount
+  const heldCash = { id: 'tc', name: 'TC', currency: 'EGP', currentBalance: 0, heldInPaymentMethodId: 'cash' } as SavingsAccount
+  const standalone = { id: 'q', name: 'Q', currency: 'EGP', currentBalance: 0 } as SavingsAccount
+  const stx = (o: Record<string, unknown>) =>
+    ({ id: 't1', accountId: 'trip', type: 'withdrawal', amount: 100, currency: 'EGP', date: '2026-10-07', ...o }) as never
+  const run = (txs: unknown[], pockets: SavingsAccount[] = [held, standalone], extra: Partial<LedgerInput> = {}) =>
+    base({ savingsAccounts: pockets, savingsTransactions: txs as never, ...extra })
+
+  it('spend from a held pocket lowers the holder and leaves free unchanged', () => {
+    const b0 = bal(run([]), 'bank')!
+    const b = bal(run([stx({})], [{ ...held, currentBalance: 200 }, standalone]), 'bank')!
+    expect(b.balance).toBe(900)
+    expect(b0.free).toBe(700)
+    expect(b.free).toBe(700)
+    expect(b.held).toBe(200)
+  })
+  it('debt-funded and invest withdrawals lower the holder', () => {
+    const debt = stx({ id: 'd1', source: 'debt' })
+    const inv = stx({ id: 'i1', amount: 50, source: 'transfer' })
+    expect(bal(run([debt, inv]), 'bank')?.balance).toBe(850)
+  })
+  it('income with a paired event and no account leaves the holder alone', () => {
+    const ev = { id: incomeEventIdForTx('t1'), name: 'x', amount: 100, currency: 'EGP', sourceType: 'other', receivedDate: '2026-10-07', status: 'confirmed', createdAt: '', updatedAt: '' }
+    expect(bal(run([stx({})], undefined, { incomeEvents: [ev as never] }), 'bank')?.balance).toBe(1000)
+  })
+  it('income sent to another account debits the holder once and credits the target once', () => {
+    const ev = { id: incomeEventIdForTx('t1'), name: 'x', amount: 100, currency: 'EGP', sourceType: 'other', receivedDate: '2026-10-07', status: 'confirmed', paymentMethodId: 'cash', createdAt: '', updatedAt: '' }
+    const i = run([stx({})], undefined, { incomeEvents: [ev as never] })
+    expect(bal(i, 'bank')?.balance).toBe(900)
+    expect(bal(i, 'cash')?.balance).toBe(300)
+  })
+  it('opening deposit and corrections never move the holder', () => {
+    const open = stx({ id: 'o', type: 'deposit', isCashFlow: false })
+    const fix = stx({ id: 'c', isCashFlow: false })
+    expect(bal(run([open, fix]), 'bank')?.balance).toBe(1000)
+  })
+  it('a deposit with no account is an earmark, not a leg', () => {
+    expect(bal(run([stx({ type: 'deposit' })]), 'bank')?.balance).toBe(1000)
+  })
+  it('a carry withdrawal with no account moves nothing; with the primary account it keeps the transfer legs', () => {
+    expect(bal(run([stx({ source: 'carry' })]), 'bank')?.balance).toBe(1000)
+    const withAcc = run([stx({ source: 'carry', paymentMethodId: 'cash' })])
+    expect(bal(withAcc, 'cash')?.balance).toBe(300)
+    expect(bal(withAcc, 'bank')?.balance).toBe(900)
+  })
+  it('move held -> standalone lowers the holder; standalone -> held raises it', () => {
+    const out = [stx({ id: 'a', transferGroupId: 'g', isCashFlow: false }), stx({ id: 'b', accountId: 'q', type: 'deposit', transferGroupId: 'g', isCashFlow: false })]
+    expect(bal(run(out), 'bank')?.balance).toBe(900)
+    const inn = [stx({ id: 'a', accountId: 'q', transferGroupId: 'g', isCashFlow: false }), stx({ id: 'b', accountId: 'trip', type: 'deposit', transferGroupId: 'g', isCashFlow: false })]
+    expect(bal(run(inn), 'bank')?.balance).toBe(1100)
+  })
+  it('move between two pockets of the same holder changes nothing', () => {
+    const legs = [stx({ id: 'a', transferGroupId: 'g', isCashFlow: false }), stx({ id: 'b', accountId: 'trip2', type: 'deposit', transferGroupId: 'g', isCashFlow: false })]
+    expect(bal(run(legs, [held, held2]), 'bank')?.balance).toBe(1000)
+  })
+  it('move between pockets of two holders debits one and credits the other', () => {
+    const legs = [stx({ id: 'a', transferGroupId: 'g', isCashFlow: false }), stx({ id: 'b', accountId: 'tc', type: 'deposit', transferGroupId: 'g', isCashFlow: false })]
+    const i = run(legs, [held, heldCash])
+    expect(bal(i, 'bank')?.balance).toBe(900)
+    expect(bal(i, 'cash')?.balance).toBe(300)
+  })
+  it('an orphan transfer leg counts as crossing', () => {
+    expect(bal(run([stx({ transferGroupId: 'g', isCashFlow: false })]), 'bank')?.balance).toBe(900)
+  })
+  it('a held pocket in an untracked holder throws nothing and adds no entry', () => {
+    const p = { ...held, heldInPaymentMethodId: 'debit' } as SavingsAccount
+    const out = computeBalances(run([stx({})], [p]))
+    expect(out.has('debit')).toBe(false)
+    expect(out.get('bank')?.balance).toBe(1000)
+  })
+  it('a withdrawal at or before the holder opening anchor makes no leg', () => {
+    expect(bal(run([stx({ occurredAt: '2026-09-30T10:00:00.000Z', date: '2026-09-30' })]), 'bank')?.balance).toBe(1000)
+  })
+  it('a withdrawal from a standalone pocket never touches an account', () => {
+    expect(bal(run([stx({ accountId: 'q' })]), 'bank')?.balance).toBe(1000)
   })
 })

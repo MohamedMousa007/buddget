@@ -16,6 +16,8 @@ export function verifySignedWebhook(
   const ts = Number(h.timestamp)
   if (!Number.isFinite(ts) || Math.abs(nowSeconds - ts) > TOLERANCE_S) return false
   const key = Buffer.from(secret.replace(/^v1,/, '').replace(/^whsec_/, ''), 'base64')
+  // A secret pasted as just its prefix decodes to an empty key, which anyone can sign with (S8A X-10).
+  if (key.length < 16) return false
   const expected = createHmac('sha256', key).update(`${h.id}.${h.timestamp}.${body}`).digest()
   return h.signature.split(' ').some((part) => {
     const sig = Buffer.from(part.replace(/^v1,/, ''), 'base64')

@@ -252,13 +252,11 @@ test('R12 Quick add lists its entries; scan receipt and voice entry reachable on
 
 test('R13 sign out with an unsent edit asks before wiping (QA-65)', async ({ page, context, user }) => {
   await withQnb(page, 1000)
-  await goto(page, '/flow')
+  // The profile menu redesign (b69d8b3a) moved Sign out to the foot of Settings; load it while online, then go offline there.
+  await goto(page, '/settings')
   await context.setOffline(true)
   await addExpense(page, { amount: 40, description: 'QA R13 unsent', category: 'Food', method: /QNB/ })
   await localWait(page, (s) => s.expenses.find((x: any) => x.description === 'QA R13 unsent'))
-  // Sign out is the last row of the Settings hub since the profile menu redesign (b69d8b3a); reached in-app, the page is offline.
-  await page.getByRole('button', { name: /^Profile menu/ }).click()
-  await page.getByRole('menuitem', { name: 'Settings', exact: true }).click()
   await page.getByRole('button', { name: 'Sign out', exact: true }).first().click()
   const seen: string[] = []
   for (let i = 0; i < 16; i++) {
@@ -282,6 +280,86 @@ test('R13 sign out with an unsent edit asks before wiping (QA-65)', async ({ pag
   expect(wiped && !asked, 'unsent expense wiped with no warning').toBe(false)
 })
 
+const isRestWrite = (method: string, url: string) => method !== 'GET' && method !== 'HEAD' && /\/rest\/v1\/(?!rpc\/)/.test(url)
+
+test('R16 S7a: when the server refuses every write the user sees "not saved", and the retry lands it once the server is back', async ({ page, user }) => {
+  await withQnb(page, 1000)
+  await goto(page, '/flow')
+  await page.route(/\/rest\/v1\//, (route) => (isRestWrite(route.request().method(), route.request().url())
+    ? route.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"qa forced failure"}' })
+    : route.fallback()))
+  await addExpense(page, { amount: 60, description: 'QA R16 refused', category: 'Food', method: /QNB/ })
+  await expect(page.getByText(/not saved/i).first(), 'a refused save must say so on screen').toBeVisible({ timeout: 15_000 })
+  await page.unroute(/\/rest\/v1\//)
+  // D-4: the backoff retries on its own, no further edit needed.
+  await serverRows('expenses', user.id, 'description=eq.QA R16 refused&deleted_at=is.null', (r) => r.length === 1, 45_000)
+  await expect(page.getByText(/not saved/i)).toHaveCount(0, { timeout: 15_000 })
+})
+
+test('R17 S8d-6: a reload with no edit sends no writes', async ({ page, user }) => {
+  await withQnb(page, 1000)
+  await goto(page, '/flow')
+  await addExpense(page, { amount: 15, description: 'QA R17 seed', category: 'Food', method: /QNB/ })
+  await serverRows('expenses', user.id, 'description=eq.QA R17 seed&deleted_at=is.null', (r) => r.length === 1)
+  await page.waitForTimeout(4000)
+  const writes: string[] = []
+  page.on('request', (r) => {
+    if (!isRestWrite(r.method(), r.url())) return
+    const table = new URL(r.url()).pathname.split('/').pop()
+    let keys = ''
+    try { const b = r.postDataJSON(); keys = Object.keys(Array.isArray(b) ? b[0] ?? {} : b ?? {}).sort().join('|') } catch { /* no body */ }
+    writes.push(`${r.method()} ${table} [${keys}] ${(r.postData() ?? '').slice(0, 700)}`)
+  })
+  page.on('response', async (res) => {
+    if (!isRestWrite(res.request().method(), res.url())) return
+    writes.push(`  -> ${res.status()} ${new URL(res.url()).pathname.split('/').pop()} ${(await res.text().catch(() => '')).slice(0, 300)}`)
+  })
+  const boot: string[] = []
+  await page.context().addInitScript((uid) => {
+    (window as any).__qaBoot = { fp: localStorage.getItem(`buddget:flushed:${uid}`), store: localStorage.getItem('buddget-storage') }
+  }, user.id)
+  for (let i = 0; i < 2; i++) {
+    // What the next boot diffs against: the stored fingerprint and the persisted rows (synthetic user, no personal data).
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    // Read what the app booted on: copied by an init script before any app code ran.
+    boot.push(await page.evaluate((uid) => {
+      const b = (window as any).__qaBoot ?? {}
+      const raw = b.fp as string | null
+      const fp = raw ? JSON.parse(raw) : null
+      const st = JSON.parse(b.store ?? '{}').state ?? {}
+      // Same hash as src/components/sync/flushedFingerprint.ts: which cached rows the next boot will see as unsent.
+      const stable = (value: unknown): string => {
+        if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`
+        if (value && typeof value === 'object') { const o = value as Record<string, unknown>; return `{${Object.keys(o).sort().filter((k) => o[k] !== undefined).map((k) => `${JSON.stringify(k)}:${stable(o[k])}`).join(',')}}` }
+        return JSON.stringify(value) ?? 'null'
+      }
+      const hash = (value: unknown) => {
+        const t = stable(value); let h1 = 0x811c9dc5; let h2 = 0x9747b28c
+        for (let i = 0; i < t.length; i++) { const c = t.charCodeAt(i); h1 = Math.imul(h1 ^ c, 0x01000193); h2 = Math.imul(h2 ^ c, 0x5bd1e995); h2 ^= h2 >>> 15 }
+        return `${t.length.toString(36)}.${(h1 >>> 0).toString(36)}.${(h2 >>> 0).toString(36)}`
+      }
+      const mismatch: string[] = []
+      for (const [k, v] of Object.entries(fp?.singles ?? {})) if (v !== hash(st[k])) mismatch.push(`single ${k}`)
+      for (const [k, rowsByHash] of Object.entries(fp?.lists ?? {})) for (const r of (st[k] ?? []) as any[]) {
+        const known = (rowsByHash as Record<string, string>)[r.id]
+        if (known === undefined) mismatch.push(`${k} ${r.id} not in fingerprint`)
+        else if (known !== hash(r)) mismatch.push(`${k} ${r.id} hash differs`)
+      }
+      return JSON.stringify({
+        mismatch,
+        fp: fp && { v: fp.v, singles: Object.keys(fp.singles ?? {}), lists: Object.fromEntries(Object.entries(fp.lists ?? {}).map(([k, v]) => [k, Object.keys(v as object)])) },
+        cache: { profileId: st.profile?.id, paymentMethods: (st.paymentMethods ?? []).map((m: any) => m.id), expenses: (st.expenses ?? []).map((e: any) => e.id) },
+        store: { profile: st.profile, settings: st.settings, paymentMethods: st.paymentMethods, expenses: st.expenses },
+      }).slice(0, 6000)
+    }, user.id))
+    await expect(page.locator('main')).toContainText('QA R17 seed', { timeout: 30_000 })
+    await page.waitForTimeout(8000)
+  }
+  test.info().annotations.push({ type: 'evidence', description: `writes on reload: ${JSON.stringify(writes)}` })
+  test.info().annotations.push({ type: 'evidence', description: `state each boot started from: ${JSON.stringify(boot)}` })
+  expect(writes, 'writes on a reload without an edit').toEqual([])
+})
+
 test.describe('two devices', () => {
   test('R14 two devices: add, offline add, offline delete, reconnect; nothing lost, duplicated or revived', async ({ page, browser, user }) => {
     await withQnb(page, 3000)
@@ -297,7 +375,8 @@ test.describe('two devices', () => {
       await signIn(B, user.email)
       await goto(B, '/flow')
       await expect(B.locator('main')).toContainText('QA R14 from A', { timeout: 30_000 })
-      expect(await tile(B, 'Net worth')).toBe(2900)
+      // The list can show A's expense a moment before the Net worth tile recomputes: poll the tile.
+      await expect.poll(() => tile(B, 'Net worth'), { timeout: 15_000 }).toBe(2900)
 
       // B goes offline, adds an expense and deletes A's.
       await ctxB.setOffline(true)
@@ -324,12 +403,16 @@ test.describe('two devices', () => {
       test.info().annotations.push({ type: 'evidence', description: `server after reconnect: ${evidence}` })
       expect(live.filter((e: any) => e.description === 'QA R14 from B')).toHaveLength(1)
       // Both devices must now agree on the same set of live expenses and the same net worth.
-      const sa = (await localState(page)).expenses.filter((e: any) => !e.deletedAt).map((e: any) => e.id).sort()
-      const sb = (await localState(B)).expenses.filter((e: any) => !e.deletedAt).map((e: any) => e.id).sort()
-      expect(sb).toEqual(sa)
-      expect(sa).toEqual(live.map((e: any) => e.id).sort())
+      // Both devices must converge on the server's live set. A reload's reconcile (flush, then pull) can take longer than
+      // a fixed wait on the dev server, so poll; a device that never converges within the window is a real defect.
+      const want = live.map((e: any) => e.id).sort()
+      const ids = async (p: typeof page) => (await localState(p)).expenses.filter((e: any) => !e.deletedAt).map((e: any) => e.id).sort()
+      let sa: string[] = []; let sb: string[] = []
+      await expect.poll(async () => { sa = await ids(page); sb = await ids(B); return JSON.stringify([sa, sb]) }, { timeout: 40_000 }).toBe(JSON.stringify([want, want]))
+      test.info().annotations.push({ type: 'evidence', description: `converged: A=${sa.join(',')} B=${sb.join(',')} server=${want.join(',')}` })
       await goto(page, '/flow'); await goto(B, '/flow')
-      expect(await tile(B, 'Net worth')).toBe(await tile(page, 'Net worth'))
+      const nwA = await tile(page, 'Net worth')
+      await expect.poll(() => tile(B, 'Net worth'), { timeout: 15_000 }).toBe(nwA)
     } finally { await ctxB.close() }
   })
 

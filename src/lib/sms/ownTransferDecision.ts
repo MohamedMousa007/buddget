@@ -27,6 +27,11 @@ export interface PairFacts {
   sameAccount: boolean
   /** Both legs carry a device id and it is the same one. */
   sameDevice: boolean
+  /**
+   * Both legs carry a device id, each one a device of this user (every leg is posted under the user's own token), but
+   * not the same one: the credit still reached the user, only on their other phone (D-3).
+   */
+  bothOnUsersDevices?: boolean
   amountsEqual: boolean
   /** The amounts differ by no more than a transfer fee. */
   withinFee: boolean
@@ -64,6 +69,11 @@ export function decideOwnTransfer(f: PairFacts): { verdict: OwnTransferVerdict; 
   if (f.answered === false) return f.sameReference ? { verdict: 'ask', signals: ownTransferSignals(f) } : { verdict: 'none', signals: [] }
   const signals = ownTransferSignals(f)
   if (signals.includes('device') && signals.some((s) => DECISIVE.has(s))) return { verdict: 'settle', signals }
+  // D-3: the two legs captured by two of the user's phones. Weaker than one phone, so it takes two decisive signals,
+  // the shared payment reference and the same person named on both messages, with the device pair's account and
+  // amount rules.
+  if (f.bothOnUsersDevices && f.differentAccounts && (f.amountsEqual || (f.withinFee && f.sameReference)) &&
+      signals.includes('reference') && signals.includes('name')) return { verdict: 'settle', signals }
   // The user already said these two accounts are both theirs: a later pair between them settles without asking again,
   // even across two phones, when the amounts match as the device pair requires (QA-34).
   if (f.answered === true && f.differentAccounts && (f.amountsEqual || (f.withinFee && f.sameReference))) return { verdict: 'settle', signals }

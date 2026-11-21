@@ -1976,6 +1976,8 @@ export interface Dictionary {
     errorPasswordWeakComposition: string
     errorSignUpGeneric: string
     errorEmailSendFailed: string
+    errorEmailHookSlow: string
+    errorSignInSlow: string
     errorOtpIncomplete: string
     passwordStrengthLabel: string
     passwordStrengthWeak: string
@@ -3251,6 +3253,9 @@ export interface Dictionary {
       currency: string
       fromAccount: string
       toAccount: string
+      staysIn: (account: string) => string
+      otherAccount: string
+      heldSpendHint: (account: string) => string
       whereFrom: string
       thisMonth: string
       outside: string

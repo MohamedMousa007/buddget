@@ -71,6 +71,10 @@ describe('cancellation, un-cancellation, expiry', () => {
     expect(out.entitlement).toMatchObject({ status: 'active', will_renew: true, canceled_at: null })
     expect(out.sparks).toBeNull()
   })
+  it('S8A B-12 an un-cancellation or reversed refund with no expiry is ignored, never Plus with no end', () => {
+    expect(planEffects(ev({ type: 'UNCANCELLATION', expirationMs: null }))).toBe('ignore')
+    expect(planEffects(ev({ type: 'REFUND_REVERSED', expirationMs: null }))).toBe('ignore')
+  })
   it('expiry drops to expired and ends the open Sparks period', () => {
     const out = plan(ev({ type: 'EXPIRATION', eventMs: T0 + 31 * DAY }))
     expect(out.entitlement).toMatchObject({ status: 'expired', will_renew: false })
@@ -128,6 +132,20 @@ describe('what is ignored', () => {
     expect(planEffects(ev({ appUserId: '$RCAnonymousID:abc' }))).toBe('ignore')
     expect(planEffects(ev({ type: 'NON_RENEWING_PURCHASE' }))).toBe('ignore')
     expect(planEffects(ev({ type: 'TEST' }))).toBe('ignore')
+  })
+})
+
+describe('S8A B-1 sandbox events', () => {
+  it('parseEvent reads the environment', () => {
+    const base = { type: 'RENEWAL', id: 'e1', app_user_id: USER, event_timestamp_ms: T0 }
+    expect(parseEvent({ event: { ...base, environment: 'SANDBOX' } })?.sandbox).toBe(true)
+    expect(parseEvent({ event: { ...base, environment: 'PRODUCTION' } })?.sandbox).toBe(false)
+    expect(parseEvent({ event: base })?.sandbox).toBe(false)
+  })
+  it('a sandbox purchase or pack is ignored when sandbox is refused; accepted by default (App Review buys in the sandbox)', () => {
+    expect(planEffects(ev({ sandbox: true }), null, new Set(), false)).toBe('ignore')
+    expect(planEffects(ev({ sandbox: true, productId: 'sparks_650' }), null, new Set(['sparks_650']), false)).toBe('ignore')
+    expect(planEffects(ev({ sandbox: true }))).not.toBe('ignore')
   })
 })
 
