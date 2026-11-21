@@ -20,6 +20,13 @@
 - **Builds:** main/dev `1f449dce`. **iOS 1.0.0 (149)** on TestFlight and attached to App Store version 1.0.0; **Android vc2** APK on Drive (https://drive.google.com/file/d/1meCEU_3IYLQmMWi-lOlxcZb5IKHsDMxX/view) and signed Play bundle `~/Desktop/buddget-vc2.aab` (version 1.0.0). iOS 148 / Android vc1 went out before the SMS fix and are superseded.
 - **TestFlight cleaned:** every older build expired (1.1.0 130 to 147, the old 1.1.0 7 to 9, 1.0.0 148). Only 1.0.0 (149) is active, in the Alpha testers group. Old AABs moved to `~/Desktop/old-aab/`. Old Drive APKs (debug-signed) were left in place.
 
+## Afternoon, 2026-11-21
+
+- **"Keep Pro" spun forever (root cause, fixed):** `purchases.ts` returned the RevenueCat plugin from an async function. Capacitor's plugin proxy answers `then` with a native method, so the promise took it for a thenable and never settled: on a phone every store call (configure, offerings, purchase, restore) hung before reaching RevenueCat. That is why RevenueCat shows 0 customers. The unit test mock now has the proxy's `then`; 9 tests hung on the old code and pass on the fix. No other plugin in the app is returned this way.
+- **SMS row:** "Connected" only (no last-SMS time); "View guide" opens the guide's first page directly; "Set up again" replaces the switch after 14 days with no SMS and no Shortcut run on this phone. Playwright `ios-sms-settings` 4/4 on a production build.
+- **Pro page:** the "Nothing is charged until you choose a plan" line under the CTA is removed.
+- **RevenueCat Play products:** plan `ef58f135` (v3 names: بادجت برو، شهري / سنوي, N شرارة) is drafted but cannot apply: Play still answers "Manage store presence" missing and "No application found". Play only allows in-app products once a bundle with the billing permission is uploaded, so this waits on the AAB. Before applying, add Sparks availability (and `equalize_missing_product_prices`).
+
 ## Waiting on you (in order)
 
 1. **Drag the AAB into Play:** in the Brave tab "Prepare release" (Alpha), drop `~/Desktop/buddget-vc2.aab` on "Upload app bundles", then Save, Next, and "Send for review" (the closed test starts when Google approves). The upload tool I have caps at 10.4 MB and the bundle is 22 MB. The release notes are typed in that tab.

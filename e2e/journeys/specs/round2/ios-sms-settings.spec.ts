@@ -96,6 +96,9 @@ test.describe('iPhone SMS tracking on Settings (BDG-008)', () => {
     if (process.env.QA_SHOT) await smsRow(page).screenshot({ path: process.env.QA_SHOT })
     await guide.click()
     await expect(page).toHaveURL(/\/settings\/sms/)
+    // Straight to the guide's first page: no in-between screen with a second setup button.
+    await expect(page.getByText('Shortcuts already exist? Skip guide')).toBeVisible()
+    await expect(page.getByText('Not confirmed yet · waiting')).toHaveCount(0)
   })
 
   test('a Shortcut run seen here: the switch and "The Shortcut ran"', async ({ page }) => {
@@ -110,7 +113,6 @@ test.describe('iPhone SMS tracking on Settings (BDG-008)', () => {
     await page.goto('/settings')
     await page.getByTestId('sms-setup-button').click({ timeout: 90_000 })
     await expect(page).toHaveURL(/\/settings\/sms/)
-    await page.getByRole('button', { name: /^(Set up|Set up auto-tracking)/ }).first().click()
     await page.getByText('Shortcuts already exist? Skip guide').click()
     await expect(page.getByRole('alertdialog').or(page.getByRole('dialog').filter({ hasText: /skip|already/i })).first()).toBeVisible()
     expect(await page.evaluate(() => (window as any).__sms.setupCompleted)).toBe(false)

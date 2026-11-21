@@ -1,10 +1,10 @@
 'use client'
 
-import { SmsIosSetupCard } from '@/components/features/settings/SmsIosSetupCard'
+import SmsTrackingGuide from '@/components/onboarding/SmsTrackingGuide'
 import { useSmsTracking } from '@/hooks/useSmsTracking'
 
-/** The iPhone Shortcut guide and connection status; the on/off switch itself lives on the settings page. */
+/** The iPhone Shortcut guide, opened at its first page. Status and the switch live on the settings page (SmsCard). */
 export function SettingsSmsTrackingSection() {
   const { completeIosSetup, setup, error } = useSmsTracking({ withDeviceSms: true })
-  return <SmsIosSetupCard setup={setup} onSetupComplete={completeIosSetup} error={error} />
+  return <SmsTrackingGuide onComplete={completeIosSetup} verified={setup.verified} error={error} />
 }

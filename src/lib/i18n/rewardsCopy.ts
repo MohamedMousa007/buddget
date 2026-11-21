@@ -80,7 +80,7 @@ export interface RewardsCopy {
       sheetTitle: string
       plansTitle: string
     }
-    keep: { title: (date: string) => string; body: (date: string) => string; cta: string; fine: (store: string) => string }
+    keep: { title: (date: string) => string; body: (date: string) => string; cta: string }
     month: {
       kickerPro: string
       kickerTrial: string
@@ -377,7 +377,6 @@ const en: RewardsCopy = {
       title: (date) => `Keep Pro after ${date}`,
       body: (date) => `On ${date} your account goes back to Free. Choose a plan and nothing changes.`,
       cta: 'Keep Pro',
-      fine: (store) => `Nothing is charged until you choose a plan. Billed through ${store}.`,
     },
     month: {
       kickerPro: 'Pro this month',
@@ -719,7 +718,6 @@ const ar: RewardsCopy = {
       title: (date) => `احتفظ ببرو بعد ${date}`,
       body: (date) => `في ${date} يعود حسابك إلى المجاني. اختر خطة ولن يتغير شيء.`,
       cta: 'احتفظ ببرو',
-      fine: (store) => `لن يُخصم شيء حتى تختار خطة. الدفع عبر ${store}.`,
     },
     month: {
       kickerPro: 'برو هذا الشهر',

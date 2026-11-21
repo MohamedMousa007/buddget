@@ -5,7 +5,6 @@ import { AlertTriangle } from 'lucide-react'
 import { SettingsRow } from '@/components/features/settings/SettingsRow'
 import { SettingsSection } from '@/components/features/settings/SettingsSection'
 import { SettingsSwitchRow } from '@/components/features/settings/SettingsSwitchRow'
-import { statusLabel } from '@/components/features/settings/SmsIosSetupCard'
 import { SETTING_ICONS } from '@/components/features/settings/settingIcons'
 import { GROUP_TONE } from '@/components/features/settings/groupMeta'
 import { AppLink } from '@/components/ui/AppLink'
@@ -14,7 +13,16 @@ import { useSmsTracking } from '@/hooks/useSmsTracking'
 import { useT } from '@/lib/i18n'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 import { isIOS, isNative } from '@/lib/native/isNative'
+import type { SmsSetupState } from '@/lib/sms/setupState'
 import { cn } from '@/lib/utils'
+
+/** This phone's status in one line, from what a run or an SMS proved (BDG-008); never says a Shortcut exists or was deleted. */
+function statusLabel(t: ReturnType<typeof useT>['smsTracking'], connected: string, s: SmsSetupState): string {
+  if (s.health === 'receiving') return connected
+  if (s.health === 'quiet') return t.iosStatusQuiet(s.quietDays)
+  if (s.runSeen) return t.iosStatusRunSeen
+  return s.claimed ? t.iosStatusNotConfirmed : t.iosStatusNotSetUp
+}
 
 /**
  * SMS tracking on the settings page (BDG-008, findings/B-sms-setup.md). An iPhone that never set up on this phone gets a
@@ -26,10 +34,11 @@ export function SmsCard({ title, vivid = false, children }: { title?: string; vi
   const t = useT()
   const iosGuide = isNative() && isIOS()
   const { isEnabled, isSetup, toggle, loading, error, permission, setup } = useSmsTracking({ withDeviceSms: iosGuide })
-  const needsGuide = iosGuide && !isSetup
+  const setUpAgain = iosGuide && isSetup && setup.setUpAgain
+  const needsGuide = (iosGuide && !isSetup) || setUpAgain
   const notice = error ?? (isEnabled && permission === false ? copy.sms.permissionOff : null)
   const tone = vivid ? 1 : GROUP_TONE.autoTrack
-  const hint = iosGuide && isEnabled ? statusLabel(t.smsTracking, setup) : isEnabled ? copy.sms.on : copy.sms.hint
+  const hint = iosGuide && isEnabled ? statusLabel(t.smsTracking, copy.sms.connected, setup) : isEnabled ? copy.sms.on : copy.sms.hint
 
   return (
     <SettingsSection title={title ?? copy.groupName.autoTrack}>
@@ -39,10 +48,10 @@ export function SmsCard({ title, vivid = false, children }: { title?: string; vi
           tone={tone}
           solid={vivid}
           title={copy.sms.title}
-          subtitle={copy.sms.iosHint}
+          subtitle={setUpAgain ? t.smsTracking.iosStatusQuiet(setup.quietDays) : copy.sms.iosHint}
           href="/settings/sms"
           settingId="sms"
-          trailing={<span data-testid="sms-setup-button" className={buttonVariants({ size: 'touch' })}>{copy.sms.guide}</span>}
+          trailing={<span data-testid="sms-setup-button" className={buttonVariants({ size: 'touch' })}>{setUpAgain ? copy.sms.setUpAgain : copy.sms.guide}</span>}
         />
       ) : (
         <SettingsSwitchRow

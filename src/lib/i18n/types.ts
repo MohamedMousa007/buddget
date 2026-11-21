@@ -2850,8 +2850,6 @@ export interface Dictionary {
     iosStepActionTitle: string
     iosStepActionDesc: string
     iosRepeatPerCurrencyHint: string
-    iosSetupButton: string
-    iosSetupButtonConnected: string
     iosSetupPageTitle: string
     iosSetupDone: string
     androidCardTitle: string

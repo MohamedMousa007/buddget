@@ -10,6 +10,8 @@
 
 /** A phone whose last SMS is older than this reads as "quiet". */
 export const QUIET_AFTER_DAYS = 7
+/** No SMS and no Shortcut run on this phone for this long: Settings offers "Set up again" in place of the switch (owner, 2026-11-21). */
+export const SETUP_AGAIN_AFTER_DAYS = 14
 
 export interface SmsDeviceFacts {
   /** This phone's first and last SMS on the server; null when none or not read yet. */
@@ -38,6 +40,11 @@ export interface SmsSetupState {
   quietDays: number
   /** Settings shows the switch instead of "Set up". Owner decision 2026-11-20: a run counts as well as a claim. */
   showSwitch: boolean
+  /**
+   * This phone delivered before, but neither an SMS nor a Shortcut run for SETUP_AGAIN_AFTER_DAYS: the automation may be
+   * gone (iOS cannot say), so Settings offers "Set up again" instead of the switch. A new run or SMS clears it.
+   */
+  setUpAgain: boolean
 }
 
 /** The native facts this module reads. `wired` and `tokenSaved` are deliberately not among them. */
@@ -60,6 +67,11 @@ export function iosSetUpHere(status: SmsNativeFacts | null | undefined): boolean
   return Boolean(status?.setupCompleted || status?.lastRunAt)
 }
 
+/** Whole days since `iso`; Infinity when there is none. */
+function daysSince(iso: string | null | undefined, now: number): number {
+  return iso ? Math.floor((now - Date.parse(iso)) / 86_400_000) : Infinity
+}
+
 export function deriveSmsSetupState(
   preference: boolean,
   native: SmsNativeFacts | null | undefined,
@@ -80,5 +92,6 @@ export function deriveSmsSetupState(
     lastSmsAt,
     quietDays,
     showSwitch: iosSetUpHere(native),
+    setUpAgain: Boolean(lastSmsAt) && quietDays >= SETUP_AGAIN_AFTER_DAYS && daysSince(native?.lastRunAt, now) >= SETUP_AGAIN_AFTER_DAYS,
   }
 }

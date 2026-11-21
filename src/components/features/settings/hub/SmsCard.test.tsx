@@ -44,10 +44,22 @@ describe('SmsCard', () => {
     expect(render()).toContain('The Shortcut ran')
   })
 
-  it('once this phone delivered an SMS the status says connected', () => {
+  it('once this phone delivered an SMS the status says only "Connected", no last-SMS time', () => {
     const at = new Date(Date.now() - 2 * 3_600_000).toISOString()
     state.setup = deriveSmsSetupState(true, { setupCompleted: true }, { firstSmsAt: at, lastSmsAt: at, legacyLastSmsAt: null }, Date.now())
-    expect(render()).toContain('Connected · last SMS')
+    const out = render()
+    expect(out).toContain('>Connected<')
+    expect(out).not.toContain('last SMS')
+  })
+
+  it('no SMS and no Shortcut run here for 14 days: "Set up again" with the quiet note, no switch', () => {
+    const at = new Date(Date.now() - 15 * 86_400_000).toISOString()
+    state.setup = deriveSmsSetupState(true, { setupCompleted: true }, { firstSmsAt: at, lastSmsAt: at, legacyLastSmsAt: null }, Date.now())
+    const out = render()
+    expect(out).not.toContain('role="switch"')
+    expect(out).toContain('>Set up again<')
+    expect(out).toContain('No bank SMS from this iPhone for 15 days')
+    expect(out).toContain('href="/settings/sms"')
   })
 
   it('Android and the web get the switch alone', () => {

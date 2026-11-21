@@ -2986,8 +2986,6 @@ export const en: Dictionary = {
     iosStepActionTitle: 'Add the buddget action',
     iosStepActionDesc: 'Tap Next \u2192 New Blank Automation, search for "Catch Bank SMS", then tap the "Bank Message" field and choose Shortcut Input. That\u2019s the whole bridge.',
     iosRepeatPerCurrencyHint: 'Use more than one currency? Repeat once per keyword \u2014 each automation takes a single phrase.',
-    iosSetupButton: 'Set up SMS tracking',
-    iosSetupButtonConnected: 'View setup guide',
     iosSetupPageTitle: 'Set up SMS Tracking',
     iosSetupDone: 'All done',
     androidCardTitle: 'Android Setup',

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { NO_DEVICE_FACTS, QUIET_AFTER_DAYS, deriveSmsSetupState, iosSetUpHere, needsLegacyReading } from './setupState'
+import { NO_DEVICE_FACTS, QUIET_AFTER_DAYS, SETUP_AGAIN_AFTER_DAYS, deriveSmsSetupState, iosSetUpHere, needsLegacyReading } from './setupState'
 
 const NOW = Date.parse('2026-11-20T12:00:00Z')
 const ago = (h: number) => new Date(NOW - h * 3_600_000).toISOString()
@@ -51,6 +51,19 @@ describe('deriveSmsSetupState (BDG-008)', () => {
   it(`quiet after ${QUIET_AFTER_DAYS} days with no SMS from this phone`, () => {
     const s = derive({ setupCompleted: true }, { firstSmsAt: ago(24 * 30), lastSmsAt: ago(24 * 9), legacyLastSmsAt: null })
     expect(s).toMatchObject({ verified: true, health: 'quiet', quietDays: 9 })
+  })
+
+  it(`"Set up again" after ${SETUP_AGAIN_AFTER_DAYS} days with no SMS and no Shortcut run on this phone`, () => {
+    const server = { firstSmsAt: ago(24 * 40), lastSmsAt: ago(24 * 15), legacyLastSmsAt: null }
+    expect(derive({ setupCompleted: true }, server).setUpAgain).toBe(true)
+    expect(derive({ setupCompleted: true, lastRunAt: ago(24 * 20) }, server).setUpAgain).toBe(true)
+  })
+
+  it('a recent Shortcut run or a recent SMS keeps the switch (no "Set up again")', () => {
+    const quiet = { firstSmsAt: ago(24 * 40), lastSmsAt: ago(24 * 15), legacyLastSmsAt: null }
+    expect(derive({ setupCompleted: true, lastRunAt: ago(24 * 2) }, quiet).setUpAgain).toBe(false)
+    expect(derive({ setupCompleted: true }, { ...quiet, lastSmsAt: ago(24 * 13) }).setUpAgain).toBe(false)
+    expect(derive({ setupCompleted: true }).setUpAgain).toBe(false)
   })
 
   it('old token with no device id keeps the account-level reading once a run was seen here, but is not verified', () => {

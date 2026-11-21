@@ -249,7 +249,6 @@ export function ProStateView({ me }: { me: BillingMe }) {
             <Sub className="mt-1">{p.keep.body(plainDate(view.until, locale, false))}</Sub>
           </div>
           <div className="grid gap-3.5 pt-1.5">{plansChoice}</div>
-          <Fine>{p.keep.fine(inStore)}</Fine>
           <Button size="touch" variant="ghost" onClick={() => navigate('/settings/invite')} className="h-auto min-h-11 w-full whitespace-normal text-center text-[0.8125rem] font-semibold text-[var(--color-brand-primary-ink)]">{r.invite.billingLine}</Button>
         </MembershipPanel>
       ) : null}
