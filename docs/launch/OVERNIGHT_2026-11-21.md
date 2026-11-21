@@ -29,11 +29,18 @@
 
 - **Builds with the billing fix (main `145e47c8`):** iOS 1.0.0 (150) on TestFlight (Alpha testers) and attached to App Store version 1.0.0 in place of 149; Android vc3 APK on Drive (https://drive.google.com/file/d/1fwel4hhtloJBMsULWD-r_7J642LF3CXX/view); signed Play bundle `~/Desktop/buddget-vc3.aab` (jar verified). vc2 moved to `~/Desktop/old-aab/`. Upload vc3, not vc2.
 
+- **Evening:** Play release review raised two errors. SMS declaration filled and saved ("SMS based money management", opt-in, never sends SMS or reads inbox history, business senders only). The foreground-service error is removed at the source: `FOREGROUND_SERVICE_DATA_SYNC` dropped (only API 24-30 ever ran that service, untyped there), so no declaration or video is needed. Signed bundle **vc4** at `~/Desktop/buddget-vc4.aab` (main `e2d67e43`); vc3 moved to `old-aab`. The "no debug symbols" warning stays: the native libraries ship stripped from Sentry and CameraX; it does not block.
+- **Play products are blocked by a missing Google Payments merchant account** (Monetize > Subscriptions says so). RevenueCat cannot create them either until it exists.
+
 ## Waiting on you (in order)
 
-1. **Drag the AAB into Play:** in the Brave tab "Prepare release" (Alpha), drop `~/Desktop/buddget-vc3.aab` on "Upload app bundles", then Save, Next, and "Send for review" (the closed test starts when Google approves). The upload tool I have caps at 10.4 MB and the bundle is 22 MB. The release notes are typed in that tab.
-2. **Reviewer demo account:** create the Layla Hassan demo account and type its email and password into App Store Connect (App Review > Sign-In Information) and Play Console (App content > App access). I may not enter passwords.
-3. **10 more testers** for Play's 12-tester / 14-day rule: the clock starts only when 12 have opted in.
+See the owner step list in the chat of 2026-11-21 evening; in short:
+1. Play: create the Google Payments merchant account (Setup > Payments profile, or the link on Monetize > Subscriptions). Then tell Claude, who applies the RevenueCat plan (7 products, v3 names).
+2. Play: in the draft Alpha release, remove vc3 and upload `~/Desktop/buddget-vc4.aab`; Save; Next; the foreground-service error is gone.
+3. Play: SMS declaration video (optional, helps approval): 30-60 s Android screen recording, unlisted YouTube or Drive link, into App content > Sensitive app permissions > SMS.
+4. Reviewer account: create it in the app (email + your own password), fill Play App content > App access > "Reviewer account" and App Store version 1.0.0 > App Review Information > Sign-in.
+5. Play: Send for review; add 10 more testers (12 opted in starts the 14 days).
+6. App Store: sign in, check build 150 on version 1.0.0, Add for Review with the 7 in-app purchases, Submit.
 4. **Screenshots: uploaded.** From the cloud capture (`qa/store-shots`, Layla Hassan persona, web render of f16d0e18): App Store iPhone 6 shots (resized to the 1206 x 2622 size this account's version asks for) + iPad 13" 4 shots; Play phone 6 + 7" tablet 3 + 10" tablet 3 (Play listing saved as draft; it goes out with the release). Shot 07 (Pro trial) left out on purpose: it shows a crossed-out yearly price, against the paywall rule in `STORE_SETUP.md`. Seen in the shots and worth fixing (UI, so mockup first): the Buddgy orb sits on top of the "Today" date label on Flow, and Arabic month names in the monospace date font render letter by letter ("نو فمبر"). Replace these web shots with simulator and emulator captures of the 1.0.0 build when convenient.
 
 ## Owner-visible decisions taken overnight (overturn any)
