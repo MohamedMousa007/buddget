@@ -151,3 +151,19 @@ The brief asks for approval before migrations, reward-rule changes, security cha
   - The mini card shows the bank or provider name, the card type and ••last4, on its theme.
   - A final mockup of the exact in-app look is being drawn for approval.
   - This is a shared component change, so it needs regression coverage on contrast per theme and on the fields shown.
+
+## Owner rulings on the Phase 3 mockups, 2026-11-21 (canvas https://claude.ai/artifact/58heLXFTN4K6nTjaHFHSgc)
+
+1. **Pro subscription page (BDG-020, BDG-021):**
+   - Remove the manage bar and its actions entirely.
+   - Keep only "Cancel subscription" at the end of the page, in the low-key style the industry uses.
+   - The stay offer shows only when it is tapped.
+   - The owner is unsure about a "Manage subscription" button in front of it, so both are drawn for a final pick.
+2. **Bank icons (BDG-024):** use real bank logos. The owner sees no licensing issue. Logo files still have to be sourced.
+3. **Back everywhere (BDG-017):** swipe-to-go-back only. No UI change; no header back buttons.
+4. **Pocket picker (BDG-026–028):** reuse the existing provider picker component, showing pockets. Additive variant.
+5. **Invite landing page (BDG-005):** shows the guest pass card.
+6. **Guest pass card:** "From <inviter name>" placed in a striking way on the opposite side, as the owner arranged it on the canvas (S004 boards).
+7. **Setup bar (BDG-002):** as slim as possible while still clear. It counts setup steps.
+
+Not commented on, taken as approved: BDG-023 "Privacy & lock" (option C), and the BDG-004/006 invite wording.
