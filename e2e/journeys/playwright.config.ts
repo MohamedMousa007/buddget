@@ -1,4 +1,8 @@
+import { existsSync } from 'node:fs'
 import { defineConfig, devices } from '@playwright/test'
+
+const chrome = process.env.QA_CHROME ?? (existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined)
+const launchOptions = chrome ? { executablePath: chrome } : {}
 
 /**
  * QA Session 05 journeys against the SHARED dev server on :3100 (never started or stopped here).
@@ -23,9 +27,10 @@ export default defineConfig({
     navigationTimeout: 90_000,
     locale: 'en-US',
     timezoneId: 'Africa/Cairo',
+    launchOptions,
   },
   projects: [
-    { name: 'mobile', use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 }, isMobile: false, hasTouch: true } },
-    { name: 'desktop', grep: /@desktop/, use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 860 } } },
+    { name: 'mobile', use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 }, isMobile: false, hasTouch: true, launchOptions } },
+    { name: 'desktop', grep: /@desktop/, use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 860 }, launchOptions } },
   ],
 })

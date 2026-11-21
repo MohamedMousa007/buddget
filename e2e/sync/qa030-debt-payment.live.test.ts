@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto'
-import { writeFileSync } from 'fs'
+import { mkdirSync, writeFileSync } from 'fs'
 import { describe, expect, it } from 'vitest'
 import { emptySnapshot, flushDiff, type Snapshot } from '@/lib/supabase/remote'
 import { holdParkedBack } from '@/lib/supabase/remote/parkedRows'
@@ -48,6 +48,7 @@ describe('QA-030 debt payment from Cash never reaches the server', () => {
     wire.length = 0
     const r1 = await flushDiff(client, userId, s1, s2)
     const failed = wire.filter((w) => w.status >= 400)
+    mkdirSync('e2e/sync/evidence', { recursive: true })
     writeFileSync('e2e/sync/evidence/qa030-wire.json', JSON.stringify(failed, null, 2))
     // QA-15/QA-16 fixed: Cash maps to NULL, nothing is parked, both rows land and no 4xx is sent.
     expect(r1.anyError).toBe(false)

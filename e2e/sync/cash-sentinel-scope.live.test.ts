@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto'
-import { writeFileSync } from 'fs'
+import { mkdirSync, writeFileSync } from 'fs'
 import { describe, expect, it } from 'vitest'
 import { emptySnapshot, flushDiff, type Snapshot } from '@/lib/supabase/remote'
 import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
@@ -18,6 +18,7 @@ describe('Cash sentinel in other uuid columns', () => {
     const deposit = { id: randomUUID(), accountId: pocket.id, type: 'deposit', amount: 50, currency: 'EGP', date: now.slice(0, 10), paymentMethodId: DEFAULT_CASH_ID, createdAt: now, updatedAt: now } as unknown as SavingsTransaction
     const r2 = await flushDiff(client, userId, s1, { ...s1, savingsTransactions: [deposit] })
     const out = { pocketFlush: { errors: r1.errors, parked: r1.parked, heldInCashId: heldInCash.id }, depositFlush: { errors: r2.errors, parked: r2.parked } }
+    mkdirSync('e2e/sync/evidence', { recursive: true })
     writeFileSync('e2e/sync/evidence/cash-sentinel-scope.json', JSON.stringify(out, null, 2))
     // QA-40 fixed: the Cash sentinel goes to the server as NULL, nothing is parked, both rows land.
     expect(r1.parked ?? []).toEqual([])
