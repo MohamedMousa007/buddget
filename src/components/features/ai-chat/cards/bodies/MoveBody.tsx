@@ -2,6 +2,7 @@
 
 import { ArrowDown } from 'lucide-react'
 import { BrandMark } from '@/components/features/accounts/BrandMark'
+import { bankLogoForName } from '@/lib/payment/bankLogos'
 import type { PreviewModel, PreviewRef } from '@/lib/buddgy/tools/proposal'
 import { money } from '@/lib/buddgy/tools/writeKit'
 import { useBuddgyCardCopy } from '@/lib/i18n/buddgyCardCopy'
@@ -11,7 +12,7 @@ import { Line } from './parts'
 function End({ role, end }: { role: string; end: PreviewRef }) {
   return (
     <div className="flex min-h-[52px] items-center gap-3">
-      <BrandMark name={end.name} color={end.color ?? 'var(--color-brand-primary)'} size={36} />
+      <BrandMark name={end.name} color={end.color ?? 'var(--color-brand-primary)'} size={36} logo={bankLogoForName(end.name)} />
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="text-xs text-[var(--color-brand-text-muted)]">{role}</span>
         <span dir="auto" className="truncate font-semibold">{end.name}</span>

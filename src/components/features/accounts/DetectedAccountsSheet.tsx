@@ -23,6 +23,7 @@ import { useReattribute } from '@/lib/accounts/useReattribute'
 import { ProviderPickerSheet } from '@/components/features/payments/ProviderPickerSheet'
 import { confirmProvisional, confirmProvisionalWithBank, isBankless, mergeProvisional, provisionalIdOf, rejectProvisional } from '@/lib/accounts/provisional'
 import { BrandMark } from './BrandMark'
+import { bankLogoForName } from '@/lib/payment/bankLogos'
 
 const BANK_FIRST = [...QUICK_ADD.EG, ...QUICK_ADD.SA]
 
@@ -196,7 +197,7 @@ export function DetectedAccountsSheet({ open, onClose, onManual }: { open: boole
       const color = PAYMENT_BRANDS[resolvePaymentBrandKey(a.provider ?? '') ?? '']?.colors[0] ?? PAYMENT_TYPE_META.bank_account.color
       return (
         <SelectableCard key={a.key} as="action" layout="row" aria-label={`${titleOf(a)}. ${provisionalIdOf(a.key) ? t.provisionalBody(a.count) : all.prompts.acctBody(a.count)}`} onClick={() => setStep({ key: a.key, mode: 'actions' })} className="h-auto min-h-[56px] py-2.5">
-          <BrandMark name={a.provider ?? 'Bank'} color={color} size={40} />
+          <BrandMark name={a.provider ?? 'Bank'} color={color} size={40} logo={bankLogoForName(a.provider)} />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]" dir="auto">{titleOf(a)}</span>
             <span className="block text-xs text-[var(--color-brand-text-secondary)]">{provisionalIdOf(a.key) ? t.provisionalBody(a.count) : all.prompts.acctBody(a.count)}</span>

@@ -2,6 +2,7 @@ import type { AccountView } from '@/lib/accounts/useAccounts'
 import { MASK } from '@/lib/privacy/mask'
 import { useT } from '@/lib/i18n'
 import { BrandMark } from './BrandMark'
+import { bankLogoForName } from '@/lib/payment/bankLogos'
 import { CardStrip } from './CardStrip'
 import { Badge } from '@/components/ui/badge'
 import { accountColor, accountSubtitle, accountTitle, splitMoney } from './accountDisplay'
@@ -40,7 +41,7 @@ export function AccountRow({ account, masked, gap, shared = false, onOpen, onFix
     <div>
       <button type="button" onClick={hasGap && onFix ? onFix : onOpen} data-raw-button-ok="a whole-row tap target, sized by its content"
         className="flex min-h-[72px] w-full items-center gap-3.5 px-4 py-3 text-start" aria-label={accountTitle(method)}>
-        <BrandMark name={accountTitle(method)} color={accountColor(method)} alert={hasGap}
+        <BrandMark name={accountTitle(method)} color={accountColor(method)} alert={hasGap} logo={isCash ? null : bankLogoForName(accountTitle(method))}
           icon={isCash ? createElement(paymentTypeIcon('cash'), { className: 'size-5', 'aria-hidden': true }) : undefined} />
         <span className="min-w-0 flex-1">
           <span className="flex min-w-0 items-center gap-1.5">

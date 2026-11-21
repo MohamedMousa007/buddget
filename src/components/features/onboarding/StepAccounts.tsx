@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Info, Landmark, Plus, Smartphone, Wallet } from 'lucide-react'
 import { AddAccountSheet } from '@/components/features/accounts/AddAccountSheet'
 import { BrandMark } from '@/components/features/accounts/BrandMark'
+import { bankLogoForName } from '@/lib/payment/bankLogos'
 import { accountColor } from '@/components/features/accounts/accountDisplay'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -91,7 +92,7 @@ export function StepAccounts({ chrome }: { chrome: StepChrome }) {
         <Card padding="none" className="mt-5 divide-y divide-[var(--color-brand-border)] overflow-hidden rounded-2xl">
           {rows.map((a) => (
             <div key={a.method.id} className="flex min-h-16 items-center gap-3.5 px-4 py-2.5">
-              <BrandMark name={a.method.name} color={accountColor(a.method)} size={40} />
+              <BrandMark name={a.method.name} color={accountColor(a.method)} size={40} logo={a.method.type === 'cash' ? null : bankLogoForName(a.method.name)} />
               <span className="min-w-0 flex-1 truncate text-base font-semibold text-[var(--color-brand-text-primary)]">{a.method.name}</span>
               <span className="font-mono-numbers text-base font-medium">{a.balance ? formatCurrency(a.balance.balance, a.balance.currency, false) : '-'}</span>
             </div>

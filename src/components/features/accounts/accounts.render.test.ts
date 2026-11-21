@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import type { PaymentMethod } from '@/lib/store/types'
 import { AccountRow } from './AccountRow'
 import { CardStrip } from './CardStrip'
+import { BrandMark } from './BrandMark'
 import { monogram, splitMoney } from './accountDisplay'
 
 const pm = (o: Partial<PaymentMethod> & Pick<PaymentMethod, 'id' | 'type' | 'name'>): PaymentMethod =>
@@ -63,5 +64,22 @@ describe('accounts UI renders', () => {
     expect(monogram('Vodafone Cash')).toBe('VC')
     expect(splitMoney(-1234.5, 'EGP')).toEqual({ int: '−1,234', dec: '.50' })
     expect(splitMoney(1, 'KWD').dec).toBe('.000')
+  })
+})
+
+describe('BrandMark logo variant (BDG-024)', () => {
+  it('draws the logo padded on a white tile and keeps the alert badge', () => {
+    const html = renderToStaticMarkup(h(BrandMark, { name: 'CIB', color: '#1E4E9B', logo: '/logos/banks/cib.svg', alert: true }))
+    expect(html).toContain('src="/logos/banks/cib.svg"')
+    expect(html).toContain('bg-white')
+    expect(html).toContain('>!</span>')
+    expect(html).not.toContain('>CIB<')
+  })
+  it('without a logo it is the monogram on the brand colour, as before', () => {
+    const html = renderToStaticMarkup(h(BrandMark, { name: 'Nile Crest Bank', color: '#1E4E9B', logo: null }))
+    expect(html).not.toContain('<img')
+    expect(html).not.toContain('data-brand-logo')
+    expect(html).toContain('>NC<')
+    expect(html).toContain('background:#1E4E9B')
   })
 })

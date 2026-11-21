@@ -2,6 +2,7 @@
 
 import { useId } from 'react'
 import { BrandMark } from '@/components/features/accounts/BrandMark'
+import { bankLogoForName } from '@/lib/payment/bankLogos'
 import { SelectableCard } from '@/components/ui/SelectableCard'
 import { useBuddgyCardCopy } from '@/lib/i18n/buddgyCardCopy'
 
@@ -31,7 +32,7 @@ export function AccountPick({ value, options, onPick, label }: AccountPickProps)
         {options.map((a) => (
           <SelectableCard key={a.value} selected={a.value === value} onClick={() => onPick(a.value)} aria-label={a.sub ? `${a.name}, ${a.sub}` : a.name}>
             <span className="flex min-h-10 w-full items-center gap-3 text-start">
-              <BrandMark name={a.name} color={a.color ?? 'var(--color-brand-primary)'} size={34} />
+              <BrandMark name={a.name} color={a.color ?? 'var(--color-brand-primary)'} size={34} logo={bankLogoForName(a.name)} />
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate text-sm font-semibold">{a.name}</span>
                 {a.sub ? <span className="text-xs text-[var(--color-brand-text-muted)]">{a.sub}</span> : null}

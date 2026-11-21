@@ -11,6 +11,8 @@ import { PAYMENT_BRANDS, PAYMENT_TYPE_META, brandIssuesType } from '@/lib/paymen
 import { rgba } from '@/lib/utils/color'
 import type { PaymentMethodType } from '@/lib/store/types'
 import { SelectableCard } from '@/components/ui/SelectableCard'
+import { BrandMark } from '@/components/features/accounts/BrandMark'
+import { bankLogoSrc } from '@/lib/payment/bankLogos'
 
 /**
  * App-wide provider chooser over the {@link PAYMENT_BRANDS} catalogue — searchable, Popular/All
@@ -136,6 +138,7 @@ export function ProviderPickerSheet({
             const b = PAYMENT_BRANDS[r.id]
             const col = b.colors[0]
             const sel = selectedId === r.id
+            const logo = bankLogoSrc(r.id)
             return (
               <SelectableCard
                 key={`${r.id}-${i}`}
@@ -143,12 +146,14 @@ export function ProviderPickerSheet({
                 onClick={() => onPick(r.id)}
                 className="min-h-14 gap-3 rounded-[14px] px-3 py-2"
               >
+                {logo ? <BrandMark name={b.name} color={col} size={38} logo={logo} /> : (
                 <span
                   className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[11px] text-[0.75rem] font-extrabold"
                   style={{ background: rgba(col, 0.18), color: col }}
                 >
                   {b.short}
                 </span>
+                )}
                 <span className="min-w-0 flex-1 text-start">
                   <span className="block truncate text-[0.90625rem] font-semibold text-[var(--color-brand-text-primary)]">{b.name}</span>
                   <span className="block text-[0.6875rem] font-medium text-[var(--color-brand-text-muted)]">

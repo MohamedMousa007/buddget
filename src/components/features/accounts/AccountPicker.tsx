@@ -6,6 +6,7 @@ import type { AccountView } from '@/lib/accounts/useAccounts'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { BrandMark } from './BrandMark'
+import { bankLogoForName } from '@/lib/payment/bankLogos'
 import { accountColor, accountSubtitle, accountTitle, sharesProvider, splitMoney } from './accountDisplay'
 
 interface AccountPickerProps {
@@ -29,7 +30,7 @@ export function AccountPicker({ accounts, value, onChange, label }: AccountPicke
     <div>
       <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} data-raw-button-ok="the collapsed row of an inline picker"
         className="flex min-h-[52px] w-full items-center gap-3 text-start">
-        <BrandMark name={accountTitle(current.method)} color={accountColor(current.method)} size={36} />
+        <BrandMark name={accountTitle(current.method)} color={accountColor(current.method)} size={36} logo={bankLogoForName(accountTitle(current.method))} />
         <span className="min-w-0 flex-1">
           <span className="block text-xs text-[var(--color-brand-text-muted)]">{label ?? t.from}</span>
           <span className="block truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{accountTitle(current.method)}</span>
@@ -43,7 +44,7 @@ export function AccountPicker({ accounts, value, onChange, label }: AccountPicke
             <button key={a.method.id} type="button" role="option" aria-selected={a.method.id === current.method.id}
               onClick={() => { onChange(a.method.id); setOpen(false) }} data-raw-button-ok="a row inside the unfolded picker list"
               className="flex min-h-14 w-full items-center gap-3 px-3.5 text-start">
-              <BrandMark name={accountTitle(a.method)} color={accountColor(a.method)} size={32} />
+              <BrandMark name={accountTitle(a.method)} color={accountColor(a.method)} size={32} logo={bankLogoForName(accountTitle(a.method))} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{accountTitle(a.method)}</span>
                 <span dir="ltr" className="block truncate text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{subtitle(a)}</span>

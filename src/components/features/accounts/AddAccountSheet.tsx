@@ -20,6 +20,7 @@ import { isSavableTail } from '@/lib/accounts/identity/accountRef'
 import { useReattribute } from '@/lib/accounts/useReattribute'
 import type { AccountPrefill } from '@/lib/store/useSettingsStore'
 import { BrandMark } from './BrandMark'
+import { bankLogoForName } from '@/lib/payment/bankLogos'
 
 type Kind = 'bank_account' | 'wallet' | 'cash'
 
@@ -109,7 +110,7 @@ export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', p
               <div>
                 <div className={`mx-0.5 mb-2 ${microClassName}`}>{tp.provider}</div>
                 <FieldButton onClick={() => setPickOpen(true)} placeholder={t.chooseBank} value={provider || undefined}
-                  icon={provider ? <BrandMark name={provider} color={brand?.colors[0] ?? PAYMENT_TYPE_META[kind].color} size={32} /> : undefined} />
+                  icon={provider ? <BrandMark name={provider} color={brand?.colors[0] ?? PAYMENT_TYPE_META[kind].color} size={32} logo={bankLogoForName(provider)} /> : undefined} />
               </div>
               <AccountIdentifierField mode={idMode} onModeChange={setIdMode} allowsLast4 last4={last4} onLast4Change={setLast4} label={label} onLabelChange={setLabel} />
               <div>
