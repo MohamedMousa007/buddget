@@ -5,6 +5,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { PageBody } from '@/components/layout/PageContainer'
 import { MembershipRows } from '@/components/features/settings/hub/MembershipRows'
 import { PreferencesCard } from '@/components/features/settings/hub/PreferencesCard'
+import { PrivacyRows } from '@/components/features/settings/hub/PrivacyRows'
 import { ProfileBanner } from '@/components/features/settings/hub/ProfileBanner'
 import { SettingsSearch } from '@/components/features/settings/hub/SettingsSearch'
 import { SmsCard } from '@/components/features/settings/hub/SmsCard'
@@ -27,7 +28,6 @@ export default function SettingsPage() {
   const p = copy.page
   const { user, signOut } = useAuth()
   const dataReady = useFinanceStore((s) => s.dataReady)
-  const twoFactor = useFinanceStore((s) => s.settings.twoFactorEmailEnabled)
   const focusId = useSettingsStore((s) => s.settingsFocusId)
   const setFocusId = useSettingsStore((s) => s.setSettingsFocusId)
   const [searching, setSearching] = useState(false)
@@ -58,10 +58,7 @@ export default function SettingsPage() {
         {user ? <MembershipRows /> : null}
         <PreferencesCard onSearch={() => setSearching(true)} />
         {user ? <SmsCard title={p.tracking} vivid>{aiRow}</SmsCard> : <SettingsSection title={p.tracking}>{aiRow}</SettingsSection>}
-        <SettingsSection title={p.privacy}>
-          {user ? <SettingsRow icon={SETTING_ICONS.shield} tone={4} solid title={copy.security.title} value={twoFactor ? p.twoFactorOn : undefined} href="/settings/security" settingId="security" /> : null}
-          <SettingsRow icon={SETTING_ICONS.download} tone={5} solid title={p.dataBackup} href="/settings/data" />
-        </SettingsSection>
+        <PrivacyRows />
         <SettingsSection title={p.support}>
           <SettingsRow icon={SETTING_ICONS.help} tone={2} solid title={p.helpFeedback} href="/settings/help" />
           <SettingsRow icon={SETTING_ICONS.file} tone="neutral" solid title={p.aboutLegal} href="/settings/about" />

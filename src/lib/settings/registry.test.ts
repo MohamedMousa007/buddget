@@ -9,6 +9,7 @@ import {
 } from '@/lib/settings/registry'
 import { normalizeQuery, searchSettings } from '@/lib/settings/search'
 import { isShellPath } from '@/lib/navigation/shellRoutes'
+import { OPENABLE_SETTINGS } from '@/lib/buddgy/tools/specs/navigation'
 
 describe('settings registry', () => {
   it('has exactly one entry per id', () => {
@@ -42,6 +43,32 @@ describe('settings registry', () => {
       expect(target, key).toBeDefined()
       if (target !== 'internal') expect(SETTING_BY_ID[target], key).toBeDefined()
     }
+  })
+})
+
+describe('Privacy & lock (BDG-023)', () => {
+  it('puts biometric sign-in and app lock together on the Privacy & lock screen', () => {
+    for (const id of ['biometric', 'appLock'] as const) {
+      expect(SETTING_BY_ID[id]).toMatchObject({ group: 'privacy', route: '/settings/privacy', kind: 'toggle' })
+    }
+    expect(isShellPath('/settings/privacy')).toBe(true)
+    expect(settingsHubCopy.en.groupName.privacy).toBe('Privacy & lock')
+    expect(settingsHubCopy.ar.groupName.privacy.length).toBeGreaterThan(1)
+  })
+
+  it('leaves the account controls on Sign-in & security', () => {
+    for (const id of ['password', 'twoFactor', 'deleteAccount'] as const) expect(SETTING_BY_ID[id].route).toBe('/settings/security')
+  })
+
+  it('still resolves every setting id, and Buddgy can still open both moved switches', () => {
+    for (const id of SETTING_IDS) expect(SETTING_BY_ID[id]?.id, id).toBe(id)
+    expect(OPENABLE_SETTINGS).toEqual(expect.arrayContaining(['biometric', 'appLock']))
+    for (const id of OPENABLE_SETTINGS) expect(SETTING_BY_ID[id], id).toBeDefined()
+  })
+
+  it('finds the moved switches from search for signed-in users', () => {
+    expect(searchSettings('app lock', 'en', true)).toContain('appLock')
+    expect(searchSettings('biometric', 'en', true)).toContain('biometric')
   })
 })
 

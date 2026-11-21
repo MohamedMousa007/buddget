@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect } from 'react'
-import { BalancePrivacyCard } from '@/components/features/settings/hub/BalancePrivacyCard'
 import { DeleteAccountCta } from '@/components/features/settings/hub/DeleteAccountCta'
 import { SecurityBody } from '@/components/features/settings/hub/SecurityCard'
 import { SettingsSubPageShell } from '@/components/features/settings/SettingsSubPageShell'
@@ -9,7 +8,7 @@ import { useProfilePage } from '@/hooks/useProfilePage'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 import { navigate } from '@/lib/navigation/navigate'
 
-/** Sign-in and security: password, two-step, biometrics, app lock, and account deletion at the bottom. */
+/** Sign-in and security: password, two-step, devices, and account deletion at the bottom. Biometrics, app lock and hidden balances live on Privacy & lock. */
 export default function SettingsSecurityPage() {
   const copy = useSettingsHubCopy()
   const p = useProfilePage()
@@ -24,7 +23,6 @@ export default function SettingsSecurityPage() {
   return (
     <SettingsSubPageShell title={copy.security.title}>
       <SecurityBody p={{ ...p, user }} />
-      <BalancePrivacyCard />
       <DeleteAccountCta p={p} />
     </SettingsSubPageShell>
   )

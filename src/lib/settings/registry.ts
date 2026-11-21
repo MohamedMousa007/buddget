@@ -1,6 +1,6 @@
 import type { AppSettings } from '@/lib/store/types'
 
-export type GroupId = 'profile' | 'security' | 'quick' | 'autoTrack' | 'ai' | 'memory' | 'notifications' | 'data' | 'help'
+export type GroupId = 'profile' | 'security' | 'privacy' | 'quick' | 'autoTrack' | 'ai' | 'memory' | 'notifications' | 'data' | 'help'
 
 export const SETTING_IDS = [
   'profile', 'password', 'twoFactor', 'biometric', 'appLock', 'deleteAccount',
@@ -43,6 +43,7 @@ const e = (
 const HUB = '/settings'
 const MEMORY = '/settings/memory'
 const SECURITY = '/settings/security'
+const PRIVACY = '/settings/privacy'
 const AI = '/settings/ai'
 const NOTIFICATIONS = '/settings/notifications'
 const DATA = '/settings/data'
@@ -53,8 +54,8 @@ export const SETTINGS_REGISTRY: readonly SettingEntry[] = [
   e('profile', 'profile', 'nav', '/settings/profile', 'user'),
   e('password', 'security', 'nav', SECURITY, 'key', { needsAuth: true }),
   e('twoFactor', 'security', 'toggle', SECURITY, 'shield', { needsAuth: true }),
-  e('biometric', 'security', 'toggle', SECURITY, 'lock', { needsAuth: true }),
-  e('appLock', 'security', 'toggle', SECURITY, 'lock'),
+  e('biometric', 'privacy', 'toggle', PRIVACY, 'lock', { needsAuth: true }),
+  e('appLock', 'privacy', 'toggle', PRIVACY, 'lock'),
   e('deleteAccount', 'security', 'danger', SECURITY, 'trash', { needsAuth: true, action: 'deleteAccount' }),
   e('baseCurrency', 'quick', 'value', HUB, 'coins', { action: 'currencies' }),
   e('secondaryCurrency', 'quick', 'value', HUB, 'swap', { action: 'currencies' }),

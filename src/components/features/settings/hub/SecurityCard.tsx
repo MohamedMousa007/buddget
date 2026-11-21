@@ -4,8 +4,6 @@ import { useEffect, useState } from 'react'
 import { KeyRound } from 'lucide-react'
 import { DevicesSheet } from './DevicesSheet'
 import { TwoFactorOffSheet } from './TwoFactorOffSheet'
-import { AppLockToggle } from '@/components/features/settings/AppLockToggle'
-import { BiometricLoginToggle } from '@/components/features/settings/BiometricLoginToggle'
 import { SettingsChip, SettingsRow } from '@/components/features/settings/SettingsRow'
 import { SettingsSection } from '@/components/features/settings/SettingsSection'
 import { SettingsSwitchRow } from '@/components/features/settings/SettingsSwitchRow'
@@ -20,7 +18,7 @@ import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 
 type Profile = ReturnType<typeof useProfilePage>
 
-/** Account email, password, two-step, biometrics and app lock: the content of the security screen. */
+/** Account email, password, two-step and devices: the content of the security screen. */
 export function SecurityBody({ p }: { p: Profile & { user: NonNullable<Profile['user']> } }) {
   const copy = useSettingsHubCopy()
   const { locale } = useLocale()
@@ -70,8 +68,6 @@ export function SecurityBody({ p }: { p: Profile & { user: NonNullable<Profile['
         checked={p.store.settings.twoFactorEmailEnabled}
         onChange={(val) => void changeTwoFactor(val)}
       />
-      <div data-setting-id="biometric"><BiometricLoginToggle userEmail={user.email} hasPassword={hasPassword} bare /></div>
-      <div data-setting-id="appLock"><AppLockToggle userEmail={user.email} bare /></div>
       <SettingsRow icon={SETTING_ICONS.shield} tone={tone} title={copy.devices.title} subtitle={copy.devices.hint} onClick={() => setDevicesOpen(true)} settingId="devices" />
       <DevicesSheet open={devicesOpen} onClose={() => setDevicesOpen(false)} />
       <TwoFactorOffSheet

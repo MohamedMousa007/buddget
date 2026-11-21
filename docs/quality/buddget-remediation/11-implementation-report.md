@@ -408,3 +408,40 @@ Buddgy chats now work like ChatGPT and Claude, inside the same pop-up.
 | Picking a pocket sets the form value; Add pocket calls the add flow; no Add pocket on Withdraw | `MoneySheetParts.tsx`, `PocketPickerField.render.test.ts`, `selectedPocket.ts` (+ test) | **Automated verification (runner job pending)** at the prop-wiring and pure-logic level. Vitest here is node-only, so the state changes inside the sheet are covered by journey D3. |
 | Add pocket opens the existing flow and returns to Add money with the amount kept and the new pocket selected | `AddSavingsSheetV3.tsx`, `AddHoldingSheet.tsx`, `PocketFormSheet.tsx`, `e2e/journeys/specs/d-pockets.spec.ts` (D3) | **Automated verification (runner job pending)**: journey written, not run. |
 | Look of the field row and picker in en and ar, light and dark; the numpad if it is open when Add pocket is tapped | same | **Manual verification required**. |
+
+## Step 17: setup bar and Privacy & lock (BDG-002, BDG-023)
+
+Owner-approved canvas: `S002-after`, `S002-sheet`, `S023-hub-after`, `S023-screen-after`.
+
+**BDG-002, setup bar.** The owner ruled that the bar counts setup steps, not profile completion.
+- The 3px unlabelled bar under the Settings profile row is now one 44px row: "Finish setup · 3 of 5", a 4px progress line (96px wide) and a chevron. It is hidden once setup is complete, as before.
+- Tapping it opens the existing `SetupChecklistSheet`, the same sheet the profile menu opens.
+- `computeSetupSteps` takes a new `smsAvailable` input, and `useSetupProgress` passes `isNative()`. The SMS step only counts in the iOS and Android apps. On the web, where capture cannot run, the count reads "of 4" and can reach 100%. A synced SMS intent on the web no longer counts.
+- The header ring, the profile menu row, the checklist and Flow's setup card all read the same hook, so they all count the same steps.
+- The copy reuses `t.setup.chipLabel` and `t.setup.progress`. No dictionary change.
+
+**BDG-023, Privacy & lock.** The owner chose option C, a new screen.
+- New screen `/settings/privacy`: a "Lock" section with the biometric sign-in and app lock switches and a note under it, then "Hide balances" (`BalancePrivacyCard`). It is registered in `SHELL_PATHS` and `AppViewRouter`, and signed-out users are redirected like on the security screen.
+- The Lock section shows only in the app, because both switches render nothing on the web.
+- Sign-in & security keeps email, password, two-step, devices and Delete account.
+- The hub's Privacy & data group is now `PrivacyRows`:
+  - Sign-in & security, subtitle "Password, two-step, devices".
+  - Privacy & lock, subtitle "Face ID, app lock, hidden balances", signed in only.
+  - Data & backup, subtitle "Export, restore, not counted", for everyone.
+- Registry: `biometric` and `appLock` moved to the new group `privacy` ("Privacy & lock") and route `/settings/privacy`. The ids are unchanged, so search, `useOpenSetting` and Buddgy's `open_setting` reach the new screen. The `data-setting-id` wrappers moved with the switches, so the arrival highlight still works.
+- Copy in en and ar is in `settingsHubCopy.ts`.
+
+| Item | Files | Status |
+|---|---|---|
+| Step count per platform (5 with SMS, 4 without, synced intent ignored without the step) | `src/hooks/useSetupProgress.ts`, `useSetupProgress.test.ts` | **Automated verification (runner job pending)**: written, not run on the Mac. |
+| Registry: both switches on the new screen and group, account controls stay, every id resolves, Buddgy can still open both, search finds them | `src/lib/settings/registry.ts`, `registry.test.ts`, `shellRoutes.ts`, `AppViewRouter.tsx`, `groupMeta.ts` | **Automated verification (runner job pending)**: written, not run on the Mac. |
+| Hub rows and subtitles, signed in and signed out | `hub/PrivacyRows.tsx`, `PrivacyRows.test.tsx`, `settings/page.tsx` | **Automated verification (runner job pending)**: written, not run on the Mac. |
+| Look of the setup row, the sheet it opens, the hub rows and the Privacy & lock screen in en and ar, light and dark | `ProfileBanner.tsx`, `settings/privacy/page.tsx`, `security/page.tsx`, `SecurityCard.tsx` | **Manual verification required** (runner screenshot, then owner review). |
+| Biometric and app lock switches working on the new screen; the search highlight landing on them | `settings/privacy/page.tsx` | **Native verification required**. |
+
+Differences from the boards:
+- The checklist sheet is unchanged. It has no "Steps for this phone" line, its bar is the shared `Progress` (4px, not 8px), and its title shows in both the sheet header and the card.
+- The Face ID and app lock rows are the existing `bare` toggles, which have an inline icon rather than the board's tinted chip.
+- The lock note says "Face ID or fingerprint" so that it is also true on Android.
+- There is no "NEW" tag on the hub row (the board marks it optional).
+- Hide balances has no setting id, so search and Buddgy cannot open it directly. Adding one would widen Buddgy's `open_setting` list.

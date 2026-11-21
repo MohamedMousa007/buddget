@@ -5,6 +5,7 @@ import type { GroupId } from '@/lib/settings/registry'
 export const GROUP_TONE: Record<GroupId, RowTone> = {
   profile: 1,
   security: 1,
+  privacy: 1,
   quick: 2,
   autoTrack: 3,
   ai: 4,

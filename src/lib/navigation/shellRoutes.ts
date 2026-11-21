@@ -31,6 +31,7 @@ export const SHELL_PATHS = [
   '/settings/sms',
   '/settings/memory',
   '/settings/security',
+  '/settings/privacy',
   '/settings/pro',
   '/settings/pro/usage',
   '/settings/rewards',
