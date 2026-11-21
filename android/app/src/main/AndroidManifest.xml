@@ -56,12 +56,6 @@
             </intent-filter>
         </receiver>
 
-        <!-- Expedited SMS forwarding runs as a data-sync foreground service on API 24-30; Android 14+ requires the type here. -->
-        <service
-            android:name="androidx.work.impl.foreground.SystemForegroundService"
-            android:foregroundServiceType="dataSync"
-            tools:node="merge" />
-
         <!-- Sentry auto-inits from this at process start, so launch crashes before the WebView are captured. -->
         <meta-data android:name="io.sentry.dsn" android:value="${sentryDsn}" />
 
@@ -91,7 +85,6 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />

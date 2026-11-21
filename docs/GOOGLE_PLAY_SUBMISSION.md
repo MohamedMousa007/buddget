@@ -62,9 +62,9 @@ After `npx cap add android`, merge the following into
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
-<!-- SMS forwarding runs as a data-sync foreground service on API 24-30 (Android 14+ needs the type) -->
+<!-- Expedited SMS forwarding runs as an untyped foreground service on API 24-30 only (12+ uses a job).
+     No FOREGROUND_SERVICE_DATA_SYNC: it would need Play's foreground-service declaration (removed in vc4). -->
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
 <!-- Voice expense -->
 <uses-permission android:name="android.permission.RECORD_AUDIO" />

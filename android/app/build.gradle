@@ -45,6 +45,8 @@ android {
         release {
             minifyEnabled true
             shrinkResources true
+            // Native debug symbols go into the bundle so Play can symbolicate native crashes (Play warning on vc3).
+            ndk { debugSymbolLevel 'SYMBOL_TABLE' }
             // Release signing comes from the environment (never committed); without it the release build stays unsigned.
             if (System.getenv("ANDROID_RELEASE_KEYSTORE")) {
                 signingConfig signingConfigs.release

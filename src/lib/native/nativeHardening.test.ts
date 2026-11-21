@@ -5,14 +5,15 @@ const read = (p: string) => readFileSync(p, 'utf8')
 const A = 'android/app/src/main/java/app/buddget'
 
 describe('Android SMS bridge hardening (static)', () => {
-  it('NAT-1: the forward worker supplies a foreground notification and the manifest declares the service type', () => {
+  it('NAT-1: the forward worker supplies an untyped foreground notification and no typed FGS permission is declared', () => {
     const worker = read(`${A}/SmsForwardWorker.kt`)
     expect(worker).toContain('override suspend fun getForegroundInfo(): ForegroundInfo')
     expect(worker).toContain('NotificationChannel(CHANNEL_ID')
-    expect(worker).toContain('FOREGROUND_SERVICE_TYPE_DATA_SYNC')
+    // A typed call needs a declared type and FOREGROUND_SERVICE_DATA_SYNC, which Play gates behind a declaration (vc4).
+    expect(worker).not.toContain('FOREGROUND_SERVICE_TYPE_DATA_SYNC')
     const manifest = read('android/app/src/main/AndroidManifest.xml')
-    expect(manifest).toMatch(/SystemForegroundService"\s+android:foregroundServiceType="dataSync"/)
-    expect(manifest).toContain('android.permission.FOREGROUND_SERVICE_DATA_SYNC')
+    expect(manifest).not.toContain('foregroundServiceType')
+    expect(manifest).not.toContain('FOREGROUND_SERVICE_DATA_SYNC')
     expect(manifest).toContain('android.permission.FOREGROUND_SERVICE"')
   })
 
