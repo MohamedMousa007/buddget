@@ -36,6 +36,7 @@ import { consumeExpectedSignOut } from '@/lib/auth/intentionalSignOut'
 import { DialogProvider, useConfirm, type ConfirmOptions } from '@/components/ui/dialog/DialogProvider'
 import { settleBeforeWipe } from '@/lib/auth/signOutFlush'
 import { takePasswordUpdatedHint } from '@/components/auth/passwordUpdatedHint'
+import { isAuthGateBypassRoute } from '@/components/auth/authGateRoutes'
 
 /**
  * Minimal centered splash rendered while the initial auth check is in flight.
@@ -589,16 +590,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ],
   )
 
-  // Reset-password + auth-callback routes must be reachable for unauthenticated
-  // users — they're part of the inbound auth flow. Legal pages must be public
-  // too (linked from the signed-out landing screen) — without this the gate
-  // swallows the route and re-renders LandingGate on top of it, remounting the
-  // email step and popping the keyboard instead of showing the policy text.
-  // The gate bypasses all of these and renders children directly.
-  const isBypassRoute =
-    pathname.startsWith('/reset-password') ||
-    pathname.startsWith('/auth/callback') ||
-    pathname.startsWith('/legal')
+  // Public routes (see authGateRoutes): without the bypass the gate swallows the
+  // route and renders LandingGate on top of it.
+  const isBypassRoute = isAuthGateBypassRoute(pathname)
 
   const skipAuthModal = pathname.startsWith('/reset-password')
   const showAuthModal = configured && !loading && authModalOpen && !user && !skipAuthModal
