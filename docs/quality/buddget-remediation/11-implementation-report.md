@@ -357,3 +357,54 @@ Buddgy chats now work like ChatGPT and Claude, inside the same pop-up.
 | Daily cron, frequency rule, `SCHEDULED_JOBS.md` row | `docs/SCHEDULED_JOBS.md`, `src/lib/server/__tests__/cronGuardrails.test.ts` | **Automated verification**: written, not run (cloud runner). Job live in `cron.job`. |
 | Overview "Needs attention" line | `src/app/api/admin/overview/route.ts`, `views/OverviewView.tsx`, `aiModelAlertDisplay.ts` (+ `.test.ts`), `database.types.ts` | Unit test written, not run. **Manual verification required**: the line in the portal (no alert exists yet, so it shows once a model trips). |
 | Owner email or push | none | **Blocked**: no SQL-side email queue, and `RESEND_API_KEY` is not set for system sends. |
+
+## Step 14: swipe back (BDG-017)
+
+- **Owner ruling:** swipe to go back everywhere, no UI change, no header back buttons.
+- **Path chosen: a JS left-edge swipe, iOS only. WKWebView's `allowsBackForwardNavigationGestures` stays off.** The shell does push real history entries (`navigate()` calls `pushState`, `bindPopState` handles pop), so the native gesture would fire. It still fails three of the goals:
+  - WebKit pops history before the back guards can close an open sheet;
+  - it goes back from tab roots, because the history trail includes tab hops;
+  - it has no Flow fallback when there is no history.
+- **One back action:** `goBack()` (`src/lib/navigation/goBack.ts`) is now shared by the Android `backButton` handler and the iOS swipe.
+  - **Both platforms:** back guards run first (LIFO registry; sheets close through `ModalShell`'s guard), then the active modal closes.
+  - **Android:** unchanged. A non-root screen goes `history.back()`, or `/` when there is no history; `/` hands over to the press-again-to-exit toast.
+  - **iOS:** nothing happens under an overlay that holds the scroll lock without a guard, or on a tab root (`/`, `/flow`, `/expenses`, `/income`, `/accounts`, `/wealth`, `/savings`, `/investment`, `/debts`). Otherwise it goes `history.back()`, and with no history `navigate('/flow', { replace: true })`. It never leaves the app.
+- **Gesture** (`src/lib/navigation/edgeSwipe.ts`, mounted by `EdgeSwipeBack` in `AppShell`):
+  - starts within 20 pt of the leading edge and commits on release after 60 pt of mostly horizontal travel;
+  - is cancelled early by a vertical or wrong-way move;
+  - ignores touches that start on the Buddgy orb (`data-no-ptr`), inputs, sliders, a horizontal scroller with content to scroll, or a finger-driven carousel (`touch-action: pan-y`, as `PaymentCardCarousel` sets);
+  - mirrors to the right edge when `<html dir="rtl">`;
+  - uses passive listeners only, so pull-to-refresh and scrolling are untouched.
+- **iOS has no `canGoBack`:** `navStore` counts shell pushes since the document loaded, with `popstate` taking one off. An undercount only sends a back to Flow.
+- **Android system back gesture:** Capacitor delivers it as `backButton`, the same event as the hardware key. `MainActivity` and the manifest override nothing, so it keeps working through `goBack('android')`.
+- **No native change, no Swift edit:** it ships with the web bundle.
+
+| Item | Files | Status |
+|---|---|---|
+| Gesture decision: start zone, 60 pt threshold, vertical and wrong-way rejection, RTL mirror, ignored targets | `src/lib/navigation/edgeSwipe.ts`, `edgeSwipe.test.ts` | **Automated verification (runner job pending)**: written, not run on the Mac. |
+| Back action: guard first, modal, unguarded overlay, tab-root no-op, history, no-history to Flow; Android order unchanged | `src/lib/navigation/goBack.ts`, `edgeSwipe.test.ts`, `navStore.ts`, `navigate.ts` | **Automated verification (runner job pending)**: written, not run on the Mac. |
+| Android handler moved onto `goBack('android')` | `src/components/layout/AppShell.tsx` | **Native verification required**: hardware back and the system back gesture on a device (sheet closes first, inner screen goes back, exit toast on `/`). |
+| Swipe feel on iPhone: edge pickup, no clash with carousels, PlanDeck, PaydayTimeline or the orb, sheet closes first | `src/components/layout/EdgeSwipeBack.tsx` | **Native verification required** (needs a native build; none was run). There is no slide animation by design, since the owner asked for no UI change. |
+
+## Step 15: pocket picker (BDG-026-028)
+
+- **Owner ruling:** the pocket select reuses the existing provider picker component, showing pockets.
+- **Additive variant of `ProviderPickerSheet`:** `items` (id, name, subtitle, glyph, trailing), `title`, `searchPlaceholder` and `customLabel`, with `onCustom` and `popularIds` now optional.
+  - With `items`, the sheet lists those options with search over name and subtitle, in a `radiogroup`, with no Popular/All sections.
+  - The CTA shows only when `onCustom` is given.
+  - Without `items` the catalogue mode is byte-for-byte the same path, and the three existing callers are unchanged.
+- **`PocketPickerField`** (in `MoneySheetParts`) replaces `PocketRadioList` (removed, no other callers) for Add money "Into" and Withdraw "From".
+  - It is one `FieldButton` row with the chosen pocket's colour tile, name, identity and balance, labelled for screen readers as "Into: <pocket>".
+  - It opens the picker with every pocket and its balance, so the amount stays near the top of the sheet.
+- **Add pocket** (Add money only, as the owner asked) opens the existing `AddHoldingSheet` with an additive `pocketOnly` prop that hides the Investment tab.
+  - It is a sibling sheet above Add money, so the typed amount survives.
+  - `PocketFormSheet` gains an optional `onCreated(id, currency)`, and `AddHoldingSheet` an optional `onPocketCreated`. The new pocket is selected and its currency taken from the callback, because the `pockets` prop is one render behind (`pocketCurrency`).
+- **Strings:** `searchPockets` and `addPocket` added in en and ar.
+- **Journey suite:** `d-pockets.spec.ts` now picks Into and From through the picker, and a new case D3 covers Add pocket from Add money: the amount is kept, the new pocket is selected, and the deposit is saved. The case is listed in `e2e/README.md`.
+
+| Item | Files | Status |
+|---|---|---|
+| Variant renders pockets (name, balance, glyph, search, Add pocket); provider mode unchanged | `ProviderPickerSheet.tsx`, `ProviderPickerSheet.pockets.render.test.ts` | **Automated verification (runner job pending)**: written, not run on the Mac. |
+| Picking a pocket sets the form value; Add pocket calls the add flow; no Add pocket on Withdraw | `MoneySheetParts.tsx`, `PocketPickerField.render.test.ts`, `selectedPocket.ts` (+ test) | **Automated verification (runner job pending)** at the prop-wiring and pure-logic level. Vitest here is node-only, so the state changes inside the sheet are covered by journey D3. |
+| Add pocket opens the existing flow and returns to Add money with the amount kept and the new pocket selected | `AddSavingsSheetV3.tsx`, `AddHoldingSheet.tsx`, `PocketFormSheet.tsx`, `e2e/journeys/specs/d-pockets.spec.ts` (D3) | **Automated verification (runner job pending)**: journey written, not run. |
+| Look of the field row and picker in en and ar, light and dark; the numpad if it is open when Add pocket is tapped | same | **Manual verification required**. |
