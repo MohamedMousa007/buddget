@@ -104,10 +104,10 @@ export default function WealthPage() {
   const [menu, setMenu] = useState<{ row: WealthRowVM; anchor: DOMRect } | null>(null)
   const [emergencyOpen, setEmergencyOpen] = useState(false)
   const [zakatOpen, setZakatOpen] = useState(false)
-  // Quick add > Savings lands here asking for the add-money sheet (auth was checked at the tile).
+  // Quick add > Savings lands here asking for the add-money sheet (auth was checked at the tile). The request stays in
+  // the store until the sheet closes; it is never cleared in an unmount cleanup, which StrictMode runs on mount (Q3).
   const wealthAddRequested = useSettingsStore((s) => s.wealthAddRequested)
   const showAdd = addOpen || wealthAddRequested
-  useEffect(() => () => useSettingsStore.getState().setWealthAddRequested(false), [])
   const [filter, setFilter] = useState<CatKey | null>(null)
   const [collapsed, setCollapsed] = useState(false)
   const [feedHidden, hideFeed] = useHiddenStatus('gold-prices')
