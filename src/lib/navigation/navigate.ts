@@ -1,6 +1,6 @@
 'use client'
 
-import { normalizePath, setNavPath } from './navStore'
+import { normalizePath, noteShellPush, setNavPath } from './navStore'
 import { isShellPath } from './shellRoutes'
 import { isNativeShellBuild } from '@/lib/native/isNative'
 
@@ -31,7 +31,10 @@ export function navigate(href: string, opts: NavigateOptions = {}): void {
   // The apps bundle the portal as an in-memory view too: a document load of /admin can land on the wrong page in the WebView.
   if (isShellPath(path) || (path === '/admin' && isNativeShellBuild())) {
     if (opts.replace) window.history.replaceState(null, '', href)
-    else window.history.pushState(null, '', href)
+    else {
+      window.history.pushState(null, '', href)
+      noteShellPush()
+    }
     setNavPath(path)
     window.scrollTo(0, 0)
     return

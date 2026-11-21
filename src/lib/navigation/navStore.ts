@@ -56,10 +56,26 @@ export function useNavPath(): string {
   return useSyncExternalStore(subscribe, getNavPath, () => '/')
 }
 
+// Shell entries pushed since this document loaded: the WebView reports no canGoBack on iOS.
+// Forward navigation (web only) undercounts, which only sends a back to Flow instead.
+let shellDepth = 0
+
+export function noteShellPush(): void {
+  shellDepth++
+}
+
+/** True when `history.back()` returns to an earlier shell view of this document. */
+export function shellCanGoBack(): boolean {
+  return shellDepth > 0
+}
+
 /** Keep the store in sync with browser back/forward. Call once at app root. */
 export function bindPopState(): () => void {
   if (typeof window === 'undefined') return () => {}
-  const onPop = () => setNavPath(browserPath())
+  const onPop = () => {
+    shellDepth = Math.max(0, shellDepth - 1)
+    setNavPath(browserPath())
+  }
   window.addEventListener('popstate', onPop)
   return () => window.removeEventListener('popstate', onPop)
 }

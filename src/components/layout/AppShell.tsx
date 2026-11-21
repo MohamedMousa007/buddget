@@ -36,6 +36,8 @@ import { useExpenseFilterStore } from '@/lib/store/useExpenseFilterStore'
 import { isNative } from '@/lib/native/isNative'
 import { isAndroid } from '@/lib/native/isNative'
 import { runBackGuards } from '@/lib/navigation/backGuard'
+import { goBack } from '@/lib/navigation/goBack'
+import { EdgeSwipeBack } from './EdgeSwipeBack'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { StorageQuotaToast } from '@/components/layout/StorageQuotaToast'
 import { useT } from '@/lib/i18n'
@@ -254,16 +256,17 @@ function AndroidBackHandler() {
       const added = await App.addListener('backButton', ({ canGoBack }) => {
         // Guards first: inner dismissable layers (number pad, unsaved-changes
         // dialogs) must consume the back press before the modal itself closes.
-        if (runBackGuards()) return
-        if (activeModalRef.current) {
-          setActiveModalRef.current(null)
-          return
-        }
-        if (pathnameRef.current !== '/') {
-          if (canGoBack) window.history.back()
-          else navigate('/')
-          return
-        }
+        const outcome = goBack('android', {
+          runGuards: runBackGuards,
+          modalOpen: !!activeModalRef.current,
+          closeModal: () => setActiveModalRef.current(null),
+          overlayLocked: false,
+          path: pathnameRef.current,
+          canGoBack,
+          historyBack: () => window.history.back(),
+          navigate,
+        })
+        if (outcome !== 'root') return
         if (exitPending.current) {
           void App.exitApp()
           return
@@ -354,6 +357,7 @@ export function AppShell({ children }: AppShellProps) {
       <SmsNudgeSync />
       <SmsPushActionHandler />
       <AndroidBackHandler />
+      <EdgeSwipeBack />
       <StorageQuotaToast />
     </div>
   )
