@@ -16,7 +16,7 @@
 2. **Drag the AAB into Play:** in the Brave tab "Prepare release" (Alpha), drop the new `~/Desktop/buddget-vc1.aab` (after step 1's build; `buddget-vc181.aab` is the old numbering) on "Upload app bundles". The upload tool I have caps at 10.4 MB and the bundle is 22 MB. The release notes are typed in that tab.
 3. **Reviewer demo account:** create the Layla Hassan demo account and type its email and password into App Store Connect (App Review > Sign-In Information) and Play Console (App content > App access). I may not enter passwords.
 4. **10 more testers** for Play's 12-tester / 14-day rule: the clock starts only when 12 have opted in.
-5. **Screenshots:** the cloud screenshot job (iPhone 6.9", iPad 13", Play phone and tablets) was started; if it pushed `qa/store-shots`, I upload them; otherwise they are still missing on both stores.
+5. **Screenshots: uploaded.** From the cloud capture (`qa/store-shots`, Layla Hassan persona, web render of f16d0e18): App Store iPhone 6 shots (resized to the 1206 x 2622 size this account's version asks for) + iPad 13" 4 shots; Play phone 6 + 7" tablet 3 + 10" tablet 3 (Play listing saved as draft; it goes out with the release). Shot 07 (Pro trial) left out on purpose: it shows a crossed-out yearly price, against the paywall rule in `STORE_SETUP.md`. Seen in the shots and worth fixing (UI, so mockup first): the Buddgy orb sits on top of the "Today" date label on Flow, and Arabic month names in the monospace date font render letter by letter ("نو فمبر"). Replace these web shots with simulator and emulator captures of the 1.0.0 build when convenient.
 
 ## Owner-visible decisions taken overnight (overturn any)
 
