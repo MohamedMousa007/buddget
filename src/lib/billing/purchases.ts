@@ -33,9 +33,11 @@ export function purchasesAvailable(): boolean {
   return isNative() && apiKey() !== null
 }
 
-async function sdk() {
-  return (await import('@revenuecat/purchases-capacitor')).Purchases
-}
+/**
+ * The SDK module. Never return `Purchases` itself from an async function: Capacitor's plugin proxy answers `then` with a native
+ * method, so the promise takes it for a thenable and never settles (every store call hung on device, 1.0.0 build 149).
+ */
+const sdk = () => import('@revenuecat/purchases-capacitor')
 
 // The SDK is configured once per app run; later users switch with logIn. Calling configure again replaces the shared instance.
 let configured = false
@@ -73,7 +75,7 @@ export async function startPurchases(userId: string): Promise<boolean> {
   if (configured && configuredFor === userId && status === 'ready') return true
   setStatus('starting')
   try {
-    const purchases = await sdk()
+    const { Purchases: purchases } = await sdk()
     if (!configured) {
       await within(purchases.configure({ apiKey: key, appUserID: userId }), 20_000)
       configured = true
@@ -100,7 +102,7 @@ export async function stopPurchases(): Promise<void> {
   if (configuredFor === null) return
   configuredFor = null
   try {
-    await (await sdk()).logOut()
+    await (await sdk()).Purchases.logOut()
   } catch {
     // an anonymous SDK user (already logged out) throws; nothing to undo
   }
@@ -113,7 +115,7 @@ export async function loadPackages(attempts = 3, delayMs = 1500): Promise<Purcha
   for (let i = 0; i < attempts; i++) {
     if (configuredFor === null) return []
     try {
-      const offerings = await within((await sdk()).getOfferings(), 12_000)
+      const offerings = await within((await sdk()).Purchases.getOfferings(), 12_000)
       const found = offerings.current?.availablePackages ?? []
       if (found.length > 0) return found
     } catch (e) {
@@ -126,7 +128,7 @@ export async function loadPackages(attempts = 3, delayMs = 1500): Promise<Purcha
 
 export async function purchasePackage(aPackage: PurchasesPackage): Promise<PurchaseOutcome> {
   try {
-    await (await sdk()).purchasePackage({ aPackage })
+    await (await sdk()).Purchases.purchasePackage({ aPackage })
     return 'purchased'
   } catch (e) {
     return (e as { userCancelled?: boolean }).userCancelled ? 'cancelled' : 'failed'
@@ -143,7 +145,7 @@ export async function purchaseWithOffer(aPackage: PurchasesPackage, offerId: str
   const discount = aPackage.product.discounts?.find((d) => d.identifier === offerId)
   if (!discount) return 'unavailable'
   try {
-    const purchases = await sdk()
+    const { Purchases: purchases } = await sdk()
     const offer = await purchases.getPromotionalOffer({ product: aPackage.product, discount })
     if (!offer) return 'unavailable'
     await purchases.purchaseDiscountedPackage({ aPackage, discount: offer })
@@ -158,7 +160,7 @@ export async function loadSparksProducts(ids: readonly string[]): Promise<Purcha
   if (configuredFor === null || ids.length === 0) return []
   try {
     const { PRODUCT_CATEGORY } = await import('@revenuecat/purchases-capacitor')
-    const { products } = await (await sdk()).getProducts({ productIdentifiers: [...ids], type: PRODUCT_CATEGORY.NON_SUBSCRIPTION })
+    const { products } = await (await sdk()).Purchases.getProducts({ productIdentifiers: [...ids], type: PRODUCT_CATEGORY.NON_SUBSCRIPTION })
     return products
   } catch {
     return []
@@ -167,7 +169,7 @@ export async function loadSparksProducts(ids: readonly string[]): Promise<Purcha
 
 export async function purchaseProduct(product: PurchasesStoreProduct): Promise<PurchaseOutcome> {
   try {
-    await (await sdk()).purchaseStoreProduct({ product })
+    await (await sdk()).Purchases.purchaseStoreProduct({ product })
     return 'purchased'
   } catch (e) {
     return (e as { userCancelled?: boolean }).userCancelled ? 'cancelled' : 'failed'
@@ -176,7 +178,7 @@ export async function purchaseProduct(product: PurchasesStoreProduct): Promise<P
 
 export async function restorePurchases(): Promise<'restored' | 'failed'> {
   try {
-    await (await sdk()).restorePurchases()
+    await (await sdk()).Purchases.restorePurchases()
     return 'restored'
   } catch {
     return 'failed'

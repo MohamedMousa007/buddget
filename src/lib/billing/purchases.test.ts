@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const h = vi.hoisted(() => ({
   native: true,
   platform: 'ios' as 'ios' | 'android' | 'web',
-  sdk: { configure: vi.fn(), logIn: vi.fn(), logOut: vi.fn(), getOfferings: vi.fn(), purchasePackage: vi.fn(), restorePurchases: vi.fn(), getPromotionalOffer: vi.fn(), purchaseDiscountedPackage: vi.fn() },
+  sdk: { configure: vi.fn(), logIn: vi.fn(), logOut: vi.fn(), getOfferings: vi.fn(), purchasePackage: vi.fn(), restorePurchases: vi.fn(), getPromotionalOffer: vi.fn(), purchaseDiscountedPackage: vi.fn(),
+    // Capacitor's plugin proxy answers every property with a method, `then` included, and that `then` never calls back.
+    then: vi.fn() },
 }))
 vi.mock('@/lib/native/isNative', () => ({ isNative: () => h.native, getPlatform: () => h.platform }))
 vi.mock('@revenuecat/purchases-capacitor', () => ({ Purchases: h.sdk }))
