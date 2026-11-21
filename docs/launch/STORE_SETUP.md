@@ -81,6 +81,8 @@ Prepared content only. Nothing was entered in App Store Connect, Play Console or
 
 ## Listing copy v2 (leads with privacy, no-SMS use, Arabic, installments; not with AI)
 
+> **Superseded 2026-11-21 by `STORE_COPY_V3.md`** (same angle, AI tells removed, Arabic-only brand names). v3 is what is entered in App Store Connect and Play Console.
+
 Why changed (S5a business review): bank-SMS apps already exist in Egypt and the UAE, so no "only app that" wording; "Free. No ads." is gone (billing is on); the measured-accuracy claim is **held**: `docs/launch/S8f-bank-accuracy.md` shows no Egyptian bank at "supported" (NBE and CIB partial, the rest not enough data), so S5c gate 1 is not met. Until the per-bank table is published, the copy names no accuracy figure and no "supported" bank list. When gate 1 passes, add one line: "Reads texts from <banks in the published table>".
 
 **Owner decision (2026-11-20), over a 3-0 council vote for option (a):** the listing keeps an accuracy claim, in words only. Use "reads your bank texts accurately and keeps getting better". No percentage and no bank names until the per-bank table is published: `S8f-bank-accuracy.md` measures no figure ("booked correctly" is unmeasured), so any number would be one we cannot back. Never quote the "97% / 94% get a row" figure; it is not accuracy. Metadata can be edited after launch with no new build.

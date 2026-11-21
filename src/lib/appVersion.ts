@@ -4,7 +4,7 @@
  * (Platform > Minimum app version) and refuses older releases with "update required". Native marketing versions
  * are kept equal to it at release time so the store and the portal speak the same number.
  */
-export const APP_CLIENT_VERSION = '1.1.0'
+export const APP_CLIENT_VERSION = '1.0.0'
 
 const parts = (v: string): number[] => v.split('.').map((n) => Number.parseInt(n, 10) || 0)
 

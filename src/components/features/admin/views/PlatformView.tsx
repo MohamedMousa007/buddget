@@ -186,8 +186,8 @@ function MinVersion({ data, canManage, onSaved }: { data: PlatformData; canManag
     <Panel title="Minimum app version" description="Releases below this stop working and show an update screen (the apps from this release on); older releases simply stop connecting. Leave empty to allow everything.">
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <Field label="iOS"><Input size="brand" placeholder="1.1.0" value={ios} onChange={(e) => setIos(e.target.value)} disabled={!canManage} /></Field>
-          <Field label="Android"><Input size="brand" placeholder="1.1.0" value={android} onChange={(e) => setAndroid(e.target.value)} disabled={!canManage} /></Field>
+          <Field label="iOS"><Input size="brand" placeholder="1.0.0" value={ios} onChange={(e) => setIos(e.target.value)} disabled={!canManage} /></Field>
+          <Field label="Android"><Input size="brand" placeholder="1.0.0" value={android} onChange={(e) => setAndroid(e.target.value)} disabled={!canManage} /></Field>
         </div>
         <Field label="iOS update link" hint="Opened by the Update now button (TestFlight or App Store)."><Input size="brand" placeholder="https://testflight.apple.com/join/…" value={iosUrl} onChange={(e) => setIosUrl(e.target.value)} disabled={!canManage} /></Field>
         <Field label="Android update link" hint="Play Store or the APK download."><Input size="brand" placeholder="https://…" value={androidUrl} onChange={(e) => setAndroidUrl(e.target.value)} disabled={!canManage} /></Field>
