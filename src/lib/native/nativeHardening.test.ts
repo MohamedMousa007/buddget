@@ -17,6 +17,10 @@ describe('Android SMS bridge hardening (static)', () => {
     expect(manifest).toContain('android.permission.FOREGROUND_SERVICE"')
   })
 
+  it('iOS Catch Bank SMS shows Sender in its summary (a hidden parameter was never filled: 0 of 824)', () => {
+    expect(read('ios/App/App/CatchBankSmsIntent.swift')).toContain('Summary("Catch \\(\\.$message) from \\(\\.$sender)")')
+  })
+
   it('SST-2: saveToken and the worker both refuse a URL outside the allow-list; iOS does too', () => {
     expect(read(`${A}/SmsCapacitorPlugin.kt`)).toMatch(/SmsApiUrl\.isAllowed\(apiUrl[\s\S]*?call\.reject/)
     expect(read(`${A}/SmsForwardWorker.kt`)).toContain('SmsApiUrl.isAllowed(apiUrl')

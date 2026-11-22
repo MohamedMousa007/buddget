@@ -17,14 +17,15 @@ struct CatchBankSmsIntent: AppIntent {
     @Parameter(title: "Bank Message", inputConnectionBehavior: .connectToPreviousIntentResult)
     var message: String
 
-    /// Kept only so Shortcuts already built with the old two-field action keep running. iOS never hands an app the
-    /// sender of a message (production: 0 of 824 forwarded messages carried one), so it is no longer shown or asked for;
-    /// the server names the provider from the message text (see providerFromBody.ts).
+    /// The message's sender: in the automation, Shortcut Input with its property set to Sender (iOS 27 exposes it).
+    /// Shown in the summary because Shortcuts only fills a hidden parameter unreliably (0 of 824 forwarded messages
+    /// carried one while it was hidden). Optional: an empty sender still works, the server names the provider from
+    /// the message text (see providerFromBody.ts).
     @Parameter(title: "Sender", default: "")
     var sender: String?
 
     static var parameterSummary: some ParameterSummary {
-        Summary("Catch \(\.$message)")
+        Summary("Catch \(\.$message) from \(\.$sender)")
     }
 
     func perform() async throws -> some IntentResult {
