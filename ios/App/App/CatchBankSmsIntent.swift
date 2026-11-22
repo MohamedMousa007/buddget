@@ -35,9 +35,9 @@ struct CatchBankSmsIntent: AppIntent {
         // the "wired" capability that gates the Settings switch vs. setup CTA.
         SmsCredentialStore.recordRun(result: "detected")
         guard SmsCredentialStore.isEnabled else { return .result() }
-        // Same on-device gate as Android's SmsGate: one-time codes never leave the phone
-        // unless the text also states an actual money movement.
-        guard !SmsOtpGate.shouldDrop(message) else {
+        // The catch-all automation hands every SMS here: one-time codes and promotions never leave the phone
+        // unless the text also states money that actually moved (src/lib/sms/deviceOtpGate.ts shouldDropOnDevice).
+        guard !SmsOtpGate.shouldDrop(message, sender: sender ?? "") else {
             SmsCredentialStore.recordRun(result: "skipped_otp")
             return .result()
         }
@@ -146,7 +146,7 @@ enum SmsCaptureRepeat {
     }
 }
 
-/// Mirror of Android SmsGate for the OTP and marketing rules (the Shortcut has no sender, so no sender gate).
+/// On-device gate for the iOS Shortcut: OTP and promotion rules (from Android SmsGate, tightened on history) plus the money check.
 enum SmsOtpGate {
     private static let otp = try! NSRegularExpression(
         pattern: "(?<![a-z])(otp|one[- ]time (password|code|pin)|verification code|security code|passcode|do not share|never share|don't share)(?![a-z])",
@@ -190,10 +190,39 @@ enum SmsOtpGate {
         hasAmount(message) || carriesMoneyMovement(message)
     }
 
-    static func shouldDrop(_ message: String) -> Bool {
-        let isOtp = matches(otp, message) || otpArabic.contains { message.contains($0) }
-        let isMarketing = matches(marketing, message) || marketingArabic.contains { message.contains($0) }
-        return (isOtp || isMarketing) && !carriesMoneyMovement(message)
+    // Catch-all trigger rules, measured on 120 days of history: all 778 booked texts kept, 65% of the junk cut.
+    // Keep in step with shouldDropOnDevice in src/lib/sms/deviceOtpGate.ts (tested there).
+    private static let codeWord = try! NSRegularExpression(
+        pattern: "(?<![a-z])(otp|one[- ]time|verification|code|passcode|password)(?![a-z])", options: .caseInsensitive)
+    private static let codeWordArabic = ["رمز", "كود", "كلمة المرور"]
+    /// What a one-time code says and a receipt never does: it expires, or completes an action still pending.
+    private static let codeContext = try! NSRegularExpression(
+        pattern: "(valid (for|until|till)|expires?|expiry|to (complete|confirm|authori[sz]e|verify|proceed)|is your)",
+        options: .caseInsensitive)
+    private static let codeContextArabic = ["صالح", "ينتهي", "لإتمام", "لتأكيد", "لإكمال", "للتحقق"]
+    private static let promo = try! NSRegularExpression(
+        pattern: "(?<![a-z])(promo(tion)?|promo code|coupon|discount|\\d+\\s?% ?off|offer|cash ?back|for only|save \\d|subscribe|win|winner|free gift|flash sale|unsubscribe|reply stop|bundle)(?![a-z])",
+        options: .caseInsensitive)
+    /// "كاش باك" and "تكسب" are left out on purpose: real wallet receipts end with a cashback line.
+    private static let promoArabic = ["عرض", "كوبون", "اشترك", "للإلغاء", "مبروك", "كسبت", "باقة", "للتفعيل", "ميجا", "دقيقة", "هدية", "فرصتك"]
+    private static let promoSenders: Set<String> = ["ads", "promo", "promos", "offers", "offer", "marketing", "deals", "sale"]
+    private static let doneTransfer = try! NSRegularExpression(
+        pattern: "(?<![a-z])(received|transferred)(?![a-z])", options: .caseInsensitive)
+    private static let doneTransferArabic = ["تم تحويل", "تم استلام", "استلمت"]
+
+    private static func has(_ words: [String], _ s: String) -> Bool { words.contains { s.contains($0) } }
+
+    static func shouldDrop(_ message: String, sender: String) -> Bool {
+        if (matches(codeWord, message) || has(codeWordArabic, message))
+            && (matches(codeContext, message) || has(codeContextArabic, message)) { return true }
+        let isOtp = matches(otp, message) || has(otpArabic, message)
+        if isOtp && !carriesMoneyMovement(message) { return true }
+        let senderKey = sender.lowercased().filter { $0 >= "a" && $0 <= "z" }
+        let isPromo = promoSenders.contains(senderKey) || matches(promo, message) || has(promoArabic, message)
+            || matches(marketing, message) || has(marketingArabic, message)
+        guard isPromo else { return false }
+        let strong = matches(txn, message) || has(txnArabic, message)
+        return !(strong || (hasAmount(message) && (matches(doneTransfer, message) || has(doneTransferArabic, message))))
     }
 }
 

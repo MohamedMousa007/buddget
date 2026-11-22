@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isNonTransaction } from '@/lib/sms/patterns/preFilter'
-import { looksLikeBankMoney, shouldDropOtp } from './deviceOtpGate'
+import { looksLikeBankMoney, shouldDropOnDevice, shouldDropOtp } from './deviceOtpGate'
 
 describe('device OTP gate (mirror of SmsGate.kt / SmsOtpGate)', () => {
   it('forwards the server fixture: a card purchase with a never-share footer', () => {
@@ -44,5 +44,35 @@ describe('iOS bank-money gate (mirror of SmsOtpGate.looksLikeBankMoney)', () => 
   it('drops personal texts that only contain a 0', () => {
     expect(looksLikeBankMoney('See you at 10:30 tomorrow')).toBe(false)
     expect(looksLikeBankMoney('Call me on 0100 123 4567')).toBe(false)
+  })
+})
+
+// iOS catch-all trigger: shapes taken from 120 days of real (masked) history, digits and names invented.
+describe('iOS catch-all device rule (mirror of SmsOtpGate.shouldDrop)', () => {
+  it.each([
+    ['card purchase with a never-share footer', 'Your card ending 1234 was used for EGP 450.00 at CARREFOUR. Never share your PIN or OTP.'],
+    ['Arabic payment with a verification-code footer', 'تم الدفع 150 جنيه لدى متجر. لا تشارك رمز التحقق'],
+    ['wallet receipt that ends with a cashback line', 'تم استلام 500 جنيه من 01012345678 على فودافون كاش. حول دلوقتي واكسب كاش باك'],
+    ['Saudi mada purchase', 'شراء PoS عبر:1234;مدى-أثير بـSAR 25 لـAl Jeri 1/2/26 10:30'],
+    ['HSBC decline (booked as a zero row on purpose)', 'From HSBC: Transaction of EGP 120.00 from SHOP using HSBC card ending with *** 1234 was declined.'],
+    ['a plain debit', 'EGP 100 debited at Shop'],
+  ])('keeps %s', (_name, text) => {
+    expect(shouldDropOnDevice(text)).toBe(false)
+  })
+
+  it.each([
+    ['a one-time code for a purchase', 'OTP 482913 for purchase of EGP 500 at Amazon. Valid for 5 minutes.'],
+    ['an Arabic code to complete a purchase', 'رمز التحقق 4821 لإتمام عملية شراء بقيمة 300 جنيه'],
+    ['a data bundle offer', 'خصم كبير على باقة النت، Plus5 الشهريه بـ50 جنيه بدل 70 لمدة شهرين'],
+    ['an English offer with prices', 'Special limited time offer!! Save 20 SAR and enjoy benefits for only 49 SAR'],
+    ['a prize text', 'مبروك كسبت 5 وحدة هدية! رد ب 1 الآن'],
+    ['a minutes transfer', 'تم تحويل 30 دقيقة بنجاح من 01012345678'],
+  ])('drops %s', (_name, text) => {
+    expect(shouldDropOnDevice(text)).toBe(true)
+  })
+
+  it('drops anything from a marketing sender unless money clearly moved', () => {
+    expect(shouldDropOnDevice('New arrivals this week, visit us', 'PROMO')).toBe(true)
+    expect(shouldDropOnDevice('EGP 100 debited at Shop', 'PROMO')).toBe(false)
   })
 })
