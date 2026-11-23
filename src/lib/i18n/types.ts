@@ -2819,6 +2819,47 @@ export interface Dictionary {
     undoTooLate: string
   }
 
+  smsSetup: {
+    introTitle1: string
+    introTitle2: string
+    introBody: string
+    heroBank: string
+    heroNow: string
+    heroSmsPre: string
+    heroSmsMid: string
+    heroSmsPost: string
+    heroLogged: string
+    heroLoggedPost: string
+    heroLoggedDetail: string
+    seeHow: string
+    startSetup: string
+    knowSteps: string
+    turnOnAndroid: string
+    later: string
+    capShortcut: string
+    capManual: string
+    capAndroid: string
+    howTitle: string
+    howHeading: string
+    howBody: string
+    addShortcut: string
+    /** *segments* render bold. */
+    pingsTip: string
+    setupTitle: string
+    stepOf: (n: number, total: number) => string
+    openShortcuts: string
+    next: string
+    finish: string
+    back: string
+    close: string
+    steps: { title: string; body: string }[]
+    doneTitle: string
+    doneBody: string
+    doneStatus: string
+    gotIt: string
+    /** One per walkthrough stop (guideStops.ts); *segments* render bold. */
+    tips: Record<string, string>
+  }
   smsTracking: {
     sectionTitle: string
     sectionSubtitle: string
@@ -2830,9 +2871,6 @@ export interface Dictionary {
     iosCardTitle: string
     iosStatusWaiting: string
     iosStatusConnected: (time: string) => string
-    iosStatusNotSetUp: string
-    iosStatusNotConfirmed: string
-    iosStatusRunSeen: string
     iosStatusQuiet: (days: number) => string
     iosStepKeywordsTitle: string
     iosStepKeywordsDesc: string

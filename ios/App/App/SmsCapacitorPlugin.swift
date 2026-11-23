@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 import Capacitor
 import Security
 import BackgroundTasks
@@ -29,7 +30,8 @@ public class SmsCapacitorPlugin: CAPInstancePlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "getStatus", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "healthCheck", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "peekPendingQueue", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "removePending", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "removePending", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getOsVersion", returnType: CAPPluginReturnPromise)
     ]
 
     @objc func checkPermission(_ call: CAPPluginCall) { call.resolve(["granted": true]) }
@@ -141,11 +143,17 @@ public class SmsCapacitorPlugin: CAPInstancePlugin, CAPBridgedPlugin {
             "tokenUserId": SmsCredentialStore.tokenUserId ?? "",
             "permission": true,
             "lastRunAt": SmsCredentialStore.lastRunAt ?? "",
+            "armedAt": SmsCredentialStore.armedAt ?? "",
             "lastResult": SmsCredentialStore.lastResult ?? "",
             "pendingCount": SmsCredentialStore.pendingCount,
             "evictedCount": SmsCredentialStore.evictedCount,
             "oldestPendingAt": SmsCredentialStore.oldestPendingAt ?? ""
         ])
+    }
+
+    /// The iOS version only (for picking the setup guide). Nothing else about the device is read.
+    @objc func getOsVersion(_ call: CAPPluginCall) {
+        call.resolve(["version": UIDevice.current.systemVersion])
     }
 
     /// Returns queued SMS without clearing — the queue stays authoritative.
@@ -280,6 +288,7 @@ enum SmsCredentialStore {
     private static let enabledKey = "buddget.sms.enabled"
     private static let setupCompletedKey = "buddget.sms.setup_completed"
     private static let lastRunAtKey = "buddget.sms.last_run_at"
+    private static let armedAtKey = "buddget.sms.armed_at"
     private static let lastResultKey = "buddget.sms.last_result"
     private static let pendingQueueKey = "buddget.sms.pending_queue"
 
@@ -476,8 +485,14 @@ enum SmsCredentialStore {
         d.set(userId, forKey: tokenUserIdKey)
     }
 
+    /// armedAt marks the off-to-on switch on this phone, so the app only calls a run or an SMS "since it was turned on"
+    /// when it came after this. Re-arming an already-on phone (start-up reconcile) keeps the original time.
     static func setEnabled(_ enabled: Bool) {
-        UserDefaults.standard.set(enabled, forKey: enabledKey)
+        let d = UserDefaults.standard
+        if enabled && !d.bool(forKey: enabledKey) {
+            d.set(ISO8601DateFormatter().string(from: Date()), forKey: armedAtKey)
+        }
+        d.set(enabled, forKey: enabledKey)
     }
 
     static func setSetupCompleted(_ completed: Bool) {
@@ -530,6 +545,7 @@ enum SmsCredentialStore {
     /// switches (clearCredentials keeps setupCompleted + lastRunAt).
     static var isWired: Bool { isSetupCompleted || lastRunAt != nil || token != nil }
     static var lastRunAt: String? { UserDefaults.standard.string(forKey: lastRunAtKey) }
+    static var armedAt: String? { UserDefaults.standard.string(forKey: armedAtKey) }
     static var lastResult: String? { UserDefaults.standard.string(forKey: lastResultKey) }
 }
 

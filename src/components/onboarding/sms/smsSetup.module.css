@@ -1,0 +1,275 @@
+/*
+ * iPhone SMS setup: the branded lock-screen hero and the guide walkthrough player.
+ * Ported 1:1 from the approved mockups (nimbalyst-local/mockups/sms-intro-b and sms-guide-ios27-v2 / ios26-v2).
+ * Base styles are each animation's final frame, so Reduce Motion shows the finished state.
+ * Illustration colours are design tokens or color-mix() of them; the device bezel stays dark in both themes.
+ */
+
+.illo {
+  --sms-bezel: var(--color-brand-ink-dark);
+  --sms-glass: color-mix(in oklab, var(--color-brand-ink-light) 90%, transparent);
+  --sms-scan: color-mix(in oklab, var(--color-brand-primary-bright) 35%, transparent);
+  --sms-wall-a: color-mix(in oklab, var(--color-brand-primary-bright) 26%, var(--color-brand-primary-soft));
+  --sms-wall-b: color-mix(in oklab, var(--color-brand-primary-bright) 12%, var(--color-brand-primary-soft));
+  --sms-ink: var(--color-brand-ink-dark);
+  --sms-on-ink: var(--color-brand-ink-light);
+}
+
+/* ---------- hero: mini lock screen ---------- */
+.heroStage { container-type: size; }
+
+.device {
+  position: relative;
+  width: 262px;
+  height: 100%;
+  min-height: 300px;
+  margin: 0 auto;
+  border-radius: 44px 44px 0 0;
+  padding: 9px 9px 0;
+  background: var(--sms-bezel);
+  box-shadow: 0 30px 50px -30px color-mix(in oklab, var(--color-brand-ink-dark) 55%, transparent);
+}
+.device::after {
+  content: '';
+  position: absolute;
+  left: -12px;
+  right: -12px;
+  bottom: -1px;
+  height: 110px;
+  background: linear-gradient(to bottom, color-mix(in oklab, var(--color-brand-bg) 0%, transparent), var(--color-brand-bg) 85%);
+  z-index: 4;
+}
+.wall {
+  position: relative;
+  height: 100%;
+  border-radius: 36px 36px 0 0;
+  overflow: hidden;
+  color: var(--sms-ink);
+  background:
+    radial-gradient(70% 45% at 85% 10%, var(--sms-wall-a) 0%, transparent 70%),
+    radial-gradient(80% 50% at 0% 60%, var(--sms-wall-b) 0%, transparent 70%),
+    linear-gradient(180deg, color-mix(in oklab, var(--color-brand-primary-soft) 40%, var(--color-brand-ink-light)), var(--color-brand-primary-soft));
+}
+.island {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 78px;
+  height: 23px;
+  border-radius: 14px;
+  background: var(--sms-bezel);
+  z-index: 3;
+}
+.punchHole { width: 14px; height: 14px; border-radius: 50%; }
+.battery {
+  position: absolute;
+  top: 12px;
+  right: 20px;
+  width: 18px;
+  height: 8px;
+  border-radius: 2px;
+  border: 1px solid currentColor;
+  z-index: 2;
+}
+.battery::after {
+  content: '';
+  position: absolute;
+  inset: 1px 3px 1px 1px;
+  background: currentColor;
+  border-radius: 1px;
+}
+.lock { position: absolute; top: 44px; left: 0; right: 0; text-align: center; }
+.date { font-size: 13px; font-weight: 600; opacity: 0.9; }
+.time { font-size: 62px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.list { position: absolute; left: 10px; right: 10px; top: 140px; height: 220px; }
+
+.note {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  padding: 10px 11px;
+  border-radius: 20px;
+  background: var(--sms-glass);
+  color: var(--color-brand-ink-dark);
+  box-shadow: 0 6px 18px -10px color-mix(in oklab, var(--color-brand-ink-dark) 35%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  text-align: start;
+}
+.noteIcon { width: 32px; height: 32px; border-radius: 8px; flex: none; display: flex; align-items: center; justify-content: center; }
+/* The Messages app's bright green, derived from the brand green; older WebKit falls back to the brand green itself. */
+.msgIcon {
+  color: var(--color-brand-ink-light);
+  background: var(--color-brand-green);
+  background: linear-gradient(oklch(from var(--color-brand-green) calc(l + 0.33) calc(c * 1.25) h), oklch(from var(--color-brand-green) calc(l + 0.22) calc(c * 1.25) h));
+}
+.noteBody { flex: 1; min-width: 0; }
+.noteHead { display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 700; line-height: 1.2; }
+.noteHead span { font-weight: 500; font-size: 11px; opacity: 0.62; }
+.noteText { font-size: 12px; line-height: 1.32; margin-top: 2px; }
+.budText { white-space: nowrap; }
+.logged { color: var(--color-brand-green); font-weight: 700; }
+.amount { color: var(--color-brand-primary-ink); font-weight: 700; }
+.detail { font-size: 11px; font-weight: 600; opacity: 0.72; overflow: hidden; white-space: nowrap; max-height: 16px; margin-top: 4px; }
+.sms { overflow: hidden; transform: translateY(84px) scale(0.96); opacity: 0.9; }
+.bud { z-index: 2; }
+.u {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 100% 1.5px;
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  font-variant-numeric: tabular-nums;
+}
+.scan {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 70px;
+  left: -80px;
+  background: linear-gradient(90deg, transparent, var(--sms-scan), transparent);
+  pointer-events: none;
+}
+.ding { position: absolute; inset: 0; border-radius: 20px; pointer-events: none; }
+
+/* Short screens: smaller clock, notifications move up so both stay in view. */
+@container (max-height: 360px) {
+  .lock { top: 36px; }
+  .time { font-size: 46px; }
+  .list { top: 108px; }
+}
+
+@keyframes heroSms {
+  0%, 6% { opacity: 0; transform: translateY(22px) scale(0.92); }
+  12% { opacity: 1; transform: translateY(-3px) scale(1.01); }
+  15%, 38% { opacity: 1; transform: none; }
+  46%, 90% { opacity: 0.9; transform: translateY(84px) scale(0.96); }
+  97%, 100% { opacity: 0; transform: translateY(84px) scale(0.96); }
+}
+@keyframes heroDing {
+  0%, 11% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-brand-primary-bright) 0%, transparent); }
+  13% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-brand-primary-bright) 60%, transparent); }
+  22%, 100% { box-shadow: 0 0 0 14px color-mix(in oklab, var(--color-brand-primary-bright) 0%, transparent); }
+}
+@keyframes heroScan { 0%, 18% { left: -80px; } 32%, 100% { left: 260px; } }
+@keyframes heroUnderline {
+  0%, 22% { background-size: 0 1.5px; }
+  30%, 90% { background-size: 100% 1.5px; }
+  97%, 100% { background-size: 0 1.5px; }
+}
+@keyframes heroBud {
+  0%, 40% { opacity: 0; transform: translateY(-18px) scale(0.94); }
+  47% { opacity: 1; transform: translateY(2px) scale(1.01); }
+  50%, 90% { opacity: 1; transform: none; }
+  97%, 100% { opacity: 0; }
+}
+@keyframes heroDetail {
+  0%, 54% { max-height: 0; opacity: 0; margin-top: 0; }
+  62%, 90% { max-height: 16px; opacity: 0.72; margin-top: 4px; }
+  97%, 100% { max-height: 16px; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sms { animation: heroSms 8s infinite cubic-bezier(0.3, 0.7, 0.2, 1); }
+  .ding { animation: heroDing 8s infinite; }
+  .scan { animation: heroScan 8s infinite ease-in-out; }
+  .u { animation: heroUnderline 8s infinite; }
+  .bud { animation: heroBud 8s infinite cubic-bezier(0.3, 0.7, 0.2, 1); }
+  .detail { animation: heroDetail 8s infinite; }
+}
+
+/* ---------- walkthrough player ---------- */
+.player {
+  position: relative;
+  height: 100%;
+  max-height: var(--player-max, 390px);
+  border-radius: 30px;
+  padding: 7px;
+  background: var(--sms-bezel);
+  box-shadow: var(--shadow-lg);
+}
+.screen { position: relative; width: 100%; height: 100%; border-radius: 24px; overflow: hidden; background: var(--sms-bezel); }
+.stop { position: absolute; inset: 0; opacity: 0; }
+.stopPrev { opacity: 1; z-index: 1; }
+.stopActive { opacity: 1; z-index: 2; }
+.shot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; }
+
+/* Spotlight: a cut-out in the target's own shape; the huge shadow is the dimmed rest of the screen. */
+.spot {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--w);
+  height: var(--h);
+  border-radius: var(--r);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 999px color-mix(in oklab, var(--color-brand-ink-dark) 34%, transparent);
+  pointer-events: none;
+}
+.tap {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--color-brand-ink-light) 85%, transparent);
+  border: 2px solid color-mix(in oklab, var(--color-brand-ink-dark) 25%, transparent);
+  box-shadow: 0 4px 10px color-mix(in oklab, var(--color-brand-ink-dark) 30%, transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+.tip {
+  position: absolute;
+  left: 50%;
+  top: var(--ty);
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 88%;
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--sms-on-ink);
+  background: var(--sms-ink);
+  padding: 6px 10px;
+  border-radius: 10px;
+  box-shadow: var(--shadow-md);
+}
+.tip b { color: var(--color-brand-primary-bright); }
+.stopPrev .spot, .stopPrev .tip, .stopPrev .tap { display: none; }
+
+.dots { display: flex; gap: 5px; justify-content: center; margin-top: 10px; }
+.dot { width: 22px; height: 4px; border-radius: 4px; background: var(--color-brand-sunken); position: relative; overflow: hidden; }
+.dot::after { content: ''; position: absolute; inset: 0; background: var(--color-brand-primary); transform: scaleX(0); transform-origin: left; }
+
+@keyframes stopIn { 0% { opacity: 0; } 7.5%, 100% { opacity: 1; } }
+@keyframes spotIn {
+  0%, 20% { opacity: 0; transform: translate(-50%, -50%) scale(var(--z)); }
+  30% { opacity: 1; transform: translate(-50%, -50%) scale(var(--z)); animation-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1); }
+  57.5%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes tipIn { 0%, 55% { opacity: 0; margin-top: 6px; } 65%, 100% { opacity: 1; margin-top: 0; } }
+@keyframes tapIn {
+  0%, 65% { opacity: 0; transform: scale(1.6); }
+  72.5% { opacity: 1; transform: scale(1); }
+  80% { opacity: 1; transform: scale(0.75); }
+  90%, 100% { opacity: 0; transform: scale(0.75); }
+}
+@keyframes dotFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+@media (prefers-reduced-motion: no-preference) {
+  .stopActive { animation: stopIn var(--slot) linear both; }
+  .stopActive .spot { animation: spotIn var(--slot) both; }
+  .stopActive .tip { animation: tipIn var(--slot) both; }
+  .stopActive .tap { animation: tapIn var(--slot) both; }
+  .dotActive::after { animation: dotFill var(--slot) linear both; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dotActive::after { transform: scaleX(1); }
+}

@@ -82,8 +82,6 @@ export interface OnboardingCopy {
     done: string
     webNote: string
   }
-  android: { title: string; bullets: [string, string, string]; note: string; cont: string; notNow: string }
-  ios: { title: string; lead: string; steps: [string, string, string]; setup: string; later: string; remind: string }
   budget: {
     title: string
     lead: string
@@ -211,25 +209,6 @@ export const onboardingCopyEn: OnboardingCopy = {
     done: 'Done',
     webNote: 'Bank text capture and reminders are in the buddget app for iPhone and Android.',
   },
-  android: {
-    title: 'Allow buddget to read your bank texts',
-    bullets: [
-      'Only messages from banks and wallets are used. Personal chats are ignored.',
-      'Each one becomes a transaction with its amount, merchant and balance.',
-      'You can turn it off any time in Settings.',
-    ],
-    note: 'Android will ask for your permission next.',
-    cont: 'Continue',
-    notNow: 'Not now',
-  },
-  ios: {
-    title: 'See it first. Set it up in two minutes, once.',
-    lead: "On iPhone, one Shortcut passes your bank texts to buddget. I'll walk you through it step by step.",
-    steps: ['Bank text arrives', 'Shortcut runs by itself', 'Transaction appears'],
-    setup: 'Set up now, about 2 minutes',
-    later: 'Later',
-    remind: "I'll offer it again after your first expense.",
-  },
   budget: {
     title: 'Want me to build your budget now?',
     lead: "It takes about two minutes. I already know a lot from what you told me, so I'll only ask a few things.",
@@ -356,25 +335,6 @@ export const onboardingCopyAr: OnboardingCopy = {
     pushAllow: 'اسمح بالتذكيرات',
     done: 'تم',
     webNote: 'التقاط رسائل البنك والتذكيرات متوفران في تطبيق بادجت للآيفون والأندرويد.',
-  },
-  android: {
-    title: 'اسمح لبادجت بقراءة رسائل البنك',
-    bullets: [
-      'تُستخدم رسائل البنوك والمحافظ فقط. المحادثات الشخصية تُتجاهل.',
-      'كل رسالة تصبح معاملة بمبلغها والتاجر والرصيد.',
-      'يمكنك إيقافها في أي وقت من الإعدادات.',
-    ],
-    note: 'سيطلب منك أندرويد الإذن بعد ذلك.',
-    cont: 'متابعة',
-    notNow: 'ليس الآن',
-  },
-  ios: {
-    title: 'شاهدها أولًا. أعدّها في دقيقتين، مرة واحدة.',
-    lead: 'على الآيفون يمرر اختصار واحد رسائل البنك إلى بادجت. سأرافقك خطوة بخطوة.',
-    steps: ['تصل رسالة البنك', 'يعمل الاختصار وحده', 'تظهر المعاملة'],
-    setup: 'أعدّها الآن، نحو دقيقتين',
-    later: 'لاحقًا',
-    remind: 'سأعرضها عليك مجددًا بعد أول مصروف.',
   },
   budget: {
     title: 'هل أبني ميزانيتك الآن؟',

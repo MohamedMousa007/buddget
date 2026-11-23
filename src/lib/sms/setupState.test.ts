@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { NO_DEVICE_FACTS, QUIET_AFTER_DAYS, SETUP_AGAIN_AFTER_DAYS, deriveSmsSetupState, iosSetUpHere, needsLegacyReading } from './setupState'
+import { NO_DEVICE_FACTS, QUIET_AFTER_DAYS, SETUP_AGAIN_AFTER_DAYS, deriveSmsSetupState, iosSetUpHere, needsLegacyReading, iosRowStatus } from './setupState'
 
 const NOW = Date.parse('2026-11-20T12:00:00Z')
 const ago = (h: number) => new Date(NOW - h * 3_600_000).toISOString()
@@ -92,5 +92,33 @@ describe('needsLegacyReading (BDG-008: which phones may read device-less SMS)', 
   it('never once the phone has its own SMS, or when its record could not be read', () => {
     expect(needsLegacyReading({ firstAt: ago(5), lastAt: ago(1), boundToken: false })).toBe(false)
     expect(needsLegacyReading(null)).toBe(false)
+  })
+})
+
+describe('since the switch went on (armedAt)', () => {
+  const now = Date.parse('2026-11-23T12:00:00Z')
+  const facts = (lastSmsAt: string | null) => ({ firstSmsAt: lastSmsAt, lastSmsAt, legacyLastSmsAt: null })
+  const armedAt = '2026-11-20T00:00:00Z'
+
+  it('a run or SMS before re-arming does not count', () => {
+    const s = deriveSmsSetupState(true, { setupCompleted: true, lastRunAt: '2026-11-19T00:00:00Z', armedAt }, facts('2026-11-19T00:00:00Z'), now)
+    expect(s.runSinceArmed).toBe(false)
+    expect(s.smsSinceArmed).toBe(false)
+    expect(iosRowStatus(true, s)).toBe('waiting')
+  })
+  it('a run after arming reads working, an SMS after arming reads tracking', () => {
+    const run = deriveSmsSetupState(true, { lastRunAt: '2026-11-21T00:00:00Z', armedAt }, facts(null), now)
+    expect(iosRowStatus(true, run)).toBe('working')
+    const sms = deriveSmsSetupState(true, { lastRunAt: '2026-11-21T00:00:00Z', armedAt }, facts('2026-11-22T00:00:00Z'), now)
+    expect(iosRowStatus(true, sms)).toBe('tracking')
+  })
+  it('builds without armedAt keep counting any run or SMS', () => {
+    const s = deriveSmsSetupState(true, { lastRunAt: '2026-11-01T00:00:00Z', armedAt: '' }, facts('2026-11-02T00:00:00Z'), now)
+    expect(iosRowStatus(true, s)).toBe('tracking')
+  })
+  it('claimed but nothing yet is waiting, and off is off', () => {
+    const s = deriveSmsSetupState(true, { setupCompleted: true, armedAt }, facts(null), now)
+    expect(iosRowStatus(true, s)).toBe('waiting')
+    expect(iosRowStatus(false, s)).toBe('off')
   })
 })

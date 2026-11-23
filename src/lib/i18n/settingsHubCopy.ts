@@ -66,7 +66,7 @@ export interface SettingsHubCopy {
     alsoNotifyNo: string
     keptQuiet: string
   }
-  sms: { title: string; hint: string; iosHint: string; on: string; off: string; guide: string; viewGuide: string; connected: string; setUpAgain: string; permissionDenied: string; permissionOff: string; setupFailed: string }
+  sms: { title: string; hint: string; on: string; off: string; guide: string; viewGuide: string; addShortcut: string; waiting: string; working: string; tracking: (date: string) => string; setUpAgain: string; permissionDenied: string; permissionOff: string; setupFailed: string }
   ai: { title: string; tipsHint: string; learningHint: string; memoryHint: string }
   notif: { title: string; master: string; on: string; off: string; blocked: string; unsupported: string; pushHint: string; subs: string; goals: string; dueHint: string; priceHint: string; progressHint: string; behindHint: string }
   data: {
@@ -238,7 +238,7 @@ const en: SettingsHubCopy = {
     empty: 'Add an account or card first.',
     some: (n) => `${n} not counted`,
   },
-  sms: { title: 'SMS tracking', hint: 'Log bank texts as expenses automatically', iosHint: 'Set up with a Shortcut', on: 'Tracking bank texts', off: 'Off', guide: 'Set up', viewGuide: 'View guide', connected: 'Connected', setUpAgain: 'Set up again', permissionDenied: 'Permission to read messages was not granted', permissionOff: 'Message permission was turned off. Bank messages are not being read.', setupFailed: 'Setup could not finish. Check your connection and try again.' },
+  sms: { title: 'SMS tracking', hint: 'Log bank texts automatically', on: 'Tracking bank texts', off: 'Off', guide: 'Set up', viewGuide: 'View guide', addShortcut: 'Add shortcut', waiting: 'Waiting for your first text', working: 'Working · no bank text yet', tracking: (date) => `Tracking · last ${date}`, setUpAgain: 'Set up again', permissionDenied: 'Permission to read messages was not granted', permissionOff: 'Message permission was turned off. Bank messages are not being read.', setupFailed: 'Setup could not finish. Check your connection and try again.' },
   ai: { title: 'Buddgy & AI', tipsHint: 'Speaks up with timely tips', learningHint: 'Remembers useful facts from chats', memoryHint: 'Household, budget answers and what Buddgy learned' },
   notif: {
     title: 'Notifications',
@@ -461,7 +461,7 @@ const ar: SettingsHubCopy = {
     empty: 'أضف حساباً أو بطاقة أولاً.',
     some: (n) => `${n} غير محسوب`,
   },
-  sms: { title: 'تتبع الرسائل', hint: 'سجّل رسائل البنك كمصروفات تلقائياً', iosHint: 'يُضبط عبر اختصار على الآيفون', on: 'يتابع رسائل البنك', off: 'متوقف', guide: 'إعداد', viewGuide: 'عرض الدليل', connected: 'متصل', setUpAgain: 'إعداد من جديد', permissionDenied: 'لم يتم منح إذن قراءة الرسائل', permissionOff: 'تم إيقاف إذن الرسائل. رسائل البنك لا تُقرأ.', setupFailed: 'تعذّر إكمال الإعداد. تحقق من اتصالك وحاول مرة أخرى.' },
+  sms: { title: 'تتبع الرسائل', hint: 'سجّل رسائل البنك تلقائياً', on: 'يتابع رسائل البنك', off: 'متوقف', guide: 'إعداد', viewGuide: 'عرض الدليل', addShortcut: 'أضف الاختصار', waiting: 'بانتظار أول رسالة', working: 'يعمل · لا رسالة بنك بعد', tracking: (date) => `يتابع · آخر رسالة ${date}`, setUpAgain: 'إعداد من جديد', permissionDenied: 'لم يتم منح إذن قراءة الرسائل', permissionOff: 'تم إيقاف إذن الرسائل. رسائل البنك لا تُقرأ.', setupFailed: 'تعذّر إكمال الإعداد. تحقق من اتصالك وحاول مرة أخرى.' },
   ai: { title: 'بادجي والذكاء الاصطناعي', tipsHint: 'يقترح نصائح في وقتها', learningHint: 'يتذكر معلومات مفيدة من محادثاتك معه', memoryHint: 'الأسرة وإجابات الميزانية وما تعلّمه بادجي' },
   notif: {
     title: 'الإشعارات',

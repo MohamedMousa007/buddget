@@ -13,6 +13,7 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { getSmsBridgeStatus } from '@/lib/native/smsTracker'
+import { Emphasis } from './sms/Emphasis'
 import { ShortcutsScene, type SceneId } from './sms/ShortcutsScenes'
 import { allGuideKeywords, guideKeywords } from './sms/guideKeywords'
 
@@ -42,10 +43,6 @@ async function openApp(url: 'shortcuts://' | 'sms:') {
   window.location.href = url
 }
 
-/** *segments* in a description render as teal emphasis. */
-function Emphasis({ text }: { text: string }) {
-  return <>{text.split('*').map((part, i) => (i % 2 === 1 ? <b key={i} className="font-bold text-[var(--color-brand-primary-ink)]">{part}</b> : part))}</>
-}
 
 function Hero() {
   const g = useT().smsTracking.guide

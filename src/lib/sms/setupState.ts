@@ -45,12 +45,18 @@ export interface SmsSetupState {
    * gone (iOS cannot say), so Settings offers "Set up again" instead of the switch. A new run or SMS clears it.
    */
   setUpAgain: boolean
+  /** A Shortcut run on this phone after it was last switched on (native armedAt). No armedAt = any run counts. */
+  runSinceArmed: boolean
+  /** An SMS reached the server after this phone was last switched on. No armedAt = any SMS counts. */
+  smsSinceArmed: boolean
 }
 
 /** The native facts this module reads. `wired` and `tokenSaved` are deliberately not among them. */
 export interface SmsNativeFacts {
   setupCompleted?: boolean
   lastRunAt?: string | null
+  /** When this phone last went from off to on; "" or absent on builds before it was recorded. */
+  armedAt?: string | null
 }
 
 /**
@@ -93,5 +99,26 @@ export function deriveSmsSetupState(
     quietDays,
     showSwitch: iosSetUpHere(native),
     setUpAgain: Boolean(lastSmsAt) && quietDays >= SETUP_AGAIN_AFTER_DAYS && daysSince(native?.lastRunAt, now) >= SETUP_AGAIN_AFTER_DAYS,
+    runSinceArmed: after(native?.lastRunAt, native?.armedAt),
+    smsSinceArmed: after(lastSmsAt, native?.armedAt),
   }
+}
+
+/** `at` exists and is not before `armedAt` (no armedAt: any `at` counts). */
+function after(at: string | null | undefined, armedAt: string | null | undefined): boolean {
+  if (!at) return false
+  return !armedAt || Date.parse(at) >= Date.parse(armedAt)
+}
+
+export type SmsRowStatus = 'off' | 'waiting' | 'working' | 'tracking'
+
+/**
+ * The iPhone Settings row status, proven since the switch went on: tracking once a bank SMS arrived, working once the
+ * Shortcut ran for any text, otherwise waiting. ponytail: a queued SMS delivered after re-arming also stamps lastRunAt;
+ * that run was real, so "working" stays honest.
+ */
+export function iosRowStatus(enabled: boolean, s: Pick<SmsSetupState, 'runSinceArmed' | 'smsSinceArmed'>): SmsRowStatus {
+  if (!enabled) return 'off'
+  if (s.smsSinceArmed) return 'tracking'
+  return s.runSinceArmed ? 'working' : 'waiting'
 }

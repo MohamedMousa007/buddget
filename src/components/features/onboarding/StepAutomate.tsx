@@ -1,15 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowDown, Bell, Check, MessageSquare, ShoppingCart, Zap } from 'lucide-react'
-import { ModalShell } from '@/components/modals/ModalShell'
+import { ArrowDown, Bell, Check, MessageSquare, ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useSmsTracking } from '@/hooks/useSmsTracking'
 import { createClient } from '@/lib/supabase/client'
 import { isIOS } from '@/lib/native/isNative'
+import { guideVariantFor, useIosMajor } from '@/lib/native/iosVersion'
+import { SmsBrandIntro } from '@/components/onboarding/sms/SmsBrandIntro'
+import { SmsSetupGuide, SmsSetupScreen } from '@/components/onboarding/sms/SmsSetupGuide'
 import { registerPushNotifications } from '@/lib/native/pushNotifications'
-import { navigate } from '@/lib/navigation/navigate'
 import { trackOnboarding } from '@/lib/onboarding/track'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
@@ -18,7 +19,6 @@ import type { StepChrome } from './chrome'
 import { JourneyFrame } from './JourneyFrame'
 import { useOnboarding } from './useOnboarding'
 import { useOnboardingCopy } from './useOnboardingCopy'
-import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 
 type Sheet = 'android' | 'ios' | null
 
@@ -27,6 +27,8 @@ export function StepAutomate({ chrome }: { chrome: StepChrome }) {
   const c = useOnboardingCopy()
   const sms = useSmsTracking({ withDeviceSms: true })
   const guide = useT().smsTracking.guide
+  const setupCopy = useT().smsSetup
+  const iosMajor = useIosMajor()
   // iPhone: the same facts as Settings (BDG-008). Armed but no SMS from this phone yet is "Not confirmed yet", not done.
   const smsDone = isIOS() ? sms.isEnabled && sms.setup.verified : sms.isEnabled
   const smsUnconfirmed = isIOS() && sms.isEnabled && !sms.setup.verified
@@ -42,12 +44,6 @@ export function StepAutomate({ chrome }: { chrome: StepChrome }) {
     await sms.toggle(true)
     // toggle() returns nothing and quietly stays off on a denial or a failed token fetch; the setting is the outcome.
     trackOnboarding('onboarding_permission', { kind: 'sms', granted: useFinanceStore.getState().settings.smsTrackingEnabled })
-  }
-
-  const setupIos = () => {
-    setSheet(null)
-    chrome.next()
-    navigate('/settings/sms')
   }
 
   const allowPush = async () => {
@@ -125,40 +121,23 @@ export function StepAutomate({ chrome }: { chrome: StepChrome }) {
         )}
       </Card>
 
-      <ModalShell open={sheet === 'android'} onBackdropClick={() => setSheet(null)} padContent>
-        <div className="flex flex-col gap-3 pt-1">
-          <V3SheetHeader.DialogTitle align="start">{c.android.title}</V3SheetHeader.DialogTitle>
-          <ul className="flex flex-col gap-3">
-            {c.android.bullets.map((b) => (
-              <li key={b} className="flex gap-3 text-[0.90625rem] text-[var(--color-brand-text-secondary)]">
-                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]"><Check className="size-3.5" strokeWidth={3} aria-hidden /></span>
-                {b}
-              </li>
-            ))}
-          </ul>
-          <p className="text-xs text-[var(--color-brand-text-muted)]">{c.android.note}</p>
-          <Button size="cta" className="w-full" onClick={() => void allowSms()}>{c.android.cont}</Button>
-          <Button variant="ghost" size="touch" className="w-full" onClick={() => setSheet(null)}>{c.android.notNow}</Button>
-        </div>
-      </ModalShell>
+      {sheet === 'android' ? (
+        <SmsSetupScreen>
+          <SmsBrandIntro
+            platform="android"
+            cta={setupCopy.turnOnAndroid}
+            onCta={() => void allowSms()}
+            ctaLoading={sms.loading}
+            link={{ label: setupCopy.later, onClick: () => setSheet(null) }}
+            caption={setupCopy.capAndroid}
+            onClose={() => setSheet(null)}
+          />
+        </SmsSetupScreen>
+      ) : null}
 
-      <ModalShell open={sheet === 'ios'} onBackdropClick={() => setSheet(null)} padContent>
-        <div className="flex flex-col gap-3 pt-1">
-          <V3SheetHeader.DialogTitle align="start">{c.ios.title}</V3SheetHeader.DialogTitle>
-          <p className="text-[0.90625rem] leading-snug text-[var(--color-brand-text-secondary)]">{c.ios.lead}</p>
-          <div className="flex items-start gap-1.5 rounded-2xl bg-[var(--color-brand-elevated)] p-3.5">
-            {[MessageSquare, Zap, Check].map((Icon, i) => (
-              <div key={i} className="flex flex-1 flex-col items-center gap-1.5 text-center">
-                <span className="flex size-10 items-center justify-center rounded-xl text-white" style={{ background: `var(--color-cat-${[5, 6, 1][i]})` }}><Icon className="size-5" aria-hidden /></span>
-                <span className="text-xs font-semibold text-[var(--color-brand-text-primary)]">{c.ios.steps[i]}</span>
-              </div>
-            ))}
-          </div>
-          <Button size="cta" className="w-full" onClick={setupIos}>{c.ios.setup}</Button>
-          <Button variant="ghost" size="touch" className="w-full" onClick={() => setSheet(null)}>{c.ios.later}</Button>
-          <p className="text-center text-xs text-[var(--color-brand-text-muted)]">{c.ios.remind}</p>
-        </div>
-      </ModalShell>
+      {sheet === 'ios' && iosMajor !== undefined ? (
+        <SmsSetupGuide variant={guideVariantFor(iosMajor)} onClose={() => setSheet(null)} onComplete={sms.completeIosSetup} error={sms.error} />
+      ) : null}
     </JourneyFrame>
   )
 }

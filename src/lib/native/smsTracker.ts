@@ -28,6 +28,8 @@ export interface SmsBridgeStatus {
   /** Android: live RECEIVE_SMS permission. iOS: always true (no OS SMS perm). */
   permission: boolean
   lastRunAt?: string
+  /** iOS: when this phone last went from off to on ("" if never); a run or SMS only counts as new after it. */
+  armedAt?: string
   lastResult?: string
   /** SMS captured but not yet delivered to the server (offline / bad token). */
   pendingCount?: number
@@ -86,6 +88,8 @@ export interface SmsCapacitorPlugin {
   removeSecureItem(opts: { key: SecureItemKey }): Promise<void>
   /** Per-device bridge state — authoritative for the UI. */
   getStatus(): Promise<SmsBridgeStatus>
+  /** iOS only: the OS version string (e.g. "27.1"). Nothing else about the device. */
+  getOsVersion(): Promise<{ version: string }>
   /** iOS only: GET /api/sms/health through the same native path the intent uses. */
   healthCheck(): Promise<SmsHealthResult>
   /** Returns queued SMS WITHOUT clearing — the queue stays authoritative. */
@@ -495,6 +499,19 @@ export async function peekPendingSms(): Promise<PendingSmsItem[]> {
 }
 
 /** Per-device bridge status — token saved, enabled, setup completed, permission. */
+/**
+ * iOS version string, or null (web, Android, or an app build without the method). Called directly, not through
+ * callNative: an older native build rejects the unknown method, and that must not raise the native-error banner.
+ */
+export async function readOsVersion(): Promise<string | null> {
+  if (!(await ensurePlugin()) || !_plugin) return null
+  try {
+    return (await _plugin.getOsVersion()).version || null
+  } catch {
+    return null
+  }
+}
+
 export async function getSmsBridgeStatus(): Promise<SmsBridgeStatus | null> {
   return callNative<SmsBridgeStatus | null>('getStatus', (p) => p.getStatus(), null)
 }
