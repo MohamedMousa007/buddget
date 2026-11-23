@@ -7,7 +7,7 @@
 
 .illo {
   --sms-bezel: var(--color-brand-ink-dark);
-  --sms-glass: color-mix(in oklab, var(--color-brand-ink-light) 90%, transparent);
+  --sms-glass: color-mix(in oklab, var(--color-brand-card) 90%, transparent);
   --sms-scan: color-mix(in oklab, var(--color-brand-primary-bright) 35%, transparent);
   --sms-wall-a: color-mix(in oklab, var(--color-brand-primary-bright) 26%, var(--color-brand-primary-soft));
   --sms-wall-b: color-mix(in oklab, var(--color-brand-primary-bright) 12%, var(--color-brand-primary-soft));
@@ -44,11 +44,11 @@
   height: 100%;
   border-radius: 36px 36px 0 0;
   overflow: hidden;
-  color: var(--sms-ink);
+  color: var(--color-brand-text-primary);
   background:
     radial-gradient(70% 45% at 85% 10%, var(--sms-wall-a) 0%, transparent 70%),
     radial-gradient(80% 50% at 0% 60%, var(--sms-wall-b) 0%, transparent 70%),
-    linear-gradient(180deg, color-mix(in oklab, var(--color-brand-primary-soft) 40%, var(--color-brand-ink-light)), var(--color-brand-primary-soft));
+    linear-gradient(180deg, color-mix(in oklab, var(--color-brand-primary-soft) 40%, var(--color-brand-card)), var(--color-brand-primary-soft));
 }
 .island {
   position: absolute;
@@ -95,7 +95,7 @@
   padding: 10px 11px;
   border-radius: 20px;
   background: var(--sms-glass);
-  color: var(--color-brand-ink-dark);
+  color: var(--color-brand-text-primary);
   box-shadow: 0 6px 18px -10px color-mix(in oklab, var(--color-brand-ink-dark) 35%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);

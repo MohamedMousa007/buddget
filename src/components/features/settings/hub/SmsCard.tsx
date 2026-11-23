@@ -76,7 +76,7 @@ export function SmsCard({ title, vivid = false, children }: { title?: string; vi
           disabled={loading}
           accessory={
             iosGuide ? (
-              <AppLink href="/settings/sms" onClick={() => setGuideStart(shortcut ? 'walkthrough' : 'intro')} data-testid="sms-view-guide" className={cn(buttonVariants({ variant: 'ghost', size: 'touch' }), 'px-3 text-[var(--color-brand-primary-ink)]')}>
+              <AppLink href="/settings/sms" onClick={() => setGuideStart(shortcut ? 'walkthrough' : 'intro')} data-testid="sms-view-guide" className={cn(buttonVariants({ variant: 'ghost', size: 'touch' }), '-mx-1 px-1 text-[0.8125rem] font-semibold text-[var(--color-brand-primary-ink)]')}>
                 {shortcut ? copy.sms.addShortcut : copy.sms.viewGuide}
               </AppLink>
             ) : undefined

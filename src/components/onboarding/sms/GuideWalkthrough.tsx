@@ -11,7 +11,8 @@ const SLOT_MS = 3200
 /**
  * The guide's walkthrough (approved mockups sms-guide-ios27-v2 / ios26-v2): real Shortcuts captures, one stop every
  * 3.2 s, looping. Each stop dims everything but a cut-out in the target's shape that opens wide and closes in, then a
- * tip and a tap. Coordinates are LTR capture coordinates, so the player never mirrors.
+ * tip and a tap. Coordinates are LTR capture coordinates, so the player never mirrors. Keys are stable so the captures
+ * never remount (no flash); adding the active class is what restarts a stop's animations.
  */
 export function GuideWalkthrough({ stops, tips, aspect, maxHeight = 440 }: { stops: GuideStop[]; tips: string[]; aspect: number; maxHeight?: number }) {
   const [index, setIndex] = useState(0)
@@ -29,7 +30,7 @@ export function GuideWalkthrough({ stops, tips, aspect, maxHeight = 440 }: { sto
         <div className={s.screen}>
           {stops.map((stop, i) => (
             <div
-              key={`${stop.src}-${i}-${i === index ? index : 'x'}`}
+              key={i}
               className={cn(s.stop, i === index ? s.stopActive : i === prev && stops.length > 1 ? s.stopPrev : null)}
               style={{ '--x': `${stop.x}%`, '--y': `${stop.y}%`, '--w': `${stop.w}%`, '--h': `${stop.h}%`, '--r': `${stop.radius}px`, '--z': stop.zoom, '--ty': `${stop.tipY}%` } as CSSProperties}
             >
@@ -42,7 +43,7 @@ export function GuideWalkthrough({ stops, tips, aspect, maxHeight = 440 }: { sto
         </div>
       </div>
       <div className={s.dots}>
-        {stops.map((_, i) => <i key={i === index ? `a${index}` : i} className={cn(s.dot, i === index && s.dotActive)} />)}
+        {stops.map((_, i) => <i key={i} className={cn(s.dot, i === index && s.dotActive)} />)}
       </div>
     </div>
   )

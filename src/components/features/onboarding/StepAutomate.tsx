@@ -122,7 +122,7 @@ export function StepAutomate({ chrome }: { chrome: StepChrome }) {
       </Card>
 
       {sheet === 'android' ? (
-        <SmsSetupScreen>
+        <SmsSetupScreen onBack={() => setSheet(null)}>
           <SmsBrandIntro
             platform="android"
             cta={setupCopy.turnOnAndroid}

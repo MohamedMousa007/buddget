@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { BellOff, Check, ChevronLeft, Play, Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -10,6 +11,8 @@ import { GROUP_TONE } from '@/components/features/settings/groupMeta'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { isNative } from '@/lib/native/isNative'
+import { registerBackGuard } from '@/lib/navigation/backGuard'
 import { Emphasis } from './Emphasis'
 import { GuideWalkthrough } from './GuideWalkthrough'
 import { SmsBrandIntro } from './SmsBrandIntro'
@@ -20,8 +23,9 @@ import type { GuideStart } from './guideLaunch'
 export const SHARED_SHORTCUT_URL = 'https://www.icloud.com/shortcuts/82d9029ba5fa408eb900d57bdfad424c'
 
 async function openUrl(url: string) {
-  try { const { AppLauncher } = await import('@capacitor/app-launcher'); await AppLauncher.openUrl({ url }); return } catch { /* web fallback */ }
-  window.location.href = url
+  try { const { AppLauncher } = await import('@capacitor/app-launcher'); await AppLauncher.openUrl({ url }); return } catch { /* web fallback below */ }
+  // Never navigate the app's own WebView to an outside page.
+  if (!isNative()) window.location.href = url
 }
 
 export interface SmsSetupGuideProps {
@@ -58,7 +62,7 @@ export function SmsSetupGuide({ variant, start = 'intro', onClose, onComplete, e
   const errorLine = error ? <p role="alert" className="mt-2 text-center text-xs text-[var(--color-brand-amber)]">{error}</p> : null
 
   return (
-    <SmsSetupScreen>
+    <SmsSetupScreen onBack={onClose}>
         {screen.at === 'intro' ? (
           variant === 'shortcut' ? (
             <SmsBrandIntro cta={c.seeHow} ctaIcon={<Play className="size-3.5" fill="currentColor" aria-hidden />} onCta={() => setScreen({ at: 'how' })} caption={c.capShortcut} onClose={close} />
@@ -97,15 +101,18 @@ export function SmsSetupGuide({ variant, start = 'intro', onClose, onComplete, e
   )
 }
 
-/** The full-screen frame every SMS setup screen sits in (guide and onboarding). */
-export function SmsSetupScreen({ children }: { children: React.ReactNode }) {
-  return (
+/** The full-screen frame every SMS setup screen sits in (guide and onboarding). `onBack`: Android hardware back closes it. */
+export function SmsSetupScreen({ children, onBack }: { children: React.ReactNode; onBack?: () => void }) {
+  useEffect(() => (onBack ? registerBackGuard(() => { onBack(); return true }) : undefined), [onBack])
+  const frame = (
     <div className="fixed inset-0 z-[var(--z-dialog)] flex items-center justify-center bg-[var(--color-brand-bg)]">
       <div className="relative flex h-full max-h-[844px] w-full max-w-[390px] flex-col overflow-hidden bg-[var(--color-brand-bg)] safe-area-top safe-area-bottom">
         {children}
       </div>
     </div>
   )
+  // Portaled like ModalShell, so no transformed ancestor can trap the full-screen frame.
+  return typeof document === 'undefined' ? frame : createPortal(frame, document.body)
 }
 
 function GuideScreen({ title, onBack, onClose, backLabel, closeLabel, children }: { title: string; onBack: () => void; onClose: () => void; backLabel: string; closeLabel: string; children: React.ReactNode }) {
