@@ -1524,6 +1524,27 @@ export interface Dictionary {
     seePro: string
     proChip: string
     rangeLocked: string
+    whatIf: {
+      title: string
+      ahead: string
+      extra: (amount: string) => string
+      debtFree: string
+      same: string
+      sooner: (months: number) => string
+      months: (n: number) => string
+      none: string
+    }
+    recap: {
+      title: string
+      none: string
+      spent: { label: string; line: (pct: number | null, up: boolean) => string }
+      top: { label: string; line: (name: string) => string }
+      biggest: { label: string; line: (description: string) => string }
+      kept: { label: (positive: boolean) => string; line: (share: number) => string }
+      count: { label: string; line: (perDay: string) => string }
+      locked: string
+    }
+    explain: { title: string; sub: string; seed: string }
     areas: Record<'spending' | 'income' | 'budget' | 'bills' | 'debts' | 'wealth' | 'goals' | 'how', { title: string; sub: string }>
     kinds: Record<import('@/lib/insights/types').InsightKind, {
       tag: string

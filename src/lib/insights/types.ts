@@ -1,8 +1,8 @@
 /** One finding, as data. The words come from i18n templates keyed by `kind`, so no sentence is built by joining strings. */
 export type InsightKind =
   | 'pace' | 'topCategory' | 'kept' | 'bnplBurden' | 'subsTotal' | 'billsBeforePayday' | 'payMix'
-  | 'categoryShift' | 'paydayRhythm' | 'weekdayPattern' | 'unusualPurchase' | 'smallBuys' | 'cashVsCard' | 'priceRise'
-export type InsightArea = 'spending' | 'income' | 'bills' | 'debts' | 'how'
+  | 'categoryShift' | 'paydayRhythm' | 'weekdayPattern' | 'unusualPurchase' | 'smallBuys' | 'cashVsCard' | 'priceRise' | 'netWorthPath'
+export type InsightArea = 'spending' | 'income' | 'bills' | 'debts' | 'how' | 'wealth'
 
 export interface Insight {
   kind: InsightKind
@@ -47,6 +47,10 @@ export interface InsightInput {
   /** Average purchase size by card and by cash over the last 90 days (unassigned bank texts excluded). */
   cardCash: { cardAvg: number; cardN: number; cashAvg: number; cashN: number }
   priceRise: { name: string; rise: number } | null
+  /** Instalment plans owed, in the base currency (the what-if card). */
+  debtPlan: { remaining: number; monthly: number }
+  /** A 12-month line from saved net worth snapshots; filled by the page once they are read, null until then. */
+  netWorthPath: import('./netWorthPath').NetWorthPath | null
 }
 
 export type HeroState = 'learning' | 'ok' | 'tight'

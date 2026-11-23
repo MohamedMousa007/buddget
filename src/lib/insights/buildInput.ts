@@ -166,13 +166,21 @@ export function buildInsightInput(src: InsightSource, leftToSpend: number, now: 
   const debts = countedDebts(src.debts, src.paymentMethods)
   const payments = countedDebtPayments(src.debtPayments, src.debts, src.paymentMethods)
   const bnpl = { plans: 0, remaining: 0, monthly: 0, incomeMonthly: income }
+  // Instalment plans I owe, interest-free assumption: the what-if card reads the whole set, the BNPL finding only the BNPL ones.
+  const debtPlan = { remaining: 0, monthly: 0 }
   for (const d of debts) {
-    if (!isBnplPlan(d, src.paymentMethods) || d.status === 'cleared') continue
+    if (d.debtType !== 'installment' || d.direction === 'they_owe' || d.status === 'cleared' || d.isGold) continue
     const left = calculateDebtRemaining(d, payments)
     if (left <= 0) continue
-    bnpl.plans += 1
-    bnpl.remaining += calculateDebtRemainingInBaseCurrency(left, d, base, rates, src.goldPricePerGram, src.goldPriceAvailable)
-    bnpl.monthly += convertCurrency((d.installmentAmount ?? 0) * INSTALLMENT_PER_MONTH[d.installmentFrequency ?? 'monthly'], d.currency as typeof base, base, rates)
+    const remainingBase = calculateDebtRemainingInBaseCurrency(left, d, base, rates, src.goldPricePerGram, src.goldPriceAvailable)
+    const monthlyBase = convertCurrency((d.installmentAmount ?? 0) * INSTALLMENT_PER_MONTH[d.installmentFrequency ?? 'monthly'], d.currency as typeof base, base, rates)
+    debtPlan.remaining += remainingBase
+    debtPlan.monthly += monthlyBase
+    if (isBnplPlan(d, src.paymentMethods)) {
+      bnpl.plans += 1
+      bnpl.remaining += remainingBase
+      bnpl.monthly += monthlyBase
+    }
   }
 
   const live = src.subscriptions.filter((s) => isCharging(s, today))
@@ -204,5 +212,7 @@ export function buildInsightInput(src: InsightSource, leftToSpend: number, now: 
     small,
     cardCash,
     priceRise,
+    debtPlan,
+    netWorthPath: null,
   }
 }

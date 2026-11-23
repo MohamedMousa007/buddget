@@ -11,6 +11,7 @@ const AREA_DOT: Record<InsightArea, string> = {
   bills: 'var(--color-cat-2)',
   debts: 'var(--color-cat-4)',
   how: 'var(--color-cat-5)',
+  wealth: 'var(--color-brand-gold)',
 }
 
 export interface InsightCardProps {

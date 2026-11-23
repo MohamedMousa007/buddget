@@ -24,6 +24,8 @@ const base = (over: Partial<InsightInput> = {}): InsightInput => ({
   small: { threshold: 100, count: 14, total: 1100 },
   cardCash: { cardAvg: 460, cardN: 40, cashAvg: 200, cashN: 30 },
   priceRise: { name: 'WE Home', rise: 50 },
+  debtPlan: { remaining: 9600, monthly: 1450 },
+  netWorthPath: { projected: 250000, low: 225000, high: 280000, months: 6 },
   ...over,
 })
 
@@ -168,11 +170,11 @@ describe('ranking', () => {
   })
   it('keeps every finding and orders the rest by score', () => {
     const out = computeInsights(base())
-    expect(out).toHaveLength(14)
+    expect(out).toHaveLength(15)
     expect(out.slice(FREE_INSIGHTS).every((x, i, a) => i === 0 || a[i - 1].score >= x.score)).toBe(true)
   })
   it('is empty when no detector has enough data', () => {
-    const thin = base({ categories: [], paydays: { count: 0, purchases: 0, liftPct: null }, weekday: { weeks: 0, purchases: 0, byDay: [0, 0, 0, 0, 0, 0, 0], overallDaily: 0 }, unusual: null, small: { threshold: 0, count: 0, total: 0 }, cardCash: { cardAvg: 0, cardN: 0, cashAvg: 0, cashN: 0 }, priceRise: null, expenseCount: 0, usualSpend: null, keptLast: null, topCategory: null, bnpl: { plans: 0, remaining: 0, monthly: 0, incomeMonthly: 0 }, subs: { count: 0, monthly: 0 }, bills: { count: 0, total: 0 }, pay: { card: 0, cash: 0, unassigned: 0, other: 0, placedCount: 0 } })
+    const thin = base({ categories: [], paydays: { count: 0, purchases: 0, liftPct: null }, weekday: { weeks: 0, purchases: 0, byDay: [0, 0, 0, 0, 0, 0, 0], overallDaily: 0 }, unusual: null, small: { threshold: 0, count: 0, total: 0 }, cardCash: { cardAvg: 0, cardN: 0, cashAvg: 0, cashN: 0 }, priceRise: null, netWorthPath: null, expenseCount: 0, usualSpend: null, keptLast: null, topCategory: null, bnpl: { plans: 0, remaining: 0, monthly: 0, incomeMonthly: 0 }, subs: { count: 0, monthly: 0 }, bills: { count: 0, total: 0 }, pay: { card: 0, cash: 0, unassigned: 0, other: 0, placedCount: 0 } })
     expect(computeInsights(thin)).toEqual([])
   })
 })

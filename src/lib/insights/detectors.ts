@@ -127,7 +127,13 @@ export function priceRiseInsight(i: InsightInput): Insight | null {
   return { kind: 'priceRise', area: 'bills', pro: true, score: 65, params: { name: r.name, rise: Math.round(r.rise) } }
 }
 
+export function netWorthPathInsight(i: InsightInput): Insight | null {
+  const n = i.netWorthPath
+  if (!n || n.projected <= 0) return null
+  return { kind: 'netWorthPath', area: 'wealth', pro: true, score: 58, params: { projected: Math.round(n.projected), low: Math.round(Math.max(0, n.low)), high: Math.round(n.high), months: n.months } }
+}
+
 export const DETECTORS = [
   paceInsight, topCategoryInsight, keptInsight, bnplInsight, subsInsight, billsInsight, payMixInsight,
-  categoryShiftInsight, paydayRhythmInsight, weekdayInsight, unusualInsight, smallBuysInsight, cashVsCardInsight, priceRiseInsight,
+  categoryShiftInsight, paydayRhythmInsight, weekdayInsight, unusualInsight, smallBuysInsight, cashVsCardInsight, priceRiseInsight, netWorthPathInsight,
 ]
