@@ -345,7 +345,7 @@ const en: MembershipCopy = {
     expired: {
       chip: 'Ended',
       title: 'You’re on Free now. Nothing was deleted.',
-      lines: ['SMS reads 2 accounts. Messages from other accounts wait for you for 30 days.', 'All your history is kept. Reports show the last 3 months.', 'Saved plans beyond 2 are read-only. Your active plan works as before.'],
+      lines: ['SMS reads 2 accounts. Messages from other accounts wait for you for 30 days.', 'All your history is kept. Insights show the last 3 months.', 'Saved plans beyond 2 are read-only. Your active plan works as before.'],
       rejoin: 'Rejoin buddget Pro',
       rejoinFrom: (price) => `Rejoin from ${price} a year`,
       back: 'Everything comes back on, as you left it.',
@@ -481,7 +481,7 @@ const ar: MembershipCopy = {
       { label: 'خطط الميزانية المحفوظة', free: '2', pro: 'بلا حد' },
       { label: 'شرارات للذكاء الاصطناعي الإضافي', free: 'الباقات العادية', pro: '25% إضافية في كل باقة' },
     ],
-    stayFree: 'تتبع SMS على كل حساب، مجاناً للأبد. والمجاني يحتفظ أيضاً بالتقارير والتصدير والأهداف والديون والأقساط.',
+    stayFree: 'تتبع SMS على كل حساب، مجاناً للأبد. والمجاني يحتفظ أيضاً بالتحليلات والتصدير والأهداف والديون والأقساط.',
     comingSoon: { title: 'قريباً في برو', partner: 'شارك ميزانية مع شريكك', insights: 'رؤى متقدمة', notify: 'أخبرني', noted: 'سنخبرك' },
     choose: 'اختر خطتك',
     best: 'القيمة الأفضل',
@@ -562,7 +562,7 @@ const ar: MembershipCopy = {
     included: 'ما يتضمنه برو',
     includedRows: {
       sms: (n) => (n > 1 ? `SMS على كل الحسابات الـ ${n}` : 'SMS على كل حساباتك'),
-      year: 'العام كله في التقارير',
+      year: 'العام كله في التحليلات',
       plans: 'خطط بلا حد ومقارنة جنباً إلى جنب',
       sparks: (sparks, estimates) => `${sparks} شرارة و${estimates} تقديرات بالأسعار الحية يومياً`,
     },
@@ -594,7 +594,7 @@ const ar: MembershipCopy = {
     expired: {
       chip: 'انتهى',
       title: 'أنت على المجاني الآن. لم يُحذف شيء.',
-      lines: ['SMS يقرأ حسابين. رسائل الحسابات الأخرى تنتظرك 30 يوماً.', 'كل سجلك محفوظ. التقارير تعرض آخر 3 أشهر.', 'الخطط المحفوظة بعد الثانية للقراءة فقط. خطتك النشطة تعمل كما كانت.'],
+      lines: ['SMS يقرأ حسابين. رسائل الحسابات الأخرى تنتظرك 30 يوماً.', 'كل سجلك محفوظ. التحليلات تعرض آخر 3 أشهر.', 'الخطط المحفوظة بعد الثانية للقراءة فقط. خطتك النشطة تعمل كما كانت.'],
       rejoin: 'انضم إلى بادجت برو من جديد',
       rejoinFrom: (price) => `انضم من جديد بسعر ${price} سنوياً`,
       back: 'يعود كل شيء كما تركته.',

@@ -40,7 +40,7 @@ test('N1 navigation: every main tab, header Budget, profile menu pages @desktop'
     await page.keyboard.press('Escape')
   })
   for (const [item, path] of [
-    ['Goals', /\/goals$/], ['Paydays', /\/paydays$/], ['Subscriptions', /\/subscriptions$/], ['Reports', /\/reports$/], ['Settings', /\/settings/]
+    ['Goals', /\/goals$/], ['Paydays', /\/paydays$/], ['Subscriptions', /\/subscriptions$/], ['Insights', /\/reports$/], ['Settings', /\/settings/]
   ] as const) {
     await test.step(`profile menu > ${item}`, async () => {
       await goto(page, '/flow')

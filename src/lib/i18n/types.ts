@@ -1500,6 +1500,38 @@ export interface Dictionary {
     buttonSubmit: string
   }
 
+  insights: {
+    heroLabel: string
+    heroUnit: (currency: string) => string
+    heroNote: (days: number) => string
+    heroTight: (days: number) => string
+    heroNone: string
+    heroLearning: (days: number) => string
+    cellSpent: string
+    cellPace: string
+    cellLasts: string
+    cellLastsAfter: string
+    lastsEmpty: string
+    learningTitle: string
+    learningBody: (days: number) => string
+    feedTitle: string
+    areasTitle: string
+    detailsTitle: string
+    askBuddgy: string
+    unlock: string
+    moreWaiting: (n: number) => string
+    moreBody: string
+    seePro: string
+    proChip: string
+    rangeLocked: string
+    areas: Record<'spending' | 'income' | 'budget' | 'bills' | 'debts' | 'wealth' | 'goals' | 'how', { title: string; sub: string }>
+    kinds: Record<'pace' | 'topCategory' | 'kept' | 'bnplBurden' | 'subsTotal' | 'billsBeforePayday' | 'payMix', {
+      tag: string
+      headline: (p: Record<string, number | string>, m: (n: number) => string) => string
+      why: (p: Record<string, number | string>, m: (n: number) => string) => string
+      seed: (p: Record<string, number | string>, m: (n: number) => string) => string
+    }>
+  }
   reports: {
     pageTitle: string
     summaryHeading: (start: string, end: string) => string

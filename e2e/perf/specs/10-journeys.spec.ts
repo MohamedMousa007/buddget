@@ -77,7 +77,7 @@ for (const who of ['small', 'large'] as const) {
         await timed(page, `tab_${tab.toLowerCase()}`, m, net, async () => { await nav.getByRole('link', { name: tab, exact: true }).click() }, async () => { await expect(page.locator('main')).toBeVisible(); void mark })
       }
       // 5. Reports (profile menu) and Wealth again via the tab
-      await timed(page, 'reports', m, net, async () => { await openProfileLink(page, 'Reports') })
+      await timed(page, 'reports', m, net, async () => { await openProfileLink(page, 'Insights') })
       await timed(page, 'wealth', m, net, async () => { await nav.getByRole('link', { name: 'Wealth', exact: true }).click() })
       await timed(page, 'back_to_flow', m, net, async () => { await nav.getByRole('link', { name: 'Flow', exact: true }).click() })
       // 6. add-expense sheet open, then save

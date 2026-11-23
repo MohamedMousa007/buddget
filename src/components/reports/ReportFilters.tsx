@@ -8,9 +8,12 @@ type DateRange = 'thisMonth' | 'lastMonth' | 'last3Months' | 'last6Months' | 'th
 interface ReportFiltersProps {
   selected: DateRange
   onSelect: (range: DateRange) => void
+  /** Ranges the plan does not include: shown with a Pro mark, and tapping one calls `onLocked` instead of selecting it. */
+  lockedRanges?: readonly DateRange[]
+  onLocked?: () => void
 }
 
-export function ReportFilters({ selected, onSelect }: ReportFiltersProps) {
+export function ReportFilters({ selected, onSelect, lockedRanges = [], onLocked }: ReportFiltersProps) {
   const t = useT()
   const options: { value: DateRange; label: string }[] = [
     { value: 'thisMonth', label: t.reports.rangeThisMonth },
@@ -25,9 +28,14 @@ export function ReportFilters({ selected, onSelect }: ReportFiltersProps) {
         <OptionChip
           key={opt.value}
           selected={selected === opt.value}
-          onClick={() => onSelect(opt.value)}
+          onClick={() => (lockedRanges.includes(opt.value) ? onLocked?.() : onSelect(opt.value))}
         >
           {opt.label}
+          {lockedRanges.includes(opt.value) && (
+            <span className="rounded-md bg-[color-mix(in_oklab,var(--color-brand-gold)_16%,var(--color-brand-card))] px-1.5 text-[0.59375rem] font-extrabold uppercase tracking-wide text-[var(--color-brand-gold)]">
+              {t.insights.rangeLocked}
+            </span>
+          )}
         </OptionChip>
       ))}
     </div>

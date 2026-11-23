@@ -13,7 +13,7 @@ import { useT } from '@/lib/i18n'
 /**
  * Reports' hero: same net-worth formula as the dashboard, on the shared HeroBand.
  */
-export function ReportsNetWorthPanel() {
+export function ReportsNetWorthPanel({ contained = false }: { contained?: boolean } = {}) {
   const t = useT()
   const nw = useNetWorth()
   const hidden = useMask('hero')
@@ -21,6 +21,7 @@ export function ReportsNetWorthPanel() {
 
   return (
     <HeroBand
+      contained={contained}
       label={t.reports.netWorthTitle}
       numbers={
         <>

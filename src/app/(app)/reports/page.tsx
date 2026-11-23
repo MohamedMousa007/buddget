@@ -16,6 +16,15 @@ import { ReportsNetWorthPanel } from '@/components/reports/ReportsNetWorthPanel'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { reportCycles } from '@/lib/reports/reportsPeriod'
+import { useBillingStore } from '@/lib/billing/billingStore'
+import { canSeeAdvancedInsights, FREE_RANGES } from '@/lib/insights/access'
+import { useInsights } from '@/lib/insights/useInsights'
+import { InsightsHero } from '@/components/features/insights/InsightsHero'
+import { InsightsFeed } from '@/components/features/insights/InsightsFeed'
+import { InsightsLearning } from '@/components/features/insights/InsightsLearning'
+import { InsightsAreas } from '@/components/features/insights/InsightsAreas'
+import { navigate } from '@/lib/navigation/navigate'
+import { useT } from '@/lib/i18n'
 
 const MonthlyChart = dynamic(
   () => import('@/components/reports/MonthlyChart').then((m) => ({ default: m.MonthlyChart })),
@@ -29,6 +38,10 @@ const CategoryPieChart = dynamic(
 
 export default function ReportsPage() {
   const r = useReportsPage()
+  const t = useT()
+  const { input, hero, insights } = useInsights()
+  const advanced = canSeeAdvancedInsights(useBillingStore((b) => b.me))
+  const lockedRanges = advanced ? [] : (['last6Months', 'thisYear'] as const).filter((x) => !FREE_RANGES.includes(x))
   const stats = useMonthlyStats()
   const monthFilter = useSettingsStore((s) => s.monthFilter)
   // The pace panel reads the viewed month's stats, so it shows only when that month is the report's current cycle.
@@ -36,9 +49,28 @@ export default function ReportsPage() {
 
   return (
     <div>
-      <ReportsNetWorthPanel />
-      <PageBody className="space-y-4">
-        <ReportFilters selected={r.dateRange} onSelect={r.setDateRange} />
+      <PageBody className="space-y-4 pt-3">
+        <InsightsHero hero={hero} input={input} currency={r.settings.baseCurrency} />
+
+        <section className="space-y-2">
+          <h2 className="px-1 text-[0.6875rem] font-bold uppercase tracking-wide text-[var(--color-brand-text-muted)]">{t.insights.feedTitle}</h2>
+          {insights.length === 0 ? (
+            <InsightsLearning daysMore={hero.daysMore} totalDays={input.cycle.totalDays} />
+          ) : (
+            <InsightsFeed insights={insights} currency={r.settings.baseCurrency} advanced={advanced} />
+          )}
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="px-1 text-[0.6875rem] font-bold uppercase tracking-wide text-[var(--color-brand-text-muted)]">{t.insights.areasTitle}</h2>
+          <InsightsAreas />
+        </section>
+
+        <PageDivider />
+
+        <h2 className="px-1 text-[0.6875rem] font-bold uppercase tracking-wide text-[var(--color-brand-text-muted)]">{t.insights.detailsTitle}</h2>
+        <ReportsNetWorthPanel contained />
+        <ReportFilters selected={r.dateRange} onSelect={r.setDateRange} lockedRanges={lockedRanges} onLocked={() => navigate('/settings/pro')} />
 
         <ReportExpenseDebtFilter value={r.expenseDebtFilter} onChange={r.setExpenseDebtFilter} />
 

@@ -81,7 +81,7 @@ Rule: free is the complete loop (capture, categorise, budget, review, goals). Pl
 | Data export **[changed, was Plus-only]** | Yes | Yes |
 | Share one budget with a partner (not built; first Plus feature after launch) | No | Yes, when it ships |
 | Second currency and FX | Yes | Yes |
-| Buddgy chat, AI budget, receipt scan, voice, insights | Yes, paid in Sparks (20 a month) | Yes, 100 Sparks a month |
+| Buddgy chat, AI budget, receipt scan, voice, Explain my month | Yes, paid in Sparks (20 a month) | Yes, 100 Sparks a month |
 | Local quick-add and common questions (no model call) | Free, no Sparks | Free, no Sparks |
 | Live-price estimates (goal cost, emergency fund) | 3 a day (S4), 10 Sparks each | 10 a day, 10 Sparks each |
 | Notifications, biometric lock, offline, sync, web and mobile | Yes | Yes |

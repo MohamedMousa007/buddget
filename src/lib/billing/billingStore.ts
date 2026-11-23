@@ -25,6 +25,8 @@ export interface BillingMe {
   /** Length of the running trial in days: 30, or 37 after joining through an invite. Null when not trialing. */
   trialDays?: number | null
   billingEnabled: boolean
+  /** Plan features the server resolved for this user (plan plus overrides), e.g. `advanced_reports`. */
+  features?: string[]
   sparks: { left: number; total: number; resetsAt: string | null } | null
   /** What the usage screens read: both credit windows, Sparks, balance views, plans, the Advisor (from `ai_usage_state`). */
   usage?: UsageState | null
