@@ -34,7 +34,7 @@ export const navigationSpecs: ToolSpec[] = [
     domain: 'navigation',
     kind: 'nav',
     description: 'Take the user to an app screen.',
-    params: obj({ screen: oneOf(Object.keys(SCREEN_ROUTES)) }, ['screen']),
+    params: obj({ screen: oneOf(Object.keys(SCREEN_ROUTES)), insight: str('finding id from get_insights to scroll to; only with screen reports') }, ['screen']),
   },
   {
     name: 'open_setting',

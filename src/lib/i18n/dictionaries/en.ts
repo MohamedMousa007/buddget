@@ -1693,6 +1693,48 @@ export const en: Dictionary = {
         why: (p) => (Number(p.unassigned) > 0 ? `${p.unassigned}% came from bank texts not matched to an account yet.` : 'Counted over this cycle.'),
         seed: (p) => `${p.card}% of my spending is by card and ${p.cash}% in cash. Is that a healthy mix?`,
       },
+      categoryShift: {
+        tag: 'Spending',
+        headline: (p) => `*${p.name}* is running *${p.pct}% ${p.up ? 'above' : 'below'}* your usual this cycle.`,
+        why: () => 'Projected over the full cycle, against your average of the last 3 cycles.',
+        seed: (p) => `Why is ${p.name} ${p.pct}% ${p.up ? 'above' : 'below'} my usual this cycle?`,
+      },
+      paydayRhythm: {
+        tag: 'Pattern',
+        headline: (p) => `You spend *${p.pct}% more* in the week after payday.`,
+        why: () => 'Compared with the rest of each pay cycle, over your recent confirmed paydays.',
+        seed: (p) => `Why do I spend ${p.pct}% more in the week after payday, and how can I smooth it out?`,
+      },
+      weekdayPattern: {
+        tag: 'Pattern',
+        headline: (p, m) => `*${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][Number(p.day)]}* is your most expensive day: about *${m(Number(p.avg))}*.`,
+        why: () => 'Average over the last 8 weeks.',
+        seed: (p) => `Why is ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][Number(p.day)]} my most expensive day, and what could I change?`,
+      },
+      unusualPurchase: {
+        tag: 'Spending',
+        headline: (p, m) => `One purchase stood out: *${m(Number(p.amount))}* at ${p.description}.`,
+        why: (p, m) => `Your usual ${p.category} purchase is about ${m(Number(p.typical))}.`,
+        seed: (p, m) => `I spent ${m(Number(p.amount))} at ${p.description}, far above my usual. Was this a one-off or should I plan for it?`,
+      },
+      smallBuys: {
+        tag: 'Habit',
+        headline: (p, m) => `*${p.count}* small buys under ${m(Number(p.threshold))} added up to *${m(Number(p.total))}* this cycle.`,
+        why: () => 'Small amounts add up. This only shows where they went.',
+        seed: (p, m) => `${p.count} small purchases added up to ${m(Number(p.total))} this cycle. Which ones could I skip?`,
+      },
+      cashVsCard: {
+        tag: 'How you pay',
+        headline: (p) => (p.cardBigger ? `Your card purchases are *${p.times} times* bigger than your cash ones.` : `Your cash purchases are *${p.times} times* bigger than your card ones.`),
+        why: () => 'Average purchase size over the last 90 days. Bank texts not yet matched to an account are left out.',
+        seed: (p) => `My ${p.cardBigger ? 'card' : 'cash'} purchases are ${p.times} times bigger than my ${p.cardBigger ? 'cash' : 'card'} ones. Why might that be?`,
+      },
+      priceRise: {
+        tag: 'Bills',
+        headline: (p, m) => `*${p.name}* went up *${m(Number(p.rise))}* on your last charge.`,
+        why: () => 'The charge is higher than the price saved for it. Update it if the new price is right.',
+        seed: (p, m) => `${p.name} charged ${m(Number(p.rise))} more than its saved price. Should I keep it?`,
+      },
     },
   },
   reports: {

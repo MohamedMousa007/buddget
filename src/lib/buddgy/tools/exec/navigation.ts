@@ -33,6 +33,7 @@ const open_screen: Nav = (args) => {
   const screen = (Object.keys(SCREEN_ROUTES) as (keyof typeof SCREEN_ROUTES)[]).find((k) => k === args.screen)
   if (!screen) return refused(`Unknown screen. Use one of: ${Object.keys(SCREEN_ROUTES).join(', ')}.`)
   leaveChat()
+  if (screen === 'reports' && typeof args.insight === 'string' && /^[a-zA-Z]{1,30}$/.test(args.insight)) ui().setFocusInsightId(args.insight)
   navigate(SCREEN_ROUTES[screen])
   return opened(screen)
 }

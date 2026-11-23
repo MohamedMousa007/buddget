@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { billsInsight, bnplInsight, heroAnswer, keptInsight, MIN_DAYS, MIN_EXPENSES, MIN_PLACED_PURCHASES, paceInsight, payMixInsight, subsInsight, topCategoryInsight } from './detectors'
+import { billsInsight, bnplInsight, cashVsCardInsight, categoryShiftInsight, heroAnswer, paydayRhythmInsight, priceRiseInsight, smallBuysInsight, unusualInsight, weekdayInsight, keptInsight, MIN_DAYS, MIN_EXPENSES, MIN_PLACED_PURCHASES, paceInsight, payMixInsight, subsInsight, topCategoryInsight } from './detectors'
 import { computeInsights, FREE_INSIGHTS, rankInsights } from './rank'
 import type { Insight, InsightInput } from './types'
 
@@ -17,6 +17,13 @@ const base = (over: Partial<InsightInput> = {}): InsightInput => ({
   subs: { count: 6, monthly: 890 },
   bills: { count: 3, total: 2400 },
   pay: { card: 620, cash: 210, unassigned: 100, other: 70, placedCount: 40 },
+  categories: [{ name: 'Food', thisCycle: 4100, usual: 3000 }, { name: 'Bills', thisCycle: 3200, usual: 3100 }],
+  paydays: { count: 4, purchases: 120, liftPct: 40 },
+  weekday: { weeks: 8, purchases: 120, byDay: [300, 250, 280, 310, 290, 620, 400], overallDaily: 350 },
+  unusual: { description: 'Electronics store', category: 'Shopping', amount: 5400, typical: 600, priorCount: 9 },
+  small: { threshold: 100, count: 14, total: 1100 },
+  cardCash: { cardAvg: 460, cardN: 40, cashAvg: 200, cashN: 30 },
+  priceRise: { name: 'WE Home', rise: 50 },
   ...over,
 })
 
@@ -105,6 +112,50 @@ describe('payMixInsight', () => {
   })
 })
 
+describe('pattern findings', () => {
+  it('categoryShift picks the biggest projected shift against the usual', () => {
+    // Food 4100 over 17 of 26 days projects to 6271 against 3000 usual: +109%.
+    expect(categoryShiftInsight(base())?.params).toEqual({ name: 'Food', pct: 109, up: 1 })
+  })
+  it('categoryShift stays silent with no usual, small shifts or thin data', () => {
+    expect(categoryShiftInsight(base({ categories: [{ name: 'Food', thisCycle: 4100, usual: null }] }))).toBeNull()
+    expect(categoryShiftInsight(base({ categories: [{ name: 'Bills', thisCycle: 2200, usual: 3100 }] }))).toBeNull()
+    expect(categoryShiftInsight(base({ expenseCount: 2 }))).toBeNull()
+  })
+  it('paydayRhythm needs 3 paydays, 60 purchases and a 25% lift, and is Pro', () => {
+    expect(paydayRhythmInsight(base())).toMatchObject({ kind: 'paydayRhythm', pro: true, params: { pct: 40 } })
+    expect(paydayRhythmInsight(base({ paydays: { count: 2, purchases: 120, liftPct: 40 } }))).toBeNull()
+    expect(paydayRhythmInsight(base({ paydays: { count: 4, purchases: 30, liftPct: 40 } }))).toBeNull()
+    expect(paydayRhythmInsight(base({ paydays: { count: 4, purchases: 120, liftPct: 10 } }))).toBeNull()
+    expect(paydayRhythmInsight(base({ paydays: { count: 4, purchases: 120, liftPct: null } }))).toBeNull()
+  })
+  it('weekdayPattern needs 8 weeks and a clearly dearer day', () => {
+    expect(weekdayInsight(base())?.params).toEqual({ day: 5, avg: 620 })
+    expect(weekdayInsight(base({ weekday: { weeks: 5, purchases: 120, byDay: [0, 0, 0, 0, 0, 900, 0], overallDaily: 100 } }))).toBeNull()
+    expect(weekdayInsight(base({ weekday: { weeks: 8, purchases: 120, byDay: [350, 350, 350, 350, 350, 360, 350], overallDaily: 350 } }))).toBeNull()
+  })
+  it('unusualPurchase needs 6 earlier purchases and 3x the median', () => {
+    expect(unusualInsight(base())?.params).toMatchObject({ amount: 5400, typical: 600 })
+    expect(unusualInsight(base({ unusual: { description: 'x', category: 'Shopping', amount: 5400, typical: 600, priorCount: 3 } }))).toBeNull()
+    expect(unusualInsight(base({ unusual: { description: 'x', category: 'Shopping', amount: 1500, typical: 600, priorCount: 9 } }))).toBeNull()
+  })
+  it('smallBuys needs 8 small purchases', () => {
+    expect(smallBuysInsight(base())?.params).toEqual({ threshold: 100, count: 14, total: 1100 })
+    expect(smallBuysInsight(base({ small: { threshold: 100, count: 5, total: 300 } }))).toBeNull()
+    expect(smallBuysInsight(base({ small: { threshold: 0, count: 14, total: 1100 } }))).toBeNull()
+  })
+  it('cashVsCard compares average purchase size both ways and needs 15 of each', () => {
+    expect(cashVsCardInsight(base())?.params).toEqual({ times: 2.3, cardBigger: 1 })
+    expect(cashVsCardInsight(base({ cardCash: { cardAvg: 100, cardN: 20, cashAvg: 300, cashN: 20 } }))?.params).toEqual({ times: 3, cardBigger: 0 })
+    expect(cashVsCardInsight(base({ cardCash: { cardAvg: 100, cardN: 20, cashAvg: 110, cashN: 20 } }))).toBeNull()
+    expect(cashVsCardInsight(base({ cardCash: { cardAvg: 460, cardN: 5, cashAvg: 200, cashN: 30 } }))).toBeNull()
+  })
+  it('priceRise reports a rise only', () => {
+    expect(priceRiseInsight(base())).toMatchObject({ kind: 'priceRise', pro: true, params: { name: 'WE Home', rise: 50 } })
+    expect(priceRiseInsight(base({ priceRise: null }))).toBeNull()
+  })
+})
+
 describe('ranking', () => {
   const mk = (kind: Insight['kind'], area: Insight['area'], score: number): Insight => ({ kind, area, score, params: {} })
   it('puts the first three from different areas', () => {
@@ -112,13 +163,16 @@ describe('ranking', () => {
     expect(out.slice(0, FREE_INSIGHTS).map((x) => x.kind)).toEqual(['pace', 'bnplBurden', 'kept'])
     expect(out).toHaveLength(4)
   })
+  it('never gives a free slot to a Pro pattern', () => {
+    expect(computeInsights(base()).slice(0, FREE_INSIGHTS).every((x) => !x.pro)).toBe(true)
+  })
   it('keeps every finding and orders the rest by score', () => {
     const out = computeInsights(base())
-    expect(out).toHaveLength(7)
+    expect(out).toHaveLength(14)
     expect(out.slice(FREE_INSIGHTS).every((x, i, a) => i === 0 || a[i - 1].score >= x.score)).toBe(true)
   })
   it('is empty when no detector has enough data', () => {
-    const thin = base({ expenseCount: 0, usualSpend: null, keptLast: null, topCategory: null, bnpl: { plans: 0, remaining: 0, monthly: 0, incomeMonthly: 0 }, subs: { count: 0, monthly: 0 }, bills: { count: 0, total: 0 }, pay: { card: 0, cash: 0, unassigned: 0, other: 0, placedCount: 0 } })
+    const thin = base({ categories: [], paydays: { count: 0, purchases: 0, liftPct: null }, weekday: { weeks: 0, purchases: 0, byDay: [0, 0, 0, 0, 0, 0, 0], overallDaily: 0 }, unusual: null, small: { threshold: 0, count: 0, total: 0 }, cardCash: { cardAvg: 0, cardN: 0, cashAvg: 0, cashN: 0 }, priceRise: null, expenseCount: 0, usualSpend: null, keptLast: null, topCategory: null, bnpl: { plans: 0, remaining: 0, monthly: 0, incomeMonthly: 0 }, subs: { count: 0, monthly: 0 }, bills: { count: 0, total: 0 }, pay: { card: 0, cash: 0, unassigned: 0, other: 0, placedCount: 0 } })
     expect(computeInsights(thin)).toEqual([])
   })
 })

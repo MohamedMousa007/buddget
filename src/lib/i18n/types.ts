@@ -1525,7 +1525,7 @@ export interface Dictionary {
     proChip: string
     rangeLocked: string
     areas: Record<'spending' | 'income' | 'budget' | 'bills' | 'debts' | 'wealth' | 'goals' | 'how', { title: string; sub: string }>
-    kinds: Record<'pace' | 'topCategory' | 'kept' | 'bnplBurden' | 'subsTotal' | 'billsBeforePayday' | 'payMix', {
+    kinds: Record<import('@/lib/insights/types').InsightKind, {
       tag: string
       headline: (p: Record<string, number | string>, m: (n: number) => string) => string
       why: (p: Record<string, number | string>, m: (n: number) => string) => string

@@ -123,6 +123,8 @@ interface SettingsState {
   monthFilter: string
   /** Pre-filled AI chat input (e.g. voice "Open in chat" hands off the transcript). */
   aiChatSeed: string | null
+  /** An Insights finding id to scroll to when the page opens (set by Buddgy's open_screen); the page clears it. */
+  focusInsightId: string | null
   /** Send `aiChatSeed` as soon as the chat opens instead of just pre-filling it. */
   aiChatSeedSend: boolean
   /** Buddgy may speak up with screen-aware tips (persisted; AI settings switch). */
@@ -198,6 +200,7 @@ interface SettingsState {
   setMonthFilter: (month: string) => void
   openAiChatWithSeed: (text: string, send?: boolean) => void
   clearAiChatSeed: () => void
+  setFocusInsightId: (id: string | null) => void
   openDebtSheetNew: (family?: 'personal' | 'installment') => void
   openPayDebtSheet: () => void
   openDebtSheetRecordPayment: (debtId: string) => void
@@ -253,6 +256,7 @@ export const useSettingsStore = create<SettingsState>()(
       restoreDismissedPrompts: () => set({ dismissedBanners: [], snoozedBanners: {}, hiddenStatusUntil: {} }),
       monthFilter: getCurrentMonth(),
       aiChatSeed: null,
+      focusInsightId: null,
       aiChatSeedSend: false,
       buddgyNudges: true,
       setBuddgyNudges: (on) => set({ buddgyNudges: on }),
@@ -327,6 +331,7 @@ export const useSettingsStore = create<SettingsState>()(
       setMonthFilter: (month) => set({ monthFilter: month }),
       openAiChatWithSeed: (text, send = false) => set({ activeModal: 'aiChat', aiChatSeed: text, aiChatSeedSend: send }),
       clearAiChatSeed: () => set({ aiChatSeed: null, aiChatSeedSend: false }),
+      setFocusInsightId: (id) => set({ focusInsightId: id }),
       openDebtSheetNew: (family) =>
         set({
           debtSheetPaymentOnly: false,

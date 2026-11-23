@@ -32,17 +32,23 @@ export function InsightsFeed({ insights, currency, advanced }: Props) {
   // What Buddgy is sent follows the privacy setting: with Buddgy masked, no figure leaves the page.
   const seedMoney = useMemo(() => (n: number) => (maskBuddgy ? MASK : formatCurrency(n, currency, false)), [maskBuddgy, currency])
   const openUpgrade = () => navigate('/settings/pro')
-  const locked = insights.filter((_, i) => !advanced && i >= FREE_INSIGHTS)
+  const locked = insights.filter((f, i) => !advanced && (f.pro === true || i >= FREE_INSIGHTS))
 
   return (
     <div className="space-y-2.5">
       {insights.map((f, i) => {
-        const p = f.kind === 'topCategory' ? { ...f.params, name: categoryLabel(t, String(f.params.name)) } : f.params
+        const p =
+          f.kind === 'topCategory' || f.kind === 'categoryShift'
+            ? { ...f.params, name: categoryLabel(t, String(f.params.name)) }
+            : f.kind === 'unusualPurchase'
+              ? { ...f.params, category: categoryLabel(t, String(f.params.category)) }
+              : f.params
         const copy = c.kinds[f.kind]
-        const isLocked = !advanced && i >= FREE_INSIGHTS
+        const isLocked = !advanced && (f.pro === true || i >= FREE_INSIGHTS)
         return (
           <InsightCard
             key={f.kind}
+            id={f.kind}
             area={f.area}
             tag={copy.tag}
             headline={copy.headline(p, money)}

@@ -9,8 +9,9 @@ export function rankInsights(found: readonly Insight[]): Insight[] {
   const sorted = [...found].sort((a, b) => b.score - a.score)
   const head: Insight[] = []
   const used = new Set<string>()
+  // The free slots go to findings Free can read, one per area, so a Pro pattern never takes a Free user's place.
   for (const f of sorted) {
-    if (head.length < FREE_INSIGHTS && !used.has(f.area)) {
+    if (head.length < FREE_INSIGHTS && !f.pro && !used.has(f.area)) {
       head.push(f)
       used.add(f.area)
     }

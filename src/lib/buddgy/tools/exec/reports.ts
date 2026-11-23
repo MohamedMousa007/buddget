@@ -10,6 +10,11 @@ import { computeMonthlyStats } from '@/lib/utils/monthlyStats'
 import { isNonSpendExpense } from '@/lib/constants/categoryMeta'
 import { expenseAmountInBase } from '@/lib/utils/calculations'
 import type { Expense, FinanceStore } from '@/lib/store/types'
+import { useBillingStore } from '@/lib/billing/billingStore'
+import { canSeeAdvancedInsights } from '@/lib/insights/access'
+import { computeInsightsNow } from '@/lib/insights/now'
+import { FREE_INSIGHTS } from '@/lib/insights/rank'
+import { isMasked } from '@/lib/privacy/mask'
 
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
@@ -73,6 +78,24 @@ const get_summary: ReadImpl = (args) => {
     savings_total: r0(st.savingsTotal),
     debt_remaining: r0(st.debtRemainingTotal),
     income_declared: !st.incomeBlocked,
+  }
+}
+
+/** The page's findings. Figures are left out when Buddgy is masked, and Pro findings are withheld from Free users, as on the page. */
+const get_insights: ReadImpl = (args) => {
+  const s = fin()
+  const { hero, insights } = computeInsightsNow(s)
+  const hide = isMasked(s.settings.privacy, 'buddgy')
+  const advanced = canSeeAdvancedInsights(useBillingStore.getState().me)
+  const limit = Math.max(1, Math.min(10, typeof args.limit === 'number' ? Math.floor(args.limit) : 6))
+  return {
+    currency: s.settings.baseCurrency,
+    hero: { state: hero.state, days_left: hero.daysLeft, ...(hide ? {} : { per_day: r0(hero.perDay), run_out_in_days: hero.runOutInDays }) },
+    findings: insights.slice(0, limit).map((f, i) => {
+      const locked = !advanced && (f.pro === true || i >= FREE_INSIGHTS)
+      return { id: f.kind, area: f.area, ...(locked ? { locked: true } : hide ? {} : { facts: f.params }) }
+    }),
+    ...(insights.length > limit ? { more: insights.length - limit } : {}),
   }
 }
 
@@ -156,5 +179,5 @@ const spend_breakdown: ReadImpl = (args) => {
 
 export const reportsTools = defineTools(
   reportsSpecs,
-  { get_summary, search_expenses, spend_breakdown },
+  { get_summary, get_insights, search_expenses, spend_breakdown },
 )

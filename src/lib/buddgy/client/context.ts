@@ -1,3 +1,4 @@
+import { computeInsightsNow } from '@/lib/insights/now'
 import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
 import { differenceInCalendarDays } from 'date-fns'
 import { getMonthRange } from '@/lib/utils/calculations'
@@ -29,6 +30,8 @@ export interface ContextInput {
   sheet: string | null
   counts: { debts: number; subscriptions: number; goals: number; paymentMethods: number }
   memories: string[]
+  /** Findings on the Insights page: the top one's id and how many, never figures. */
+  insights?: { top: string; count: number } | null
 }
 
 const r0 = (n: number) => Math.round(n)
@@ -43,6 +46,7 @@ export function renderContext(i: ContextInput): string {
     `on ${i.route}${i.sheet ? ` · sheet ${i.sheet}` : ''}`,
     `has ${i.counts.debts} debts · ${i.counts.subscriptions} subs · ${i.counts.goals} goals · ${i.counts.paymentMethods} methods`,
   ]
+  if (i.insights) lines.push(`insights: ${i.insights.count} findings · top ${i.insights.top} (get_insights has the facts)`)
   if (i.memories.length > 0) lines.push(`remembered: ${i.memories.join(' | ')}`)
   return lines.join('\n')
 }
@@ -59,6 +63,16 @@ export function relevantMemories(memories: BuddgyMemory[], text: string, max = 5
     .sort((a, b) => b.score - a.score || b.m.updatedAt.localeCompare(a.m.updatedAt))
     .slice(0, max)
     .map((x) => x.m.text)
+}
+
+/** The Insights page's top finding as an id and a count. Left out on any error so a chat turn never fails on it. */
+function topInsight(s: ReturnType<typeof fin>): ContextInput['insights'] {
+  try {
+    const { insights } = computeInsightsNow(s)
+    return insights.length > 0 ? { top: insights[0].kind, count: insights.length } : null
+  } catch {
+    return null
+  }
 }
 
 export function readContextInput(args: { now: Date; route: string; text: string }): ContextInput {
@@ -111,6 +125,7 @@ export function readContextInput(args: { now: Date; route: string; text: string 
       paymentMethods: s.paymentMethods.length,
     },
     memories: relevantMemories(s.buddgyMemories, args.text),
+    insights: topInsight(s),
   }
 }
 

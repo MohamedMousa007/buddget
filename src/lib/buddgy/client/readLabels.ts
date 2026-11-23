@@ -2,6 +2,7 @@ import type { BuddgyLocale } from '@/lib/buddgy/protocol'
 
 const EN: Record<string, string> = {
   get_summary: 'Month summary',
+  get_insights: 'Insights',
   search_expenses: 'Expenses',
   spend_breakdown: 'Spending breakdown',
   list_income: 'Income',
@@ -20,6 +21,7 @@ const EN: Record<string, string> = {
 
 const AR: Record<string, string> = {
   get_summary: 'ملخص الشهر',
+  get_insights: 'التحليلات',
   search_expenses: 'المصروفات',
   spend_breakdown: 'تفصيل الإنفاق',
   list_income: 'الدخل',

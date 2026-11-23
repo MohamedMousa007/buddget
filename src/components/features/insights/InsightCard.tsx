@@ -14,6 +14,8 @@ const AREA_DOT: Record<InsightArea, string> = {
 }
 
 export interface InsightCardProps {
+  /** The finding's kind, so Buddgy can scroll to it. */
+  id: string
   area: InsightArea
   tag: string
   /** The sentence; `*like this*` marks the figures. */
@@ -48,9 +50,9 @@ function Headline({ text, locked }: { text: string; locked: boolean }) {
 }
 
 /** One finding. The locked variant is the same card with the figures hidden and "Unlock with Pro" in place of "Ask Buddgy". */
-export function InsightCard({ area, tag, headline, why, locked = false, askLabel, unlockLabel, onAsk, onUnlock }: InsightCardProps) {
+export function InsightCard({ id, area, tag, headline, why, locked = false, askLabel, unlockLabel, onAsk, onUnlock }: InsightCardProps) {
   return (
-    <Card padding="md" className="space-y-1.5" data-insight-locked={locked || undefined}>
+    <Card padding="md" className="space-y-1.5 scroll-mt-4" data-insight-id={id} data-insight-locked={locked || undefined}>
       <span className="flex items-center gap-1.5 text-[0.6875rem] font-bold uppercase tracking-wide text-[var(--color-brand-text-secondary)]">
         <i aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: AREA_DOT[area] }} />
         {tag}

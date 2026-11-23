@@ -9,6 +9,13 @@ export const reportsSpecs: ToolSpec[] = [
     params: obj({ month: str('YYYY-MM; default is the month on screen') }),
   },
   {
+    name: 'get_insights',
+    domain: 'reports',
+    kind: 'read',
+    description: "The Insights page's findings, ranked: pace, category shifts, payday and weekday patterns, unusual purchases, instalments, bills, card vs cash. Use for 'anything unusual', 'what changed', 'how am I doing'.",
+    params: obj({ limit: int('max findings, default 6, at most 10') }),
+  },
+  {
     name: 'search_expenses',
     domain: 'expenses',
     kind: 'read',

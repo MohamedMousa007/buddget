@@ -57,7 +57,7 @@ Key files:
 
 | Domain | Read | Write (risk) | Nav |
 |---|---|---|---|
-| reports | get_summary, spend_breakdown | | |
+| reports | get_summary, get_insights, spend_breakdown | | |
 | expenses | search_expenses | add_expense (auto), update_expense, delete_expense (strong) | |
 | income | list_income | add_income, update_income, mark_payday_received, delete_income (strong) | |
 | debts | list_debts, get_debt | add_debt, add_installment_plan, add_credit_card, record_debt_payment, update_debt, clear_debt, delete_debt (strong), delete_debt_payment (strong) | |

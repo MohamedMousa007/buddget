@@ -25,6 +25,7 @@ import { InsightsLearning } from '@/components/features/insights/InsightsLearnin
 import { InsightsAreas } from '@/components/features/insights/InsightsAreas'
 import { navigate } from '@/lib/navigation/navigate'
 import { useT } from '@/lib/i18n'
+import { useEffect } from 'react'
 
 const MonthlyChart = dynamic(
   () => import('@/components/reports/MonthlyChart').then((m) => ({ default: m.MonthlyChart })),
@@ -42,6 +43,12 @@ export default function ReportsPage() {
   const { input, hero, insights } = useInsights()
   const advanced = canSeeAdvancedInsights(useBillingStore((b) => b.me))
   const lockedRanges = advanced ? [] : (['last6Months', 'thisYear'] as const).filter((x) => !FREE_RANGES.includes(x))
+  const focusInsightId = useSettingsStore((s) => s.focusInsightId)
+  useEffect(() => {
+    if (!focusInsightId) return
+    document.querySelector(`[data-insight-id="${CSS.escape(focusInsightId)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    useSettingsStore.getState().setFocusInsightId(null)
+  }, [focusInsightId, insights])
   const stats = useMonthlyStats()
   const monthFilter = useSettingsStore((s) => s.monthFilter)
   // The pace panel reads the viewed month's stats, so it shows only when that month is the report's current cycle.
