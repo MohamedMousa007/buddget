@@ -27,6 +27,7 @@ test('J9 Buddgy refuses to set aside more than an account has free and sets a sm
   await test.step('8,000 already saved "in my QNB account" (which holds 5,000): no proposal sets it aside there', async () => {
     await send('Create a savings goal called QA Car with a target of 20000 EGP. I already saved 8000 EGP for it and that money is in my QNB Alahli account.')
     await expect(log).not.toHaveText(/Set aside in QNB Alahli[\s\S]*8,000|8,000[\s\S]*Set aside in QNB Alahli/)
+    await expect(log).not.toContainText('Somewhere else (not tracked here)')
     expect(((await localState(page)).goals as any[]).filter((g) => g.name === 'QA Car')).toHaveLength(0)
   })
 
@@ -34,6 +35,7 @@ test('J9 Buddgy refuses to set aside more than an account has free and sets a sm
     await send('OK, make the already saved amount 3000 EGP instead, and it is in my QNB Alahli account. Create the goal.')
     const card = log.getByText('Set aside in QNB Alahli').last()
     await expect(card).toBeVisible({ timeout: 60_000 })
+    await expect(log).not.toContainText('Somewhere else (not tracked here)')
     await log.getByRole('button', { name: /^(Looks good|Add goal|Create goal|Start goal|Save goal|Add)/ }).last().click()
     const goal = await localWait(page, (s) => s.goals.find((g: any) => g.name === 'QA Car'), 30_000)
     const pocket = await localWait(page, (s) => s.savingsAccounts.find((a: any) => goal.linkedSavingsAccountIds.includes(a.id) && a.currentBalance === 3000))

@@ -9,6 +9,8 @@ export interface ToolContext {
   afterRead?: boolean
   /** True when the user is editing a card already shown, so the same entry is not a second copy of itself. */
   revising?: boolean
+  /** The user's own recent messages, newest first; never model or tool text. Absent when a card is applied. */
+  userTexts?: readonly string[]
 }
 
 export type ReadImpl = (args: Record<string, unknown>, ctx: ToolContext) => unknown

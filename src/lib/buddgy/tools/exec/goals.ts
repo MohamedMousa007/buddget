@@ -3,7 +3,7 @@ import { goalCategoryName, goalLabels } from '@/lib/buddgy/tools/exec/goalsCopy'
 import { restoreRows } from '@/lib/buddgy/tools/exec/restoreKit'
 import { inPocketCurrency, ledgerUndo, no, pick, posted, snapshotLedger, type Refusal } from '@/lib/buddgy/tools/exec/wealthKit'
 import type { EditableField, PreviewRow, Proposal } from '@/lib/buddgy/tools/proposal'
-import { refOf } from '@/lib/buddgy/tools/refs'
+import { refOf, resolveByRefOrName } from '@/lib/buddgy/tools/refs'
 import { goalsSpecs } from '@/lib/buddgy/tools/specs/goals'
 import { fin, ui } from '@/lib/buddgy/tools/stores'
 import type { ReadImpl, ToolContext, WriteImpl } from '@/lib/buddgy/tools/types'
@@ -16,6 +16,7 @@ import { getGoalStatus } from '@/lib/goals/goalStatus'
 import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
 import { availableIn, depositRefusal, explainDepositRefusal, ledgerOf } from '@/lib/savings/pocketHome'
 import { createGoalPocket, ELSEWHERE, goalHomeAccounts, savedHomeProblem } from '@/lib/goals/goalPocket'
+import { accountsNamedIn, userNamedHome } from '@/lib/goals/namedHome'
 import type { Currency, FinanceStore, Goal, GoalCategory, GoalFundingMode, PaymentMethod } from '@/lib/store/types'
 import { useFinanceStore, goldQuoteOf } from '@/lib/store/useFinanceStore'
 import { tryConvertCurrency, tryConvertWithGold } from '@/lib/utils/currency'
@@ -95,24 +96,40 @@ const futureDate = (v: unknown, ctx: ToolContext): string | Refusal => {
 
 /**
  * Where a new goal's already-saved money is. While a tracked account could contain it the answer is required and
- * never guessed: counting money that is already in an account as new would raise net worth from nothing.
+ * never guessed: counting money that is already in an account as new would raise net worth from nothing. An account
+ * the user named wins over the model's "elsewhere" or silence; when what they said is unclear the user is asked.
  */
-function resolveSavedHome(s: FinanceStore, currency: Currency, saved: number, input: unknown, elsewhereLabel: string): { home?: string; account?: PaymentMethod } | Refusal {
+function resolveSavedHome(s: FinanceStore, currency: Currency, saved: number, input: unknown, elsewhereLabel: string, ctx: ToolContext): { home?: string; account?: PaymentMethod } | Refusal {
   const accounts = saved > 0 ? goalHomeAccounts(s.paymentMethods, currency) : []
-  if (accounts.length === 0 || input === ELSEWHERE) return accounts.length ? { home: ELSEWHERE } : {}
+  if (accounts.length === 0) return {}
   const choices = [...accounts.map((a) => ({ id: refOf(a.id), label: a.name })), { id: ELSEWHERE, label: elsewhereLabel }]
-  if (input === undefined || input === '') {
-    return no('Where is the money that is already saved?', 'Ask the user whether it is inside one of these accounts or somewhere else that is not tracked here, then send saved_in. Never guess.', choices)
+  const ask = (error: string) => no(error, 'Ask the user whether it is inside one of these accounts or somewhere else that is not tracked here, then send saved_in. Never guess.', choices)
+  const said = userNamedHome(ctx.userTexts, accounts)
+  const named = said.named.length === 1 && !said.outside ? said.named[0] : undefined
+  const unclear = said.named.length > 1 || (said.named.length > 0 && said.outside)
+
+  let home: PaymentMethod | undefined
+  if (input === ELSEWHERE) {
+    if (said.named.length === 0) return { home: ELSEWHERE }
+    if (!named) return ask('The user named a tracked account, so the money may not be somewhere else.')
+    home = named
+  } else if (input === undefined || input === '') {
+    if (!named) return ask('Where is the money that is already saved?')
+    home = named
+  } else {
+    const hit = resolveByRefOrName(accounts, input, (a) => a.name)
+    const close = accountsNamedIn(String(input), accounts)
+    home = hit.kind === 'one' ? hit.item : close.length === 1 ? close[0] : undefined
+    if (!home) return no(hit.kind === 'many' ? 'Several accounts match.' : 'No account matches.', 'Send saved_in as one of the choices, or "elsewhere".', choices)
+    if (unclear || (named && named.id !== home.id)) return ask(`The user's words do not say clearly that the money is in ${home.name}.`)
   }
-  const hit = pick(accounts, input, (a) => a.name, 'account', 'Send saved_in as one of the choices, or "elsewhere".')
-  if ('error' in hit) return no(hit.error.error, 'Send saved_in as one of the choices, or "elsewhere".', choices)
-  if (savedHomeProblem(ledgerOf(s), currency, saved, hit.item.id) === 'over_available') {
+  if (savedHomeProblem(ledgerOf(s), currency, saved, home.id) === 'over_available') {
     return no(
-      `${hit.item.name} only has ${money(availableIn(hit.item.id, ledgerOf(s)), currency)} available, less than the saved amount.`,
-      'Ask for a smaller saved amount, or whether the money is somewhere else.',
+      `${home.name} only has ${money(availableIn(home.id, ledgerOf(s)), currency)} available, less than the saved amount.`,
+      `Tell the user and ask for a smaller saved amount in ${home.name}. Send "elsewhere" only if the user then says the money is outside every tracked account.`,
     )
   }
-  return { home: hit.item.id, account: hit.item }
+  return { home: home.id, account: home }
 }
 
 const add_goal: WriteImpl = {
@@ -138,7 +155,7 @@ const add_goal: WriteImpl = {
     }
     const saved = args.saved === undefined ? 0 : num(args.saved)
     if (saved === undefined || saved < 0) return no('The amount already saved cannot be negative.')
-    const where = resolveSavedHome(s, ccy.currency, saved, args.saved_in, L.elsewhere)
+    const where = resolveSavedHome(s, ccy.currency, saved, args.saved_in, L.elsewhere, ctx)
     if ('ok' in where) return where
 
     const duplicate = s.goals.some((g) => g.name.trim().toLowerCase() === name.toLowerCase())
@@ -212,7 +229,7 @@ const add_goal: WriteImpl = {
       frequency: 'monthly',
     })
     const saved = typeof a.saved === 'number' ? a.saved : 0
-    const where = resolveSavedHome(s, ccy, saved, a.saved_in, '')
+    const where = resolveSavedHome(s, ccy, saved, a.saved_in, '', ctx)
     const { pocketId, savedRecorded } = createGoalPocket(s, { goalId, pocketName: `${name} pocket`, goalName: name, currency: ccy, saved, home: 'ok' in where ? null : where.home })
     if (!savedRecorded) {
       fin().deleteGoal(goalId)

@@ -174,3 +174,61 @@ describe('Buddgy add_goal asks the same question', () => {
     expect(tool().propose({ name: 'Car', target: 200000, saved: 500 }, ctx).ok).toBe(true)
   })
 })
+
+describe('J9: Buddgy never puts money the user placed in a tracked account "somewhere else"', () => {
+  const QNB = 'c3c3c3c3-0000-0000-0000-000000000003'
+  const CIB = 'a1a1a1a1-0000-0000-0000-000000000001'
+  const tool = () => TOOLS.get('add_goal')!.write!
+  const said = (...userTexts: string[]): ToolContext => ({ now: new Date('2026-10-19T12:00:00'), locale: 'en', userTexts })
+  const goal = (saved: number, saved_in?: string) => ({ name: 'QA Car', target: 20000, currency: 'EGP', saved, ...(saved_in === undefined ? {} : { saved_in }) })
+  const homeRow = (p: ReturnType<ReturnType<typeof tool>['propose']>) => (p.ok ? p.proposal.preview.rows.find((r) => r.label === 'Where it is')?.value : undefined)
+  beforeEach(() => useFinanceStore.setState({
+    paymentMethods: [pm(QNB, { name: 'QNB Alahli', openingBalance: 5000 }), pm(CIB, { name: 'CIB' }), pm('d4d4d4d4-0000-0000-0000-000000000004', { name: 'Cash', type: 'cash', openingBalance: 800 })],
+  }))
+
+  it('the model sends "elsewhere" but the user named QNB Alahli: the money is set aside in QNB, net worth unchanged', () => {
+    const before = netWorth()
+    const p = tool().propose(goal(3000, 'elsewhere'), said('make the already saved amount 3000 EGP instead, and it is in my QNB Alahli account'))
+    expect(homeRow(p)).toBe('Set aside in QNB Alahli')
+    if (!p.ok) return
+    expect(p.proposal.args.saved_in).toBe(refOf(QNB))
+    expect(tool().apply(p.proposal, { now: new Date('2026-10-19T12:00:00'), locale: 'en', revising: true }).ok).toBe(true)
+    expect(S().savingsAccounts[0]).toMatchObject({ heldInPaymentMethodId: QNB, currentBalance: 3000 })
+    expect(netWorth()).toBe(before)
+  })
+
+  it('more than QNB holds, the model sends "elsewhere": refused with what QNB has, and never invited to go elsewhere', () => {
+    const p = tool().propose(goal(8000, 'elsewhere'), said('I already saved 8000 EGP for it and that money is in my QNB Alahli account.'))
+    expect(p.ok).toBe(false)
+    if (p.ok) return
+    expect(p.error).toContain('QNB Alahli')
+    expect(p.error).toContain('5,000')
+    expect(p.hint ?? '').not.toMatch(/somewhere else/i)
+    expect(p.choices?.some((c) => c.id === 'elsewhere') ?? false).toBe(false)
+    expect(S().goals).toHaveLength(0)
+  })
+
+  it('a close variant of the name, by the user or in saved_in, finds the account', () => {
+    expect(homeRow(tool().propose(goal(3000, 'elsewhere'), said('it is in my QNB account')))).toBe('Set aside in QNB Alahli')
+    expect(homeRow(tool().propose(goal(3000, 'elsewhere'), said('الفلوس في حساب qnb')))).toBe('Set aside in QNB Alahli')
+    expect(homeRow(tool().propose(goal(3000, 'QNB'), said()))).toBe('Set aside in QNB Alahli')
+    expect(homeRow(tool().propose(goal(300), said('it is all cash')))).toBe('Set aside in Cash')
+  })
+
+  it('no saved_in, the user named the account in an earlier message: resolved from it', () => {
+    expect(homeRow(tool().propose(goal(3000), said('OK make it 3000 then', 'that money is in my QNB Alahli account')))).toBe('Set aside in QNB Alahli')
+  })
+
+  it('unclear: two accounts named, or an account and "somewhere else", asks with the choices', () => {
+    for (const text of ['half in QNB and half in CIB', 'it was in QNB but now it is somewhere else']) {
+      const p = tool().propose(goal(3000, 'elsewhere'), said(text))
+      expect(p.ok).toBe(false)
+      if (!p.ok) expect(p.choices?.map((c) => c.label)).toContain('QNB Alahli')
+    }
+  })
+
+  it('"elsewhere" stays when the user names no tracked account, or says so', () => {
+    expect(homeRow(tool().propose(goal(3000, 'elsewhere'), said('it is at my parents house')))).toBe('Somewhere else (not tracked here)')
+    expect(homeRow(tool().propose(goal(3000, 'elsewhere'), said('somewhere else, not tracked here')))).toBe('Somewhere else (not tracked here)')
+  })
+})

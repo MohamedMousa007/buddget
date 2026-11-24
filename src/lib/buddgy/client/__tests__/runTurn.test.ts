@@ -206,3 +206,18 @@ describe('BAI-7 / BAI-10 read taint', () => {
     }
   })
 })
+
+describe('J9: the user\'s own words reach the tools', () => {
+  it('add_goal with saved_in "elsewhere" lands in the account the user named, this message or an earlier one', async () => {
+    const QNB = 'c3c3c3c3-0000-0000-0000-000000000003'
+    useFinanceStore.setState({
+      goals: [], savingsAccounts: [], savingsTransactions: [],
+      paymentMethods: [{ id: QNB, name: 'QNB Alahli', type: 'bank_account', currency: 'EGP', isDefault: false, openingBalance: 5000, openingAt: '2020-01-01T00:00:00.000Z' } as never],
+    })
+    const call: TurnEvent = { t: 'calls', parts: [], calls: [{ name: 'add_goal', args: { name: 'QA Car', target: 20000, saved: 3000, saved_in: 'elsewhere' } }] }
+    apiFetchAuth.mockResolvedValueOnce(sse([meta, call, done]))
+    const history = [{ role: 'user' as const, text: 'I saved it in my QNB Alahli account' }, { role: 'model' as const, text: 'Somewhere else then?' }]
+    const out = await runTurn({ ...base, history, text: 'make it 3000', intent: 'action', onText: () => undefined })
+    expect(out.proposals[0].preview.rows.find((r) => r.label === 'Where it is')?.value).toBe('Set aside in QNB Alahli')
+  })
+})
