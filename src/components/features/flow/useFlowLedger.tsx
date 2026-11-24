@@ -371,7 +371,7 @@ export function useFlowLedger() {
             // A credit that is probably a payday opens the link sheet: linking needs a visible route.
             onClick: notLinked ? link : open,
             title: inc.name,
-            badgeWrap: true,
+            badgeWrap: borrowed,
             titleBadge: openFlag(inc.event, 'income') ?? (passedThrough ? (
               <Badge variant="muted" size="xs" className="shrink-0">{t.flow.passThrough}</Badge>
             ) : borrowed ? (
