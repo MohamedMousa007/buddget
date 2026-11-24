@@ -128,6 +128,9 @@ interface SettingsState {
   /** The top findings the user last saw on Insights (kinds joined); the entry shows a dot while it differs. */
   insightsSeen: string | null
   setInsightsSeen: (sig: string) => void
+  /** When the last Insights evening reminder was scheduled (persisted): at most one a week. */
+  insightsRemindedAt: number | null
+  setInsightsRemindedAt: (at: number) => void
   /** Send `aiChatSeed` as soon as the chat opens instead of just pre-filling it. */
   aiChatSeedSend: boolean
   /** Buddgy may speak up with screen-aware tips (persisted; AI settings switch). */
@@ -261,6 +264,7 @@ export const useSettingsStore = create<SettingsState>()(
       aiChatSeed: null,
       focusInsightId: null,
       insightsSeen: null,
+      insightsRemindedAt: null,
       aiChatSeedSend: false,
       buddgyNudges: true,
       setBuddgyNudges: (on) => set({ buddgyNudges: on }),
@@ -337,6 +341,7 @@ export const useSettingsStore = create<SettingsState>()(
       clearAiChatSeed: () => set({ aiChatSeed: null, aiChatSeedSend: false }),
       setFocusInsightId: (id) => set({ focusInsightId: id }),
       setInsightsSeen: (sig) => set({ insightsSeen: sig }),
+      setInsightsRemindedAt: (at) => set({ insightsRemindedAt: at }),
       openDebtSheetNew: (family) =>
         set({
           debtSheetPaymentOnly: false,
@@ -406,6 +411,7 @@ export const useSettingsStore = create<SettingsState>()(
         budgetStudioDraft: state.budgetStudioDraft,
         buddgyLearning: state.buddgyLearning,
         insightsSeen: state.insightsSeen,
+        insightsRemindedAt: state.insightsRemindedAt,
       }),
     }
   )
