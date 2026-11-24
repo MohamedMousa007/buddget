@@ -2402,6 +2402,12 @@ export interface Dictionary {
     currency: string
     setDefaultSub: string
     saveMethod: string
+    linkedAccount: string
+    linkedNone: string
+    relinkTitle: string
+    relinkBody: string
+    unlinkBody: string
+    relinkConfirm: string
     chooseProvider: string
     searchProviderPlaceholder: string
     allProviders: string

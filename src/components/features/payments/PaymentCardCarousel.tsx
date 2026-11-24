@@ -156,7 +156,7 @@ export function PaymentCardCarousel({
                 bank={cardBankName(m, parent)}
                 kind={cardKindLabel(m.type, t.accountsPage)}
                 last4={m.last4}
-                holder={label || (onMenu || isSelected ? m.currency : undefined)}
+                holder={[label, onMenu || isSelected ? m.currency : undefined].filter(Boolean).join(' · ') || undefined}
                 currency={m.currency}
                 network={cardNetworkIfKnown(m)}
                 defaultLabel={m.isDefault && defaultLabel ? defaultLabel : undefined}

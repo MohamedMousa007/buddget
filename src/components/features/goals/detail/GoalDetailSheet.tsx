@@ -2,7 +2,7 @@
 
 import { intlTag } from '@/lib/i18n/dateFormat'
 import { useMemo, useState } from 'react'
-import { MoreHorizontal, Pause, Pencil, Play, Trash2, Trophy } from 'lucide-react'
+import { MoreVertical, Pause, Pencil, Play, Trash2, Trophy } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { goalCategoryLabelKey } from '@/components/features/goals/goalCategoryLabel'
 import { CheckpointBar, type CheckpointTone } from '@/components/features/goals/CheckpointBar'
@@ -163,7 +163,7 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
             </V3SheetHeader.Subtitle>
             <V3SheetHeader.Extra>
               <IconButton aria-label={d.more} aria-haspopup="menu" aria-expanded={menu !== null} onClick={(e) => setMenu(e.currentTarget.getBoundingClientRect())}>
-                <MoreHorizontal />
+                <MoreVertical />
               </IconButton>
             </V3SheetHeader.Extra>
           </V3SheetHeader>

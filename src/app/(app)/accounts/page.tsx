@@ -40,6 +40,7 @@ type Sheet =
   | { kind: 'fix'; id: string }
   | { kind: 'card'; id: string }
   | { kind: 'edit'; id: string }
+  | { kind: 'editCard'; id: string; cardId: string }
   | { kind: 'add'; cash?: boolean }
   | { kind: 'found' }
   | { kind: 'unplaced' }
@@ -81,6 +82,7 @@ export default function AccountsPage() {
   const banks = model.accounts.filter((a) => a.method.type === 'bank_account' || a.method.type === 'prepaid_card')
   const wallets = model.accounts.filter((a) => a.method.type === 'wallet' || a.method.type === 'cash')
   const open = sheet && 'id' in sheet ? model.accounts.find((a) => a.method.id === sheet.id) : undefined
+  const editCard = sheet?.kind === 'editCard' && open ? open.cards.find((c) => c.id === sheet.cardId) : undefined
   const close = () => { setSheet(null); clearAccountPrefill(); setFoundOpen(false) }
   const foundSheetOpen = sheet?.kind === 'found' || foundOpen
   const addOpen = sheet?.kind === 'add' || accountPrefill !== null
@@ -155,7 +157,8 @@ export default function AccountsPage() {
         <>
           <AccountDetailSheet key={`d-${open.method.id}`} open={sheet?.kind === 'detail'} onClose={close} account={open} masked={listMasked}
             onMove={(mode) => setSheet({ kind: 'move', id: open.method.id, mode })} onUpdate={() => setSheet({ kind: 'update', id: open.method.id })}
-            onAddCard={() => setSheet({ kind: 'card', id: open.method.id })} onEdit={() => setSheet({ kind: 'edit', id: open.method.id })} />
+            onAddCard={() => setSheet({ kind: 'card', id: open.method.id })} onEdit={() => setSheet({ kind: 'edit', id: open.method.id })}
+            onEditCard={(cardId) => setSheet({ kind: 'editCard', id: open.method.id, cardId })} />
           <MoveMoneySheet key={`m-${open.method.id}-${sheet?.kind === 'move' ? sheet.mode : ''}`} open={sheet?.kind === 'move'} onClose={close}
             accounts={model.accounts} initialAccountId={open.method.id} initialMode={sheet?.kind === 'move' ? sheet.mode : 'cash'} initialAmount={sheet?.kind === 'move' ? sheet.amount : undefined}
             onDone={() => { const g = gaps[open.method.id]; if (g && sheet?.kind === 'move' && sheet.fromGap) { snoozeGap(open.method.id, g.reportedAt); refresh() } }} />
@@ -167,6 +170,10 @@ export default function AccountsPage() {
           ) : null}
           <PaymentMethodSetupSheet open={sheet?.kind === 'card'} editing={null} baseCurrency={settings.baseCurrency} parentAccountId={open.method.id} nested onClose={close} />
           <PaymentMethodSetupSheet key={`e-${open.method.id}`} open={sheet?.kind === 'edit'} editing={open.method} baseCurrency={settings.baseCurrency} nested onClose={close} />
+          {editCard ? (
+            <PaymentMethodSetupSheet key={`ec-${editCard.id}`} open editing={editCard} baseCurrency={settings.baseCurrency} nested
+              onClose={() => setSheet({ kind: 'detail', id: open.method.id })} />
+          ) : null}
         </>
       ) : null}
       <AddAccountSheet key={addKey} open={addOpen} prefill={accountPrefill ?? undefined} initialKind={sheet?.kind === 'add' && sheet.cash ? 'cash' : 'bank_account'} onClose={close} onAddCard={(id) => setSheet({ kind: 'card', id })} />

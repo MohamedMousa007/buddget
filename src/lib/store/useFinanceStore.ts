@@ -622,7 +622,11 @@ export const useFinanceStore = create<FinanceStore>()(
         const key = (m: Pick<PaymentMethod, 'name' | 'type' | 'currency' | 'last4'>) =>
           [m.name.trim().toLowerCase(), m.type, m.currency, m.last4 ?? ''].join('|')
         const twin = get().paymentMethods.find((m) => m.id !== 'pm_default_cash' && !m.closedAt && key(m) === key(method))
-        if (twin) return twin.id
+        if (twin) {
+          // Adding an existing standalone card under an account links that card instead of dropping the link.
+          if (method.parentId && !twin.parentId) get().updatePaymentMethod(twin.id, { parentId: method.parentId })
+          return twin.id
+        }
         const pmId = generateId()
         const nowIso = new Date().toISOString()
         const newMethod: PaymentMethod = { ...method, id: pmId, createdAt: nowIso, updatedAt: nowIso }

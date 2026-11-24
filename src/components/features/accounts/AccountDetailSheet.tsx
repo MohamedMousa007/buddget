@@ -37,16 +37,20 @@ interface AccountDetailSheetProps {
   onUpdate: () => void
   onAddCard: () => void
   onEdit: () => void
+  /** Edit one of the account's cards (the setup sheet in edit mode). */
+  onEditCard: (cardId: string) => void
 }
 
 /** One account, card first: its own cards, the balance split into free and set aside, three actions, activity. */
-export function AccountDetailSheet({ open, onClose, account, masked, onMove, onUpdate, onAddCard, onEdit }: AccountDetailSheetProps) {
+export function AccountDetailSheet({ open, onClose, account, masked, onMove, onUpdate, onAddCard, onEdit, onEditCard }: AccountDetailSheetProps) {
   const tAll = useT()
   const { locale } = useLocale()
   const t = tAll.accountsPage
   const confirm = useConfirm()
   const updatePaymentMethod = useFinanceStore((s) => s.updatePaymentMethod)
+  const deletePaymentMethod = useFinanceStore((s) => s.deletePaymentMethod)
   const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null)
+  const [cardMenu, setCardMenu] = useState<{ id: string; anchor: DOMRect } | null>(null)
   const expenses = useFinanceStore((s) => s.expenses)
   const methods = useFinanceStore((s) => s.paymentMethods)
   const [active, setActive] = useState(0)
@@ -79,6 +83,21 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
     }]),
   ]
 
+  // The same card actions as Profile → Cards, so both screens manage a card the same way.
+  const menuCard = cardMenu ? cards.find((c) => c.id === cardMenu.id) ?? null : null
+  const cardItems = menuCard ? [
+    { label: tAll.paymentMethods.edit, icon: <Pencil size={17} />, onSelect: () => onEditCard(menuCard.id) },
+    ...(menuCard.isDefault ? [] : [{ label: tAll.paymentMethods.setDefault, icon: <Star size={17} />, onSelect: () => updatePaymentMethod(menuCard.id, { isDefault: true }) }]),
+    {
+      label: tAll.paymentMethods.delete, icon: <Trash2 size={17} />, destructive: true,
+      onSelect: async () => {
+        if (!(await confirm({ title: tAll.paymentMethods.delete, body: t.closeAccountBody(0), destructive: true }))) return
+        deletePaymentMethod(menuCard.id)
+        setActive(0)
+      },
+    },
+  ] : []
+
   const heldPct = balance && balance.balance > 0 ? Math.min(100, (balance.held / balance.balance) * 100) : 0
   return (
     <ModalShell open={open} onBackdropClick={onClose} scrollChild panelClassName={canBeParent(method.type) ? 'h-[min(88dvh,760px)]' : ''}>
@@ -98,7 +117,7 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
           {canBeParent(method.type) ? (
             <div className="px-5">
               {cards.length > 0 ? (
-                <PaymentCardCarousel methods={cards} active={active} onActiveChange={setActive} defaultLabel="" hint="" onAddCard={onAddCard} addLabel={t.addACard} />
+                <PaymentCardCarousel methods={cards} active={active} onActiveChange={setActive} defaultLabel="" hint="" onAddCard={onAddCard} addLabel={t.addACard} onMenu={(id, anchor) => setCardMenu({ id, anchor })} />
               ) : (
                 <Button variant="outline" size="cta-block" onClick={onAddCard}>{t.addACard}</Button>
               )}
@@ -166,6 +185,8 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
         </div>
       </div>
       <CardActionMenu anchor={menuAnchor} items={manageItems} onClose={() => setMenuAnchor(null)} zClassName="z-[110]" />
+      <CardActionMenu anchor={menuCard && cardMenu ? cardMenu.anchor : null} items={cardItems} onClose={() => setCardMenu(null)} zClassName="z-[110]"
+        title={menuCard ? `${accountTitle(menuCard)}${menuCard.last4 ? ` ••${menuCard.last4}` : ''}` : undefined} />
     </ModalShell>
   )
 }
