@@ -19,7 +19,7 @@ export default defineConfig({
   retries: Number(process.env.QA_RETRIES ?? 1),
   reporter: [['list'], ['json', { outputFile: './test-results/results.json' }]],
   use: {
-    baseURL: 'http://localhost:3100',
+    baseURL: process.env.QA_BASE ?? 'http://localhost:3100',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     bypassCSP: true,

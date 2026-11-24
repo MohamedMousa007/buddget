@@ -18,7 +18,7 @@ export default defineConfig({
   retries: 0,
   reporter: [['line']],
   use: {
-    baseURL: 'http://localhost:3100', trace: 'off', screenshot: 'only-on-failure', bypassCSP: true, actionTimeout: 30_000, navigationTimeout: 90_000,
+    baseURL: process.env.QA_BASE ?? 'http://localhost:3100', trace: 'off', screenshot: 'only-on-failure', bypassCSP: true, actionTimeout: 30_000, navigationTimeout: 90_000,
     locale: 'en-US', timezoneId: 'Africa/Cairo', launchOptions: chrome ? { executablePath: chrome } : {},
   },
   projects: [

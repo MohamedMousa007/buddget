@@ -42,7 +42,9 @@ export { expect }
 
 export async function signIn(page: Page, email: string, password = PASSWORD) {
   await page.goto('/flow', { waitUntil: 'domcontentloaded' })
-  await page.getByRole('textbox', { name: 'Email' }).fill(email)
+  // The dev server sometimes serves a blank first paint while it compiles (or after it restarts on its memory threshold); reload once.
+  if (!(await page.getByRole('textbox', { name: 'Email' }).isVisible({ timeout: 30_000 }).catch(() => false))) await page.reload({ waitUntil: 'domcontentloaded' })
+  await page.getByRole('textbox', { name: 'Email' }).fill(email, { timeout: 60_000 })
   await page.getByRole('button', { name: 'Continue', exact: true }).click()
   await page.getByRole('textbox', { name: 'Password' }).fill(password)
   await page.getByRole('button', { name: 'Sign me in' }).click()
