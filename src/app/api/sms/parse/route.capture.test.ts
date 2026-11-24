@@ -364,6 +364,7 @@ describe('BDG-008: first_sms_at is this phone\'s verified fact', () => {
 
 describe('BUD-104: one message caught twice by this phone', () => {
   const at = (s: number) => new Date(Date.parse('2026-11-15T16:23:11Z') + s * 1000).toISOString()
+  beforeEach(() => { vi.setSystemTime(new Date('2026-11-15T16:24:00Z')) })
 
   it('books and flags the copy 17 s later, never drops it, and lets the question say it was caught twice', async () => {
     h.deviceId = 'phone-a'
@@ -385,7 +386,10 @@ describe('BUD-104: one message caught twice by this phone', () => {
 
 describe('QA-32: one message, two movements', () => {
   const TWO = 'Account ***3307 was debited EGP 100.00 for purchase at UBER on 16-11-2026 08:00. Account ***3307 was debited EGP 250.00 for purchase at STARBUCKS on 16-11-2026 08:30'
-  beforeEach(() => { h.realCurated = true })
+  beforeEach(() => {
+    h.realCurated = true
+    vi.setSystemTime(new Date('2026-11-16T06:32:00Z'))
+  })
 
   it('books each movement on its own claim and answers with both', async () => {
     const res = await post({ message: TWO, receivedAt: '2026-11-16T08:31:00+02:00', eventId: EVT(1) })

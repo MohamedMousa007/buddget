@@ -10,7 +10,7 @@ const h = vi.hoisted(() => {
     from: vi.fn((): unknown => { throw new Error('no table mock') }),
     cleanups: [] as Array<() => void>,
     online: true,
-    saveFingerprint: vi.fn(),
+    saveFingerprint: vi.fn(() => true),
   }
 })
 

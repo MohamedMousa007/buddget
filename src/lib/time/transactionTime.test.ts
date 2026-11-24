@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { transactionTime } from './transactionTime'
 
-// Runs in Africa/Cairo (UTC+2 in November).
+// Instants are built from local wall times so the file holds in every TZ the suite runs in.
+const local = (wall: string) => new Date(wall).toISOString()
+
 describe('transactionTime', () => {
   it('shows the local time of a row that carries one on its own day', () => {
-    expect(transactionTime('2026-11-20T13:30:00.000Z', '2026-11-20', 'en')).toBe('3:30 PM')
+    expect(transactionTime(local('2026-11-20T15:30:00'), '2026-11-20', 'en')).toBe('3:30 PM')
   })
 
   it('is null without a time', () => {
@@ -13,8 +15,8 @@ describe('transactionTime', () => {
   })
 
   it('is null when the instant falls on another local day than the row', () => {
-    expect(transactionTime('2026-11-19T22:30:00.000Z', '2026-11-20', 'en')).toBe('12:30 AM')
-    expect(transactionTime('2026-11-20T22:30:00.000Z', '2026-11-20', 'en')).toBeNull()
+    expect(transactionTime(local('2026-11-20T00:30:00'), '2026-11-20', 'en')).toBe('12:30 AM')
+    expect(transactionTime(local('2026-11-21T00:30:00'), '2026-11-20', 'en')).toBeNull()
   })
 
   it('is null for the invented local noon of a re-dated row', () => {
@@ -23,6 +25,6 @@ describe('transactionTime', () => {
   })
 
   it('formats in Arabic with Latin digits', () => {
-    expect(transactionTime('2026-11-20T13:30:00.000Z', '2026-11-20', 'ar')).toMatch(/3:30/)
+    expect(transactionTime(local('2026-11-20T15:30:00'), '2026-11-20', 'ar')).toMatch(/3:30/)
   })
 })

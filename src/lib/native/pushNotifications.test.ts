@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/lib/native/isNative', () => ({ isNative: () => true, getPlatform: () => 'android', isIOS: () => false }))
-vi.mock('@/lib/native/deviceId', () => ({ getOrCreateDeviceId: async () => 'dev1' }))
+vi.mock('@/lib/native/deviceId', () => ({ getOrCreateDeviceId: async () => 'dev1', getInstallKey: async () => 'ik1' }))
 vi.mock('@/lib/apiBase', () => ({ apiUrl: (p: string) => p }))
 const getSession = vi.fn()
 vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({ auth: { getSession } }) }))
