@@ -9,6 +9,7 @@ import { PrivacyRows } from '@/components/features/settings/hub/PrivacyRows'
 import { ProfileBanner } from '@/components/features/settings/hub/ProfileBanner'
 import { SettingsSearch } from '@/components/features/settings/hub/SettingsSearch'
 import { SmsCard } from '@/components/features/settings/hub/SmsCard'
+import { SupportUnreadTrailing } from '@/components/features/settings/hub/support/SupportUnreadTrailing'
 import { SettingsRow } from '@/components/features/settings/SettingsRow'
 import { SettingsSection } from '@/components/features/settings/SettingsSection'
 import { SETTING_ICONS } from '@/components/features/settings/settingIcons'
@@ -60,7 +61,7 @@ export default function SettingsPage() {
         {user ? <SmsCard title={p.tracking} vivid>{aiRow}</SmsCard> : <SettingsSection title={p.tracking}>{aiRow}</SettingsSection>}
         <PrivacyRows />
         <SettingsSection title={p.support}>
-          <SettingsRow icon={SETTING_ICONS.help} tone={2} solid title={p.helpFeedback} href="/settings/help" />
+          <SettingsRow icon={SETTING_ICONS.help} tone={2} solid title={p.helpFeedback} href="/settings/help" trailing={user ? <SupportUnreadTrailing /> : undefined} />
           <SettingsRow icon={SETTING_ICONS.file} tone="neutral" solid title={p.aboutLegal} href="/settings/about" />
         </SettingsSection>
         {user ? (
