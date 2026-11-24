@@ -86,3 +86,30 @@ test('K2 Cash changes currency: with money in it, the amount is asked again in t
     await expect(row).toContainText(/USD|\$/)
   })
 })
+
+test('K3 an empty Cash follows a main-currency switch, and Undo puts both back [J8, QA bug 15, D16]', async ({ page, user }) => {
+  const cash = await localWait(page, (s) => s.paymentMethods.find((m: any) => m.type === 'cash' && m.id !== 'pm_default_cash' && !m.closedAt))
+  expect(cash.currency).toBe('EGP')
+  expect(cash.openingBalance ?? 0).toBe(0)
+
+  await test.step('Settings > Currency: switch the main currency to USD', async () => {
+    await goto(page, '/settings')
+    await page.getByRole('button', { name: /^Currency: EGP/ }).click()
+    const sheet = dialog(page, 'Currencies')
+    await sheet.getByRole('button', { name: 'US Dollar USD' }).click()
+    const ask = page.getByRole('dialog').or(page.getByRole('alertdialog')).filter({ hasText: 'Switch main currency to USD?' }).last()
+    await ask.getByRole('button', { name: 'Switch to USD' }).click()
+    await expect(page.getByText('Main currency is now USD')).toBeVisible()
+  })
+
+  await test.step('the empty Cash is now USD, on the device and on the server', async () => {
+    await localWait(page, (s) => s.paymentMethods.find((m: any) => m.id === cash.id && m.currency === 'USD'))
+    await serverRows('payment_methods', user.id, `id=eq.${cash.id}`, (r: any[]) => r[0]?.currency === 'USD')
+  })
+
+  await test.step('Undo: main currency and Cash are EGP again', async () => {
+    await page.getByRole('button', { name: 'Undo' }).click()
+    await localWait(page, (s) => s.paymentMethods.find((m: any) => m.id === cash.id && m.currency === 'EGP'))
+    await serverRows('payment_methods', user.id, `id=eq.${cash.id}`, (r: any[]) => r[0]?.currency === 'EGP')
+  })
+})

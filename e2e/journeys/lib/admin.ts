@@ -66,6 +66,11 @@ export async function rows<T = any>(table: string, userId: string, query = ''): 
   return call(`/rest/v1/${table}?${col}=eq.${userId}${query ? `&${query}` : ''}`) as Promise<T[]>
 }
 
+/** Service-role insert of seed rows for one synthetic user (the fixture's own user id), returning the inserted rows. */
+export async function insertRows<T = any>(table: string, userId: string, data: Record<string, unknown>[]): Promise<T[]> {
+  return call(`/rest/v1/${table}`, { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(data.map((r) => ({ ...r, user_id: userId }))) }) as Promise<T[]>
+}
+
 /** Deletes a synthetic user (rows cascade from auth.users). */
 export async function deleteUser(email: string): Promise<void> {
   guard(email)
