@@ -306,6 +306,22 @@ export interface Dictionary {
     addTheExpense: string
     moveIntoPocket: string
     remindMeLater: string
+    extraFindIt: (amount: string) => string
+    extraTitle: (amount: string) => string
+    extraSub: string
+    extraWord: string
+    whereDidItComeFrom: string
+    incomeNotLogged: string
+    incomeNotLoggedSub: string
+    addAsIncome: string
+    transferIn: string
+    transferInSub: string
+    recordTransfer: string
+    pocketNeverLeft: string
+    pocketNeverLeftSub: (amount: string) => string
+    undoPocketDeposit: string
+    correctBalance: string
+    correctBalanceSub: string
     addAccountTitle: string
     chooseBank: string
     accountName: string
