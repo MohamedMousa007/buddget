@@ -59,7 +59,7 @@ function ThemeTrail() {
   const t = useT()
   const theme = useFinanceStore((s) => s.settings.theme)
   const update = useFinanceStore((s) => s.updateSettings)
-  const dark = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  const dark = theme === 'dark'
   return (
     <Switch
       size="touch"

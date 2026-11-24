@@ -2484,6 +2484,8 @@ export const useFinanceStore = create<FinanceStore>()(
             budgetEntryMode: p.settings?.budgetEntryMode ?? current.settings.budgetEntryMode,
             enableAI: p.settings?.enableAI ?? current.settings.enableAI,
             aiProvider: p.settings?.aiProvider ?? current.settings.aiProvider,
+            // A saved 'system' (the removed third option) falls back to the product default.
+            theme: p.settings?.theme === 'dark' || p.settings?.theme === 'light' ? p.settings.theme : current.settings.theme,
             noIncomeDeclared: p.settings?.noIncomeDeclared ?? current.settings.noIncomeDeclared,
             showAllCurrenciesInForms: (() => {
               const ps = p.settings as

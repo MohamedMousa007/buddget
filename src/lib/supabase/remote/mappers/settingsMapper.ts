@@ -5,7 +5,7 @@ import type { UserSettingsRow, UserSettingsInsert } from '@/lib/supabase/remote/
 export function settingsToRow(s: AppSettings, userId: string): UserSettingsInsert {
   return {
     user_id: userId,
-    theme: s.theme === 'system' ? 'dark' : s.theme,
+    theme: s.theme,
     language: s.language,
     enable_ai: s.enableAI,
     ai_provider: s.aiProvider,

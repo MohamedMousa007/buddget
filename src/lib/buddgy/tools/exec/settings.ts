@@ -31,7 +31,7 @@ interface Patch {
   ui?: { tips?: boolean; learning?: boolean }
 }
 
-const THEMES = ['light', 'dark', 'system'] as const
+const THEMES = ['light', 'dark'] as const
 const LANGUAGES = ['en', 'ar'] as const
 const ENTRY_MODES = ['amount', 'percent_of_income'] as const
 const SAMPLE_AMOUNT = 1250
@@ -94,8 +94,8 @@ function plan(key: Key, raw: unknown, v: View): Planned {
   }
   switch (key) {
     case 'theme': {
-      const theme = pick(THEMES, raw, { auto: 'system' })
-      return theme ? { value: theme, patch: { fin: { theme } } } : bad('Use light, dark or system.')
+      const theme = pick(THEMES, raw)
+      return theme ? { value: theme, patch: { fin: { theme } } } : bad('Use light or dark.')
     }
     case 'language': {
       const language = pick(LANGUAGES, raw, { english: 'en', arabic: 'ar' })
@@ -160,7 +160,7 @@ function fieldFor(key: Key, v: View, ctx: ToolContext, label: string): EditableF
   const hub = settingsHubCopy[ctx.locale]
   const options = ((): { value: string; label: string }[] => {
     switch (key) {
-      case 'theme': return [{ value: 'light', label: hub.themeLight }, { value: 'dark', label: hub.themeDark }, { value: 'system', label: L.auto }]
+      case 'theme': return [{ value: 'light', label: hub.themeLight }, { value: 'dark', label: hub.themeDark }]
       case 'language': return [{ value: 'en', label: L.english }, { value: 'ar', label: L.arabic }]
       case 'budgetEntryMode': return [{ value: 'amount', label: hub.memory.entryAmount }, { value: 'percent_of_income', label: hub.memory.entryPercent }]
       case 'monthStartDay': return Array.from({ length: PAY_CYCLE_MAX_DAY }, (_, i) => ({ value: String(i + 1), label: L.day(i + 1) }))

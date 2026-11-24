@@ -53,7 +53,7 @@ export function DevAuthBypassSeed() {
     ;(window as unknown as Record<string, unknown>).__billing = useBillingStore
     ;(window as unknown as Record<string, unknown>).__weekCheck = useWeekCheckStore
     ;(window as unknown as Record<string, unknown>).__usage = useUsageStore
-    ;(window as unknown as Record<string, unknown>).__qa = { plan: qaPlan, lang: (language: 'en' | 'ar') => useFinanceStore.getState().updateSettings({ language }), theme: (theme: 'light' | 'dark' | 'system') => useFinanceStore.getState().updateSettings({ theme }), name: (name: string) => useFinanceStore.getState().updateProfile({ name }) }
+    ;(window as unknown as Record<string, unknown>).__qa = { plan: qaPlan, lang: (language: 'en' | 'ar') => useFinanceStore.getState().updateSettings({ language }), theme: (theme: 'light' | 'dark') => useFinanceStore.getState().updateSettings({ theme }), name: (name: string) => useFinanceStore.getState().updateProfile({ name }) }
     const st = useFinanceStore.getState()
     st.setDataReady(true)
     if (!st.profile.name) st.updateProfile({ name: 'Layla Hassan' })

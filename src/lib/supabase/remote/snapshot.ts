@@ -77,7 +77,7 @@ export function emptySnapshot(): Snapshot {
       baseCurrency: DEFAULT_SETTINGS.baseCurrency,
       secondaryCurrency: null,
       showSecondaryCurrency: false,
-      theme: 'dark',
+      theme: 'light',
       language: 'en',
       showCentsInDashboard: true,
       monthStartDay: 1,
