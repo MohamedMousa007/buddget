@@ -441,4 +441,23 @@ describe('QA-32: one message, two movements', () => {
       process.env.GEMINI_API_KEY = ''
     }
   })
+
+  it('a two-movement message the model refuses to read is still held for the user, not rejected', async () => {
+    h.realCurated = false
+    h.curated = null
+    process.env.GEMINI_API_KEY = 'test-key'
+    const reading = { is_transaction: false, amount: null, currency: null, confidence: 0, kind: null, merchant: null }
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(reading) }] } }] }), { status: 200 })))
+    try {
+      const SHOP = 'Card **1234 purchase EGP 20.00 at CAFE. Card **1234 purchase EGP 35.00 at DELI.'
+      const res = await (await post({ message: SHOP, receivedAt: '2026-11-16T08:31:00+02:00', eventId: EVT(1) })).json()
+      expect(res).toMatchObject({ ok: true, held: true, reason: 'multi_amount' })
+      expect(h.dispatch).not.toHaveBeenCalled()
+      expect(claims()[0]).toMatchObject({ status: 'logged', awaiting_confirmation: true, failure_code: 'multi_amount' })
+      expect(claims()[0].learn_status).not.toBe('pending')
+    } finally {
+      vi.unstubAllGlobals()
+      process.env.GEMINI_API_KEY = ''
+    }
+  })
 })

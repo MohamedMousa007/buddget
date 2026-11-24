@@ -1124,6 +1124,8 @@ async function ingestOne(input: IngestBase & { rawMessage: string; identity: str
 
   // Reject only true non-transactions — NEVER for a missing currency (Egyptian
   // wallet SMS often omit it). resolveCurrency backfills below.
+  // Two movements stated in one wording are a bank message even when the model refuses to read it as one (QA-32).
+  if (!parsed.is_transaction && multiAmount) return holdForReview('multi_amount')
   if (!parsed.is_transaction) {
     await service.from('sms_parse_log')
       .update({
