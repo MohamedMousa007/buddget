@@ -67,7 +67,7 @@ describe('debt principal leg', () => {
   }
   const receive = (debtId: string, amount: number) =>
     s().addDebtPayment({ debtId, date: localTodayISO(), amountPaid: amount, originalAmount: amount, paymentCurrency: base(), paymentMethodId: cib })
-  const smsTransfer = (amount = 5000, daysAgo = 1, method: string | null = cib) => {
+  const smsTransfer = (amount = 5000, daysAgo = 0, method: string | null = cib) => {
     const at = ago(daysAgo)
     s().addExpense({
       date: localTodayISO(at), occurredAt: at.toISOString(), description: 'IPN transfer', category: 'Instapay', amount,
@@ -273,7 +273,7 @@ describe('debt principal leg', () => {
     })
 
     it('borrowing: the matching deposit is linked as borrowed money and the account is credited exactly once', () => {
-      const at = ago(1)
+      const at = new Date()
       s().addIncomeEvent({ name: 'Transfer in', amount: 5000, currency: base() as Currency, receivedDate: localTodayISO(at), occurredAt: at.toISOString(), status: 'confirmed', paymentMethodId: cib, smsLogId: 'sms-in' } as never)
       const ev = s().incomeEvents.at(-1)!
       expect(bal()).toBe(START + 5000)

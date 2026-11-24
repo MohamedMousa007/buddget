@@ -21,6 +21,7 @@ import { overdueDays, isLate } from '@/lib/income/paydaySummary'
 import { fillSlots } from '@/lib/ui/fillSlots'
 import { useT } from '@/lib/i18n'
 import type { IncomeEvent, IncomeSource } from '@/lib/store/types'
+import { isBorrowedMoney } from '@/lib/income/borrowed'
 
 const REALIZED = new Set<IncomeEvent['status']>(['confirmed', 'late', 'partial'])
 const DAY = 86_400_000
@@ -171,7 +172,7 @@ function LinkCreditSheet({ open, onClose, source, occ }: { open: boolean; onClos
   const credits = useMemo(() => {
     const due = parseISO(occ.dueDate).getTime()
     return incomeEvents
-      .filter((e) => !e.templateId && REALIZED.has(e.status) && !e.linkedDebtId && !e.linkedSavingsAccountId)
+      .filter((e) => !e.templateId && REALIZED.has(e.status) && !isBorrowedMoney(e) && !e.linkedSavingsAccountId)
       .map((e) => ({ e, dist: Math.abs(parseISO(e.receivedDate).getTime() - due) / DAY }))
       .filter((c) => c.dist <= 45)
       .sort((a, b) => a.dist - b.dist)

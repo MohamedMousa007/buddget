@@ -15,6 +15,7 @@ import { debtFromRow, debtToRow } from '@/lib/supabase/remote/mappers/debtMapper
 import type { DebtRow } from '@/lib/supabase/remote/types'
 import type { Currency, Debt, DebtCurrency, IncomeSourceType } from '@/lib/store/types'
 import { isBorrowedMoney } from '@/lib/income/borrowed'
+import { incomeMatches } from '@/lib/income/paydayResolution'
 import { findPrincipalMatch, linkedIncomePatch, principalAccount, principalLegFields } from '../principalLeg'
 import { confirmPrincipalDuplicate, declinePrincipalDuplicate, pendingPrincipalDuplicates, principalDuplicateKey } from '../principalDuplicate'
 
@@ -175,7 +176,7 @@ describe('borrowed money is never income (council Q3) and a late bank row is ask
 
   describe('unlinking', () => {
     it('a linked deposit leaves income, keeps its own type, and deleting the debt counts it again as what it was', () => {
-      const ev = smsDeposit({ sourceType: 'gift' }, 1)
+      const ev = smsDeposit({ sourceType: 'gift' })
       expect(stats().totalIncome).toBe(5000)
       const id = create('i_owe', false)
       s().updateIncomeEvent(ev.id, linkedIncomePatch(id))
@@ -197,6 +198,11 @@ describe('borrowed money is never income (council Q3) and a late bank row is ask
       expect(s().incomeEvents.at(-1)).toMatchObject({ sourceType: 'debt' })
       expect(s().incomeEvents.at(-1)!.linkedDebtId).toBeUndefined()
       expect(stats().totalIncome).toBe(0)
+      // It is still not a paycheck: payday matching must not pick it up once the link is gone.
+      const payday = new Date().getDate()
+      s().addIncomeSource({ name: 'Salary', amount: 5000, currency: base() as Currency, isRecurring: true, frequency: 'monthly', dayOfMonth: payday, paydayDays: [payday], sourceType: 'salary' } as never)
+      useFinanceStore.setState((st) => ({ incomeSources: st.incomeSources.map((x) => ({ ...x, effectiveStart: localTodayISO(ago(40)), createdAt: ago(40).toISOString() })) }))
+      expect(incomeMatches(s().incomeSources, s().incomeEvents, s().settings.monthStartDay, s().exchangeRates, new Date(), [])).toEqual([])
     })
   })
 
