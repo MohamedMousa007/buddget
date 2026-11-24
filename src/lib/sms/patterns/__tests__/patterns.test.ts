@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { matchCuratedPattern, ALL_PATTERN_SETS } from '../index'
+import { matchCuratedPattern, splitCuratedSegments, ALL_PATTERN_SETS } from '../index'
 import { isNonTransaction } from '../preFilter'
 
 // Real captured SMS (sms_parse_log, June 2026) — first-class fixtures.
@@ -507,5 +507,40 @@ describe('compact Saudi Arabic formats, invented fixtures', () => {
     expect(matchCuratedPattern('شراء PoS\nعبر:1234;مدى-ابل باي\nمرفوضة', null)).toBeNull()
     expect(matchCuratedPattern('شراء انترنت بطاقة:1234;مدى\nمن:5678\nرمز التحقق 123456', null)).toBeNull()
     expect(matchCuratedPattern('حوالة داخلية واردة قيد المراجعة بـSR 250', null)).toBeNull()
+  })
+})
+
+describe('splitCuratedSegments (QA-32)', () => {
+  const TWO = 'Account ***3307 was debited EGP 100.00 for purchase at UBER on 16-11-2026 08:00. Account ***3307 was debited EGP 250.00 for purchase at STARBUCKS on 16-11-2026 08:30'
+
+  it('reads only the first statement of a two-transaction message', () => {
+    expect(matchCuratedPattern(TWO, null)?.amount).toBe(100)
+  })
+
+  it('cuts one text per statement, each read on its own', () => {
+    const parts = splitCuratedSegments(TWO, null)
+    expect(parts).toHaveLength(2)
+    const reads = parts.map((p) => matchCuratedPattern(p, null))
+    expect(reads.map((r) => [r?.amount, r?.counterparty, r?.txDay])).toEqual([[100, 'UBER', '2026-11-16'], [250, 'STARBUCKS', '2026-11-16']])
+  })
+
+  it('keeps the words before the first statement with it', () => {
+    const parts = splitCuratedSegments(`Your HSBC ${TWO}`, 'HSBC')
+    expect(parts[0].startsWith('Your HSBC Account')).toBe(true)
+    expect(parts).toHaveLength(2)
+  })
+
+  it('twin statements still give two pieces', () => {
+    const one = 'Account ***3307 was debited EGP 40.00 for purchase at CAFE on 16-11-2026 08:00.'
+    expect(splitCuratedSegments(`${one} ${one}`, null)).toEqual([one, one])
+  })
+
+  it('one statement with its balance clause stays whole', () => {
+    expect(splitCuratedSegments(HSBC_PURCHASE, 'HSBC')).toEqual([HSBC_PURCHASE])
+    expect(splitCuratedSegments(HSBC_IPN_OUT, 'HSBC')).toEqual([HSBC_IPN_OUT])
+  })
+
+  it('a message no curated pattern reads stays whole', () => {
+    expect(splitCuratedSegments('hello EGP 5', null)).toEqual(['hello EGP 5'])
   })
 })

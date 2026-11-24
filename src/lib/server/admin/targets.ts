@@ -1,5 +1,5 @@
 import type { AdminContext } from './guard'
-import { outranks } from '@/lib/admin/permissions'
+import { OWNER_ROLE, outranks } from '@/lib/admin/permissions'
 
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -16,3 +16,6 @@ export async function blockedTarget(ctx: AdminContext, targetUserId: string, opt
   if (!role || !outranks(ctx.role.rank, role.rank)) return 'That account belongs to staff at or above your level.'
   return null
 }
+
+/** Anyone allowed to reset may reset their own app account (testers start fresh); only the owner may delete their own. */
+export const selfAllowedOnApp = (roleKey: string, op: string): boolean => op === 'reset_data' || (roleKey === OWNER_ROLE && op === 'delete')

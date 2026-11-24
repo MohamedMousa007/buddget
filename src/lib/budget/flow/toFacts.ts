@@ -85,6 +85,15 @@ export function applyAnswers(base: BudgetFacts, a: Answers, intent?: 'save' | 'g
     const [name, amount] = c.split('|')
     addCommitment(name, Number(amount))
   }
+  // Stated utilities replace the typical figure where the plan has a utilities line (renting or owning); elsewhere they are a cost of their own.
+  const utilities = num(a, 'utilities')
+  // A rent the person said includes utilities keeps them out, whatever figure was typed.
+  if (utilities !== undefined && utilities > 0 && (typeof a.rentIncludesUtilities === 'boolean' ? a.rentIncludesUtilities : base.rentIncludesUtilities) !== true) {
+    if (f.housing === 'rent' || f.housing === 'own') {
+      f.utilitiesMonthly = Math.round(utilities * share)
+      f.rentIncludesUtilities = false
+    } else addCommitment('Utilities', utilities * share)
+  }
   if (extras.length > 0) f.extraCommitments = extras
 
   const household = str(a, 'household') as BudgetFacts['household'] | undefined

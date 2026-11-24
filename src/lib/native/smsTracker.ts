@@ -6,7 +6,7 @@ import { isAllowedSmsApiUrl } from '@/lib/native/smsApiUrl'
 import { isDue, loadRetryState, nextDelayMs, retryAfterMs, saveRetryState } from '@/lib/native/smsRetryState'
 
 /** Keys the native plugins accept for setSecureItem/getSecureItem/removeSecureItem. */
-export type SecureItemKey = 'biometric_secret' | 'admin_biometric_secret'
+export type SecureItemKey = 'biometric_secret' | 'admin_biometric_secret' | 'install_key'
 
 export interface SmsBridgeStatus {
   tokenSaved: boolean
@@ -78,9 +78,12 @@ export interface SmsCapacitorPlugin {
   setDeviceSecret(opts: { secret: string }): Promise<void>
   getDeviceSecret(): Promise<{ secret: string | null }>
   removeDeviceSecret(): Promise<void>
+  /** Android: SHA-256 hex of "buddget:" + ANDROID_ID (stable across reinstall, never the raw id). iOS does not implement it. */
+  getInstallKey(): Promise<{ key: string | null }>
   /** Biometric sign-in / admin unlock secrets, same secure store; only SecureItemKey names are accepted. Survive clearCredentials and clearState. */
   setSecureItem(opts: { key: SecureItemKey; value: string }): Promise<void>
-  getSecureItem(opts: { key: SecureItemKey }): Promise<{ value: string | null }>
+  /** `unavailable` (iOS): the store refused the read (e.g. before first unlock), so the item may still exist. */
+  getSecureItem(opts: { key: SecureItemKey }): Promise<{ value: string | null; unavailable?: boolean }>
   removeSecureItem(opts: { key: SecureItemKey }): Promise<void>
   /** Biometric sign-in / admin unlock secrets, same secure store; only the SecureItemKey names are accepted. Survive clearCredentials and clearState. */
   setSecureItem(opts: { key: SecureItemKey; value: string }): Promise<void>
@@ -182,6 +185,31 @@ function writePendingRevokes(userIds: string[]): void {
     if (userIds.length === 0) localStorage.removeItem(REVOKE_PENDING_KEY)
     else localStorage.setItem(REVOKE_PENDING_KEY, JSON.stringify(userIds))
   } catch { /* storage unavailable: nothing to remember the revoke with */ }
+}
+
+const LAST_OWNER_KEY = 'sms.lastOwner'
+const UNOWNED_OWNER_KEY = 'sms.unownedOwner'
+
+const unownedKey = (i: PendingSmsItem) => `${i.eventId ?? ''}|${i.receivedAt}|${i.message.length}`
+
+/**
+ * Who each unstamped queued message belongs to (BUD-42): the account that had drained on this phone before the message
+ * was first seen, the only one that can have caught it. Settled once per message, so a later account never inherits it.
+ * '' = no account had drained yet: it is kept, never sent, until the 30-day eviction. Never throws.
+ */
+function unownedOwners(unowned: readonly PendingSmsItem[], userId: string): Map<string, string> {
+  let saved: Record<string, string> = {}
+  let previous: string | null = null
+  try {
+    saved = JSON.parse(localStorage.getItem(UNOWNED_OWNER_KEY) ?? '{}') as Record<string, string>
+    previous = localStorage.getItem(LAST_OWNER_KEY)
+  } catch { /* storage unavailable: nothing is adopted */ }
+  const owners = new Map(unowned.map((i) => [unownedKey(i), typeof saved[unownedKey(i)] === 'string' ? saved[unownedKey(i)] : (previous ?? '')]))
+  try {
+    localStorage.setItem(UNOWNED_OWNER_KEY, JSON.stringify(Object.fromEntries(owners)))
+    localStorage.setItem(LAST_OWNER_KEY, userId)
+  } catch { /* storage unavailable: unstamped messages keep waiting */ }
+  return owners
 }
 
 async function postRevoke(accessToken: string): Promise<boolean> {
@@ -300,6 +328,8 @@ export async function reconcileSmsOwner(userId: string): Promise<void> {
 
 /** Account switch: drop the stored token/owner + disarm, keep the device capability. */
 export async function clearSmsCredentials(): Promise<void> {
+  // A sign-out or account switch is an ownership boundary: messages first seen after it belong to no one (BUD-42).
+  try { localStorage.removeItem(LAST_OWNER_KEY) } catch { /* storage unavailable: nothing to forget */ }
   await callNative('clearCredentials', (p) => p.clearCredentials(), undefined)
 }
 
@@ -337,6 +367,26 @@ export async function setSecureItem(key: SecureItemKey, value: string): Promise<
 
 export async function getSecureItem(key: SecureItemKey): Promise<string | null> {
   return callNative('getSecureItem', async (p) => (await p.getSecureItem({ key })).value ?? null, null)
+}
+
+/**
+ * The reinstall-proof install key (BUD-107). Quiet on failure: builds before the native change reject the call, and that
+ * must not surface as an SMS error.
+ */
+export async function nativeInstallKey(kind: 'android' | 'ios'): Promise<string | null> {
+  if (!(await ensurePlugin()) || !_plugin) return null
+  try {
+    if (kind === 'android') return (await _plugin.getInstallKey()).key ?? null
+    const read = await _plugin.getSecureItem({ key: 'install_key' })
+    if (read.value) return read.value
+    // Only a read that succeeded and found nothing may create a key; a refused read must never overwrite the real one.
+    if (read.unavailable) return null
+    const fresh = Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, '0')).join('')
+    await _plugin.setSecureItem({ key: 'install_key', value: fresh })
+    return fresh
+  } catch {
+    return null
+  }
 }
 
 export async function removeSecureItem(key: SecureItemKey): Promise<boolean> {
@@ -438,10 +488,10 @@ async function runDrain(accessToken: string, userId: string, force: boolean): Pr
   if (!peeked) return
   // Only replay SMS captured under the CURRENT account. Items owned by a previous
   // account (item.userId set and different) stay queued for when that user returns.
-  // Unstamped items (queued before owner stamping) have no known owner: never posted, dropped.
-  const unowned = peeked.filter((i) => !i.userId)
-  if (unowned.length > 0) await callNative('removePending', (p) => p.removePending({ items: unowned }), undefined)
-  const items = peeked.filter((i) => i.userId === userId)
+  // An unstamped item (caught while the phone held no owner) is never deleted (BUD-42): it goes with the account that
+  // had drained here before it was first seen, and otherwise waits for the 30-day eviction.
+  const owners = unownedOwners(peeked.filter((i) => !i.userId), userId)
+  const items = peeked.filter((i) => i.userId === userId || (!i.userId && owners.get(unownedKey(i)) === userId))
   if (items.length === 0) return
 
   const { apiUrl: buildUrl } = await import('@/lib/apiBase')

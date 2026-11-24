@@ -27,7 +27,7 @@ const netWorth = (invested = 0) => {
   const paid = s.debtPayments.reduce((n, p) => n + p.amountPaid, 0)
   return computeNetWorth({
     ...accountsBasisFor(ledger(), 'EGP'), savingsAccounts: s.savingsAccounts, investmentHoldings: [], debts: [], settings: s.settings,
-    exchangeRates: {}, goldPricePerGram: 0, goldPriceAvailable: true, lookup: (() => null) as never, monthlyIncome: 0, cashOutflow: 0,
+    exchangeRates: {}, goldPricePerGram: 0, goldPriceAvailable: true, lookup: (() => null) as never,
     debtRemaining: 2000 - paid,
   }).netWorth + invested
 }

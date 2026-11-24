@@ -72,3 +72,52 @@ describe('REG-10 hash width', () => {
     expect(diffLists(cache.expenses, baselineForBoot('u1', cache).expenses).updates.map((r) => r.id)).toEqual(['a'])
   })
 })
+
+describe('QA-81 fingerprint never outruns the persisted store', () => {
+  const store = new Map<string, string>()
+  afterEach(async () => {
+    vi.unstubAllGlobals()
+    store.clear()
+    ;(await import('@/lib/store/safeLocalStorage')).__resetSafeStorageForTests()
+  })
+  const stubQuota = () => {
+    const ls = {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => { if (k === 'big-store' || k === 'buddget-storage') throw new Error('QuotaExceededError'); store.set(k, v) },
+      removeItem: (k: string) => void store.delete(k),
+    }
+    vi.stubGlobal('window', { localStorage: ls, dispatchEvent: () => true })
+    vi.stubGlobal('CustomEvent', class { constructor(public type: string) {} })
+    vi.stubGlobal('localStorage', ls)
+  }
+
+  it('keeps the older fingerprint while the store write is held only in memory', async () => {
+    stubQuota()
+    saveFingerprint('u1', { ...emptySnapshot(), expenses: [exp('a', 1)] })
+    const older = store.get('buddget:flushed:u1')
+    expect(older).toBeDefined()
+    const { createSafeLocalStorage } = await import('@/lib/store/safeLocalStorage')
+    createSafeLocalStorage().setItem('buddget-storage', 'x')
+    expect(saveFingerprint('u1', { ...emptySnapshot(), expenses: [exp('a', 1), exp('b', 2)] })).toBe(false)
+    expect(store.get('buddget:flushed:u1')).toBe(older)
+  })
+
+  it('is not frozen by another store (chats, settings) being over quota', async () => {
+    stubQuota()
+    const { createSafeLocalStorage } = await import('@/lib/store/safeLocalStorage')
+    createSafeLocalStorage().setItem('big-store', 'x')
+    expect(saveFingerprint('u1', { ...emptySnapshot(), expenses: [exp('a', 1)] })).toBe(true)
+    expect(store.get('buddget:flushed:u1')).toBeDefined()
+  })
+
+  it('advances the fingerprint once nothing is held in memory', async () => {
+    stubQuota()
+    const { createSafeLocalStorage } = await import('@/lib/store/safeLocalStorage')
+    const s = createSafeLocalStorage()
+    s.setItem('buddget-storage', 'x')
+    s.removeItem('buddget-storage')
+    saveFingerprint('u1', { ...emptySnapshot(), expenses: [exp('a', 1)] })
+    saveFingerprint('u1', { ...emptySnapshot(), expenses: [exp('a', 1), exp('b', 2)] })
+    expect(Object.keys(JSON.parse(store.get('buddget:flushed:u1')!).lists.expenses)).toEqual(['a', 'b'])
+  })
+})

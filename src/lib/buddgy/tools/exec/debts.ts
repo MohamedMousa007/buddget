@@ -587,11 +587,13 @@ const record_debt_payment: WriteImpl = {
         tool: 'record_debt_payment',
         args: { debt: refOf(debt.id), amount, currency: payCur, date, method: pmId ? refOf(pmId) : undefined, notes },
         risk: 'approve',
-        summary: `Pending approval: pay ${shown} toward ${debtTitle(debt)}${clears ? ', which clears it' : ''}.`,
+        summary: received
+          ? `Pending approval: record ${shown} received from ${debtTitle(debt)}${clears ? ', which clears it' : ''}.`
+          : `Pending approval: pay ${shown} toward ${debtTitle(debt)}${clears ? ', which clears it' : ''}.`,
         preview: {
           domain: 'debts',
           tone: 'change',
-          title: `${L.payDebt}: ${debtTitle(debt)}`,
+          title: `${received ? L.receiveDebt : L.payDebt}: ${debtTitle(debt)}`,
           rows: [
             { label: L.amount, value: shown },
             ...(converted ? [{ label: L.paid, value: fmtDebt(computed.amountInDebtUnit, debt) }] : []),

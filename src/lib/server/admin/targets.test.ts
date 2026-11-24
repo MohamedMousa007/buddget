@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { blockedTarget } from './targets'
+import { blockedTarget, selfAllowedOnApp } from './targets'
 import type { AdminContext } from './guard'
 
 const ranks: Record<string, number> = { owner: 0, admin: 10, support_agent: 30 }
@@ -34,5 +34,20 @@ describe('blockedTarget', () => {
   })
   it('lets anyone act on an ordinary user', async () => {
     expect(await blockedTarget(ctx('s1', 30, { s1: 'support_agent' }), 'someone')).toBeNull()
+  })
+})
+
+describe('selfAllowedOnApp (BUD-94)', () => {
+  it('lets any role that may reset reset its own app account, and only the owner delete its own', () => {
+    expect(selfAllowedOnApp('admin', 'reset_data')).toBe(true)
+    expect(selfAllowedOnApp('admin', 'delete')).toBe(false)
+    expect(selfAllowedOnApp('owner', 'delete')).toBe(true)
+    expect(selfAllowedOnApp('owner', 'suspend')).toBe(false)
+  })
+  it('self-reset never opens another admin’s account', async () => {
+    const staff = { a1: 'admin', a2: 'admin' }
+    expect(await blockedTarget(ctx('a1', 10, staff), 'a1', { allowSelf: selfAllowedOnApp('admin', 'reset_data') })).toBeNull()
+    expect(await blockedTarget(ctx('a1', 10, staff), 'a2', { allowSelf: selfAllowedOnApp('admin', 'reset_data') })).toMatch(/at or above/)
+    expect(await blockedTarget(ctx('a1', 10, staff), 'a1', { allowSelf: selfAllowedOnApp('admin', 'delete') })).toMatch(/your own account/)
   })
 })

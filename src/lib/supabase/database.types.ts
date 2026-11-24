@@ -5762,6 +5762,7 @@ export type Database = {
           created_at: string
           device_id: string
           first_sms_at: string | null
+          install_key: string | null
           is_main: boolean
           last_seen_at: string
           last_sms_at: string | null
@@ -5786,6 +5787,7 @@ export type Database = {
           created_at?: string
           device_id: string
           first_sms_at?: string | null
+          install_key?: string | null
           is_main?: boolean
           last_seen_at?: string
           last_sms_at?: string | null
@@ -5810,6 +5812,7 @@ export type Database = {
           created_at?: string
           device_id?: string
           first_sms_at?: string | null
+          install_key?: string | null
           is_main?: boolean
           last_seen_at?: string
           last_sms_at?: string | null
@@ -6584,6 +6587,10 @@ export type Database = {
           p_transaction_id: string
         }
         Returns: string
+      }
+      devices_supersede: {
+        Args: { p_new: string; p_old: string; p_user: string }
+        Returns: boolean
       }
       detect_zero_variance_templates: {
         Args: { p_min_matches?: number }

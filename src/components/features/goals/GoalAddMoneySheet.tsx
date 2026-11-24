@@ -12,6 +12,11 @@ import { useT } from '@/lib/i18n'
 import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Goal } from '@/lib/store/types'
+import { useGoalProgress } from '@/hooks/useGoalProgress'
+import { goalAddHint } from '@/lib/goals/goalAddHint'
+import { MASK } from '@/lib/privacy/mask'
+import { useMask } from '@/lib/privacy/useMask'
+import { formatCurrency } from '@/lib/utils/formatters'
 
 /** Manual deposit into the goal's pocket; creates the pocket (and links it) when the goal has none. */
 export function GoalAddMoneySheet({ goal, onClose }: { goal: Goal | null; onClose: () => void }) {
@@ -55,6 +60,7 @@ export function GoalAddMoneySheet({ goal, onClose }: { goal: Goal | null; onClos
       }
     >
       <AmountField value={amount} onChange={setAmount} currency={goal?.currency} aria-label={t.addMoneyAmount} />
+      {goal && goal.category !== 'debt_freedom' && goal.category !== 'spending_control' ? <AddHintLine goal={goal} add={value} /> : null}
       {guard.holder ? (
         <p className="mt-4 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{tMoney.setAsideIn(accountTitle(guard.holder))}</p>
       ) : (
@@ -62,5 +68,21 @@ export function GoalAddMoneySheet({ goal, onClose }: { goal: Goal | null; onClos
       )}
       {refusal ? <p role="alert" className="mt-2 text-[0.8125rem] text-[var(--color-brand-amber)]">{guard.message(refusal)}</p> : null}
     </SheetFrame>
+  )
+}
+
+/** "X left" / "+X over target" under the amount: information only, the deposit is never capped (BUD-99). */
+function AddHintLine({ goal, add }: { goal: Goal; add: number }) {
+  const t = useT().goals.home
+  const hidden = useMask('lists')
+  const { currentAmount } = useGoalProgress(goal)
+  const hint = goalAddHint(currentAmount, goal.targetAmount, add)
+  if (!hint) return null
+  const money = (n: number) => (hidden ? MASK : formatCurrency(n, goal.currency, false))
+  const text = hint.kind === 'exact' ? t.addExact : hint.kind === 'left' ? t.addLeft(money(hint.amount)) : t.addOver(money(hint.amount))
+  return (
+    <p dir="auto" role="status" className="mt-2 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
+      {text}
+    </p>
   )
 }

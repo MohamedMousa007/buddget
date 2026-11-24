@@ -6,7 +6,7 @@ import { localDayKey } from '@/lib/utils/localDate'
 import { useEffect, useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { format, parseISO, subDays } from 'date-fns'
-import { CircleSlash, Link as LinkIcon, Link2, MessageSquare } from 'lucide-react'
+import { CircleSlash, HandCoins, Link as LinkIcon, Link2, MessageSquare } from 'lucide-react'
 import { CategoryIcon } from '@/components/dashboard/CategoryIcon'
 import { IncomeTypeIcon } from '@/components/features/income/IncomeTypeIcon'
 import { Badge } from '@/components/ui/badge'
@@ -34,6 +34,7 @@ import { useLocale, useT } from '@/lib/i18n'
 import { useWeekStart } from '@/hooks/useWeekStart'
 import { smsAccountLabelKind } from '@/lib/accounts/unplacedSms'
 import { storedMethodId } from '@/lib/accounts/resolve'
+import { repaymentsReceived } from '@/lib/debts/repaymentsReceived'
 import { applyPassThrough, labelledPassThroughPairs, rememberedYesPairs } from '@/lib/spending/passThrough'
 import { firstOpenFlag, type FlagRowKind } from '@/lib/sms/flagPrompts'
 import type { SmsFlag } from '@/lib/sms/smsFlags'
@@ -87,6 +88,8 @@ export function useFlowLedger() {
     expenses,
     incomeSources,
     incomeEvents,
+    debts,
+    debtPayments,
     paymentMethods,
     settings,
     rates,
@@ -99,6 +102,8 @@ export function useFlowLedger() {
       expenses: s.expenses,
       incomeSources: s.incomeSources,
       incomeEvents: s.incomeEvents,
+      debts: s.debts,
+      debtPayments: s.debtPayments,
       paymentMethods: s.paymentMethods,
       settings: s.settings,
       rates: s.exchangeRates,
@@ -411,13 +416,48 @@ export function useFlowLedger() {
       })
     }
 
+    // Money paid back on a debt owed to the user: money in, but not earned income, so it stays out of the totals (BUD-90).
+    for (const r of repaymentsReceived(debts, debtPayments, (day) => inRange(day, resolved))) {
+      const amountBase = convertCurrency(r.amount, r.currency, base, rates)
+      const pmLabel = methodLabel(r.paymentMethodId ? pmById.get(r.paymentMethodId) : undefined)
+      items.push({
+        id: r.id,
+        dir: 'in',
+        date: r.date,
+        at: instantOf(r.occurredAt, r.date),
+        amountBase,
+        counted: false,
+        facet: 'repayment',
+        methodId: r.paymentMethodId,
+        row: {
+          key: `r-${r.id}`,
+          isIn: true,
+          row: {
+            icon: <HandCoins className="h-5 w-5" aria-hidden />,
+            iconBg: 'var(--color-brand-green-soft)',
+            iconFg: 'var(--color-brand-green)',
+            caption: t.flow.repaymentCaption,
+            captionColor: 'var(--color-brand-green)',
+            title: t.flow.repaymentReceived(r.person),
+            titleBadge: <Badge variant="muted" size="xs" className="shrink-0">{t.flow.repaymentNotIncome}</Badge>,
+            subtitle: pmLabel ? <span className="truncate">→ {pmLabel}</span> : undefined,
+            amount: amountNode('+', amountBase, false),
+            amountColor: 'var(--color-brand-green)',
+            sub: sub(amountBase, ''),
+          },
+        },
+      })
+    }
+
     // SMS captured offline: shown where they will land, muted and not counted, until they sync.
     // Their category is guessed offline, the way the server will: this user's own last
     // expense at the merchant, then the subscription catalog.
     const pastCategory = new Map<string, string>()
-    for (const e of [...expenses].sort((a, b) => a.date.localeCompare(b.date))) {
-      const k = merchantCategoryKey(e.description)
-      if (k) pastCategory.set(k, e.category)
+    if (previews.length > 0) {
+      for (const e of [...expenses].sort((a, b) => a.date.localeCompare(b.date))) {
+        const k = merchantCategoryKey(e.description)
+        if (k) pastCategory.set(k, e.category)
+      }
     }
     for (const p of previews) {
       const date = format(new Date(p.receivedAt), 'yyyy-MM-dd')
@@ -457,7 +497,7 @@ export function useFlowLedger() {
     }
     return items
   }, [
-    expenses, incomeEvents, incomeSources, paymentMethods, previews, matches, resolved, base, secondary, rates, t, possiblePassThrough,
+    expenses, incomeEvents, incomeSources, debts, debtPayments, paymentMethods, previews, matches, resolved, base, secondary, rates, t, possiblePassThrough,
     setActiveModal, setEditingExpenseId, setEditingIncomeEventId, setEditingIncomeId, openAssignIncome,
     removeExpense, deleteIncomeEvent, deleteIncomeSource, restoreIncomeEvent, restoreIncomeSource, toast, shortDate,
   ])

@@ -1,5 +1,6 @@
 import type { AIAction } from '@/lib/ai/gemini'
 import { settlesWithoutExpense } from '@/lib/debts/debtDirection'
+import { defaultMethodId, storedMethodId } from '@/lib/accounts/resolve'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { ambiguityMessage, checkAmount, checkCategory, checkDate, matchByHint, type HintMatch } from '@/lib/ai/legacyGuards'
 import { tryConvertCurrency } from '@/lib/utils/currency'
@@ -630,18 +631,25 @@ export function executeActionItem(
     if (isDebtFullyPaid(debt, ctx.debtPayments, bctx)) return
     const remainingExec = calculateDebtRemainingRaw(debt, ctx.debtPayments, bctx)
     if (amountInDebtUnit > remainingExec + 1e-6) return
+    const pmHint = getField(d, 'paymentMethod', 'payment_method')
+    const pm = findPaymentMethod(ctx, pmHint)
+    const noExpense = settlesWithoutExpense(debt)
+    // With no expense the payment itself is the account leg (money received, or a card paid): it needs its account,
+    // the default one when none was named, as the sheet does. With an expense, the expense carries the account;
+    // tagging both would move the balance twice.
+    const legId = pmHint && pm ? pm.id : storedMethodId(defaultMethodId(ctx.paymentMethods), ctx.paymentMethods)
     ctx.addDebtPayment({
       debtId: debt.id,
       date: dateStr,
       amountPaid: amountInDebtUnit,
+      ...(noExpense && legId ? { paymentMethodId: legId } : {}),
       paymentCurrency,
       originalAmount,
       amountInPrimary: amountInBase,
       rateAtEntry,
       notes: getField(d, 'notes') as string | undefined,
     })
-    if (settlesWithoutExpense(debt)) return
-    const pm = findPaymentMethod(ctx, getField(d, 'paymentMethod', 'payment_method'))
+    if (noExpense) return
     ctx.addExpense({
       date: dateStr,
       description: `Debt payment – ${debt.person}`,
@@ -684,7 +692,8 @@ export function executeActionItem(
   }
   if (action === 'clear_debt') {
     const debt = resolved<Debt>(ctx, action, d)
-    if (debt) ctx.clearDebt(debt.id)
+    // A credit card revolves: it is never cleared (Buddgy refuses it too), or its balance would leave debt and net worth.
+    if (debt && debt.debtType !== 'credit_card') ctx.clearDebt(debt.id)
     return
   }
   if (action === 'add_income') {

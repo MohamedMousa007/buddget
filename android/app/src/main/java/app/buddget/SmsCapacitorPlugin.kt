@@ -176,6 +176,19 @@ class SmsCapacitorPlugin : Plugin() {
         call.resolve()
     }
 
+    /**
+     * Reinstall-proof install key (BUD-107): SHA-256 hex of "buddget:" + ANDROID_ID. ANDROID_ID is scoped to this app's
+     * signing key, user and device, survives reinstall and resets on factory reset; only the hash leaves the phone, and it
+     * is used for device security, never ads.
+     */
+    @PluginMethod
+    fun getInstallKey(call: PluginCall) {
+        val androidId = android.provider.Settings.Secure.getString(context.contentResolver, android.provider.Settings.Secure.ANDROID_ID)
+        if (androidId.isNullOrBlank()) { call.resolve(JSObject().apply { put("key", org.json.JSONObject.NULL) }); return }
+        val digest = java.security.MessageDigest.getInstance("SHA-256").digest("buddget:$androidId".toByteArray(Charsets.UTF_8))
+        call.resolve(JSObject().apply { put("key", digest.joinToString("") { "%02x".format(it) }) })
+    }
+
     /** Biometric sign-in / admin unlock secrets, same encrypted store. Only these names are accepted; clearCredentials and clearState leave them alone. */
     private fun secureKey(call: PluginCall): String? =
         call.getString("key")?.takeIf { it in SECURE_ITEM_KEYS } ?: run { call.reject("unknown key"); null }

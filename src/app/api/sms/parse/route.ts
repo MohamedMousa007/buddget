@@ -28,10 +28,10 @@ import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNative
 import { smsDeviceGate } from '@/lib/sms/deviceGate'
 import { recordIngestRefusal } from '@/lib/sms/ingestRefusal'
 import { rateLimitOutcome } from '@/lib/server/rateLimit'
-import { resolveSmsCaller } from '@/lib/sms/resolveSmsUser'
+import { resolveSmsCaller, type SmsCaller } from '@/lib/sms/resolveSmsUser'
 import { monthNameInZone } from '@/lib/time/zonedMonth'
 import { getUserTimeZone } from '@/lib/server/userTimeZone'
-import { matchCuratedPattern } from '@/lib/sms/patterns'
+import { matchCuratedPattern, splitCuratedSegments } from '@/lib/sms/patterns'
 import { applyMappingRules, type MappingRules } from '@/lib/sms/templateApply'
 import { isSmsExpenseKind } from '@/lib/sms/smsKinds'
 import { namesUntrackedAccount, type SmsExpenseKind } from '@/lib/sms/createSmsExpense'
@@ -55,7 +55,7 @@ import {
   type TemplateCandidate,
 } from '@/lib/sms/templateScope'
 import { SMS_SENDER_HELD_PUSH_KIND } from '@/lib/sms/pushKinds'
-import { MAX_SMS_BODY_CHARS, aiReadingGrounded, checkCreditSender, isCreditKind, senderKnownForUser, claimInProgressResponse, heldForConfirmation, computeLegacySmsHashes, computeNeighbourSmsHashes, computeSmsHash, computeBodyHash, captureSecond, hasPostedTransaction, isClaimInFlight, isPlausibleAmount, isStaleClaim, maskOtpDigits, nonTransactionReason, resolveSmsDay, smsLocalDay } from '@/lib/sms/ingestGuards'
+import { MAX_SMS_BODY_CHARS, aiReadingGrounded, checkCreditSender, isCreditKind, senderKnownForUser, claimInProgressResponse, heldForConfirmation, computeLegacySmsHashes, computeNeighbourSmsHashes, computeSmsHash, computeBodyHash, captureSecond, segmentIdentity, hasPostedTransaction, isClaimInFlight, isPlausibleAmount, isStaleClaim, maskOtpDigits, nonTransactionReason, resolveSmsDay, smsLocalDay } from '@/lib/sms/ingestGuards'
 import { withSmsAiQuota } from '@/lib/sms/meteredAi'
 import { normalizeSmsText } from '@/lib/sms/normalizeDigits'
 import { senderCapReached } from '@/lib/sms/senderCap'
@@ -80,9 +80,10 @@ import type { ExpenseCategory } from '@/lib/store/types'
 import { DEFAULT_MARKET_RATES } from '@/lib/store/defaultFinanceData'
 import { resolveCurrency } from '@/lib/sms/currencyResolver'
 import { extractBalance, recordBalanceReport } from '@/lib/sms/balanceReport'
-import { findStandingCopy, secondCopyVerdict } from '@/lib/sms/captureGuard'
+import { findStandingCopy, isSamePhoneRecapture, secondCopyVerdict } from '@/lib/sms/captureGuard'
+import { looksMultiTransaction } from '@/lib/sms/multiAmount'
 import { appendSmsFlags } from '@/lib/sms/stampFlags'
-import type { SmsFlag } from '@/lib/sms/smsFlags'
+import { MULTI_AMOUNT, SAME_PHONE_COPY, type SmsFlag } from '@/lib/sms/smsFlags'
 import { extractAccountTail } from '@/lib/accounts/identity/accountRef'
 import { providerFromBody } from '@/lib/sms/providerFromBody'
 import { getServerDictionary } from '@/lib/i18n/getServerDictionary'
@@ -717,14 +718,49 @@ export async function POST(request: Request) {
 
   const { sender, source, receivedAt, truncated } = parsedBody.data
   const rawMessage = parsedBody.data.message
+  const eventId = parsedBody.data.eventId ?? (UUID_RE.test(request.headers.get('x-sms-event-id') ?? '') ? request.headers.get('x-sms-event-id') : null)
+  const base: IngestBase = { userId, deviceId, sender, source, receivedAt, truncated, eventId, service: createServiceRoleClient() }
+
+  // One message can state several movements in one curated wording; each is its own claim, booked on its own (QA-32).
+  const segments = splitCuratedSegments(normalizeSmsText(rawMessage), sender ?? null, receivedAt ?? null)
+  if (segments.length < 2) return ingestOne({ ...base, rawMessage, identity: rawMessage })
+  return ingestSegments(base, rawMessage, segments)
+}
+
+type IngestBase = Pick<z.infer<typeof bodySchema>, 'sender' | 'source' | 'receivedAt' | 'truncated'> & {
+  userId: string
+  deviceId: SmsCaller['deviceId']
+  eventId: string | null
+  service: ReturnType<typeof createServiceRoleClient>
+}
+
+/**
+ * Every piece of a several-movement message, in order. The phone may forget the message only when every piece is
+ * booked or already held: the first piece that answers otherwise (a claim in flight, an outage) is the answer, and the
+ * phone's retry cuts the message the same way, so finished pieces come back as duplicates and the rest are booked.
+ */
+async function ingestSegments(base: IngestBase, rawMessage: string, segments: readonly string[]): Promise<Response> {
+  const results: unknown[] = []
+  for (const [i, segment] of segments.entries()) {
+    const res = await ingestOne({ ...base, rawMessage: segment, identity: segmentIdentity(rawMessage, i, segments.length) })
+    if (!res.ok) return res
+    results.push(await res.json())
+  }
+  return NextResponse.json({ ...(results[0] as Record<string, unknown>), segments: results })
+}
+
+/**
+ * One movement: claim, parse, book. `identity` is the text the claim hashes are taken over: the message itself, or the
+ * message and the piece's ordinal when the message was cut (`segmentIdentity`).
+ */
+async function ingestOne(input: IngestBase & { rawMessage: string; identity: string }): Promise<Response> {
+  const { userId, deviceId, sender, source, receivedAt, truncated, eventId, service, rawMessage, identity } = input
   const message = normalizeSmsText(rawMessage)
-  const service = createServiceRoleClient()
 
   // sms_hash identifies the row for /api/sms/confirm + the FCM sms_confirm push.
-  const eventId = parsedBody.data.eventId ?? (UUID_RE.test(request.headers.get('x-sms-event-id') ?? '') ? request.headers.get('x-sms-event-id') : null)
-  const hash = computeSmsHash(rawMessage, receivedAt, eventId ?? undefined)
+  const hash = computeSmsHash(identity, receivedAt, eventId ?? undefined)
   // Identifies the capture whatever capture id was sent: the same text at the same second is one capture (I5).
-  const bodyHash = computeBodyHash(rawMessage)
+  const bodyHash = computeBodyHash(identity)
   const capturedAt = captureSecond(receivedAt)
   const nowIso = receivedAt ?? new Date().toISOString()
 
@@ -759,7 +795,7 @@ export async function POST(request: Request) {
     .single()
   // The same SMS forwarded twice either side of a bucket edge hashes differently; a live claim in a neighbouring bucket is the same SMS.
   // Older builds hashed the digit-normalised text: their row for this SMS is the same SMS.
-  const neighbours = [...computeNeighbourSmsHashes(rawMessage, receivedAt, eventId ?? undefined), ...computeLegacySmsHashes(rawMessage, receivedAt)]
+  const neighbours = [...computeNeighbourSmsHashes(identity, receivedAt, eventId ?? undefined), ...computeLegacySmsHashes(identity, receivedAt)]
   if (neighbours.length > 0) {
     let nearQuery = service
       .from('sms_parse_log')
@@ -847,11 +883,14 @@ export async function POST(request: Request) {
   // Read after this message's own claim row exists, so two simultaneous requests see each other and exactly one of
   // them stands down. A finished copy stands whichever capture came first. A reference or a running balance proves the same movement; without either, both book.
   let possibleDuplicate = false
+  let samePhoneCopy = false
   const standingCopy = await findStandingCopy(service, { userId, logId, bodyHash, capturedAt, receivedAt: nowIso })
   if (standingCopy) {
     const verdict = secondCopyVerdict({ hasReference: extractIpnReference(message) != null, hasBalance: extractBalance(message) != null })
     if (verdict === 'possible_duplicate') {
       possibleDuplicate = true
+      // Never proof (two real payments can look the same): it only lets the question say "caught twice" (BUD-104).
+      samePhoneCopy = isSamePhoneRecapture({ deviceId, sender: sender ?? null, receivedAt: nowIso }, standingCopy)
     } else if (isClaimInFlight(standingCopy.status)) {
       // The earlier run may still die: retire this claim so the phone's retry can claim again, and keep its copy.
       await service.from('sms_parse_log').update({ is_duplicate: true, status: 'failed', failure_code: 'duplicate_retry' }).eq('id', logId)
@@ -1040,14 +1079,18 @@ export async function POST(request: Request) {
     captureDay: receivedAt ? smsLocalDay(receivedAt, timeZone) : null,
     arrivalDay: smsLocalDay(new Date().toISOString(), timeZone),
   })
+  // A reading the curated split did not cut that still states several movements reads only the first one (QA-32).
+  const multiAmount = !curated && looksMultiTransaction(message)
   const rowFlags: SmsFlag[] = [...(dateUnsure ? (['date_unsure'] as const) : []), ...(possibleDuplicate ? (['possible_duplicate'] as const) : [])]
+  // Flags plus their data entries, for the log row and the money row's own flags list.
+  const rowFlagData: string[] = [...rowFlags, ...(samePhoneCopy ? [SAME_PHONE_COPY] : []), ...(multiAmount ? [MULTI_AMOUNT] : [])]
 
   const kindSource = parseMethod === 'fully_curated' ? 'code' : 'model'
 
   // What a message the tiers called a transaction but that cannot be booked yet becomes: a row held for the user, in
   // the same shape as a credit held for its sender (parsed_ok, awaiting_confirmation), so the review list shows it and
   // /api/sms/confirm or /api/sms/dismiss settles it. Never an answer that makes the phone forget it (I6).
-  const holdForReview = async (code: 'null_amount' | 'low_confidence' | 'implausible_amount' | 'truncated_amount' | 'unverified_reading') => {
+  const holdForReview = async (code: 'null_amount' | 'low_confidence' | 'implausible_amount' | 'truncated_amount' | 'unverified_reading' | 'multi_amount') => {
     const { error: holdErr } = await service.from('sms_parse_log')
       .update({
         status: 'logged',
@@ -1065,7 +1108,7 @@ export async function POST(request: Request) {
         clean_title: parsed.cleanTitle,
         parse_method: parseMethod,
         booked_day: day,
-        sms_flags: rowFlags.length ? rowFlags : null,
+        sms_flags: rowFlagData.length ? rowFlagData : null,
         kind_source: kindSource,
         harvested_at: new Date().toISOString(),
       })
@@ -1121,6 +1164,7 @@ export async function POST(request: Request) {
   if (!isPlausibleAmount(parsed.amount)) return holdForReview('implausible_amount')
   // The phone says it cut the message, so the amount may be a fragment: the user checks it (N6).
   if (truncated === true) return holdForReview('truncated_amount')
+  if (multiAmount) return holdForReview('multi_amount')
   // The AI's reading must be backed by the message: its amount printed, money-in wording for a credit, no JSON (QA-14).
   if (parseMethod === 'ai_new' && !aiReadingGrounded(parsed.amount, parsed.kind, message)) return holdForReview('unverified_reading')
 
@@ -1186,8 +1230,8 @@ export async function POST(request: Request) {
   const { expenseId, incomeId, debtPaymentId } = tx
   // A pairing creates its row inside the database and cannot take flags with the insert; stamp what it did not carry.
   // The money is already booked, so a failure here is logged and never fails the message.
-  if (rowFlags.length && (expenseId || incomeId)) {
-    try { await appendSmsFlags(service, userId, logId, rowFlags) } catch (e) { console.warn('[sms/parse] flag stamp failed', e) }
+  if (rowFlagData.length && (expenseId || incomeId)) {
+    try { await appendSmsFlags(service, userId, logId, rowFlagData) } catch (e) { console.warn('[sms/parse] flag stamp failed', e) }
   }
 
   // A purchase the curated/template tiers matched but couldn't categorise (AI never saw it, and
@@ -1325,7 +1369,7 @@ export async function POST(request: Request) {
       parse_method: parseMethod,
       masked_body: maskSkeletonText(message),
       booked_day: day,
-      sms_flags: rowFlags.length ? rowFlags : null,
+      sms_flags: rowFlagData.length ? rowFlagData : null,
       kind_source: kindSource,
       pattern_id: patternId,
       // B1: without this a template-parsed row has no link to the template that produced it,

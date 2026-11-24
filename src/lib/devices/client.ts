@@ -5,10 +5,12 @@ const BEAT_KEY = 'buddget_device_beat'
 const beatKey = (userId: string) => `${BEAT_KEY}:${userId}`
 const BEAT_EVERY_MS = 4 * 3600_000
 
-function selfReport() {
+async function selfReport() {
+  const { getInstallKey } = await import('@/lib/native/deviceId')
   return {
     platform: isIOS() ? 'ios' : isAndroid() ? 'android' : 'web',
     model: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 200) : null,
+    installKey: await getInstallKey(),
   } as const
 }
 
@@ -37,7 +39,7 @@ export async function sendDeviceHeartbeat(userId: string, collects: boolean | un
     const changed = localStorage.getItem(permKey(userId)) !== String(pushPermission)
     const last = Number(localStorage.getItem(beatKey(userId)) ?? 0)
     if (!changed && Date.now() - last < BEAT_EVERY_MS) return
-    const res = await apiFetchAuth('/api/devices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...selfReport(), collects, pushPermission }) })
+    const res = await apiFetchAuth('/api/devices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...(await selfReport()), collects, pushPermission }) })
     if (!res.ok) return
     localStorage.setItem(beatKey(userId), String(Date.now()))
     localStorage.setItem(permKey(userId), String(pushPermission))
@@ -64,7 +66,7 @@ export async function reportSmsQueue(status: { pendingCount?: number; oldestPend
     const res = await apiFetchAuth('/api/devices', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...selfReport(), smsQueue: { pending, oldestAt: status.oldestPendingAt ?? null, lastResult: status.lastResult ?? null, evicted } }),
+      body: JSON.stringify({ ...(await selfReport()), smsQueue: { pending, oldestAt: status.oldestPendingAt ?? null, lastResult: status.lastResult ?? null, evicted } }),
     })
     if (res.ok) lastQueueReport = { pending, evicted, at: Date.now() }
   } catch {
@@ -109,7 +111,7 @@ export function resolveStartIntent(pending: boolean | null, device: boolean | nu
 export async function setDeviceCollectsSms(userId: string, collectsSms: boolean): Promise<boolean> {
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const res = await apiFetchAuth('/api/devices', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...selfReport(), collectsSms }) })
+      const res = await apiFetchAuth('/api/devices', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...(await selfReport()), collectsSms }) })
       if (res.ok) {
         storePendingSmsRole(userId, null)
         return true

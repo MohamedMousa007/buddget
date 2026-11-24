@@ -25,7 +25,7 @@ const netWorth = () => {
   const s = S()
   return computeNetWorth({
     ...accountsBasisFor(ledger(), 'EGP'), savingsAccounts: s.savingsAccounts, investmentHoldings: [], debts: [], settings: s.settings,
-    exchangeRates: s.exchangeRates, goldPricePerGram: 0, goldPriceAvailable: true, lookup: (() => null) as never, monthlyIncome: 0, cashOutflow: 0,
+    exchangeRates: s.exchangeRates, goldPricePerGram: 0, goldPriceAvailable: true, lookup: (() => null) as never,
     debtRemaining: 0,
   }).netWorth
 }

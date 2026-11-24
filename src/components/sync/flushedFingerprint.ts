@@ -1,3 +1,4 @@
+import { hasUnpersistedWrites } from '@/lib/store/safeLocalStorage'
 import { emptySnapshot, type Snapshot } from '@/lib/supabase/remote'
 
 /**
@@ -86,8 +87,14 @@ export function baselineFromFingerprint(cache: Snapshot, fp: Fingerprint): Snaps
 
 const KEY = (userId: string) => `buddget:flushed:${userId}`
 
-export function saveFingerprint(userId: string, snap: Snapshot): void {
+/** The persist key of the finance store: only its own refused write makes the fingerprint unsafe to advance. */
+const FINANCE_PERSIST_KEY = 'buddget-storage'
+
+/** False when the write was held back: the finance store write was refused (quota) and lives only in memory, so advancing the fingerprint would make the next boot read the older store as having deleted newer rows. The caller keeps the snapshot and retries. */
+export function saveFingerprint(userId: string, snap: Snapshot): boolean {
+  if (hasUnpersistedWrites(FINANCE_PERSIST_KEY)) return false
   try { localStorage.setItem(KEY(userId), JSON.stringify(fingerprintOf(snap))) } catch { /* storage full or blocked: next boot trusts the cache, as before */ }
+  return true
 }
 
 /** The cache itself when nothing was stored yet (first run after an upgrade), so no row is re-sent needlessly. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { standingCopies, isLaterCopy, secondCopyVerdict, SECOND_COPY_WINDOW_MS, type CopyRow } from './captureGuard'
+import { standingCopies, isLaterCopy, isSamePhoneRecapture, secondCopyVerdict, SECOND_COPY_WINDOW_MS, type CopyRow } from './captureGuard'
 import { extractIpnReference } from './dispatch'
 import { extractBalance } from './balanceReport'
 
@@ -14,6 +14,12 @@ describe('secondCopyVerdict (I5)', () => {
   it('a payment reference proves the same movement', () => expect(verdictOf(withRef)).toBe('proven_duplicate'))
   it('a running balance proves the same movement', () => expect(verdictOf(withBalance)).toBe('proven_duplicate'))
   it('a printed time of day proves nothing: the later copy is booked and flagged', () => expect(verdictOf(timeOnly)).toBe('possible_duplicate'))
+  // BUD-104: a Saudi incoming transfer printing date, minute, both account tails and the amount, and nothing else.
+  const saudiTransfer = 'Incoming transfer SAR 1,250.00 to **4821 from **9137 on 15/11/26 19:23'
+  it('date + minute + account tails + amount is not proof: the later copy is booked and flagged', () =>
+    expect(verdictOf(saudiTransfer)).toBe('possible_duplicate'))
+  it('the same transfer with a reference is proof', () =>
+    expect(verdictOf(`${saudiTransfer} reference b3abc23f`)).toBe('proven_duplicate'))
 })
 
 describe('isLaterCopy', () => {
@@ -60,4 +66,16 @@ describe('standingCopies (I5)', () => {
   it('never lists itself', () => {
     expect(standingCopies(self, [row('me', '2026-10-01T10:00:00Z')])).toEqual([])
   })
+})
+
+describe('isSamePhoneRecapture (BUD-104)', () => {
+  const other = { device_id: 'dev-1', sender: '', received_at: '2026-11-15T16:23:11Z' }
+  const self = (over: Partial<{ deviceId: string | null; sender: string | null; receivedAt: string }> = {}) =>
+    ({ deviceId: 'dev-1', sender: null, receivedAt: '2026-11-15T16:23:28Z', ...over })
+
+  it('the same phone, no sender, 17 s apart', () => expect(isSamePhoneRecapture(self(), other)).toBe(true))
+  it('another phone is not', () => expect(isSamePhoneRecapture(self({ deviceId: 'dev-2' }), other)).toBe(false))
+  it('an unknown phone is not', () => expect(isSamePhoneRecapture(self({ deviceId: null }), { ...other, device_id: null })).toBe(false))
+  it('a named sender is the Android path, not a Shortcut double-fire', () => expect(isSamePhoneRecapture(self({ sender: 'SNB' }), other)).toBe(false))
+  it('a minute apart is not', () => expect(isSamePhoneRecapture(self({ receivedAt: '2026-11-15T16:24:12Z' }), other)).toBe(false))
 })

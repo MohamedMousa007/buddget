@@ -65,7 +65,7 @@ export function HouseholdRentSheet() {
 
   return (
     <ModalShell open={isOpen} onBackdropClick={() => setActiveModal(null)} padContent>
-      <div className="p-5">
+      <div className="pt-1">
         <V3SheetHeader title={t.onboarding.householdTitle} onClose={() => setActiveModal(null)} />
         <p className="text-xs text-[var(--color-brand-text-muted)] mb-4 -mt-1">
           {t.onboarding.householdSubtitle}
@@ -90,7 +90,7 @@ export function HouseholdRentSheet() {
                   size="segment"
                   selected={active}
                   onClick={() => setHousehold(opt.value)}
-                  className="h-10 text-sm"
+                  className="h-auto min-h-11 whitespace-normal py-2 text-sm leading-snug"
                 >
                   {opt.label}
                 </OptionChip>

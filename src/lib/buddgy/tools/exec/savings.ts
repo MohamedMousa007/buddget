@@ -120,8 +120,6 @@ const get_net_worth: ReadImpl = () => {
     goldPricePerGram: s.goldPricePerGram,
     goldPriceAvailable: s.goldPriceAvailable,
     lookup: priceLookup(),
-    monthlyIncome: stats.receivedIncome,
-    cashOutflow: stats.cashOutflow,
     debtRemaining: stats.debtRemainingTotal,
   })
   return {
@@ -130,7 +128,7 @@ const get_net_worth: ReadImpl = () => {
     savings: r0(nw.totalSavings),
     investments: r0(nw.totalInvestments),
     debt: r0(nw.totalDebt),
-    ...(nw.accountsTotal !== null ? { accounts_total: r0(nw.accountsTotal) } : { month_flow: r0(nw.monthlyFlow) }),
+    ...(nw.accountsTotal !== null ? { accounts_total: r0(nw.accountsTotal) } : { no_tracked_accounts: true }),
     ...(nw.netWorthIncomplete ? { incomplete: true } : {}),
   }
 }

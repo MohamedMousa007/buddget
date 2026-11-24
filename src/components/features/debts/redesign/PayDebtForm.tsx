@@ -17,7 +17,7 @@ import { Switch } from '@/components/ui/switch'
 
 const MICRO = 'font-semibold text-[0.625rem] tracking-[0.08em] uppercase text-[var(--color-brand-text-muted)]'
 
-/** "Make a payment" — handoff pay modal. */
+/** Pay modal: a payment on a debt you owe, or money received on one owed to you. */
 export function PayDebtForm({ d }: { d: AddDebtHook }) {
   const dict = useT()
   const t = dict.debts
@@ -66,7 +66,7 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
 
       {/* Payment method — horizontal chips */}
       <div>
-        <div className={`${MICRO} mb-2`}>{t.fPaymentMethod}</div>
+        <div className={`${MICRO} mb-2`}>{debt?.direction === 'they_owe' ? t.fReceivedInto : t.fPaymentMethod}</div>
         <div className="native-scroll -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
           {pickablePaymentMethods(d.paymentMethods, d.paymentMethodId).map((m) => {
             const on = d.paymentMethodId === m.id

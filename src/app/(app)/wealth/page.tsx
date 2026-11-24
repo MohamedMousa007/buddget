@@ -33,6 +33,7 @@ import { useEnsureMonthlySavingsVault } from '@/hooks/useEnsureMonthlySavingsVau
 import { useHiddenStatus } from '@/hooks/useHiddenStatus'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useNetWorth } from '@/hooks/useNetWorth'
+import { netWorthBasisOf } from '@/lib/savings/netWorth'
 import { useNetWorthTrend } from '@/hooks/useNetWorthTrend'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { canDeletePocket } from '@/lib/savings/canDeletePocket'
@@ -204,7 +205,7 @@ export default function WealthPage() {
     [pockets, goals, coverPocketIds, profile.defaultCarryPocketId],
   )
 
-  const trendRaw = useNetWorthTrend(nw.netWorth, base, dataReady && !model.anyUnpriced && !nw.netWorthIncomplete, nw.accountsTotal != null ? 'accounts' : 'legacy')
+  const trendRaw = useNetWorthTrend(nw.netWorth, base, dataReady && !model.anyUnpriced && !nw.netWorthIncomplete, netWorthBasisOf(nw))
   const trend = trendRaw ? { points: trendRaw.points, dir: trendRaw.dir, pct: `${Math.abs(trendRaw.pct).toFixed(1)}%` } : undefined
 
   const split = useMemo<HeroSplitSegment[]>(() => {

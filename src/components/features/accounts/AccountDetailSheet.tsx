@@ -14,8 +14,8 @@ import { IconButton } from '@/components/ui/IconButton'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { closeAccount, ensureCashAccount } from '@/lib/accounts/actions'
 import { instantOf } from '@/lib/accounts/balance'
+import { cardDetails, sheetActivity } from '@/lib/accounts/cardDetails'
 import { canBeParent } from '@/lib/accounts/kinds'
-import { resolveAccountId } from '@/lib/accounts/resolve'
 import type { AccountView } from '@/lib/accounts/useAccounts'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -59,21 +59,23 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
   const [cardMenu, setCardMenu] = useState<{ id: string; anchor: DOMRect } | null>(null)
   const expenses = useFinanceStore((s) => s.expenses)
   const methods = useFinanceStore((s) => s.paymentMethods)
-  const [active, setActive] = useState(0)
+  const debts = useFinanceStore((s) => s.debts)
+  const debtPayments = useFinanceStore((s) => s.debtPayments)
+  const rates = useFinanceStore((s) => s.exchangeRates)
   const { method, balance, cards } = account
+  // The selection belongs to one account: opening another starts on its first card (BUD-103).
+  const [selected, setSelected] = useState({ accountId: method.id, index: 0 })
+  const active = selected.accountId === method.id ? selected.index : 0
+  const setActive = (index: number) => setSelected({ accountId: method.id, index })
   const cur = String(method.currency)
   const card = cards[active]
+  const details = useMemo(() => (card ? cardDetails(card, debts, expenses, debtPayments, rates) : null), [card, debts, expenses, debtPayments, rates])
   const uc = useUsageCopy().balance
   const live = useBalanceView(method.id, open, method.type === 'cash')
   const fmt = (n: number) => (masked ? MASK : splitMoney(n, cur).int + splitMoney(n, cur).dec)
 
-  // Bank messages attribute to a card only by its last four digits, so a card without digits owns nothing: fall back to the account's recent activity instead of an empty list.
-  const { activity, cardOwns } = useMemo(() => {
-    const live = expenses.filter((e) => !e.refundedAt)
-    const own = card ? live.filter((e) => e.paymentMethodId === card.id) : []
-    const mine = own.length > 0 ? own : live.filter((e) => resolveAccountId(e.paymentMethodId, methods) === method.id)
-    return { activity: mine.sort((a, b) => instantOf(b.occurredAt, b.date) - instantOf(a.occurredAt, a.date)).slice(0, 5), cardOwns: own.length > 0 }
-  }, [expenses, methods, card, method.id])
+  // The list follows the card on the carousel, empty included; the add-card slot shows the whole account.
+  const activity = useMemo(() => sheetActivity(card, method.id, expenses, methods), [expenses, methods, card, method.id])
 
   const isCash = method.type === 'cash'
   const manageItems = [
@@ -123,7 +125,26 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
           {canBeParent(method.type) ? (
             <div className="px-5">
               {cards.length > 0 ? (
+                <>
                 <PaymentCardCarousel methods={cards} active={active} onActiveChange={setActive} defaultLabel="" hint="" onAddCard={onAddCard} addLabel={t.addACard} onMenu={(id, anchor) => setCardMenu({ id, anchor })} />
+                {card && details ? (
+                  <div dir="auto" aria-live="polite" className="mt-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3.5">
+                    <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">
+                      {[tAll.paymentMethodTypes[card.type], card.label?.trim() || (card.last4 ? `•• ${card.last4}` : ''), String(card.currency)].filter(Boolean).join(' · ')}
+                    </p>
+                    {details.kind === 'debit' ? (
+                      <p className="mt-1 text-xs text-[var(--color-brand-text-secondary)]">{t.usesBalance(accountTitle(method))}</p>
+                    ) : details.kind === 'credit' && details.outstanding !== null ? (
+                      <div className="mt-2 flex justify-between gap-3 text-[0.8125rem]">
+                        <span><span className="text-[var(--color-brand-text-secondary)]">{t.cardOutstanding}</span> <b dir="ltr" className="font-mono-numbers">{masked ? MASK : splitMoney(details.outstanding, details.currency).int}</b></span>
+                        {details.limit !== null ? (
+                          <span><span className="text-[var(--color-brand-text-secondary)]">{t.cardLimit}</span> <b dir="ltr" className="font-mono-numbers">{masked ? MASK : splitMoney(details.limit, details.currency).int}</b></span>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+                </>
               ) : (
                 <Button variant="outline" size="cta-block" onClick={onAddCard}>{t.addACard}</Button>
               )}
@@ -179,9 +200,9 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
             <Button variant="secondary" size="cta-block" className="h-14 flex-col gap-1 text-xs" onClick={onUpdate}><RefreshCw aria-hidden />{t.update}</Button>
           </div>
           <div>
-            <p className="mb-1 px-5 text-[0.8125rem] font-bold text-[var(--color-brand-text-secondary)]">{card && cardOwns ? t.spentWith(accountTitle(card)) : t.recent}</p>
+            <p className="mb-1 px-5 text-[0.8125rem] font-bold text-[var(--color-brand-text-secondary)]">{card ? t.spentWith(accountTitle(card)) : t.recent}</p>
             {activity.length === 0 ? (
-              <p className="px-5 py-3 text-sm text-[var(--color-brand-text-muted)]">{t.noActivity}</p>
+              <p className="px-5 py-3 text-sm text-[var(--color-brand-text-muted)]">{card ? t.noCardActivity : t.noActivity}</p>
             ) : activity.map((e) => (
               <TransactionRow key={e.id} icon={<ShoppingBag className="size-5" aria-hidden />} title={e.description || categoryLabel(tAll, e.category)}
                 onClick={() => { onClose(); setEditingExpenseId(e.id); setActiveModal('editExpense') }}

@@ -164,7 +164,8 @@ export default function FlowPage() {
 
   // In: the income types present this month, in Paydays order, then one-time.
   const incomeChips = useMemo<FlowChip[]>(() => {
-    const present = new Set(all.filter((i) => i.dir === 'in').map((i) => i.facet))
+    // Repayments of money owed to the user are not an income type: no chip for them.
+    const present = new Set(all.filter((i) => i.dir === 'in' && i.facet !== 'repayment').map((i) => i.facet))
     const order = [...incomeSources]
       .filter((s) => s.isRecurring)
       .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
