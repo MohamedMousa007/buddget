@@ -28,6 +28,9 @@ import {
 import { stampEdits } from '@/lib/supabase/remote/stampEdits'
 import { deepEqual } from '@/lib/supabase/remote/diff'
 import { holdParkedBack } from '@/lib/supabase/remote/parkedRows'
+import {
+  ackDeletes, clearPendingDeletes, deletedIdsOf, dropDeleted, hasPendingDeletes, readPendingDeletes, trackDeletes, writePendingDeletes,
+} from '@/lib/supabase/remote/pendingDeletes'
 import type { ParkedRow } from '@/lib/supabase/remote/sync'
 import { hasUnpersistedWrites, STORAGE_QUOTA_EVENT } from '@/lib/store/safeLocalStorage'
 import { cacheOwnerMismatch } from '@/lib/auth/cacheOwnerCheck'
@@ -119,6 +122,13 @@ export function suspendFinanceSync(): void {
  * switch still forces the flip (belt-and-suspenders on top of clearBudgetData).
  */
 let lastPulledUserId: string | null = null
+
+/** True while the store is written from the server (a merged pull, a reset): those removals are not the user's deletes. */
+let applyingServer = false
+function fromServer(write: () => void): void {
+  applyingServer = true
+  try { write() } finally { applyingServer = false }
+}
 
 /**
  * Every data-bearing snapshot slice the flush cares about. Subscribing
@@ -220,6 +230,11 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       // On native the OS status lands after mount; deciding earlier reads a stale "online" and fails in airplane mode.
       await networkReady
       if (cancelled) return
+      // L1-B: the store is persisted on a debounce, so a reload right after a delete can boot on a copy that still has the row.
+      if (useFinanceStore.getState().profile.id === userId) {
+        const stale = dropDeleted(useFinanceStore.getState(), readPendingDeletes(userId))
+        if (stale) fromServer(() => useFinanceStore.setState(stale))
+      }
       // Warm cache-first path: this user's data is already persisted in
       // localStorage, so render it instantly and reconcile in the background.
       // The reconcile goes through `syncFinanceNow()` (flush → pull → re-baseline)
@@ -288,6 +303,8 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         hydrated.current = true
         dropAdoptedLogged(incoming)
         useFinanceStore.getState().setDataReady(true)
+        // This baseline is the live store, which no longer holds a pending-deleted row: only the set sends that delete.
+        if (pulled && hasPendingDeletes(readPendingDeletes(userId))) void flushFinanceNow()
       }
     }
 
@@ -359,9 +376,10 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
 
       const next = snapshot(useFinanceStore.getState())
       const prev = prevSnap.current ?? emptySnapshot()
+      const deletes = readPendingDeletes(userId)
 
       try {
-        const result = await flushDiff(supabase, userId, prev, next)
+        const result = await flushDiff(supabase, userId, prev, next, deletes)
         // Always feed the result (empty on success, non-empty on
         // error) into the failures store — a successful flush
         // clears any previously-displayed banner.
@@ -371,9 +389,11 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         const adopted = new Set(result.adoptedPaydays ?? [])
         if (adopted.size > 0) {
           // Another device's row won the payday: drop our duplicate; the next pull brings the live one.
-          useFinanceStore.setState((s) => ({ incomeEvents: s.incomeEvents.filter((e) => !adopted.has(e.id)) }))
+          fromServer(() => useFinanceStore.setState((s) => ({ incomeEvents: s.incomeEvents.filter((e) => !adopted.has(e.id)) })))
         }
         if (!result.anyError) {
+          // The deletes this flush carried are on the server now; one made or redone meanwhile stays for the next flush.
+          if (hasPendingDeletes(deletes)) writePendingDeletes(userId, ackDeletes(readPendingDeletes(userId), deletes))
           // Rows the server refused on their own merit stay "unsent" in the baseline; everything else is delivered.
           const delivered = adopted.size > 0 ? { ...next, incomeEvents: next.incomeEvents.filter((e) => !adopted.has(e.id)) } : next
           prevSnap.current = holdParkedBack(delivered, prev, result.parked ?? [])
@@ -428,7 +448,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     const hasUnsent = () => {
       const base = prevSnap.current as Record<string, unknown> | null
       const now = useFinanceStore.getState() as unknown as Record<string, unknown>
-      return !base || TRACKED_SLICES.some((k) => now[k] !== base[k] && !deepEqual(now[k], base[k]))
+      return !base || hasPendingDeletes(readPendingDeletes(userId)) || TRACKED_SLICES.some((k) => now[k] !== base[k] && !deepEqual(now[k], base[k]))
     }
 
     // The device refused a save: push what is unsent now, so the server holds it if the app is closed before space frees up.
@@ -494,6 +514,13 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     const stopStamping = useFinanceStore.subscribe((state, prevState) => {
       const patch = stampEdits(prevState, state, new Date().toISOString())
       if (patch) useFinanceStore.setState(patch)
+    })
+    // L1-B: every row the user removes from a synced list is remembered until the server has the delete. Rows the server
+    // removed, a reset, a sign-out wipe and another account's store are not the user's deletes.
+    const stopTrackingDeletes = useFinanceStore.subscribe((state, prevState) => {
+      if (applyingServer || syncSuspended || state.profile.id !== userId || prevState.profile.id !== userId) return
+      const next = trackDeletes(readPendingDeletes(userId), prevState, state, new Date().toISOString())
+      if (next) writePendingDeletes(userId, next)
     })
     const unsub = useFinanceStore.subscribe(() => {
       if (!hydrated.current) return
@@ -614,6 +641,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       stopResume()
       unsub()
       stopStamping()
+      stopTrackingDeletes()
       unsubNet()
       if (reconnectTimer) clearTimeout(reconnectTimer)
       window.removeEventListener('pagehide', onHide)
@@ -681,7 +709,7 @@ async function runFullSync(
       delta.recurringDebtPayments, delta.savingsAccounts, delta.savingsTransactions, delta.recurringSavingsDeposits, delta.investmentHoldings, delta.goals,
       delta.paymentMethods].flatMap((l) => l?.deletedIds ?? [])
     if (deleted.length > 0 && refusedUndos(deleted).length > 0) useSyncFailures.getState().setNotice('undoRefused')
-    const merged = applyDelta(snapshot(useFinanceStore.getState()), delta, delivered)
+    const merged = applyDelta(snapshot(useFinanceStore.getState()), delta, delivered, deletedIdsOf(readPendingDeletes(userId)))
     applyMerged(merged, userId)
     // A cursor ahead of the stored copy would skip rows after a restart: while saves are being refused, the next pull stays a full one.
     if (hasUnpersistedWrites()) clearSyncCursors()
@@ -701,7 +729,8 @@ function wipeOnReset(userId: string, at: string | null): boolean {
   const verdict = decideReset(readResetSeen(userId), at)
   if (verdict !== 'none') writeResetSeen(userId, at)
   if (verdict !== 'wipe') return false
-  useFinanceStore.getState().reset()
+  clearPendingDeletes()
+  fromServer(() => useFinanceStore.getState().reset())
   useSettingsStore.getState().reset()
   clearSyncCursors()
   clearNetWorthStamps()
@@ -739,7 +768,7 @@ async function runLegacyFullSync(
   wipeOnReset(userId, stamp?.data_reset_at ?? null)
   const server = await pullAll(supabase, userId)
   if (!server || stale()) return { incoming: [], serverBaseline: null }
-  applyMerged(mergeSnapshots(snapshot(useFinanceStore.getState()), server), userId)
+  applyMerged(mergeSnapshots(snapshot(useFinanceStore.getState()), server, deletedIdsOf(readPendingDeletes(userId))), userId)
   useSettingsStore.getState().markServerSynced(userId)
   // A full pull IS the server's copy.
   return { incoming: server.expenses, serverBaseline: server }
@@ -756,7 +785,7 @@ function dropAdoptedLogged(incoming: readonly Expense[]): void {
 }
 
 function applyMerged(merged: Snapshot, userId: string): void {
-  useFinanceStore.setState({
+  fromServer(() => useFinanceStore.setState({
     profile: merged.profile,
     settings: merged.settings,
     financialGoalsNotes: merged.financialGoalsNotes,
@@ -780,7 +809,7 @@ function applyMerged(merged: Snapshot, userId: string): void {
     budgetPlanActivations: merged.budgetPlanActivations,
     buddgyMemories: merged.buddgyMemories,
     accountAdjustments: merged.accountAdjustments,
-  })
+  }))
   // Apply the server theme synchronously so the <html> class is already
   // correct before the loading splash is removed.
   applyTheme(merged.settings.theme)

@@ -6,6 +6,7 @@ import type { Snapshot } from './snapshot'
 import type { HasId } from './types'
 import { toServerTime } from './serverClock'
 import { diffLists, diffSingleton } from './diff'
+import { deleteTimesOf, withDeleteStubs, type PendingDeletes } from './pendingDeletes'
 import { profileToRow, profileFromRow } from './mappers/profileMapper'
 import { settingsToRow, settingsFromRow } from './mappers/settingsMapper'
 import { paymentMethodToRow, paymentMethodFromRow } from './mappers/paymentMethodMapper'
@@ -104,7 +105,8 @@ class OpRunner {
   private ops: Writes = []
   private removals: Writes = []
 
-  constructor(private client: Client) {}
+  /** `deletedAt`: when the user deleted each row (L1-B); a row missing from it is stamped with the flush time. */
+  constructor(private client: Client, private deletedAt?: ReadonlyMap<string, string>) {}
 
   private from(table: TableName) {
     return this.client.from(table) as never as {
@@ -207,19 +209,27 @@ class OpRunner {
    */
   tombstone(table: TableName, ids: readonly string[], label: string) {
     if (ids.length === 0) return
-    this.removals.push(() =>
-      (this.client.from(table) as never as {
-        update: (patch: { deleted_at: string }) => {
-          in: (col: string, vals: readonly string[]) => Promise<{ error: { message: string } | null }>
-        }
-      })
-        .update({ deleted_at: toServerTime(new Date().toISOString()) })
-        .in('id', ids)
-        .then((res) => {
-        this.writes++
-        if (res.error) this.errors.push(`${label}: ${res.error.message}`)
-      })
-    )
+    const now = new Date().toISOString()
+    const byTime = new Map<string, string[]>()
+    for (const id of ids) {
+      const at = this.deletedAt?.get(id) ?? now
+      byTime.set(at, [...(byTime.get(at) ?? []), id])
+    }
+    for (const [at, group] of byTime) {
+      this.removals.push(() =>
+        (this.client.from(table) as never as {
+          update: (patch: { deleted_at: string }) => {
+            in: (col: string, vals: readonly string[]) => Promise<{ error: { message: string } | null }>
+          }
+        })
+          .update({ deleted_at: toServerTime(at) })
+          .in('id', group)
+          .then((res) => {
+          this.writes++
+          if (res.error) this.errors.push(`${label}: ${res.error.message}`)
+        })
+      )
+    }
   }
 
   /** Tombstones and deletes land first so a removed row frees its unique key for a same-flush replacement. */
@@ -331,18 +341,22 @@ function emitSavingsAccounts(
 }
 
 /**
- * Diff prev → next and emit per-table writes in parallel.
+ * Diff prev → next and emit per-table writes in parallel. Every id in `pendingDeletes` that `next` lacks is deleted on
+ * the server with the user's delete time, even when `prev` no longer holds it (a pull re-baselined in between).
  */
 export async function flushDiff(
   client: Client,
   userId: string,
-  prev: Snapshot,
-  next: Snapshot
+  delivered: Snapshot,
+  next: Snapshot,
+  pendingDeletes: PendingDeletes = {}
 ): Promise<FlushResult> {
+  const prev = withDeleteStubs(delivered, next, pendingDeletes)
+  const deletedAt = deleteTimesOf(pendingDeletes)
   // Writes drain tier by tier so a parent row commits before any child that references it (FK order).
   // Link-column FKs (Q9): income_sources need debts + pockets (level1), income_events need income_sources (level2),
   // and the profile points at the active plan (roots) and the carry pocket (level1), so it goes last.
-  const [roots, level1, level2, level3] = [new OpRunner(client), new OpRunner(client), new OpRunner(client), new OpRunner(client)]
+  const [roots, level1, level2, level3] = [new OpRunner(client, deletedAt), new OpRunner(client, deletedAt), new OpRunner(client, deletedAt), new OpRunner(client, deletedAt)]
 
   // Singletons
   const profileExtras = {
@@ -401,7 +415,7 @@ export async function flushDiff(
   // A re-switch in the same cycle replaces the row, and the one-live-row-per-cycle index would reject
   // the new row while the old one is still live, so the tombstone lands first.
   const activationDiff = diffLists(next.budgetPlanActivations, prev.budgetPlanActivations)
-  const staleRunner = new OpRunner(client)
+  const staleRunner = new OpRunner(client, deletedAt)
   staleRunner.tombstone('budget_plan_activations', activationDiff.deletes, 'budget_plan_activations.tombstone')
   const staleResult = await staleRunner.drain()
   const freshRunner = new OpRunner(client)

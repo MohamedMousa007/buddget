@@ -8,6 +8,7 @@ import { mergeList } from './merge'
 import { noteServerTime, serverInstant } from './serverClock'
 import type { Snapshot } from './snapshot'
 import { holdUnsentBalances } from './unsentLedger'
+import { withoutDeleted } from './pendingDeletes'
 import { memoryFromRow } from './mappers/buddgyMemoryMapper'
 import { accountAdjustmentFromRow } from './mappers/accountAdjustmentMapper'
 import { activationFromRow } from './mappers/budgetActivationMapper'
@@ -150,7 +151,7 @@ export async function pullDelta(client: SupabaseClient<Database>, since: string 
   }
 }
 
-function applyListWith<T extends WithId>(local: T[], d: ListDelta<T>, staleBefore: string | null, pending?: ReadonlySet<string>): T[] {
+function applyListWith<T extends WithId>(local: T[], d: ListDelta<T>, staleBefore: string | null, pending?: ReadonlySet<string>, deletedHere?: ReadonlySet<string>): T[] {
   const dead = new Set(d.deletedIds)
   const live = new Set(d.upserts.map((r) => r.id))
   const cutoff = staleBefore === null ? NaN : Date.parse(staleBefore)
@@ -159,7 +160,7 @@ function applyListWith<T extends WithId>(local: T[], d: ListDelta<T>, staleBefor
   // edit time is never dropped (the built-in Cash method is never sent, so the server never returns it).
   const gone = (r: T) => !Number.isNaN(cutoff) && !live.has(r.id) && !!r.updatedAt && r.id !== DEFAULT_CASH_ID
     && (pending ? !pending.has(r.id) : (serverInstant(r.updatedAt) ?? Infinity) <= cutoff)
-  return mergeList(local, d.upserts, pending).filter((r) => !dead.has(r.id) && !gone(r))
+  return withoutDeleted(mergeList(local, d.upserts, pending), local, deletedHere).filter((r) => !dead.has(r.id) && !gone(r))
 }
 
 /** Ids of the rows this device holds that the server has not acknowledged: new, or different from the last delivered copy. Undefined when there is no baseline to tell. */
@@ -174,9 +175,10 @@ function pendingIds<T extends WithId>(now: readonly T[], delivered: readonly T[]
  * removed, and everything else is left alone. Settings and profile are taken from the server only when they changed (the
  * caller has already flushed local edits). `delivered` is the snapshot the server last acknowledged: when given, a
  * local row beats the server copy only if it holds an edit that was not delivered (and then the newer edit time wins);
- * without it the newer edit time decides for every row.
+ * without it the newer edit time decides for every row. `deletedHere` holds the ids the user deleted on this device that
+ * the server has not acknowledged: a pull never brings those back (L1-B).
  */
-export function applyDelta(local: Snapshot, d: MappedDelta, delivered?: Snapshot | null): Snapshot {
+export function applyDelta(local: Snapshot, d: MappedDelta, delivered?: Snapshot | null, deletedHere?: ReadonlySet<string>): Snapshot {
   // An edit made after the flush snapshot (or still in flight) is not on the server yet: the copy that comes down is
   // older, so the local one stays and goes out with the next flush.
   const profilePending = !!delivered && !(
@@ -198,7 +200,7 @@ export function applyDelta(local: Snapshot, d: MappedDelta, delivered?: Snapshot
   const deadPlans = new Set(d.deletedBudgetPlanIds)
   const deadActivations = new Set(d.deletedBudgetPlanActivationIds)
   const applyList = <T extends WithId>(rows: T[], delta: ListDelta<T>, base: readonly T[] | undefined): T[] =>
-    applyListWith(rows, delta, d.staleBefore, pendingIds(rows, base))
+    applyListWith(rows, delta, d.staleBefore, pendingIds(rows, base), deletedHere)
   return {
     profile: profileResult?.profile ?? local.profile,
     settings,
@@ -223,7 +225,7 @@ export function applyDelta(local: Snapshot, d: MappedDelta, delivered?: Snapshot
     goals: applyList(local.goals, d.goals, delivered?.goals),
     buddgyMemories: applyList(local.buddgyMemories as WithId[], d.buddgyMemories as ListDelta<WithId>, delivered?.buddgyMemories as WithId[] | undefined) as Snapshot['buddgyMemories'],
     accountAdjustments: applyList(local.accountAdjustments as WithId[], d.accountAdjustments as ListDelta<WithId>, delivered?.accountAdjustments as WithId[] | undefined) as Snapshot['accountAdjustments'],
-    budgetPlans: applyListWith(local.budgetPlans as WithId[], { upserts: d.budgetPlans as WithId[], deletedIds: d.deletedBudgetPlanIds }, null, pendingIds(local.budgetPlans as WithId[], delivered?.budgetPlans as WithId[] | undefined)) as Snapshot['budgetPlans'],
-    budgetPlanActivations: (mergeList(local.budgetPlanActivations as WithId[], d.budgetPlanActivations as WithId[], pendingIds(local.budgetPlanActivations as WithId[], delivered?.budgetPlanActivations as WithId[] | undefined)) as Snapshot['budgetPlanActivations']).filter((a) => !deadPlans.has(a.planId) && !deadActivations.has(a.id)),
+    budgetPlans: applyListWith(local.budgetPlans as WithId[], { upserts: d.budgetPlans as WithId[], deletedIds: d.deletedBudgetPlanIds }, null, pendingIds(local.budgetPlans as WithId[], delivered?.budgetPlans as WithId[] | undefined), deletedHere) as Snapshot['budgetPlans'],
+    budgetPlanActivations: (withoutDeleted(mergeList(local.budgetPlanActivations as WithId[], d.budgetPlanActivations as WithId[], pendingIds(local.budgetPlanActivations as WithId[], delivered?.budgetPlanActivations as WithId[] | undefined)), local.budgetPlanActivations as WithId[], deletedHere) as Snapshot['budgetPlanActivations']).filter((a) => !deadPlans.has(a.planId) && !deadActivations.has(a.id)),
   }
 }
