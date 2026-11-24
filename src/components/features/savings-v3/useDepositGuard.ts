@@ -36,9 +36,9 @@ export function useDepositGuard(pocket: Pocket | undefined): DepositGuard {
     message: (refusal, fromAccountId) => {
       if (!refusal || !pocket) return null
       if (refusal === 'no_account_leg') return t.noAccountLeg(pocket.currency)
-      if (!holder) return null
-      if (refusal === 'needs_account') return t.needsAccount(accountTitle(holder))
+      if (refusal === 'needs_account') return holder ? t.needsAccount(accountTitle(holder)) : null
       const short = (fromAccountId ? ledger.paymentMethods.find((m) => m.id === fromAccountId) : null) ?? holder
+      if (!short) return null
       if (refusal === 'no_rate') return t.noRateFrom(accountTitle(short))
       const cur = String(short.currency)
       const free = splitMoney(availableIn(short.id, ledger), cur)

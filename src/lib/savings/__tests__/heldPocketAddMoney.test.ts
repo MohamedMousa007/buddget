@@ -75,3 +75,32 @@ describe('L1-A: Wealth > Add money into a pocket held in an account', () => {
     expect(netWorth()).toBe(6000)
   })
 })
+
+describe('a pocket outside the accounts funded from a tracked account', () => {
+  beforeEach(() => {
+    useFinanceStore.setState({
+      paymentMethods: [pm('qnb', 1000), pm('cib', 5000)], savingsAccounts: [], savingsTransactions: [], incomeEvents: [], goals: [], expenses: [], debtPayments: [], debts: [], accountAdjustments: [],
+      settings: { ...S().settings, baseCurrency: 'EGP' },
+    })
+    S().addSavingsAccount({ name: 'Trip', category: 'savings', type: 'vault', currency: 'EGP' } as never)
+  })
+  const deposit = (amount: number, fromAccountId?: string) => S().depositToSavings(rainy().id, amount, 'EGP', undefined, fromAccountId ? { fromAccountId } : undefined)
+
+  it('more than the account has free is refused: the account never goes below zero, net worth unchanged', () => {
+    expect(deposit(2000)).toBe(false)
+    expect(deposit(2000, 'qnb')).toBe(false)
+    expect(rainy().currentBalance).toBe(0)
+    expect(balances().get('qnb')!.balance).toBe(1000)
+    expect(netWorth()).toBe(6000)
+  })
+
+  it('inside its free money the account goes down, the pocket up, net worth unchanged', () => {
+    expect(deposit(1000)).toBe(true)
+    expect(balances().get('qnb')!.balance).toBe(0)
+    expect(rainy().currentBalance).toBe(1000)
+    expect(deposit(1)).toBe(false)
+    expect(deposit(5000, 'cib')).toBe(true)
+    expect(netWorth()).toBe(6000)
+  })
+})
+

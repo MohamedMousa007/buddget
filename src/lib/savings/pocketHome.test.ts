@@ -79,3 +79,34 @@ describe('depositRefusal: a pocket held in an account (L1-A)', () => {
     expect(explainDepositRefusal(l, rainy, 'no_rate', 'USD').error).toContain('exchange rate')
   })
 })
+
+describe('depositRefusal: a pocket outside the accounts funded from a tracked account', () => {
+  const methods = [pm('QNB', { openingBalance: 1000 }), pm('USD', { currency: 'USD', openingBalance: 100 }), pm('U', { openingBalance: undefined, openingAt: undefined })]
+  const trip = pocket('trip', 0)
+  const l = ledger(methods, [trip, pocket('held', 400, 'QNB')])
+
+  it('the default source (the primary account) is capped at its free money', () => {
+    expect(depositRefusal(l, trip, { amount: 600 })).toBeNull()
+    expect(depositRefusal(l, trip, { amount: 601 })).toBe('over_available')
+  })
+
+  it('a named source and an explicit paymentMethodId are capped the same way', () => {
+    expect(depositRefusal(l, trip, { amount: 601, fromAccountId: 'QNB' })).toBe('over_available')
+    expect(depositRefusal(l, trip, { amount: 601, mode: 'declare', paymentMethodId: 'QNB' })).toBe('over_available')
+    expect(depositRefusal(l, trip, { amount: 600, mode: 'declare', paymentMethodId: 'QNB' })).toBeNull()
+  })
+
+  it('declared money with no account, and a source that is not tracked, move no account and stay allowed', () => {
+    expect(depositRefusal(l, trip, { amount: 5000, mode: 'declare' })).toBeNull()
+    expect(depositRefusal(l, trip, { amount: 5000, mode: 'declare', paymentMethodId: 'U' })).toBeNull()
+  })
+
+  it('a source in another currency is refused with no rate', () => {
+    const noRate: LedgerInput = { ...l, convert: (a, from, to) => (from === to ? a : null) }
+    expect(depositRefusal(noRate, trip, { amount: 10, paymentMethodId: 'USD' })).toBe('no_rate')
+  })
+
+  it('the refusal names the funding account', () => {
+    expect(explainDepositRefusal(l, trip, 'over_available').error).toContain('QNB only has 600 EGP available')
+  })
+})

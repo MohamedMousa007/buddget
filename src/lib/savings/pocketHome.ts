@@ -31,8 +31,8 @@ export function availableIn(accountId: string, ledger: LedgerInput): number {
 /**
  * Why a deposit must not be written:
  * - `over_available`: more than the account the money comes from has free: the holding account for a reserve, the
- *   other account for a transfer into the holder.
- * - `no_rate`: a transfer from an account in another currency with no exchange rate to measure it by.
+ *   funding account for money that moves (into the holder, or into a pocket outside the accounts).
+ * - `no_rate`: money from an account in another currency with no exchange rate to measure it by.
  * - `needs_account`: outside money aimed at a reserved pocket with no account named; it must arrive in the account first.
  * - `no_account_leg`: a budget deposit the user's main account cannot fund, so it would raise net worth from nothing.
  */
@@ -70,8 +70,9 @@ function exceedsAvailable(ledger: LedgerInput, pocket: GuardedPocket, accountId:
 }
 
 /**
- * A leg from another account into a held pocket is a transfer (source down, holder up), so it is capped at what the
- * source has free. A source with no known balance, or no rate to measure the amount by, cannot fund one.
+ * A leg from an account takes the money out of it (into the holder for a held pocket, into the pocket itself for one
+ * outside the accounts), so it is capped at what the source has free. A source with no known balance, or no rate to
+ * measure the amount by, cannot fund one.
  */
 function transferRefusal(ledger: LedgerInput, pocket: GuardedPocket, sourceId: string | null, amount: number): 'over_available' | 'no_rate' | null {
   const source = sourceId ? computeBalances(ledger).get(sourceId) : undefined
@@ -94,6 +95,10 @@ export function depositRefusal(ledger: LedgerInput, pocket: GuardedPocket, inten
     if (sourceId !== home.accountId) return transferRefusal(ledger, pocket, sourceId, intent.amount)
     return exceedsAvailable(ledger, pocket, home.accountId, intent.amount) ? 'over_available' : null
   }
+  // A leg from a tracked account takes the money out of it: available never goes below zero. A source that is not
+  // tracked moves no balance, as before.
+  const sourceId = legId ? resolveAccountId(legId, methods) : null
+  if (sourceId && computeBalances(ledger).has(sourceId)) return transferRefusal(ledger, pocket, sourceId, intent.amount)
   // Refused only when a primary account exists and cannot carry the leg. With none (nothing tracked, or only Cash or a
   // prepaid card) the default deposit never had a leg, and it keeps that meaning.
   return !legId && !declared && primaryTrackedAccount(methods) !== null ? 'no_account_leg' : null
@@ -111,7 +116,9 @@ export function explainDepositRefusal(ledger: LedgerInput, pocket: GuardedPocket
   const home = pocketHome(pocket, ledger.paymentMethods)
   const holder = home.kind === 'reserved' ? ledger.paymentMethods.find((m) => m.id === home.accountId) : undefined
   const account = holder?.name ?? 'its account'
-  const source = fromAccountId && fromAccountId !== holder?.id ? ledger.paymentMethods.find((m) => m.id === fromAccountId) : undefined
+  // A pocket outside the accounts with no source named is funded by the default leg (the primary account).
+  const sourceId = fromAccountId ?? (holder ? undefined : resolveAccountId(depositLegId(ledger.paymentMethods, pocket, {}), ledger.paymentMethods))
+  const source = sourceId && sourceId !== holder?.id ? ledger.paymentMethods.find((m) => m.id === sourceId) : undefined
   if (refusal === 'no_rate') {
     return {
       error: `There is no exchange rate between ${source?.currency ?? 'that account\'s currency'} and ${pocket.currency}, so the money cannot be moved from ${source?.name ?? 'that account'}. Nothing was added.`,
@@ -120,7 +127,7 @@ export function explainDepositRefusal(ledger: LedgerInput, pocket: GuardedPocket
   }
   if (refusal === 'over_available' && source) {
     return {
-      error: `${source.name} only has ${availableIn(source.id, ledger)} ${source.currency} available to move into ${account}. Nothing was added.`,
+      error: `${source.name} only has ${availableIn(source.id, ledger)} ${source.currency} available${holder ? ` to move into ${account}` : ''}. Nothing was added.`,
       hint: 'Ask for a smaller amount, or for another account to send it from.',
     }
   }
