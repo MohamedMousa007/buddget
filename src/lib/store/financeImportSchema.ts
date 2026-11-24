@@ -98,7 +98,7 @@ export const importDataSchema = z.object({
       baseCurrency: fiatCurrencySchema,
       secondaryCurrency: fiatCurrencySchema.nullable().optional(),
       showSecondaryCurrency: z.boolean().optional(),
-      theme: z.enum(['dark', 'light', 'system']),
+      theme: z.enum(['dark', 'light', 'system']).transform((t) => (t === 'dark' ? 'dark' : 'light') as 'dark' | 'light'),
       language: z.enum(['en', 'ar']),
       showCentsInDashboard: z.boolean(),
       monthStartDay: z.number().int().min(1).max(28),

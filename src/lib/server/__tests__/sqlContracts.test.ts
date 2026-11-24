@@ -50,7 +50,16 @@ describe('AI credit windows', () => {
     expect(body).toContain('if r.turn_id is null then if r.use_sparks and')
     expect(body).toContain('perform public.ai_turn_close_charged(p_user, r.turn_id, p_reservation)')
     expect(body).toContain('set credits_exempt = true, units = 0')
-    expect(squash(latest('ai_quota_settle_core'))).toContain('v_free := v_free or r.free_rerun')
+    expect(squash(latest('ai_quota_settle_core'))).toContain('v_free := v_fail or r.free_rerun')
+  })
+
+  // 0344: a free failure that cost money is charged once the user has 5 in the last hour; a failure that cost nothing never is.
+  it('ai_quota_settle_core caps costly free failures at 5 an hour and never caps zero-cost ones', () => {
+    const core = squash(latest('ai_quota_settle_core'))
+    expect(core).toContain('if v_fail and v_cost > 0 and (')
+    expect(core).toContain("created_at > now() - interval '1 hour'")
+    expect(core).toContain('cost_usd_micro > 0 limit 5')
+    expect(core).toContain(') >= 5 then v_fail := false; end if;')
   })
 
   it('a free re-run and a hop of an open turn skip the credit check; other calls do not', () => {

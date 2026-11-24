@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeftRight, Moon, Monitor, Search, Sun } from 'lucide-react'
+import { ArrowLeftRight, Moon, Search, Sun } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { BaseCurrencyChangeSheet } from '@/components/features/settings/BaseCurrencyChangeSheet'
@@ -20,7 +20,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import type { Currency } from '@/lib/store/types'
 
-const NEXT_THEME = { light: 'dark', dark: 'system', system: 'light' } as const
+const NEXT_THEME = { light: 'dark', dark: 'light' } as const
 
 interface TileProps {
   /** Glyph inside the button: an icon, or a short mark such as the language's initials. */
@@ -99,7 +99,7 @@ export function PreferencesCard({ onSearch }: { onSearch: () => void }) {
   const second: Currency | null = settings.showSecondaryCurrency ? settings.secondaryCurrency : null
   const pickSecond = (code: string | null) =>
     updateSettings(code ? { secondaryCurrency: code as Currency, showSecondaryCurrency: true } : { showSecondaryCurrency: false, secondaryCurrency: settings.secondaryCurrency || defaultSecondCurrency(settings.baseCurrency) })
-  const themeLabel = settings.theme === 'dark' ? copy.themeDark : settings.theme === 'light' ? copy.themeLight : p.themeSystem
+  const themeLabel = settings.theme === 'dark' ? copy.themeDark : copy.themeLight
 
   return (
     <>
@@ -109,7 +109,7 @@ export function PreferencesCard({ onSearch }: { onSearch: () => void }) {
             <span className="font-mono-numbers">{locale === 'ar' ? 'ع' : 'EN'}</span>
           </Tile>
           <Tile settingId="theme" label={`${p.appearance}: ${themeLabel}`} onClick={changeTheme}>
-            {settings.theme === 'dark' ? <Moon /> : settings.theme === 'light' ? <Sun /> : <Monitor />}
+            {settings.theme === 'dark' ? <Moon /> : <Sun />}
           </Tile>
           <Tile settingId="baseCurrency" label={`${copy.currencyTile}: ${settings.baseCurrency}${second ? ` + ${second}` : ''}`} onClick={() => openSheet('currencies')}>
             <span className="font-mono-numbers">{settings.baseCurrency}</span>

@@ -961,7 +961,7 @@ export interface AppSettings {
   baseCurrency: Currency
   secondaryCurrency: Currency | null
   showSecondaryCurrency: boolean
-  theme: 'dark' | 'light' | 'system'
+  theme: 'dark' | 'light'
   language: 'en' | 'ar'
   showCentsInDashboard: boolean
   monthStartDay: number

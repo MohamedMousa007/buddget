@@ -66,7 +66,7 @@ export function defaultServerSettings(baseCurrency: Currency, secondaryCurrency:
     baseCurrency,
     secondaryCurrency,
     showSecondaryCurrency: false,
-    theme: 'dark',
+    theme: 'light',
     language: 'en',
     showCentsInDashboard: true,
     monthStartDay: 1,

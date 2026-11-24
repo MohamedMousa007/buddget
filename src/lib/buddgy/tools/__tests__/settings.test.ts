@@ -87,7 +87,8 @@ describe('change_setting', () => {
     expect(settings().language).toBe('ar')
     if (applied.ok) applied.undo?.()
     expect(settings().language).toBe('en')
-    expect(change('theme', 'auto').ok).toBe(true)
+    expect(change('theme', 'dark').ok).toBe(true)
+    expect(change('theme', 'system').ok).toBe(false)
   })
 
   it('toggles store-backed switches including the device-local ones', () => {
