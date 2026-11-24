@@ -36,6 +36,8 @@ test('B bank account > expense on it > balance > reports', async ({ page, user }
     await goto(page, '/reports')
     const main = page.locator('main')
     await expect(main).toContainText('250')
+    // Reports is Insights now (782a1e18): the category chart sits in the closed "The numbers behind it" fold.
+    await main.getByText('The numbers behind it', { exact: true }).click()
     await expect(main.getByText(/Food/).first()).toBeVisible()
   })
 })

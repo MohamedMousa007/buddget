@@ -136,12 +136,15 @@ test('R05 Reports: Biggest purchase skips debt payments; money in shows expected
   await payDebt(page, { debt: 'QA R05 loan', amount: 1500, method: 'QNB Alahli' })
   await goto(page, '/reports')
   const main = page.locator('main')
+  // Reports is Insights now (782a1e18): the summary panel sits in the closed "The numbers behind it" fold.
+  await main.getByText('The numbers behind it', { exact: true }).click()
+  await expect(main.getByText(/Biggest purchase/i).first()).toBeVisible()
   const txt = (await main.innerText()).replace(/\s+/g, ' ')
   test.info().annotations.push({ type: 'evidence', description: txt.slice(0, 500) })
   const big = txt.match(/Biggest purchase.*?E£\s*([\d,]+)/i)
   expect(big, 'Reports shows a Biggest purchase figure').not.toBeNull()
   expect(Number(big![1].replace(/,/g, ''))).toBe(300)
-  await expect(main.getByText(/Money in|Income/).first()).toBeVisible()
+  await expect(main.getByText(/Money in|Income/).filter({ visible: true }).first()).toBeVisible()
   expect(txt).toMatch(/expected/i)
   expect(txt).toMatch(/received/i)
 })
@@ -376,7 +379,7 @@ test.describe('two devices', () => {
     const a1 = await localWait(page, (s) => s.expenses.find((x: any) => x.description === 'QA R14 from A'))
     await serverRows('expenses', user.id, `id=eq.${a1.id}`, (r) => r.length === 1)
 
-    const ctxB = await browser.newContext({ viewport: { width: 390, height: 844 }, baseURL: 'http://localhost:3100', bypassCSP: true, timezoneId: 'Africa/Cairo', locale: 'en-US' })
+    const ctxB = await browser.newContext({ viewport: { width: 390, height: 844 }, baseURL: process.env.QA_BASE ?? 'http://localhost:3100', bypassCSP: true, timezoneId: 'Africa/Cairo', locale: 'en-US' })
     try {
       await installApiShim(ctxB); await forceFlags(ctxB, { onboarding_v1: false })
       const B = await ctxB.newPage()

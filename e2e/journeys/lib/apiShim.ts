@@ -6,7 +6,7 @@ import type { BrowserContext } from '@playwright/test'
  * Tests run with bypassCSP and this shim sends those calls to the local server under test instead, adding the
  * CORS headers a real cross-origin API would send. No request ever reaches buddget.app.
  */
-export const LOCAL = 'http://localhost:3100'
+export const LOCAL = process.env.QA_BASE ?? 'http://localhost:3100'
 export async function installApiShim(ctx: BrowserContext) {
   await ctx.route(/^https:\/\/(www\.)?buddget\.app\/api\//, async (route) => {
     const req = route.request()

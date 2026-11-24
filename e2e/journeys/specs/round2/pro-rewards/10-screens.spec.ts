@@ -74,7 +74,7 @@ test('J5 @desktop invite: Copy link copies the link and says Copied; Share hands
   const inviter = await qa('j5i')
   const code = (await rpc(inviter.token, 'referral_my_summary')).json.code as string
   const friend = await qa('j5f')
-  await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: 'http://localhost:3100' })
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: process.env.QA_BASE ?? 'http://localhost:3100' })
   await page.addInitScript(() => { (window as unknown as { __shared: unknown[] }).__shared = []; (navigator as unknown as { share: unknown }).share = async (d: unknown) => { (window as unknown as { __shared: unknown[] }).__shared.push(d) } })
   // Deep link first, signed out: the code waits in a cookie until the account exists.
   await page.goto(`/i/${code.toLowerCase()}`)
@@ -104,7 +104,7 @@ test('J6 buy buttons tapped twice fail gracefully on the web: one "not yet" note
   await openLoaded(page, '/settings/pro')
   await main(page).getByRole('button', { name: 'Keep Pro', exact: true }).dblclick()
   await expect(main(page).getByRole('heading', { name: 'Plan and billing' })).toBeVisible()
-  await expect(main(page).getByText(/not available|yet/i).first()).toBeVisible()
+  await expect(main(page).getByText(/isn’t available on this device yet|not available/i).first()).toBeVisible()
   expect((await svc(`spark_purchases?user_id=eq.${u.id}&select=id`)).json).toEqual([])
 })
 
