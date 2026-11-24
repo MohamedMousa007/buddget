@@ -612,7 +612,7 @@ export function executeActionItem(
     // With no expense the payment itself is the account leg (money received, or a card paid): it needs its account,
     // the default one when none was named, as the sheet does. With an expense, the expense carries the account;
     // tagging both would move the balance twice.
-    const legId = pmHint && pm ? pm.id : storedMethodId(defaultMethodId(ctx.paymentMethods, ctx.expenses), ctx.paymentMethods)
+    const legId = pmHint && pm ? pm.id : storedMethodId(defaultMethodId(ctx.paymentMethods), ctx.paymentMethods)
     ctx.addDebtPayment({
       debtId: debt.id,
       date: dateStr,

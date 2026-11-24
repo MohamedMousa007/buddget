@@ -47,6 +47,10 @@ export function getInstallKey(): Promise<string | null> {
     const { nativeInstallKey } = await import('@/lib/native/smsTracker')
     const key = await nativeInstallKey(isAndroid() ? 'android' : 'ios')
     return key && /^[0-9a-f]{64}$/.test(key) ? key : null
-  })()
+  })().then((key) => {
+    // A null is not final: the iOS Keychain refuses reads before first unlock, so try again on the next heartbeat.
+    if (key === null) installKey = null
+    return key
+  })
   return installKey
 }

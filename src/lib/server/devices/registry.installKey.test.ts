@@ -83,4 +83,11 @@ describe('upsertSelf reinstall reconciliation (BUD-107)', () => {
     await upsertSelf(f.service, 'u1', 'self', { platform: 'ios', installKey: KEY })
     expect(f.updates).toContainEqual({ install_key: KEY })
   })
+
+  it('an existing phone without a key heals a failed earlier merge: the live row holding its key is folded in', async () => {
+    const f = fake([row('self'), row('older', { is_main: true, install_key: KEY })])
+    await upsertSelf(f.service, 'u1', 'self', { platform: 'android', installKey: KEY })
+    expect(f.rpcs).toEqual([{ fn: 'devices_supersede', args: { p_user: 'u1', p_old: 'older', p_new: 'self' } }])
+    expect(f.updates).not.toContainEqual({ install_key: KEY })
+  })
 })

@@ -69,6 +69,13 @@ async function accountWantsSms(service: ServiceClient, userId: string): Promise<
   return Boolean(data?.sms_tracking_enabled)
 }
 
+/** Folds an earlier install of this phone into its new row. A failure is logged, never thrown: the heartbeat still registers. */
+async function supersede(service: ServiceClient, userId: string, oldId: string, newId: string) {
+  const { data, error } = await service.rpc('devices_supersede', { p_user: userId, p_old: oldId, p_new: newId })
+  if (error) console.error('[devices] devices_supersede failed', error.code, error.message)
+  else if (data === false) console.error('[devices] devices_supersede found nothing to merge')
+}
+
 /** Creates this install's row, or refreshes what the phone knows about itself. Roles are never overwritten by a heartbeat. */
 export async function upsertSelf(service: ServiceClient, userId: string, deviceId: string, report: SelfReport) {
   const now = new Date().toISOString()
@@ -95,7 +102,8 @@ export async function upsertSelf(service: ServiceClient, userId: string, deviceI
     if (predecessor) {
       // The key moves with the roles inside the RPC; the unique index allows one live row per key.
       const { error } = await service.from('user_devices').insert({ ...row, is_main: false })
-      if (!error) await service.rpc('devices_supersede', { p_user: userId, p_old: predecessor.device_id, p_new: deviceId })
+      if (error) console.error('[devices] reinstall row insert failed', error.code, error.message)
+      else await supersede(service, userId, predecessor.device_id, deviceId)
       const { data } = await service.from('user_devices').select('*').eq('user_id', userId).eq('device_id', deviceId).single()
       return { revoked: false as const, device: data }
     }
@@ -117,8 +125,16 @@ export async function upsertSelf(service: ServiceClient, userId: string, deviceI
       ...(report.sessionId ? { session_id: report.sessionId } : {}),
       ...(report.smsQueue ? { sms_queue_pending: report.smsQueue.pending, sms_queue_oldest_at: report.smsQueue.oldestAt, sms_last_result: report.smsQueue.lastResult, sms_queue_reported_at: now, ...(report.smsQueue.evicted !== undefined ? { sms_evicted_count: report.smsQueue.evicted } : {}) } : {}),
     }).eq('user_id', userId).eq('device_id', deviceId)
-    // Phones from before install_key learn theirs on the next heartbeat; a clash with another live row is left alone.
-    if (installKey && !existing.install_key) await service.from('user_devices').update({ install_key: installKey }).eq('user_id', userId).eq('device_id', deviceId)
+    // Phones from before install_key learn theirs on the next heartbeat. If another live row already holds the key it is
+    // this phone's earlier install (a merge that failed earlier heals here); the RPC folds it in and hands the key over.
+    if (installKey && !existing.install_key) {
+      const holder = others.find((d) => d.install_key === installKey)
+      if (holder) await supersede(service, userId, holder.device_id, deviceId)
+      else {
+        const { error } = await service.from('user_devices').update({ install_key: installKey }).eq('user_id', userId).eq('device_id', deviceId)
+        if (error) console.error('[devices] install_key backfill failed', error.code, error.message)
+      }
+    }
     const stale = main && Date.now() - Date.parse(main.last_seen_at) > STALE_MAIN_DAYS * 86_400_000
     if (!existing.is_main && stale && report.pushPermission !== 'denied') await promoteMain(service, userId, main.device_id, 'stale', deviceId)
     else if (!existing.is_main && !main && report.pushPermission !== 'denied') await setMain(service, userId, deviceId)
