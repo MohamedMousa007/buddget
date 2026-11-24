@@ -8,6 +8,9 @@ import { inlineCopyAr } from '../inlineCopy'
 import { catalogCopyAr } from '../catalogCopy'
 import { arCount } from '../arPlural'
 
+/** Keeps the figure highlighted (`*n*`) inside a count noun that carries its number ("11 فاتورة"); 1 and 2 have no digit to mark. */
+const starNumber = (n: number, text: string): string => text.replace(String(n), `*${n}*`)
+
 export const ar: Dictionary = {
   /** Layout stays LTR; Arabic is typography + `data-locale` text alignment only. */
   dir: 'ltr',
@@ -1628,18 +1631,18 @@ export const ar: Dictionary = {
   insights: {
     heroLabel: 'تقدر تصرف',
     heroUnit: (c) => `${c} في اليوم`,
-    heroNote: (d) => `لمدة ${d} ${d === 1 ? 'يوم' : 'أيام'} لحد يوم الراتب، من المتبقي.`,
-    heroTight: (d) => `بالمعدل الحالي فلوسك تكفي حوالي ${d} ${d === 1 ? 'يوم' : 'أيام'}.`,
+    heroNote: (d) => `لمدة ${arCount(d, 'day')} لحد يوم الراتب، من المتبقي.`,
+    heroTight: (d) => `بالمعدل الحالي فلوسك تكفي حوالي ${arCount(d, 'day')}.`,
     heroNone: 'مفيش متبقي للصرف في الدورة دي.',
     heroNoIncome: 'ضيف دخلك عشان تشوف تقدر تصرف كام في اليوم.',
-    heroBasis: (d) => `مبني على ${d} ${d === 1 ? 'يوم' : 'أيام'} من المصروفات.`,
+    heroBasis: (d) => `مبني على ${arCount(d, 'day')} من المصروفات.`,
     previewTitle: 'اللي هوريهولك',
     previewExample: 'مثال',
     previewItems: ['بتصرف 40% أكتر في الأسبوع بعد الراتب.', 'فاتورة الإنترنت زادت 50.', '3 فواتير مستحقة قبل الراتب.'],
     lockSheet: { title: 'دي جزء من Pro', body: 'Pro بيفتح كل الأنماط وعرض السنة وخاصية لو والملخص الشهري. مبلغك اليومي والفواتير والديون تفضل مجانية.', cta: 'شوف Pro', later: 'مش دلوقتي' },
     newBadge: 'جديد',
     reminderTitle: 'تحليلات',
-    reminderBody: 'في تحليلاتك شيء جديد. ألقِ نظرة.',
+    reminderBody: 'فيه حاجة جديدة في تحليلاتك. بص عليها.',
     share: {
       button: 'شارك الملخص',
       title: 'دورتي اللي فاتت',
@@ -1649,20 +1652,20 @@ export const ar: Dictionary = {
       purchases: (n) => `${n} عملية شراء متتبعة`,
       foot: 'متتبعة بـ بادجت',
     },
-    heroLearning: (d) => (d > 0 ? `هقدر أديك إجابة واضحة بعد ${d} ${d === 1 ? 'يوم' : 'أيام'} كمان.` : 'محتاج كام عملية صرف كمان عشان أديك إجابة واضحة.'),
+    heroLearning: (d) => (d > 0 ? `هقدر أديك إجابة واضحة بعد ${arCount(d, 'day')} كمان.` : 'محتاج كام عملية صرف كمان عشان أديك إجابة واضحة.'),
     cellSpent: 'صرفت لحد دلوقتي',
     cellPace: 'في اليوم لحد دلوقتي',
     cellLasts: 'الفلوس تكفي',
     cellLastsAfter: 'لحد الراتب',
     lastsEmpty: 'خلصت',
     learningTitle: 'بتعرّف على أنماطك',
-    learningBody: (d) => (d > 0 ? `${d} ${d === 1 ? 'يوم' : 'أيام'} كمان من المصروفات، وبعدها أوريك صرفك على مدار دورة الراتب.` : 'كام عملية صرف كمان، وبعدها أوريك صرفك على مدار دورة الراتب.'),
+    learningBody: (d) => (d > 0 ? `${arCount(d, 'day')} كمان من المصروفات، وبعدها أوريك صرفك على مدار دورة الراتب.` : 'كام عملية صرف كمان، وبعدها أوريك صرفك على مدار دورة الراتب.'),
     feedTitle: 'حاجات يمكن متعرفهاش',
     areasTitle: 'فلوسك، مجال بمجال',
     detailsTitle: 'الأرقام ورا الكلام',
     askBuddgy: 'اسأل بادجي',
     unlock: 'افتح بـ Pro',
-    moreWaiting: (n) => `${n} ${n === 1 ? 'ملاحظة' : 'ملاحظات'} كمان مستنياك`,
+    moreWaiting: (n) => `${arCount(n, 'finding')} كمان مستنياك`,
     moreBody: 'Pro بيفتح كل الملاحظات وعرض 6 شهور والسنة، وأكتر جاي.',
     seePro: 'شوف Pro',
     proChip: 'Pro',
@@ -1670,11 +1673,11 @@ export const ar: Dictionary = {
     whatIf: {
       title: 'لو',
       ahead: 'نظرة قدام',
-      extra: (a) => `دفعت ${a} زيادة كل شهر على أقساطك`,
+      extra: (a) => `ادفع ${a} زيادة كل شهر على أقساطك`,
       debtFree: 'تخلص من الديون في',
       same: 'مفيش تغيير لسه. حرّك الشريط.',
-      sooner: (n) => `أبكر بـ ${n} ${n === 1 ? 'شهر' : 'شهور'}`,
-      months: (n) => `${n} ${n === 1 ? 'شهر' : 'شهور'}`,
+      sooner: (n) => `أبكر بـ ${arCount(n, 'month')}`,
+      months: (n) => arCount(n, 'month'),
       none: 'مفيش أقساط تسددها.',
     },
     recap: {
@@ -1735,8 +1738,8 @@ export const ar: Dictionary = {
       },
       billsBeforePayday: {
         tag: 'الفواتير',
-        headline: (p) => `*${p.count}* ${Number(p.count) === 1 ? 'فاتورة' : 'فواتير'} بقيمة *${p.total}* مستحقة قبل الراتب.`,
-        why: (p) => `خلال الـ ${p.days} ${Number(p.days) === 1 ? 'يوم' : 'أيام'} الجاية، من اشتراكاتك.`,
+        headline: (p) => `${starNumber(Number(p.count), arCount(Number(p.count), 'bill'))} بقيمة *${p.total}* مستحقة قبل الراتب.`,
+        why: (p) => `خلال الـ ${arCount(Number(p.days), 'day')} الجاية، من اشتراكاتك.`,
         seed: (p) => `${p.count} فواتير بقيمة ${p.total} مستحقة قبل الراتب. أقدر أدفعها وأكمل لحد الراتب؟`,
       },
       payMix: {
