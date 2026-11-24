@@ -422,6 +422,7 @@ export interface Dictionary {
     menuDelete: string
     menuMakeDefault: string
     deleteBodyBalance: (amount: string) => string
+    deleteBodyStays: (amount: string, account: string) => string
     deleteDefaultTitle: string
     deleteDefaultBody: string
     deleteOnlyTitle: string
@@ -3437,6 +3438,8 @@ export interface Dictionary {
       tipOutside: string
       moveFailed: string
       overAvailable: (amount: string, account: string) => string
+      noRateFrom: (account: string) => string
+      transferFromTo: (from: string, to: string) => string
       needsAccount: (account: string) => string
       noAccountLeg: (currency: string) => string
       noAccountLegHint: string

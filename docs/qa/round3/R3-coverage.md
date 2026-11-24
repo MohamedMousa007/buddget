@@ -9,7 +9,7 @@ Same local setup: production build (`next build --webpack`, `NEXT_PUBLIC_DEV_AUT
 | Group | Specs | Result |
 |---|---|---|
 | L1 lifecycle (new) | `round3/l-lifecycle` L1 | passed (all 10 steps, every check on screen, store and server; three fresh sign-ins rebuilt the numbers from server rows) |
-| L2, L3 (new, `test.fail`) | `round3/l-lifecycle` L2, L3 | failed as expected on findings L1-A and L1-B below |
+| L2, L3 (new, `test.fail`) | `round3/l-lifecycle` L2, L3 | failed as expected on findings L1-A and L1-B below (L2 is a normal test since the L1-A fix of 2026-11-25, not yet re-run) |
 | Round 3 journeys | `round3/{w-money (W1-W11), j-accounts-flow, p-planner-conflicts}`, `k-accounts-flow` | 20 of 20 passed |
 | J9 Buddgy (real model) | `round3/y-buddgy-rules`, 3 runs | 3 of 3 passed |
 | Regression | `b-bank-expense`, `c-debt`, `d-pockets`, `f-goal`, `h-cards-link`, `s-system-cash`, `q-quick-add` | 20 of 20 passed |
@@ -32,21 +32,21 @@ Screenshots for the owner, in `evidence/`: `w8-add-debt-left-cib-question.png`, 
 
 ### Findings (not fixed: they change money or sync behaviour, owner's call)
 
-**L1-A. Wealth > Add money into a pocket held in an account books a transfer from another account, with no check on that account.** Pinned by L2.
+**L1-A. Wealth > Add money into a pocket held in an account books a transfer from another account, with no check on that account.** Pinned by L2. Fixed 2026-11-25 (council verdict in `docs/plans/QA_NIGHT_PLAN.md`): the holder is the default source and another source is capped at its own free money; L2 is now a normal test.
 - `canCarryLeg` (`src/lib/savings/accountLeg.ts`) never offers the holder itself as "From account", so with a second tracked account the sheet defaults to it. `AddSavingsSheetV3` passes that id as `fromAccountId`, and the balance engine books a transfer into the holder.
 - `depositRefusal` (`src/lib/savings/pocketHome.ts`) checks free money only when the source is the holder. A source that is another account is never checked.
 - Seen: CIB 5,000 with a 500 pocket, QNB 1,000. Add 2,000 to the CIB pocket, nothing else touched: QNB -1,000, CIB 7,000. In L1 the same path took 14,000 out of QNB while QNB held 7,000 for a goal: QNB -1,000, and Available showed 14,000 against 6,000 real.
 - This contradicts `depositLegId`'s own comment ("defaulting to the primary would book a transfer between two accounts that never happened").
 - Fix options: (a) default a held pocket's source to its holder (no leg, a plain set-aside capped at free), or (b) keep the cross-account transfer but refuse more than the source has free. Both are money-semantics choices. L1 sets money aside through Accounts > account > Set aside, which is correct and capped.
 
-**L1-B. A pocket deleted from Wealth can come back moments later and is never deleted on the server.** Pinned by L3.
+**L1-B. A pocket deleted from Wealth can come back moments later and is never deleted on the server.** Pinned by L3. Fixed 2026-11-25 (persisted pending-delete set); L3 passed 5 of 5 in the fix-verification run below.
 - Seen in about 5 of 8 attempts: the confirm resolves and the row leaves the store, then comes back within about 200 ms. The server row keeps `deleted_at` null. It happens with both held and standalone pockets. It is more likely right after a page load, while the first pull is running.
 - Likely cause (not proven): `applyListWith` / `mergeList` (`src/lib/supabase/remote/delta.ts`, `merge.ts`) union a pull's upserts with the local list. A row deleted locally but not yet delivered is re-added from a delta fetched before the delete. After that it equals the delivered copy, so it is never sent as a delete.
 - This is sync conflict policy (local delete against a server copy), a deep-technical change that needs tests first. Not changed here. L1 step 10 deletes again until the pocket stays gone (0 retries on the final run) and records the count.
 
-**L1-C. Delete copy for a pocket held in an account is wrong.** It says "11,000 EGP will leave your net worth". Net worth stayed 30,000, which is correct, because the money stays in CIB. This is a copy change, so it needs a mockup.
+**L1-C. Delete copy for a pocket held in an account is wrong.** It says "11,000 EGP will leave your net worth". Net worth stayed 30,000, which is correct, because the money stays in CIB. This is a copy change, so it needs a mockup. Fixed 2026-11-25 (copy follows the net worth change); screenshots in the fix-verification run below.
 
-**L1-D (cosmetic).** The Flow row title for an SMS credit truncates to "Bank cr…" next to the "Not income" badge at 390 px (`w9-borrowed-not-income-row.png`).
+**L1-D (cosmetic).** The Flow row title for an SMS credit truncates to "Bank cr…" next to the "Not income" badge at 390 px (`w9-borrowed-not-income-row.png`). Fixed 2026-11-25 (badge wraps under the title on Flow); screenshots in the fix-verification run below.
 
 ### Cleanup
 - 0 `qa-e2e-*` users left. `sms_tracking_templates_ai`: 70 before and 70 after, 0 rows created during the run (only curated and multi-split texts were posted).
@@ -54,6 +54,40 @@ Screenshots for the owner, in `evidence/`: `w8-add-debt-left-cib-question.png`, 
 ### Test-only corrections
 - W8 (and L1): the debt sheet shows a method field that opens the carousel, not account chips, once there is more than Cash. The shared helper `chooseMethod` (`e2e/journeys/lib/ui.ts`) uses the chip when there is one, else the carousel.
 - The service-role seed for a late Instapay row omits `category_source`. The SMS route writes only `ai_suggested` or null there, and the check constraint refuses `sms`.
+
+## Fix-verification run on `claude/qa-r3-findings` (2026-11-25)
+
+Same local setup, on one bundle built at 4223e088 (`next build --webpack`, `NEXT_PUBLIC_DEV_AUTH_BYPASS=0`, empty `NEXT_PUBLIC_API_BASE_URL`, `TZ=Africa/Cairo`; `next start -p 3101`; one worker, no retries, phone project). No `src/` change and no test change was needed: the new deposit caps refused no step in an older journey.
+
+| Group | Specs | Result |
+|---|---|---|
+| L lifecycle | `round3/l-lifecycle` L1, L2, L3 | 3 of 3 passed (L2 and L3 as normal tests) |
+| L3 repeat (L1-B was intermittent) | L3 × 5 in all (1 + 4 repeats), 4 deletes each | 5 of 5 passed, 20 of 20 deletes stayed gone in the store and have `deleted_at` on the server |
+| Round 3 journeys | `round3/{w-money, p-planner-conflicts, j-accounts-flow}`, `k-accounts-flow` | 20 of 20 passed |
+| J9 Buddgy (real model) | `round3/y-buddgy-rules` × 3 | 3 of 3 passed |
+| Regression | `b-bank-expense`, `c-debt`, `d-pockets`, `e-subscription`, `f-goal` | 13 of 13 passed |
+| Regression | `g-buddgy`, `h-cards-link`, `n-navigation` (phone and desktop), `q-quick-add`, `s-system-cash` | 17 of 17 passed |
+| Round 2 core | `round2/r1-core` | 19 of 19 passed |
+| Round 2 API | `api/round2/{adversarial, qa-regressions}` (setup and teardown of `qa-api-*`) | 40 of 40 passed |
+| API | `api/round3/admin-devices.spec.ts` | 4 of 4 passed |
+| SMS | `sms/multi-split.mjs` | 13 of 13 checks passed, 0 synthetic rows left |
+| Billing | `api/buddgy-turns.mjs` | 9 of 9 passed |
+| Evidence (new) | `round3/z-evidence` EN and AR | 2 of 2 passed, screenshots below |
+
+### L1 findings A–D: results
+
+| Finding | Fix | Test(s) | Result | Label |
+|---|---|---|---|---|
+| L1-A held-pocket Add money | Holder is the default source (no leg, capped at its free); another source is a transfer capped at its own free money | L2 (default CIB: CIB 5,000 with 2,500 set aside, QNB 1,000, net worth 6,000, deposit has no leg; QNB 2,000 refused "Only 1,000 EGP is available in QNB Alahli", button disabled); L1 whole lifecycle; older journeys b–s and W1–W11 unchanged | pass | AV; owner to look at `l1a-*` |
+| L1-B deleted pocket resurrected | Persisted pending-delete set; no pull re-adds an id in it | L3 × 5 (20 deletes), L1 step 10 | pass; L3: 0 of 20 deletes came back. L1 passed but its retry count was not captured in this run | AV |
+| L1-C delete warning copy | Copy follows the net worth change | Shots: held pocket "The 500 EGP stays in CIB and becomes available again"; outside pocket "300 EGP will leave your net worth"; both in Arabic | taken | MV (copy, owner approves) |
+| L1-D Flow badge wrap | Additive `TransactionRow` variant on Flow | Before/after: W9's `w9-borrowed-not-income-row.png` now reads "Bank credit" in full with "Not income" under it (it was "Bank cr…"). The `l1d-*` shots use a deliberately long title: the badge sits under it, and a title longer than the row still ends in "…" on its own line | taken | MV |
+
+Screenshots in `evidence/`: `l1a-add-money-held-default-cib-{en,ar}.png`, `l1a-add-money-transfer-refused-{en,ar}.png` (shows the "Transfer from QNB Alahli to CIB" line and the refusal), `l1c-delete-held-stays-{en,ar}.png`, `l1c-delete-outside-leaves-{en,ar}.png`, `l1d-flow-borrowed-not-income-{en,ar}.png`. W9 also refreshed `w9-borrowed-not-income-row.png`. The evidence account CIB shows 7,500 free (5,000 + the 3,000 borrowed credit - the 500 pocket), not L2's 4,500, because the same user also carries the borrowed row for the L1-D shot. In the refusal shots the Add button is greyed (disabled).
+
+### Cleanup
+- 0 `qa-e2e-*` and 0 `qa-api-*`/`qa-sec-*` users left (0 before the run).
+- `sms_tracking_templates_ai`: 70 before and 70 after, 0 rows created. One existing active row (id 6886dd33…, created 2026-10-21) has `updated_at` 23:00:00 UTC, during the run; its cause was not verified (no cron job names the table; the on-the-hour time points to a scheduled job rather than a suite). Nothing was learned.
 
 ## Final run (after the one product fix, on a rebuilt bundle)
 

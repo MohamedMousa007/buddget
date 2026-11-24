@@ -1,5 +1,6 @@
 import type { Snapshot } from './snapshot'
 import { serverInstant } from './serverClock'
+import { withoutDeleted } from './pendingDeletes'
 
 const instant = (iso: string | undefined): number | null => {
   const t = Date.parse(iso ?? '')
@@ -48,9 +49,11 @@ export function mergeList<T extends WithId>(local: T[], server: T[], pending?: R
  * Merge a local Zustand snapshot with the server snapshot. Singleton slices
  * (profile/settings) prefer the server — signing in expresses a clear intent
  * to use the server's identity. Used on first sign-in of a returning user or
- * when merging offline edits made while signed out.
+ * when merging offline edits made while signed out. A row in `deletedHere` (deleted on this device, not yet
+ * acknowledged) is never taken back from the server (L1-B).
  */
-export function mergeSnapshots(local: Snapshot, server: Snapshot): Snapshot {
+export function mergeSnapshots(local: Snapshot, server: Snapshot, deletedHere?: ReadonlySet<string>): Snapshot {
+  const merge = <T extends WithId>(l: T[], s: T[]): T[] => withoutDeleted(mergeList(l, s), l, deletedHere)
   return {
     profile: server.profile,
     settings: server.settings,
@@ -58,25 +61,25 @@ export function mergeSnapshots(local: Snapshot, server: Snapshot): Snapshot {
     financialGoalsNotes: server.financialGoalsNotes || local.financialGoalsNotes,
     activeBudgetPlanId: server.activeBudgetPlanId ?? local.activeBudgetPlanId,
     // Array domains: union by id, newer `updatedAt`/`createdAt` wins.
-    paymentMethods: mergeList(local.paymentMethods as WithId[], server.paymentMethods as WithId[]) as Snapshot['paymentMethods'],
-    incomeSources: mergeList(local.incomeSources, server.incomeSources),
-    incomeEvents: mergeList(local.incomeEvents, server.incomeEvents),
-    expenses: mergeList(local.expenses, server.expenses),
-    receipts: mergeList(local.receipts, server.receipts),
-    recurringExpenses: mergeList(local.recurringExpenses as WithId[], server.recurringExpenses as WithId[]) as Snapshot['recurringExpenses'],
-    subscriptions: mergeList(local.subscriptions as WithId[], server.subscriptions as WithId[]) as Snapshot['subscriptions'],
-    debts: mergeList(local.debts, server.debts),
-    debtPayments: mergeList(local.debtPayments, server.debtPayments),
-    recurringDebtPayments: mergeList(local.recurringDebtPayments, server.recurringDebtPayments),
-    savingsAccounts: mergeList(local.savingsAccounts, server.savingsAccounts),
-    investmentHoldings: mergeList(local.investmentHoldings, server.investmentHoldings),
-    savingsTransactions: mergeList(local.savingsTransactions as WithId[], server.savingsTransactions as WithId[]) as Snapshot['savingsTransactions'],
-    recurringSavingsDeposits: mergeList(local.recurringSavingsDeposits, server.recurringSavingsDeposits),
-    goals: mergeList(local.goals, server.goals),
-    budgetPlans: mergeList(local.budgetPlans as WithId[], server.budgetPlans as WithId[]) as Snapshot['budgetPlans'],
-    buddgyMemories: mergeList(local.buddgyMemories as WithId[], server.buddgyMemories as WithId[]) as Snapshot['buddgyMemories'],
-    accountAdjustments: mergeList(local.accountAdjustments as WithId[], server.accountAdjustments as WithId[]) as Snapshot['accountAdjustments'],
-    budgetPlanActivations: mergeList(local.budgetPlanActivations as WithId[], server.budgetPlanActivations as WithId[]) as Snapshot['budgetPlanActivations'],
+    paymentMethods: merge(local.paymentMethods as WithId[], server.paymentMethods as WithId[]) as Snapshot['paymentMethods'],
+    incomeSources: merge(local.incomeSources, server.incomeSources),
+    incomeEvents: merge(local.incomeEvents, server.incomeEvents),
+    expenses: merge(local.expenses, server.expenses),
+    receipts: merge(local.receipts, server.receipts),
+    recurringExpenses: merge(local.recurringExpenses as WithId[], server.recurringExpenses as WithId[]) as Snapshot['recurringExpenses'],
+    subscriptions: merge(local.subscriptions as WithId[], server.subscriptions as WithId[]) as Snapshot['subscriptions'],
+    debts: merge(local.debts, server.debts),
+    debtPayments: merge(local.debtPayments, server.debtPayments),
+    recurringDebtPayments: merge(local.recurringDebtPayments, server.recurringDebtPayments),
+    savingsAccounts: merge(local.savingsAccounts, server.savingsAccounts),
+    investmentHoldings: merge(local.investmentHoldings, server.investmentHoldings),
+    savingsTransactions: merge(local.savingsTransactions as WithId[], server.savingsTransactions as WithId[]) as Snapshot['savingsTransactions'],
+    recurringSavingsDeposits: merge(local.recurringSavingsDeposits, server.recurringSavingsDeposits),
+    goals: merge(local.goals, server.goals),
+    budgetPlans: merge(local.budgetPlans as WithId[], server.budgetPlans as WithId[]) as Snapshot['budgetPlans'],
+    buddgyMemories: merge(local.buddgyMemories as WithId[], server.buddgyMemories as WithId[]) as Snapshot['buddgyMemories'],
+    accountAdjustments: merge(local.accountAdjustments as WithId[], server.accountAdjustments as WithId[]) as Snapshot['accountAdjustments'],
+    budgetPlanActivations: merge(local.budgetPlanActivations as WithId[], server.budgetPlanActivations as WithId[]) as Snapshot['budgetPlanActivations'],
   }
 }
 

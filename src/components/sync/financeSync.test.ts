@@ -67,10 +67,11 @@ vi.mock('@/components/sync/flushedFingerprint', () => ({ baselineForBoot: (_u: s
 import { SupabaseFinanceSync, flushFinanceNow, flushPendingFingerprints, suspendFinanceSync, syncFinanceNow } from '@/components/sync/SupabaseFinanceSync'
 import { applyDelta, decideReset, pullDelta } from '@/lib/supabase/remote'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { clearPendingDeletes, readPendingDeletes, writePendingDeletes } from '@/lib/supabase/remote/pendingDeletes'
 
 const ok = { anyError: false, errors: [] as string[] }
 const failed = { anyError: true, errors: ['expenses: boom'] }
-type FlushCall = [unknown, string, { marker: number | string }, { marker: number | string }]
+type FlushCall = [unknown, string, { marker: number | string }, { marker: number | string }, unknown]
 const calls = () => h.flushDiff.mock.calls as unknown as FlushCall[]
 
 async function mount() {
@@ -262,5 +263,69 @@ describe('finance sync flush / re-baseline', () => {
     answer(null)
     await vi.advanceTimersByTimeAsync(0)
     vi.mocked(useFinanceStore.getState).mockReturnValue({ profile: { id: 'u1' }, setDataReady: vi.fn(), reset: h.storeReset } as never)
+  })
+
+  describe('L1-B: pending deletes', () => {
+    beforeEach(() => clearPendingDeletes())
+    afterEach(() => clearPendingDeletes())
+    /** Plays one store change to every subscriber of a fresh mount. */
+    async function storeChange(state: unknown, prev: unknown) {
+      vi.mocked(useFinanceStore.subscribe).mockClear()
+      await mount()
+      for (const [fn] of vi.mocked(useFinanceStore.subscribe).mock.calls) (fn as unknown as (s: unknown, p: unknown) => void)(state, prev)
+    }
+    const me = { id: 'u1' }
+
+    it('a user delete is remembered with its time', async () => {
+      await storeChange({ profile: me, expenses: [] }, { profile: me, expenses: [{ id: 'e1' }] })
+      expect(readPendingDeletes('u1')).toEqual({ expenses: { e1: expect.any(String) } })
+    })
+
+    it('a sign-out reset (profile back to local) or a suspended sync is never taken for the user deleting everything', async () => {
+      await storeChange({ profile: { id: 'local' }, expenses: [] }, { profile: me, expenses: [{ id: 'e1' }] })
+      suspendFinanceSync()
+      for (const [fn] of vi.mocked(useFinanceStore.subscribe).mock.calls) (fn as unknown as (s: unknown, p: unknown) => void)({ profile: me, expenses: [] }, { profile: me, expenses: [{ id: 'e2' }] })
+      expect(readPendingDeletes('u1')).toEqual({})
+    })
+
+    it('every flush carries them, and they are forgotten only once the server took them', async () => {
+      writePendingDeletes('u1', { expenses: { e1: 'T' } })
+      h.flushDiff.mockResolvedValueOnce(failed)
+      await expect(flushFinanceNow()).resolves.toBe(false)
+      expect(calls()[0]![4]).toEqual({ expenses: { e1: 'T' } })
+      expect(readPendingDeletes('u1')).toEqual({ expenses: { e1: 'T' } })
+      await flushFinanceNow()
+      expect(readPendingDeletes('u1')).toEqual({})
+    })
+
+    it('a delete flushed while a pull is in flight stays pending until that pull is merged', async () => {
+      let answer!: (v: unknown) => void
+      vi.mocked(pullDelta).mockReturnValueOnce(new Promise((r) => { answer = r }) as never)
+      vi.mocked(applyDelta).mockImplementation((() => ({ marker: 'merged', settings: { theme: 'light' } })) as never)
+      const sync = syncFinanceNow()
+      await vi.advanceTimersByTimeAsync(0)
+      // The user deletes now; the debounced flush lands the delete while the pull's answer is still on its way.
+      writePendingDeletes('u1', { expenses: { e1: 'T' } })
+      await flushFinanceNow()
+      expect(readPendingDeletes('u1')).toEqual({ expenses: { e1: 'T' } })
+      answer({ cursor: 'c1', profile: null, expenses: { upserts: [], deletedIds: [] } })
+      await sync
+      expect([...(vi.mocked(applyDelta).mock.calls[0]![3] as Set<string>)]).toEqual(['e1'])
+      expect(readPendingDeletes('u1')).toEqual({})
+      vi.mocked(applyDelta).mockReset()
+    })
+
+    it('the pull merge into the store is told about them; the server baseline fold is not', async () => {
+      writePendingDeletes('u1', { expenses: { e1: 'T' } })
+      h.flushDiff.mockResolvedValue(failed)
+      vi.mocked(pullDelta).mockResolvedValueOnce({ cursor: 'c1', profile: null, expenses: { upserts: [], deletedIds: [] } } as never)
+      vi.mocked(applyDelta).mockImplementation(((local: unknown, _d: unknown, delivered: unknown) =>
+        (local === delivered ? { marker: 'base' } : { marker: 'merged', settings: { theme: 'light' } })) as never)
+      await syncFinanceNow()
+      const [live, fold] = vi.mocked(applyDelta).mock.calls
+      expect([...(live![3] as Set<string>)]).toEqual(['e1'])
+      expect(fold![3]).toBeUndefined()
+      vi.mocked(applyDelta).mockReset()
+    })
   })
 })

@@ -30,11 +30,13 @@ export function availableIn(accountId: string, ledger: LedgerInput): number {
 
 /**
  * Why a deposit must not be written:
- * - `over_available`: a reserve of more than the holding account has free.
+ * - `over_available`: more than the account the money comes from has free: the holding account for a reserve, the
+ *   funding account for money that moves (into the holder, or into a pocket outside the accounts).
+ * - `no_rate`: money from an account in another currency with no exchange rate to measure it by.
  * - `needs_account`: outside money aimed at a reserved pocket with no account named; it must arrive in the account first.
  * - `no_account_leg`: a budget deposit the user's main account cannot fund, so it would raise net worth from nothing.
  */
-export type DepositRefusal = 'over_available' | 'needs_account' | 'no_account_leg'
+export type DepositRefusal = 'over_available' | 'no_rate' | 'needs_account' | 'no_account_leg'
 
 type GuardedPocket = Pick<SavingsAccount, 'heldInPaymentMethodId' | 'currency'>
 
@@ -67,6 +69,19 @@ function exceedsAvailable(ledger: LedgerInput, pocket: GuardedPocket, accountId:
   return inHolder !== null && inHolder > holder.free + balanceEpsilon(pocket.currency)
 }
 
+/**
+ * A leg from an account takes the money out of it (into the holder for a held pocket, into the pocket itself for one
+ * outside the accounts), so it is capped at what the source has free. A source with no known balance, or no rate to
+ * measure the amount by, cannot fund one.
+ */
+function transferRefusal(ledger: LedgerInput, pocket: GuardedPocket, sourceId: string | null, amount: number): 'over_available' | 'no_rate' | null {
+  const source = sourceId ? computeBalances(ledger).get(sourceId) : undefined
+  if (!source) return 'over_available'
+  const inSource = source.currency === pocket.currency ? amount : ledger.convert(amount, pocket.currency, source.currency)
+  if (inSource === null) return 'no_rate'
+  return inSource > source.free + balanceEpsilon(pocket.currency) ? 'over_available' : null
+}
+
 /** The one guard behind every deposit writer: the store refuses on it, sheets and Buddgy explain it before submitting. */
 export function depositRefusal(ledger: LedgerInput, pocket: GuardedPocket, intent: DepositIntent): DepositRefusal | null {
   const methods = ledger.paymentMethods
@@ -76,9 +91,14 @@ export function depositRefusal(ledger: LedgerInput, pocket: GuardedPocket, inten
   if (home.kind === 'reserved') {
     if (!legId && declared) return 'needs_account'
     // No leg, or a leg that is the holder itself: the money is already in the holder and is only being set aside.
-    const fromHolder = !legId || resolveAccountId(legId, methods) === home.accountId
-    return fromHolder && exceedsAvailable(ledger, pocket, home.accountId, intent.amount) ? 'over_available' : null
+    const sourceId = legId ? resolveAccountId(legId, methods) : home.accountId
+    if (sourceId !== home.accountId) return transferRefusal(ledger, pocket, sourceId, intent.amount)
+    return exceedsAvailable(ledger, pocket, home.accountId, intent.amount) ? 'over_available' : null
   }
+  // A leg from a tracked account takes the money out of it: available never goes below zero. A source that is not
+  // tracked moves no balance, as before.
+  const sourceId = legId ? resolveAccountId(legId, methods) : null
+  if (sourceId && computeBalances(ledger).has(sourceId)) return transferRefusal(ledger, pocket, sourceId, intent.amount)
   // Refused only when a primary account exists and cannot carry the leg. With none (nothing tracked, or only Cash or a
   // prepaid card) the default deposit never had a leg, and it keeps that meaning.
   return !legId && !declared && primaryTrackedAccount(methods) !== null ? 'no_account_leg' : null
@@ -92,10 +112,25 @@ export function correctionRefusal(ledger: LedgerInput, pocket: GuardedPocket & P
 }
 
 /** The refusal in plain English for the assistant tools, which pass it to the user in their own words. */
-export function explainDepositRefusal(ledger: LedgerInput, pocket: GuardedPocket, refusal: DepositRefusal): { error: string; hint: string } {
+export function explainDepositRefusal(ledger: LedgerInput, pocket: GuardedPocket, refusal: DepositRefusal, fromAccountId?: string): { error: string; hint: string } {
   const home = pocketHome(pocket, ledger.paymentMethods)
   const holder = home.kind === 'reserved' ? ledger.paymentMethods.find((m) => m.id === home.accountId) : undefined
   const account = holder?.name ?? 'its account'
+  // A pocket outside the accounts with no source named is funded by the default leg (the primary account).
+  const sourceId = fromAccountId ?? (holder ? undefined : resolveAccountId(depositLegId(ledger.paymentMethods, pocket, {}), ledger.paymentMethods))
+  const source = sourceId && sourceId !== holder?.id ? ledger.paymentMethods.find((m) => m.id === sourceId) : undefined
+  if (refusal === 'no_rate') {
+    return {
+      error: `There is no exchange rate between ${source?.currency ?? 'that account\'s currency'} and ${pocket.currency}, so the money cannot be moved from ${source?.name ?? 'that account'}. Nothing was added.`,
+      hint: 'Ask the user to send it from an account in the pocket\'s currency.',
+    }
+  }
+  if (refusal === 'over_available' && source) {
+    return {
+      error: `${source.name} only has ${availableIn(source.id, ledger)} ${source.currency} available${holder ? ` to move into ${account}` : ''}. Nothing was added.`,
+      hint: 'Ask for a smaller amount, or for another account to send it from.',
+    }
+  }
   if (refusal === 'over_available') {
     const free = holder ? availableIn(holder.id, ledger) : 0
     return {

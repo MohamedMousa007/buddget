@@ -15,8 +15,8 @@ export interface DepositGuard {
   refusalFor: (intent: Omit<DepositIntent, 'amount'> & { amount: number; currency: string }) => DepositRefusal | null
   /** Why the store would refuse setting the pocket to this amount. */
   correctionRefusalFor: (newBalance: number) => DepositRefusal | null
-  /** The refusal in the user's words. */
-  message: (refusal: DepositRefusal | null) => string | null
+  /** The refusal in the user's words. `fromAccountId` is the chosen source, named when it is the account that is short. */
+  message: (refusal: DepositRefusal | null, fromAccountId?: string | null) => string | null
 }
 
 /** The store's deposit guard, readable by a sheet: it explains a refusal instead of letting a submit fail silently. */
@@ -33,14 +33,16 @@ export function useDepositGuard(pocket: Pocket | undefined): DepositGuard {
       return depositRefusal(ledger, pocket, { ...intent, amount: landed })
     },
     correctionRefusalFor: (newBalance) => (pocket ? correctionRefusal(ledger, pocket, newBalance) : null),
-    message: (refusal) => {
+    message: (refusal, fromAccountId) => {
       if (!refusal || !pocket) return null
       if (refusal === 'no_account_leg') return t.noAccountLeg(pocket.currency)
-      if (!holder) return null
-      if (refusal === 'needs_account') return t.needsAccount(accountTitle(holder))
-      const cur = String(holder.currency)
-      const free = splitMoney(availableIn(holder.id, ledger), cur)
-      return t.overAvailable(`${free.int}${free.dec} ${cur}`, accountTitle(holder))
+      if (refusal === 'needs_account') return holder ? t.needsAccount(accountTitle(holder)) : null
+      const short = (fromAccountId ? ledger.paymentMethods.find((m) => m.id === fromAccountId) : null) ?? holder
+      if (!short) return null
+      if (refusal === 'no_rate') return t.noRateFrom(accountTitle(short))
+      const cur = String(short.currency)
+      const free = splitMoney(availableIn(short.id, ledger), cur)
+      return t.overAvailable(`${free.int}${free.dec} ${cur}`, accountTitle(short))
     },
   }
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { eligibleLegAccountIds, defaultLegAccountId } from '@/lib/savings/legChoices'
+import { eligibleLegAccountIds, defaultLegAccountId, depositSourceIds, defaultDepositSourceId } from '@/lib/savings/legChoices'
 import type { PaymentMethod } from '@/lib/store/types'
 
 const pm = (id: string, over: Partial<PaymentMethod> = {}) =>
@@ -17,5 +17,18 @@ describe('leg choices', () => {
     expect(defaultLegAccountId(methods, {}, 'EGP')).toBe('a')
     expect(defaultLegAccountId(methods, { heldInPaymentMethodId: 'a' }, 'EGP')).toBe('bb')
     expect(defaultLegAccountId([], {}, 'EGP')).toBeUndefined()
+  })
+
+  it('Add money into a pocket held in an account: the holder comes first and is the default source (L1-A)', () => {
+    expect(depositSourceIds(methods, { heldInPaymentMethodId: 'bb' }, 'EGP')).toEqual(['bb', 'a'])
+    expect(defaultDepositSourceId(methods, { heldInPaymentMethodId: 'bb' }, 'EGP')).toBe('bb')
+  })
+
+  it('a pocket outside the accounts, or held in an untracked or closed one, keeps the usual sources', () => {
+    expect(depositSourceIds(methods, {}, 'EGP')).toEqual(['a', 'bb'])
+    expect(defaultDepositSourceId(methods, {}, 'EGP')).toBe('a')
+    expect(defaultDepositSourceId(methods, { heldInPaymentMethodId: 'untracked' }, 'EGP')).toBe('a')
+    const closed = [pm('a'), pm('bb', { closedAt: '2026-02-01' })]
+    expect(depositSourceIds(closed, { heldInPaymentMethodId: 'bb' }, 'EGP')).toEqual(['a'])
   })
 })

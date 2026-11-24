@@ -8,7 +8,7 @@
 import type { Browser, Locator, Page } from '@playwright/test'
 import { computeBalances } from '../../../../src/lib/accounts/balance'
 import { forceFlags, installApiShim } from '../../lib/apiShim'
-import { expect, goto, knownBug, localState, localWait, money, signIn, test, tile } from '../../lib/fixtures'
+import { expect, goto, localState, localWait, money, signIn, test, tile } from '../../lib/fixtures'
 import { serverRows } from '../../lib/server'
 import { blur, chooseMethod, dialog, pickPocket } from '../../lib/ui'
 import { bank, localMethod, seed } from './seed'
@@ -139,9 +139,8 @@ async function withdraw(page: Page, o: { from: string; amount: number; purpose: 
 }
 
 /**
- * Accounts > account > Set aside: puts the account's own free money aside in a pocket. This is the path that sets money
- * aside from the account that holds the pocket: Wealth > Add money never offers the holder itself as "From account"
- * (see L2), so with a second account it would book a transfer from that one instead.
+ * Accounts > account > Set aside: puts the account's own free money aside in a pocket. Wealth > Add money does the same
+ * when its "From account" is the account holding the pocket, which is its default (see L2).
  */
 async function openSetAside(page: Page, account: RegExp, pocket: string, amount: number) {
   await goto(page, '/accounts')
@@ -334,8 +333,8 @@ test('L1 one user, the whole money lifecycle: pockets, goal, reserve cap, lendin
   })
 
   await test.step('10. delete the Rainy pocket (11,000 set aside in CIB)', async () => {
-    // A deleted pocket can come back a moment later (finding L1-B, pinned by L3). This step is about the money after a
-    // delete, so it deletes again until the pocket stays gone and records how often it came back.
+    // A deleted pocket used to come back a moment later (finding L1-B, fixed, pinned by L3). This step is about the money
+    // after a delete, so it still deletes again until the pocket stays gone and records how often it came back.
     let tries = 0
     for (; tries < 5; tries++) {
       const { stuck, copy } = await deletePocket(page, RAINY, ids.pockets[RAINY])
@@ -355,7 +354,7 @@ test('L1 one user, the whole money lifecycle: pockets, goal, reserve cap, lendin
   })
 })
 
-test('L2 Wealth > Add money into a pocket held in CIB books a transfer from the other account, with no check on that account [finding L1-A]', async ({ page, user }) => {
+test('L2 Wealth > Add money into a pocket held in CIB sets aside CIB\'s own money by default, and caps another source at its own free money [finding L1-A, fixed]', async ({ page, user }) => {
   const hour = new Date(Date.now() - 3_600_000).toISOString()
   const [cib] = await seed(page, user.id, 'payment_methods', [bank('CIB', 5000, { opening_at: hour })])
   const [qnb] = await seed(page, user.id, 'payment_methods', [bank('QNB Alahli', 1000, { opening_at: hour })])
@@ -364,25 +363,28 @@ test('L2 Wealth > Add money into a pocket held in CIB books a transfer from the 
   await newPocket(page, { kind: /^CIB/, name: RAINY, amount: 500 })
   await checkScreen(page, { cib: [5000, 500], qnb: [1000, 0], pockets: {}, netWorth: 6000 })
 
+  // Another account as the source is a transfer out of it: 2,000 from QNB's 1,000 is refused, naming QNB.
+  const refused = await openAddMoney(page, RAINY, 2000, 'QNB Alahli')
+  await expect(refused).toContainText('Transfer from QNB Alahli to CIB')
+  await expect(refused.getByRole('alert')).toContainText(/Only 1,000(\.00)? EGP is available in QNB Alahli/)
+  await expect(refused.getByRole('button', { name: new RegExp(`^Add [\\d,]+ to ${RAINY}`) })).toBeDisabled()
+
   // The default path: pocket picked, amount typed, nothing else touched. CIB has 4,500 free, QNB 1,000.
   const d = await openAddMoney(page, RAINY, 2000)
-  const source = ((await d.getByRole('button', { name: /^From account/ }).textContent().catch(() => null)) ?? 'none').replace(/\s+/g, ' ')
-  test.info().annotations.push({ type: 'default-source', description: source })
-  const cta = d.getByRole('button', { name: new RegExp(`^Add [\\d,]+ to ${RAINY}`) })
-  if (await cta.isEnabled()) { await cta.click(); await expect(d).toBeHidden() }
-  await page.waitForTimeout(1500)
+  await expect(d.getByRole('button', { name: /^From account/ })).toContainText('From accountCIB')
+  await expect(d.getByRole('alert')).toHaveCount(0)
+  await d.getByRole('button', { name: new RegExp(`^Add [\\d,]+ to ${RAINY}`) }).click()
+  await expect(d).toBeHidden()
+  await localWait(page, (s) => s.savingsTransactions.some((t: any) => t.amount === 2000))
   await goto(page, '/accounts')
   const tx = ((await localState(page)).savingsTransactions as any[]).map((t) => ({ type: t.type, amount: t.amount, pm: t.paymentMethodId === qnb.id ? 'QNB' : t.paymentMethodId === cib.id ? 'CIB' : t.paymentMethodId ?? null, cashFlow: t.isCashFlow, source: t.source }))
   test.info().annotations.push({ type: 'after', description: JSON.stringify({ cib: await row(page, /^CIB/), qnb: await row(page, /^QNB Alahli/), netWorth: await netWorth(page), tx }) })
-  // Either fix creates no money: set aside from CIB's own money (CIB 5,000 with 2,500 set aside, QNB 1,000), or refuse
-  // a 2,000 transfer out of QNB's 1,000. Today the sheet defaults to QNB (the holder is never offered as a source) and
-  // books the deposit with no check on QNB (see the "after" annotation).
-  knownBug('L1-A', 'Wealth Add money into a held pocket defaults its source to another account and never checks that account has the money')
-  await expect.poll(async () => ({ cib: (await row(page, /^CIB/)).balance, qnb: (await row(page, /^QNB Alahli/)).balance, netWorth: await netWorth(page) }))
-    .toEqual({ cib: 5000, qnb: 1000, netWorth: 6000 })
+  // No money is created and none moves: CIB's own money is set aside (5,000 with 2,500 set aside), QNB keeps its 1,000.
+  await checkScreen(page, { cib: [5000, 2500], qnb: [1000, 0], pockets: {}, netWorth: 6000 })
+  expect(tx.find((t) => t.amount === 2000)).toMatchObject({ type: 'deposit', pm: null })
 })
 
-test('L3 a pocket deleted from Wealth stays deleted [finding L1-B]', async ({ page, user }) => {
+test('L3 a pocket deleted from Wealth stays deleted [finding L1-B, fixed]', async ({ page, user }) => {
   const [cib] = await seed(page, user.id, 'payment_methods', [bank('CIB', 20000, { opening_at: new Date(Date.now() - 3_600_000).toISOString() })])
   await localMethod(page, cib.id)
   const made = []
@@ -391,9 +393,8 @@ test('L3 a pocket deleted from Wealth stays deleted [finding L1-B]', async ({ pa
   const results: boolean[] = []
   for (const p of made) results.push((await deletePocket(page, p.name, p.id)).stuck)
   test.info().annotations.push({ type: 'stayed-deleted', description: JSON.stringify(results) })
-  // Seen in 5 of 8 runs: the row leaves the store, then comes back within about 200 ms and is never deleted on the
-  // server. Four deletes make the defect show in practically every run.
-  knownBug('L1-B', 'a pocket deleted from Wealth comes back moments later and is never deleted on the server')
+  // Before the fix (5 of 8 runs) the row left the store, came back within about 200 ms from a pull that was in flight,
+  // and was never deleted on the server. Four deletes made the defect show in practically every run.
   expect(results).toEqual([true, true, true, true])
   for (const p of made) await serverRows('savings_accounts', user.id, `id=eq.${p.id}&select=deleted_at`, (r: any[]) => !!r[0]?.deleted_at)
 })

@@ -6,7 +6,8 @@ import { useSkippedInstalments } from '@/lib/savings/skippedInstalments'
 /**
  * Posts every recurring savings deposit due up to `today` (ledger only). Each missed month is its own deposit,
  * dated on its due date so it lands in the right cycle; the deterministic id stops two devices double-posting.
- * No account can fund it: posted as new money. Its account has too little free money: that month is skipped and
+ * No account can fund it: posted as new money. The account it comes from (the holder of a held pocket, the funding
+ * account of a pocket outside the accounts) has too little free money: that month is skipped and
  * the user is told (inbox), never retried silently.
  */
 export function postDueRecurringSavings(today: string): void {

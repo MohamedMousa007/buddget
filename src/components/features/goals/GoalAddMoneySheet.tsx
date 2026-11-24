@@ -66,7 +66,7 @@ export function GoalAddMoneySheet({ goal, onClose }: { goal: Goal | null; onClos
       ) : (
         <div className="mt-4"><AccountLegRow leg={leg} label={tMoney.fromAccount} /></div>
       )}
-      {refusal ? <p role="alert" className="mt-2 text-[0.8125rem] text-[var(--color-brand-amber)]">{guard.message(refusal)}</p> : null}
+      {refusal ? <p role="alert" className="mt-2 text-[0.8125rem] text-[var(--color-brand-amber)]">{guard.message(refusal, fromAccountId)}</p> : null}
     </SheetFrame>
   )
 }
