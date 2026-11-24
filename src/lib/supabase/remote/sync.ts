@@ -457,8 +457,9 @@ function flushBudgetPlans([plans, categories, subcategories]: [OpRunner, OpRunne
   const nextCats = next.budgetPlans.flatMap((p) =>
     p.categories.map((c, idx) => ({ ...c, _planId: p.id, _sortOrder: idx }))
   )
+  // A baseline rebuilt from the flushed fingerprint holds a deleted plan as a bare { id } row: it has no categories.
   const prevCats = prev.budgetPlans.flatMap((p) =>
-    p.categories.map((c, idx) => ({ ...c, _planId: p.id, _sortOrder: idx }))
+    (p.categories ?? []).map((c, idx) => ({ ...c, _planId: p.id, _sortOrder: idx }))
   )
   const catDiff = diffLists(nextCats, prevCats)
   const catRow = (c: (typeof nextCats)[number]) => budgetCategoryToRow(c, c._planId, userId, c._sortOrder, baseCurrency)
@@ -473,7 +474,7 @@ function flushBudgetPlans([plans, categories, subcategories]: [OpRunner, OpRunne
     p.categories.flatMap((c) => c.subcategories.map((s, idx) => ({ ...s, _catId: c.id, _sortOrder: idx })))
   )
   const prevSubs = prev.budgetPlans.flatMap((p) =>
-    p.categories.flatMap((c) => c.subcategories.map((s, idx) => ({ ...s, _catId: c.id, _sortOrder: idx })))
+    (p.categories ?? []).flatMap((c) => c.subcategories.map((s, idx) => ({ ...s, _catId: c.id, _sortOrder: idx })))
   )
   const subDiff = diffLists(nextSubs, prevSubs)
   const planOfCategory = new Map(next.budgetPlans.flatMap((p) => p.categories.map((c) => [c.id, p.id] as const)))
