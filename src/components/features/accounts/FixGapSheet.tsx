@@ -54,8 +54,8 @@ export function FixGapSheet({ open, onClose, account, gap, onSetAside, onResolve
   const [fromId, setFromId] = useState<string | null>(null)
   const fromAccountId = sources.find((a) => a.method.id === fromId)?.method.id ?? sources[0]?.method.id
   const neverLeft = useMemo(
-    () => (surplus ? depositsThatNeverLeft(ledger, account.method.id, missing, gap.newest.reportedAt) : []),
-    [surplus, ledger, account.method.id, missing, gap.newest.reportedAt],
+    () => depositsThatNeverLeft(ledger, account.method, gap),
+    [ledger, account.method, gap],
   )
   // Money the bank's own messages already described: placing it is the first thing to try, before guessing where cash went.
   const [unplaced, setUnplaced] = useState<Expense[]>([])
@@ -87,7 +87,7 @@ export function FixGapSheet({ open, onClose, account, gap, onSetAside, onResolve
 
   const neverLeftTotal = neverLeft.reduce((n, x) => n + x.amount, 0)
   const tiles: Array<{ id: Choice; name: string; sub: string; cta: string; likely?: boolean }> = surplus ? [
-    ...(neverLeft.length > 0 ? [{ id: 'pocket' as const, name: t.pocketNeverLeft, sub: t.pocketNeverLeftSub(money(neverLeftTotal)), cta: t.undoPocketDeposit, likely: true }] : []),
+    ...(neverLeft.length > 0 ? [{ id: 'pocket' as const, name: t.pocketNeverLeft, sub: t.pocketNeverLeftSub(money(neverLeftTotal)), cta: t.undoPocketDeposit }] : []),
     { id: 'income', name: t.incomeNotLogged, sub: t.incomeNotLoggedSub, cta: t.addAsIncome },
     ...(sources.length > 0 ? [{ id: 'transfer' as const, name: t.transferIn, sub: t.transferInSub, cta: t.recordTransfer }] : []),
     { id: 'correct', name: t.correctBalance, sub: t.correctBalanceSub, cta: t.setBalanceTo(money(gap.newest.balance)) },

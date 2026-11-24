@@ -1,7 +1,8 @@
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { PaymentMethod, SavingsTransaction } from '@/lib/store/types'
 import { localTodayISO } from '@/lib/utils/localDate'
-import { instantOf, type LedgerInput } from './balance'
+import { computeBalances, instantOf, type LedgerInput } from './balance'
+import { SKEW_MS, type GapResult } from './gap'
 import { isTracked } from './kinds'
 import { resolveAccountId } from './resolve'
 
@@ -11,15 +12,24 @@ export type SurplusAnswer = 'income' | 'transfer' | 'pocket' | 'correct'
 /**
  * Pocket deposits booked as money leaving this account (the pocket lives outside it) that can explain a surplus:
  * the app moved the money, the bank never did. Newest first, as many as fit inside the surplus.
+ * Bounded by evidence: a deposit older than a bank report that matched the ledger did leave the bank, and one from
+ * before the account's opening balance never moved it, so neither is offered.
  */
-export function depositsThatNeverLeft(ledger: LedgerInput, accountId: string, surplus: number, reportedAt: string, tolerance = 1): SavingsTransaction[] {
-  const until = new Date(reportedAt).getTime()
+export function depositsThatNeverLeft(ledger: LedgerInput, account: PaymentMethod, gap: GapResult, tolerance = 1): SavingsTransaction[] {
+  if (!(gap.amount > 0) || !account.openingAt) return []
+  const accountId = account.id
+  const surplus = gap.amount
+  const until = new Date(gap.newest.reportedAt).getTime()
+  const previousAt = new Date(gap.previous.reportedAt).getTime()
+  const ledgerThen = computeBalances(ledger, previousAt + SKEW_MS).get(accountId)?.balance
+  const matchedThen = ledgerThen != null && Math.abs(gap.previous.balance - ledgerThen) <= tolerance
+  const after = Math.max(new Date(account.openingAt).getTime(), matchedThen ? previousAt : 0)
   const pockets = new Map(ledger.savingsAccounts.map((p) => [p.id, p]))
   const rows = ledger.savingsTransactions
     .filter((t) => t.type === 'deposit' && !!t.paymentMethodId && !t.transferGroupId
       && resolveAccountId(t.paymentMethodId, ledger.paymentMethods) === accountId
       && pockets.get(t.accountId)?.heldInPaymentMethodId !== accountId
-      && instantOf(t.occurredAt, t.date) <= until)
+      && instantOf(t.occurredAt, t.date) > after && instantOf(t.occurredAt, t.date) <= until)
     .sort((a, b) => instantOf(b.occurredAt, b.date) - instantOf(a.occurredAt, a.date))
   const picked: SavingsTransaction[] = []
   let total = 0
