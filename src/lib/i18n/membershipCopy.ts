@@ -345,7 +345,7 @@ const en: MembershipCopy = {
     expired: {
       chip: 'Ended',
       title: 'You’re on Free now. Nothing was deleted.',
-      lines: ['SMS reads 2 accounts. Messages from other accounts wait for you for 30 days.', 'All your history is kept. Insights show the last 3 months.', 'Saved plans beyond 2 are read-only. Your active plan works as before.'],
+      lines: ['SMS reads 2 accounts. Messages from other accounts wait for you for 30 days.', 'All your history is kept. Insights show the last 6 months.', 'Saved plans beyond 2 are read-only. Your active plan works as before.'],
       rejoin: 'Rejoin buddget Pro',
       rejoinFrom: (price) => `Rejoin from ${price} a year`,
       back: 'Everything comes back on, as you left it.',
@@ -594,7 +594,7 @@ const ar: MembershipCopy = {
     expired: {
       chip: 'انتهى',
       title: 'أنت على المجاني الآن. لم يُحذف شيء.',
-      lines: ['SMS يقرأ حسابين. رسائل الحسابات الأخرى تنتظرك 30 يوماً.', 'كل سجلك محفوظ. التحليلات تعرض آخر 3 أشهر.', 'الخطط المحفوظة بعد الثانية للقراءة فقط. خطتك النشطة تعمل كما كانت.'],
+      lines: ['SMS يقرأ حسابين. رسائل الحسابات الأخرى تنتظرك 30 يوماً.', 'كل سجلك محفوظ. التحليلات تعرض آخر 6 أشهر.', 'الخطط المحفوظة بعد الثانية للقراءة فقط. خطتك النشطة تعمل كما كانت.'],
       rejoin: 'انضم إلى بادجت برو من جديد',
       rejoinFrom: (price) => `انضم من جديد بسعر ${price} سنوياً`,
       back: 'يعود كل شيء كما تركته.',

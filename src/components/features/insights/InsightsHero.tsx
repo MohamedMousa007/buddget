@@ -19,14 +19,20 @@ export function InsightsHero({ hero, input, currency }: { hero: InsightHero; inp
   const hidden = useMask('hero')
   const money = (n: number) => (hidden ? MASK : formatCurrency(n, currency, false))
   const lastsOn = hero.runOutInDays === null ? null : formatLocalized(addDays(new Date(), hero.runOutInDays), 'd MMM', locale)
-  const note = hero.state === 'learning' ? c.heroLearning(hero.daysMore) : hero.perDay > 0 ? (hero.state === 'tight' ? c.heroTight(hero.runOutInDays ?? 0) : c.heroNote(hero.daysLeft)) : c.heroNone
+  const basis = c.heroBasis(input.cycle.daysElapsed)
+  const note =
+    hero.state === 'noIncome'
+      ? c.heroNoIncome
+      : hero.state === 'learning'
+        ? c.heroLearning(hero.daysMore)
+        : `${hero.perDay > 0 ? (hero.state === 'tight' ? c.heroTight(hero.runOutInDays ?? 0) : c.heroNote(hero.daysLeft)) : c.heroNone} ${basis}`
   return (
     <HeroBand
       contained
       label={c.heroLabel}
       numbers={
         <>
-          <span className="font-mono-numbers text-[2rem] font-extrabold leading-none">{money(hero.perDay)}</span>
+          <span className="font-mono-numbers text-[2rem] font-extrabold leading-none">{hero.state === 'noIncome' ? '—' : money(hero.perDay)}</span>
           <span className="ms-2 text-sm font-semibold opacity-80">{c.heroUnit(currency)}</span>
         </>
       }

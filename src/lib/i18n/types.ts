@@ -1506,6 +1506,14 @@ export interface Dictionary {
     heroNote: (days: number) => string
     heroTight: (days: number) => string
     heroNone: string
+    heroNoIncome: string
+    heroBasis: (days: number) => string
+    previewTitle: string
+    previewExample: string
+    previewItems: string[]
+    lockSheet: { title: string; body: string; cta: string; later: string }
+    newBadge: string
+    share: { button: string; title: string; spent: (pct: number | null, up: boolean) => string; kept: (share: number, positive: boolean) => string; top: (name: string) => string; purchases: (n: number) => string; foot: string }
     heroLearning: (days: number) => string
     cellSpent: string
     cellPace: string
@@ -1548,9 +1556,9 @@ export interface Dictionary {
     areas: Record<'spending' | 'income' | 'budget' | 'bills' | 'debts' | 'wealth' | 'goals' | 'how', { title: string; sub: string }>
     kinds: Record<import('@/lib/insights/types').InsightKind, {
       tag: string
-      headline: (p: Record<string, number | string>, m: (n: number) => string) => string
-      why: (p: Record<string, number | string>, m: (n: number) => string) => string
-      seed: (p: Record<string, number | string>, m: (n: number) => string) => string
+      headline: (p: Record<string, number | string>) => string
+      why: (p: Record<string, number | string>) => string
+      seed: (p: Record<string, number | string>) => string
     }>
   }
   reports: {

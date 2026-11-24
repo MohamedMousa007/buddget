@@ -1,7 +1,7 @@
 import { DETECTORS } from './detectors'
 import type { Insight, InsightInput } from './types'
 
-/** Findings Free users see in full; the rest show the sentence with the amounts hidden. */
+/** Slots at the top that go to readable findings from different areas, so Pro patterns never push them down. */
 export const FREE_INSIGHTS = 3
 
 /** Highest score first, but the first three come from different areas so the top of the page is varied. */

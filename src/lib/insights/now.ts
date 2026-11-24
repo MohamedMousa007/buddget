@@ -28,6 +28,6 @@ export function computeInsightsNow(s: FinanceStore, now = new Date()) {
     monthFilter: budgetMonthKeyFor(now, s.settings.monthStartDay),
     trustLocalFinance: true,
   })
-  const input = buildInsightInput(s, st.leftToSpend, now)
+  const input = buildInsightInput(s, st.leftToSpend, now, !st.incomeBlocked)
   return { input, hero: heroAnswer(input), insights: computeInsights(input) }
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import { useInsightsDot } from '@/lib/insights/useInsightsDot'
 import { RotateCwClock } from '@/components/ui/icons/RotateCwClock'
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useNavPath } from '@/lib/navigation/navStore'
@@ -51,6 +52,7 @@ export function Sidebar() {
   ]
   const activeHref = activeNavHref(pathname, [...PRIMARY, ...MORE].map((i) => i.href))
 
+  const insightsDot = useInsightsDot()
   const renderItem = (item: NavItem) => {
     const isActive = item.href === activeHref
     return (
@@ -68,6 +70,7 @@ export function Sidebar() {
       >
         <item.icon className="w-5 h-5 shrink-0" />
         <span className={localeInlineLabelClass(locale)}>{item.label}</span>
+        {item.href === '/reports' && insightsDot ? <span role="img" aria-label={t.insights.newBadge} className="ms-auto size-2 rounded-full bg-[var(--color-cat-3)]" /> : null}
       </Link>
     )
   }

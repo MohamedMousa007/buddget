@@ -41,7 +41,7 @@ function cycleSpend(expenses: Expense[], key: string, startDay: number, base: In
   return { rows, total: rows.reduce((s, e) => s + expenseAmountInBase(e, base, rates), 0) }
 }
 
-export function buildInsightInput(src: InsightSource, leftToSpend: number, now: Date): InsightInput {
+export function buildInsightInput(src: InsightSource, leftToSpend: number, now: Date, incomeKnown = true): InsightInput {
   const { settings, exchangeRates: rates } = src
   const base = settings.baseCurrency
   const startDay = settings.monthStartDay
@@ -199,6 +199,7 @@ export function buildInsightInput(src: InsightSource, leftToSpend: number, now: 
     projectedSpend: projectedMonthSpend(dailyRate, totalDays),
     usualSpend,
     leftToSpend,
+    incomeKnown,
     topCategory: top,
     keptLast,
     bnpl,

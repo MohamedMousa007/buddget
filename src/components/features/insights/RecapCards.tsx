@@ -1,6 +1,10 @@
 'use client'
 
+import { Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useActionToast } from '@/components/ui/ActionToast'
+import { useLocale } from '@/lib/i18n'
+import { recapShareText, shareRecapImage } from '@/lib/insights/shareRecap'
 import { Card } from '@/components/ui/card'
 import { useT } from '@/lib/i18n'
 import { categoryLabel } from '@/lib/i18n/categoryLabel'
@@ -32,6 +36,8 @@ export function RecapCards({ recap, currency, locked, onUnlock }: Props) {
   const t = useT()
   const c = t.insights.recap
   const hidden = useMask('lists')
+  const { locale } = useLocale()
+  const toast = useActionToast()
   if (!recap) return <p className="px-1 text-[0.78125rem] text-[var(--color-brand-text-muted)]">{c.none}</p>
   if (locked) {
     return (
@@ -47,13 +53,23 @@ export function RecapCards({ recap, currency, locked, onUnlock }: Props) {
   const delta = recap.spentBefore && recap.spentBefore > 0 ? Math.round(((recap.spent - recap.spentBefore) / recap.spentBefore) * 100) : null
   const kept = recap.received - recap.spent
   const keptShare = recap.received > 0 ? Math.round((Math.abs(kept) / recap.received) * 100) : 0
+  const share = async () => {
+    const text = recapShareText(recap, t.insights.share, (raw) => categoryLabel(t, raw))
+    if ((await shareRecapImage(text, locale === 'ar')) === 'downloaded') toast(t.expenses.fileSaved)
+  }
   return (
+    <div className="space-y-1">
     <div className="-mx-4 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 pb-1 hide-scrollbar">
       <Slide label={c.spent.label} big={money(recap.spent)} line={c.spent.line(delta === null ? null : Math.abs(delta), (delta ?? 0) > 0)} />
       {recap.topCategory && <Slide label={c.top.label} big={money(recap.topCategory.amount)} line={c.top.line(categoryLabel(t, recap.topCategory.name))} />}
       {recap.biggest && <Slide label={c.biggest.label} big={money(recap.biggest.amount)} line={c.biggest.line(recap.biggest.description)} />}
       {recap.received > 0 && <Slide label={c.kept.label(kept >= 0)} big={money(Math.abs(kept))} line={c.kept.line(keptShare)} />}
       <Slide label={c.count.label} big={String(recap.purchases)} line={c.count.line((recap.purchases / recap.days).toFixed(1))} />
+    </div>
+    <Button variant="ghost" size="touch" className="-ms-2 gap-1.5 font-bold text-[var(--color-brand-primary-ink)]" onClick={share}>
+      <Share2 aria-hidden className="size-4" />
+      {t.insights.share.button}
+    </Button>
     </div>
   )
 }

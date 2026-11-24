@@ -2,8 +2,8 @@ import { billingOn, type BillingMe } from '@/lib/billing/billingStore'
 import { subscriptionView } from '@/lib/billing/subscriptionView'
 import type { ReportRangePreset } from '@/lib/reports/reportsPeriod'
 
-/** Ranges Free keeps (the membership copy promises "the last 3 months"). */
-export const FREE_RANGES: readonly ReportRangePreset[] = ['thisMonth', 'lastMonth', 'last3Months']
+/** Ranges Free keeps: the last 6 months. Only the year view is Pro. */
+export const FREE_RANGES: readonly ReportRangePreset[] = ['thisMonth', 'lastMonth', 'last3Months', 'last6Months']
 
 /**
  * Pro insights: every finding, the 6-month and year ranges. UI-only, like the other gates.

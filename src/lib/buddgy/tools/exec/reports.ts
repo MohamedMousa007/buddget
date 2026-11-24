@@ -13,7 +13,6 @@ import type { Expense, FinanceStore } from '@/lib/store/types'
 import { useBillingStore } from '@/lib/billing/billingStore'
 import { canSeeAdvancedInsights } from '@/lib/insights/access'
 import { computeInsightsNow } from '@/lib/insights/now'
-import { FREE_INSIGHTS } from '@/lib/insights/rank'
 import { isMasked } from '@/lib/privacy/mask'
 
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/
@@ -91,8 +90,8 @@ const get_insights: ReadImpl = (args) => {
   return {
     currency: s.settings.baseCurrency,
     hero: { state: hero.state, days_left: hero.daysLeft, ...(hide ? {} : { per_day: r0(hero.perDay), run_out_in_days: hero.runOutInDays }) },
-    findings: insights.slice(0, limit).map((f, i) => {
-      const locked = !advanced && (f.pro === true || i >= FREE_INSIGHTS)
+    findings: insights.slice(0, limit).map((f) => {
+      const locked = !advanced && f.pro === true
       return { id: f.kind, area: f.area, ...(locked ? { locked: true } : hide ? {} : { facts: f.params }) }
     }),
     ...(insights.length > limit ? { more: insights.length - limit } : {}),

@@ -125,6 +125,9 @@ interface SettingsState {
   aiChatSeed: string | null
   /** An Insights finding id to scroll to when the page opens (set by Buddgy's open_screen); the page clears it. */
   focusInsightId: string | null
+  /** The top findings the user last saw on Insights (kinds joined); the entry shows a dot while it differs. */
+  insightsSeen: string | null
+  setInsightsSeen: (sig: string) => void
   /** Send `aiChatSeed` as soon as the chat opens instead of just pre-filling it. */
   aiChatSeedSend: boolean
   /** Buddgy may speak up with screen-aware tips (persisted; AI settings switch). */
@@ -257,6 +260,7 @@ export const useSettingsStore = create<SettingsState>()(
       monthFilter: getCurrentMonth(),
       aiChatSeed: null,
       focusInsightId: null,
+      insightsSeen: null,
       aiChatSeedSend: false,
       buddgyNudges: true,
       setBuddgyNudges: (on) => set({ buddgyNudges: on }),
@@ -332,6 +336,7 @@ export const useSettingsStore = create<SettingsState>()(
       openAiChatWithSeed: (text, send = false) => set({ activeModal: 'aiChat', aiChatSeed: text, aiChatSeedSend: send }),
       clearAiChatSeed: () => set({ aiChatSeed: null, aiChatSeedSend: false }),
       setFocusInsightId: (id) => set({ focusInsightId: id }),
+      setInsightsSeen: (sig) => set({ insightsSeen: sig }),
       openDebtSheetNew: (family) =>
         set({
           debtSheetPaymentOnly: false,
@@ -400,6 +405,7 @@ export const useSettingsStore = create<SettingsState>()(
         budgetClosedCycles: state.budgetClosedCycles,
         budgetStudioDraft: state.budgetStudioDraft,
         buddgyLearning: state.buddgyLearning,
+        insightsSeen: state.insightsSeen,
       }),
     }
   )

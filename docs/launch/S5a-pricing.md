@@ -76,8 +76,8 @@ Rule: free is the complete loop (capture, categorise, budget, review, goals). Pl
 | Saved budget plans (active plus drafts and archive) | 2 | Unlimited |
 | Budget compare and stress test | No | Yes |
 | Goals, debts, subscriptions, savings, net worth, paydays | Yes | Yes |
-| Reports: the last 3 months **[changed, was 2]** | Yes | Yes |
-| Advanced reports: any range, trends, year view | No | Yes |
+| Insights: the last 6 months **[changed 2026-11-23, was 3]** | Yes | Yes |
+| Advanced insights: year view, all pattern findings, what-if, recap, Explain my month | No | Yes |
 | Data export **[changed, was Plus-only]** | Yes | Yes |
 | Share one budget with a partner (not built; first Plus feature after launch) | No | Yes, when it ships |
 | Second currency and FX | Yes | Yes |
@@ -358,7 +358,7 @@ A nightly reconcile job asks RevenueCat for every row whose `current_period_end`
 | Sparks and unit windows | `ai_quota_reserve_v2`, already called by every AI route |
 | SMS AI per day | The SMS parse route, through the atomic counter (replaces `aiCallsToday`). **[S5c]** Counted inside `ai_quota_reserve_v2` as model calls per rolling 24 hours and 30 days; `sms` is excluded from the three unit windows; a denial holds the message and answers the phone 2xx |
 | SMS account cap | Trigger on `payment_methods` when `track_sms` becomes true: count for the user against `sms_accounts_max` from `ai_effective_limits`. **[S5c]** Counts top-level, non-cash accounts; sets the flag false at the cap and never raises (section 3) |
-| Advanced reports (beyond 3 months), compare, stress test, plan count | UI, from `/api/entitlements/me`; add the keys to `PAID_FEATURES` for any that get a server route |
+| Advanced insights (year view, pattern findings), compare, stress test, plan count | UI, from `/api/entitlements/me`; add the keys to `PAID_FEATURES` for any that get a server route |
 
 **9. Cost truth.** `ai_price_book`: add `per_call_usd` and a row for grounded search ($0.035); make `ai_cost_usd_micro` charge audio by seconds (units divided by 100). Without this the admin margin view under-reports voice and search.
 

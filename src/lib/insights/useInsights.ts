@@ -37,7 +37,7 @@ export function useInsights() {
   const nw = useNetWorth()
   const netWorthPath = useNetWorthPath(nw.baseCurrency, nw.accountsTotal != null ? 'accounts' : 'legacy', !nw.netWorthIncomplete)
   return useMemo(() => {
-    const input = { ...buildInsightInput(src, stats.leftToSpend, new Date()), netWorthPath }
+    const input = { ...buildInsightInput(src, stats.leftToSpend, new Date(), !stats.incomeBlocked), netWorthPath }
     return { input, hero: heroAnswer(input), insights: computeInsights(input), stats }
   }, [src, stats, netWorthPath])
 }

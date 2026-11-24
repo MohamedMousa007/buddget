@@ -24,9 +24,8 @@ describe('canSeeAdvancedInsights', () => {
 })
 
 describe('rangeIsFree', () => {
-  it('keeps 3 cycles for Free and moves 6 months and the year to Pro', () => {
-    expect(['thisMonth', 'lastMonth', 'last3Months'].every((r) => rangeIsFree(r as never))).toBe(true)
-    expect(rangeIsFree('last6Months')).toBe(false)
+  it('keeps up to 6 months for Free and moves only the year to Pro', () => {
+    expect(['thisMonth', 'lastMonth', 'last3Months', 'last6Months'].every((r) => rangeIsFree(r as never))).toBe(true)
     expect(rangeIsFree('thisYear')).toBe(false)
   })
 })

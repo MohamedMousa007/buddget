@@ -1,5 +1,6 @@
 'use client'
 
+import { useInsightsDot } from '@/lib/insights/useInsightsDot'
 import { useEffect, useRef, useCallback, useState, type ComponentType, type RefObject } from 'react'
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useNavPath } from '@/lib/navigation/navStore'
@@ -45,6 +46,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
   const t = useT()
   const copy = useSettingsHubCopy()
   const { locale } = useLocale()
+  const insightsDot = useInsightsDot()
   const { user, openAuthModal } = useAuth()
   const profile = useFinanceStore(useShallow((s) => s.profile))
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
@@ -105,9 +107,10 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
   const avatarSrc = resolveProfileAvatarSrc(profile)
   const tile = 'flex min-h-[60px] w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl bg-[var(--color-brand-elevated)] px-0.5 py-1.5 text-center text-[0.625rem] font-medium leading-tight text-[var(--color-brand-text-secondary)] transition-colors hover:bg-[var(--color-brand-sunken)] hover:text-[var(--color-brand-text-primary)] [&_svg]:size-[19px] [&_svg]:text-[var(--color-brand-primary-ink)]'
   const link = (href: string, Icon: Glyph, label: string) => (
-    <Link key={href} href={href} onClick={delayedClose} className={tile} role="menuitem">
+    <Link key={href} href={href} onClick={delayedClose} className={`${tile} relative`} role="menuitem">
       <Icon />
       <span className={localeInlineLabelClass(locale)}>{label}</span>
+      {href === '/reports' && insightsDot ? <span role="img" aria-label={t.insights.newBadge} className="absolute end-2 top-2 size-2 rounded-full bg-[var(--color-cat-3)]" /> : null}
     </Link>
   )
 

@@ -28,6 +28,8 @@ export interface InsightInput {
   usualSpend: number | null
   /** The app's own "left to spend" figure. */
   leftToSpend: number
+  /** False until the user has declared income: the daily amount means nothing without it. */
+  incomeKnown: boolean
   /** Habit detectors: debt repayments and unconverted foreign rows are left out. */
   topCategory: { name: string; amount: number; total: number } | null
   keptLast: { received: number; spent: number } | null
@@ -53,7 +55,7 @@ export interface InsightInput {
   netWorthPath: import('./netWorthPath').NetWorthPath | null
 }
 
-export type HeroState = 'learning' | 'ok' | 'tight'
+export type HeroState = 'learning' | 'noIncome' | 'ok' | 'tight'
 
 export interface InsightHero {
   state: HeroState

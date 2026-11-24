@@ -7,6 +7,7 @@ const h = vi.hoisted(() => ({
   user: { id: 'u1', email: 'layla@example.com', app_metadata: {} as Record<string, unknown> } as { id: string; email: string; app_metadata: Record<string, unknown> } | null,
   pct: 100,
   name: 'Layla Hassan',
+  dot: false,
 }))
 
 vi.mock('@/lib/billing/billingStore', async (actual) => ({
@@ -21,6 +22,7 @@ vi.mock('@/lib/navigation/backGuard', () => ({ registerBackGuard: () => () => {}
 vi.mock('@/lib/store/useFinanceStore', () => ({ useFinanceStore: (select: (s: unknown) => unknown) => select({ profile: { name: h.name, email: '' } }) }))
 vi.mock('@/lib/store/useSettingsStore', () => ({ useSettingsStore: (select: (s: unknown) => unknown) => select({ setActiveModal: vi.fn() }) }))
 vi.mock('@/components/features/setup/SetupProgressChip', () => ({ SetupChecklistSheet: () => null }))
+vi.mock('@/lib/insights/useInsightsDot', () => ({ useInsightsDot: () => h.dot }))
 vi.mock('@/lib/profile/avatarDisplay', () => ({ resolveProfileAvatarSrc: () => null }))
 
 import { ProfileDropdown } from './ProfileDropdown'
@@ -42,9 +44,18 @@ beforeEach(() => {
   h.user = { id: 'u1', email: 'layla@example.com', app_metadata: {} }
   h.pct = 100
   h.name = 'Layla Hassan'
+  h.dot = false
 })
 
 describe('the profile menu', () => {
+  it('the Insights tile carries a dot only while there are findings the member has not seen', () => {
+    expect(render()).not.toContain('bg-[var(--color-cat-3)]')
+    h.dot = true
+    const out = render()
+    expect(out).toContain('bg-[var(--color-cat-3)]')
+    expect(out.indexOf('href="/reports"')).toBeLessThan(out.indexOf('bg-[var(--color-cat-3)]'))
+  })
+
   it('a Free member: name, tier chip, a Try free Pro row, the six tools, and nothing else', () => {
     const out = render()
     expect(out).toContain('Layla Hassan')

@@ -8,9 +8,10 @@ const base = (over: Partial<InsightInput> = {}): InsightInput => ({
   spent: 18450,
   expenseCount: 60,
   dailyRate: 1085,
-  projectedSpend: 28210,
+  projectedSpend: 28800,
   usualSpend: 27000,
   leftToSpend: 3690,
+  incomeKnown: true,
   topCategory: { name: 'Food', amount: 4100, total: 20000 },
   keptLast: { received: 32000, spent: 30000 },
   bnpl: { plans: 4, remaining: 9600, monthly: 1450, incomeMonthly: 29000 },
@@ -46,6 +47,11 @@ describe('heroAnswer', () => {
     expect(heroAnswer(base({ expenseCount: MIN_EXPENSES - 1 })).state).toBe('learning')
     expect(heroAnswer(base({ cycle: { daysElapsed: 2, daysLeft: 24, totalDays: 26 } })).daysMore).toBe(MIN_DAYS - 2)
   })
+  it('asks for income before giving a daily amount', () => {
+    const h = heroAnswer(base({ incomeKnown: false }))
+    expect(h.state).toBe('noIncome')
+    expect(h.perDay).toBe(0)
+  })
   it('has no per-day amount when nothing is left', () => {
     const h = heroAnswer(base({ leftToSpend: -50 }))
     expect(h.perDay).toBe(0)
@@ -59,7 +65,7 @@ describe('heroAnswer', () => {
 describe('paceInsight', () => {
   it('compares the projection with the usual cycle', () => {
     const i = paceInsight(base())
-    expect(i?.params).toEqual({ delta: 1210, more: 1 })
+    expect(i?.params).toEqual({ delta: 1800, more: 1 })
   })
   it('reports less than usual too', () => {
     expect(paceInsight(base({ projectedSpend: 20000 }))?.params.more).toBe(0)

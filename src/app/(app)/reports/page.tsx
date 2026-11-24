@@ -29,6 +29,9 @@ import { useEffect, useMemo } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
+import { InsightsFold } from '@/components/features/insights/InsightsFold'
+import { insightsSignature } from '@/lib/insights/useInsightsDot'
+import { track } from '@/lib/analytics/events'
 import { WhatIfCard } from '@/components/features/insights/WhatIfCard'
 import { RecapCards } from '@/components/features/insights/RecapCards'
 import { buildRecap } from '@/lib/insights/recap'
@@ -57,7 +60,19 @@ export default function ReportsPage() {
   }, [focusInsightId, insights])
   const source = useInsightSource()
   const recap = useMemo(() => buildRecap(source, new Date()), [source])
-  const openUpgrade = () => navigate('/settings/pro')
+  const openUpgrade = () => {
+    track('insights.paywall_open', { source: 'page' })
+    navigate('/settings/pro')
+  }
+  const signature = insightsSignature(insights)
+  useEffect(() => {
+    track('insights.opened', { findings: insights.length, advanced })
+    // once per visit: the count is read at open time
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  useEffect(() => {
+    if (signature) useSettingsStore.getState().setInsightsSeen(signature)
+  }, [signature])
   const stats = useMonthlyStats()
   const monthFilter = useSettingsStore((s) => s.monthFilter)
   // The pace panel reads the viewed month's stats, so it shows only when that month is the report's current cycle.
@@ -104,14 +119,11 @@ export default function ReportsPage() {
           </Card>
         </section>
 
-        <section className="space-y-2">
-          <h2 className="px-1 text-[0.6875rem] font-bold uppercase tracking-wide text-[var(--color-brand-text-muted)]">{t.insights.areasTitle}</h2>
+        <InsightsFold title={t.insights.areasTitle}>
           <InsightsAreas />
-        </section>
+        </InsightsFold>
 
-        <PageDivider />
-
-        <h2 className="px-1 text-[0.6875rem] font-bold uppercase tracking-wide text-[var(--color-brand-text-muted)]">{t.insights.detailsTitle}</h2>
+        <InsightsFold title={t.insights.detailsTitle}>
         <ReportsNetWorthPanel contained />
         <ReportFilters selected={r.dateRange} onSelect={r.setDateRange} lockedRanges={lockedRanges} onLocked={() => navigate('/settings/pro')} />
 
@@ -170,6 +182,7 @@ export default function ReportsPage() {
         <ReportsPaymentMethodPanel methods={r.methodBreakdown} baseCurrency={r.settings.baseCurrency} />
 
         <ReportsExportBar onExportCsv={r.handleExportCSV} onCopySummary={r.handleCopySummary} />
+        </InsightsFold>
       </PageBody>
     </div>
   )

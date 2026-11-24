@@ -10,6 +10,7 @@ const enoughThisCycle = (i: InsightInput) => i.cycle.daysElapsed >= MIN_DAYS && 
 
 export function heroAnswer(i: InsightInput): InsightHero {
   const { daysElapsed, daysLeft } = i.cycle
+  if (!i.incomeKnown) return { state: 'noIncome', perDay: 0, runOutInDays: null, daysLeft, daysMore: 0 }
   const perDay = daysLeft > 0 && i.leftToSpend > 0 ? i.leftToSpend / daysLeft : 0
   if (!enoughThisCycle(i)) return { state: 'learning', perDay, runOutInDays: null, daysLeft, daysMore: Math.max(0, MIN_DAYS - daysElapsed) }
   const lasts = i.dailyRate > 0 && i.leftToSpend > 0 ? Math.floor(i.leftToSpend / i.dailyRate) : i.leftToSpend > 0 ? null : 0
