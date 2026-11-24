@@ -84,7 +84,7 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
     ...(isCash ? [] : [{
       label: t.closeAccount, icon: <Trash2 size={17} />, destructive: true,
       onSelect: async () => {
-        if (!(await confirm({ title: t.closeAccount, body: t.closeAccountBody(cards.length), destructive: true }))) return
+        if (!(await confirm({ title: t.closeAccount, body: t.closeAccountBody(cards.length), confirmLabel: t.closeAccount, destructive: true }))) return
         closeAccount(method.id)
         onClose()
       },

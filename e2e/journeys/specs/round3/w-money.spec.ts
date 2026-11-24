@@ -36,8 +36,9 @@ test('W1 net worth = tracked accounts - debts; closing an account takes it out [
     await page.getByRole('menuitem', { name: 'Close account' }).click()
     const ask = page.getByRole('alertdialog').or(page.getByRole('dialog', { name: 'Close account' })).last()
     await expect(ask).toContainText('leave your lists, totals and net worth')
-    // The confirm button reads "Delete" although the account is only closed (history stays): reported in R3-coverage.
-    await ask.getByRole('button', { name: 'Delete', exact: true }).click()
+    await expect(ask).toContainText("You can't reopen it from the app.")
+    await expect(ask.getByRole('button', { name: 'Delete', exact: true })).toHaveCount(0)
+    await ask.getByRole('button', { name: 'Close account', exact: true }).click()
     await localWait(page, (s) => s.paymentMethods.find((m: any) => m.id === cib.id && m.closedAt))
     await serverRows('payment_methods', user.id, `id=eq.${cib.id}`, (r: any[]) => !!r[0]?.closed_at)
     await goto(page, '/accounts')

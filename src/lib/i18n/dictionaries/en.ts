@@ -441,7 +441,7 @@ export const en: Dictionary = {
     addCardCta: 'Add card',
     cardName: 'Name',
     closeAccount: 'Close account',
-    closeAccountBody: (n) => (n > 0 ? `History stays. Its balance leaves your net worth. ${n} ${n === 1 ? 'card' : 'cards'} will stay as standalone cards.` : 'History stays. The account and its balance leave your lists, totals and net worth.'),
+    closeAccountBody: (n) => (n > 0 ? `History stays. Its balance leaves your net worth. ${n} ${n === 1 ? 'card' : 'cards'} will stay as standalone cards. You can't reopen it from the app.` : 'History stays. The account and its balance leave your lists, totals and net worth. You can\'t reopen it from the app.'),
     staleBalance: 'Balance is a while old',
     overdrawn: 'Overdrawn',
     approx: 'Approximate: includes a currency with no rate',
