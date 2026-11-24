@@ -12,6 +12,7 @@ import { nextReadMark, staffFirstName, userFacingStatus } from '@/lib/support/co
 type Params = { params: Promise<{ number: string }> }
 
 const REPLIES_PER_HOUR = 20
+const THREAD_LIMIT = 200
 const replySchema = z.object({ message: z.string().trim().max(4000).default(''), attachments: z.unknown().optional() })
 
 /** The ticket only when it belongs to the caller; any other number answers as if it did not exist. */
@@ -44,10 +45,11 @@ export async function GET(request: Request, { params }: Params) {
     .select('id, author_type, author_label, body, created_at, attachments')
     .eq('ticket_id', ticket.id)
     .eq('internal', false)
-    .order('created_at')
-    .limit(200)
-  const messages = await signThreadAttachments(service, rows ?? [])
-  const mark = nextReadMark(messages, ticket.user_last_read_at)
+    .order('created_at', { ascending: false })
+    .limit(THREAD_LIMIT)
+  // The newest messages, shown oldest first: a long thread drops its oldest, never the reply the user came for.
+  const messages = await signThreadAttachments(service, (rows ?? []).reverse())
+  const mark = nextReadMark(ticket.last_message_at ? [...messages, { created_at: ticket.last_message_at }] : messages, ticket.user_last_read_at)
   if (mark) await service.from('support_tickets').update({ user_last_read_at: mark }).eq('id', ticket.id).eq('user_id', uid)
   const visible = {
     number: ticket.number,

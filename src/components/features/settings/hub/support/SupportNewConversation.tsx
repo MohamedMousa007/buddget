@@ -7,24 +7,27 @@ import { Input } from '@/components/ui/input'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Textarea } from '@/components/ui/textarea'
 import { apiFetchAuth } from '@/lib/apiBase'
+import { useActionToast } from '@/components/ui/ActionToast'
 import { useLocale } from '@/lib/i18n'
 import { collectSupportContext } from '@/lib/support/clientContext'
 import { useSupportCopy } from '@/lib/support/supportCopy'
 import { AttachmentStrip } from './AttachmentStrip'
 import { useImageAttachments } from './useImageAttachments'
+import type { CarriedDraft } from './types'
 
 type Kind = 'bug' | 'idea' | 'question'
 
 /** Starts a conversation: what it is about, a subject, details, screenshots. Device context rides along. */
-export function SupportNewConversation({ onCreated, fromRoute }: { onCreated: (number: number) => void; fromRoute?: string }) {
+export function SupportNewConversation({ onCreated, fromRoute, draft }: { onCreated: (number: number) => void; fromRoute?: string; draft?: CarriedDraft }) {
   const copy = useSupportCopy()
   const { locale } = useLocale()
   const [kind, setKind] = useState<Kind>('bug')
   const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
+  const [description, setDescription] = useState(draft?.body ?? '')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const att = useImageAttachments()
+  const att = useImageAttachments(draft)
+  const toast = useActionToast()
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,8 +42,9 @@ export function SupportNewConversation({ onCreated, fromRoute }: { onCreated: (n
         body: JSON.stringify({ chosen: kind, title, description, context, attachments: att.ready }),
       })
       if (!res.ok) throw new Error(String(res.status))
-      const data = (await res.json()) as { number?: number }
+      const data = (await res.json()) as { number?: number; attachmentsSaved?: boolean }
       if (!data.number) throw new Error('no number')
+      if (data.attachmentsSaved === false) toast(copy.attachNotSaved)
       att.reset()
       onCreated(data.number)
     } catch {

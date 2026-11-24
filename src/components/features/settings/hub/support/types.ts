@@ -35,8 +35,16 @@ export interface PendingMessage {
   body: string
   attachments: Array<{ path: string; mime: string; size: number }>
   previews: string[]
-  state: 'sending' | 'failed'
+  /** closed: the conversation was closed before it landed; it can only move to a new conversation. */
+  state: 'sending' | 'failed' | 'closed'
   created_at: string
+}
+
+/** What a message that could not land carries into a new conversation. */
+export interface CarriedDraft {
+  body: string
+  attachments: PendingMessage['attachments']
+  previews: string[]
 }
 
 /** Body text for a message that was only a photo. */

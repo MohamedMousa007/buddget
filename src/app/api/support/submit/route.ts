@@ -83,9 +83,18 @@ export async function POST(request: Request) {
     console.error('[support/submit] failed', error?.message)
     return NextResponse.json({ error: 'Could not send that. Try again.' }, { status: 500 })
   }
+  // support_submit takes no attachments: they go on its first message right after. The ticket stands either way,
+  // so a failure here is reported to the client instead of being hidden behind ok.
+  let attachmentsSaved: boolean | undefined
   if (attachments.length) {
-    const { error: attachError } = await service.from('support_ticket_messages').update({ attachments: attachments as unknown as Json }).eq('ticket_id', row.ticket_id).eq('author_type', 'user')
-    if (attachError) console.error('[support/submit] attachments not saved', attachError.message)
+    const { data: saved, error: attachError } = await service
+      .from('support_ticket_messages')
+      .update({ attachments: attachments as unknown as Json })
+      .eq('ticket_id', row.ticket_id)
+      .eq('author_type', 'user')
+      .select('id')
+    attachmentsSaved = !attachError && (saved?.length ?? 0) > 0
+    if (!attachmentsSaved) console.error('[support/submit] attachments not saved', attachError?.message)
   }
-  return NextResponse.json({ ok: true, number: row.ticket_number })
+  return NextResponse.json({ ok: true, number: row.ticket_number, ...(attachmentsSaved === undefined ? {} : { attachmentsSaved }) })
 }

@@ -59,7 +59,10 @@ describe('relinking a debit card with history asks first (D5)', () => {
 
 describe('store', () => {
   beforeEach(() => {
-    useFinanceStore.setState({ paymentMethods: [nbe, pm({ id: 'card', type: 'debit_card', name: 'NBE ••1234', last4: '1234' })], debts: [] })
+    useFinanceStore.setState({
+      paymentMethods: [nbe, pm({ id: 'card', type: 'debit_card', name: 'NBE ••1234', last4: '1234' })],
+      debts: [], expenses: [], incomeEvents: [], debtPayments: [], savingsTransactions: [], accountAdjustments: [],
+    })
   })
   it('adding a card that already exists standalone links the existing one (D6)', () => {
     const id = useFinanceStore.getState().addPaymentMethod({ name: 'NBE ••1234', type: 'debit_card', currency: 'EGP', last4: '1234', isDefault: false, parentId: 'nbe' })
@@ -67,6 +70,12 @@ describe('store', () => {
     const s = useFinanceStore.getState()
     expect(s.paymentMethods).toHaveLength(2)
     expect(s.paymentMethods.find((m) => m.id === 'card')!.parentId).toBe('nbe')
+  })
+  it('a used standalone debit card is not moved by the reuse path; the edit sheet asks first (D5 over D6)', () => {
+    useFinanceStore.setState({ expenses: [{ id: 'e1', paymentMethodId: 'card' } as never] })
+    const id = useFinanceStore.getState().addPaymentMethod({ name: 'NBE ••1234', type: 'debit_card', currency: 'EGP', last4: '1234', isDefault: false, parentId: 'nbe' })
+    expect(id).toBe('card')
+    expect(useFinanceStore.getState().paymentMethods.find((m) => m.id === 'card')!.parentId).toBeUndefined()
   })
   it('the reuse path never moves a card that already has another parent', () => {
     useFinanceStore.getState().updatePaymentMethod('card', { parentId: 'nbe' })

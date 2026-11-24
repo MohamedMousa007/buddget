@@ -13,11 +13,11 @@ import { useSupportCopy } from '@/lib/support/supportCopy'
 import { STATUS_TONE, SupportConversationList } from './SupportConversationList'
 import { SupportNewConversation } from './SupportNewConversation'
 import { SupportThread } from './SupportThread'
-import type { ConversationRow, ThreadTicket } from './types'
+import type { CarriedDraft, ConversationRow, ThreadTicket } from './types'
 
 const POLL_MS = 15_000
 
-type View = { kind: 'list' } | { kind: 'new' } | { kind: 'thread'; number: number }
+type View = { kind: 'list' } | { kind: 'new'; draft?: CarriedDraft } | { kind: 'thread'; number: number }
 
 /**
  * Help and feedback as one place: the conversation list, a new message, and each thread as a chat. Opens on a thread
@@ -100,9 +100,9 @@ function SheetBody({ open, onClose, startNew }: { open: boolean; onClose: () => 
         ) : null}
       </V3SheetHeader>
       {view.kind === 'thread' ? (
-        <SupportThread key={view.number} number={view.number} onTicket={setTicket} onStartNew={() => setView({ kind: 'new' })} />
+        <SupportThread key={view.number} number={view.number} onTicket={setTicket} onStartNew={(draft) => setView({ kind: 'new', draft })} />
       ) : view.kind === 'new' ? (
-        <SupportNewConversation onCreated={(n) => { setView({ kind: 'thread', number: n }); void loadList() }} />
+        <SupportNewConversation draft={view.draft} onCreated={(n) => { setView({ kind: 'thread', number: n }); void loadList() }} />
       ) : (
         <SupportConversationList rows={rows} onOpen={(n) => setView({ kind: 'thread', number: n })} onNew={() => setView({ kind: 'new' })} />
       )}

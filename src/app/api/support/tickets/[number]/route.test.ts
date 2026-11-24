@@ -8,6 +8,7 @@ const h = vi.hoisted(() => ({
   update: vi.fn(),
   messages: vi.fn(),
   eqs: [] as Array<[string, unknown]>,
+  orders: [] as unknown[],
 }))
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/server/clientGate', () => ({ gateOutdatedClient: async () => null }))
@@ -26,7 +27,7 @@ vi.mock('@/lib/supabase/service', () => ({
         }
         return q
       }
-      const m = { select: () => m, eq: () => m, order: () => m, limit: () => h.messages(), insert: (v: unknown) => ({ select: () => ({ single: () => h.insert(v) }) }) }
+      const m = { select: () => m, eq: () => m, order: (...a: unknown[]) => { h.orders.push(a); return m }, limit: () => h.messages(), insert: (v: unknown) => ({ select: () => ({ single: () => h.insert(v) }) }) }
       return m
     },
   }),
@@ -45,6 +46,7 @@ describe('/api/support/tickets/[number]', () => {
   beforeEach(() => {
     for (const m of [h.uid, h.limited, h.ticket, h.insert, h.update, h.messages]) m.mockReset()
     h.eqs.length = 0
+    h.orders.length = 0
     h.uid.mockResolvedValue(UID)
     h.limited.mockResolvedValue(false)
     h.ticket.mockResolvedValue({ data: { id: 't1', number: 5, status: 'resolved', last_message_at: T1, last_message_from: 'staff', user_last_read_at: T0, csat_rating: null } })
@@ -122,5 +124,18 @@ describe('/api/support/tickets/[number]', () => {
   it('fails closed when the rate limiter is down', async () => {
     h.limited.mockResolvedValue(true)
     expect((await post({ message: 'hi' })).status).toBe(429)
+  })
+
+  it('shows the newest messages of a long thread, oldest first, and reads up to the newest', async () => {
+    const T2 = '2026-11-24T12:00:00.000Z'
+    h.ticket.mockResolvedValue({ data: { id: 't1', number: 5, status: 'open', last_message_at: T2, last_message_from: 'staff', user_last_read_at: T0, csat_rating: null } })
+    h.messages.mockResolvedValue({ data: [
+      { id: 'm2', author_type: 'staff', author_label: 'Sara', body: 'newest', created_at: T2, attachments: [] },
+      { id: 'm1', author_type: 'user', author_label: 'Customer', body: 'older', created_at: T1, attachments: [] },
+    ] })
+    const data = await (await get()).json()
+    expect(h.orders).toContainEqual(['created_at', { ascending: false }])
+    expect(data.messages.map((m: { id: string }) => m.id)).toEqual(['m1', 'm2'])
+    expect(h.update).toHaveBeenCalledWith({ user_last_read_at: T2 })
   })
 })

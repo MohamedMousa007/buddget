@@ -4,6 +4,7 @@ import { refOf } from '@/lib/buddgy/tools/refs'
 import type { ToolContext } from '@/lib/buddgy/tools/types'
 import { buildAIActionHandlerContext, executeActionItem, validateActionItem } from '@/lib/ai/aiActionHandlers'
 import { postDueRecurringSavings } from '@/lib/savings/postRecurringSavings'
+import { useSkippedInstalments } from '@/lib/savings/skippedInstalments'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Goal, PaymentMethod, SavingsAccount } from '@/lib/store/types'
 
@@ -106,13 +107,31 @@ describe('the voice and chat action handler reports a refused deposit', () => {
   })
 })
 
-describe('recurring savings into a reserved pocket', () => {
-  it('a deposit above what is available is not posted and stays due', () => {
+describe('recurring savings the store would refuse', () => {
+  beforeEach(() => useSkippedInstalments.setState({ skipped: [] }))
+  const recurring = (accountId: string, amount: number, currency: string) =>
     useFinanceStore.setState({
-      recurringSavingsDeposits: [{ id: 'r1', accountId: TRIP, amount: 8000, currency: 'EGP', dayOfMonth: 1, nextDueDate: '2026-11-01', isActive: true, createdAt: '2026-01-01' }] as never,
+      recurringSavingsDeposits: [{ id: 'r1', accountId, amount, currency, dayOfMonth: 1, nextDueDate: '2026-11-01', isActive: true, createdAt: '2026-01-01' }] as never,
     })
+
+  it('above what a reserved pocket\'s account has free: that month is skipped, moves on, and the user is told', () => {
+    recurring(TRIP, 8000, 'EGP')
     postDueRecurringSavings('2026-11-01')
     expect(rows()).toBe(0)
-    expect(S().recurringSavingsDeposits[0].nextDueDate).toBe('2026-11-01')
+    expect(S().recurringSavingsDeposits[0].nextDueDate).toBe('2026-12-01')
+    expect(useSkippedInstalments.getState().skipped).toEqual([expect.objectContaining({ ruleId: 'r1', due: '2026-11-01', pocketName: 'Trip', amount: 8000 })])
+    postDueRecurringSavings('2026-11-02')
+    expect(useSkippedInstalments.getState().skipped).toHaveLength(1)
+  })
+
+  it('no account in the pocket\'s currency: posted as new money, no account debited', () => {
+    recurring(USD, 100, 'USD')
+    postDueRecurringSavings('2026-11-01')
+    const tx = S().savingsTransactions[0]
+    expect(tx.paymentMethodId).toBeUndefined()
+    expect(tx.isCashFlow).toBe(false)
+    expect(S().savingsAccounts.find((a) => a.id === USD)!.currentBalance).toBe(100)
+    expect(S().recurringSavingsDeposits[0].nextDueDate).toBe('2026-12-01')
+    expect(useSkippedInstalments.getState().skipped).toHaveLength(0)
   })
 })

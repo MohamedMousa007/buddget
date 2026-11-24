@@ -99,7 +99,7 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
     {
       label: tAll.paymentMethods.delete, icon: <Trash2 size={17} />, destructive: true,
       onSelect: async () => {
-        if (!(await confirm({ title: tAll.paymentMethods.delete, body: t.closeAccountBody(0), destructive: true }))) return
+        if (!(await confirm({ title: tAll.paymentMethods.delete, body: tAll.paymentMethods.deleteCardBody, destructive: true }))) return
         deletePaymentMethod(menuCard.id)
         setActive(0)
       },

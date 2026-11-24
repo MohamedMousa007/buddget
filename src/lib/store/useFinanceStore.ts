@@ -1,5 +1,7 @@
 import { applyMethodExclusion, isMethodExcluded } from '@/lib/spending/exclusion'
 import { removePaymentMethod } from '@/lib/accounts/removePaymentMethod'
+import { relinkNeedsConfirm } from '@/lib/accounts/cardLink'
+import { hasAccountHistory } from '@/lib/accounts/kinds'
 import { defaultMethodId } from '@/lib/accounts/resolve'
 import { pocketCloseAdjustments } from '@/lib/accounts/pocketCloseAdjustments'
 import { create } from 'zustand'
@@ -624,8 +626,11 @@ export const useFinanceStore = create<FinanceStore>()(
           [m.name.trim().toLowerCase(), m.type, m.currency, m.last4 ?? ''].join('|')
         const twin = get().paymentMethods.find((m) => m.id !== 'pm_default_cash' && !m.closedAt && key(m) === key(method))
         if (twin) {
-          // Adding an existing standalone card under an account links that card instead of dropping the link.
-          if (method.parentId && !twin.parentId) get().updatePaymentMethod(twin.id, { parentId: method.parentId })
+          // Adding an existing standalone card under an account links that card instead of dropping the link (D6), unless
+          // it is a used debit card: moving its spending needs the user's confirm from the edit sheet (D5), so it stays as is.
+          if (method.parentId && !twin.parentId && !relinkNeedsConfirm(twin, method.parentId, hasAccountHistory(get(), twin.id))) {
+            get().updatePaymentMethod(twin.id, { parentId: method.parentId })
+          }
           return twin.id
         }
         const pmId = generateId()

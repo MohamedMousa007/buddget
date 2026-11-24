@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils'
 import { SupportComposer } from './SupportComposer'
 import { SupportCsat } from './SupportCsat'
 import { SignedImage } from './SignedImage'
-import { PHOTO_ONLY_BODY, type PendingMessage, type ThreadMessage, type ThreadTicket } from './types'
+import { PHOTO_ONLY_BODY, type CarriedDraft, type PendingMessage, type ThreadMessage, type ThreadTicket } from './types'
 
 const POLL_MS = 15_000
 
@@ -30,7 +30,7 @@ interface Bubble {
 const dayKey = (iso: string) => new Date(iso).toDateString()
 
 /** One conversation as a chat: day separators, grouped bubbles, sending and failed states, the reply bar pinned below. */
-export function SupportThread({ number, onTicket, onStartNew }: { number: number; onTicket: (t: ThreadTicket) => void; onStartNew: () => void }) {
+export function SupportThread({ number, onTicket, onStartNew }: { number: number; onTicket: (t: ThreadTicket) => void; onStartNew: (draft?: CarriedDraft) => void }) {
   const copy = useSupportCopy()
   const fmt = useLocalizedFormatters()
   const [ticket, setTicket] = useState<ThreadTicket | null>(null)
@@ -95,7 +95,8 @@ export function SupportThread({ number, onTicket, onStartNew }: { number: number
           body: JSON.stringify({ message: p.body, attachments: p.attachments }),
         })
         if (res.status === 409) {
-          setPending((list) => list.filter((x) => x.localId !== p.localId))
+          // Closed meanwhile: the message stays on screen, marked, and can move to a new conversation with its photos.
+          setPending((list) => list.map((x) => (x.localId === p.localId ? { ...x, state: 'closed' } : x)))
           await load()
           return
         }
@@ -182,7 +183,14 @@ export function SupportThread({ number, onTicket, onStartNew }: { number: number
                       {b.body}
                     </p>
                   ) : null}
-                  {b.pending?.state === 'failed' ? (
+                  {b.pending?.state === 'closed' ? (
+                    <span className="mt-0.5 flex flex-col items-end gap-0.5 px-1">
+                      <span className="inline-flex items-center gap-1 text-xs text-[var(--color-brand-red)]"><AlertCircle className="size-3.5" aria-hidden />{copy.closedNotSent}</span>
+                      <Button variant="link" size="sm" className="h-auto px-0 text-xs" onClick={() => onStartNew({ body: b.pending!.body, attachments: b.pending!.attachments, previews: b.pending!.previews })}>
+                        {copy.startNew}
+                      </Button>
+                    </span>
+                  ) : b.pending?.state === 'failed' ? (
                     <Button variant="link" size="sm" className="mt-0.5 h-auto gap-1 px-1 text-xs text-[var(--color-brand-red)]" onClick={() => void post(b.pending!)}>
                       <AlertCircle className="size-3.5" aria-hidden />
                       {copy.failed} · {copy.retry}
@@ -204,7 +212,7 @@ export function SupportThread({ number, onTicket, onStartNew }: { number: number
       {ticket?.can_reply === false ? (
         <div className="shrink-0 space-y-2 border-t border-[var(--color-brand-border)] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center">
           <p className="text-sm text-[var(--color-brand-text-secondary)]">{copy.closedNote}</p>
-          <Button size="touch" className="w-full" onClick={onStartNew}><Plus />{copy.startNew}</Button>
+          <Button size="touch" className="w-full" onClick={() => onStartNew()}><Plus />{copy.startNew}</Button>
         </div>
       ) : (
         <SupportComposer onSend={send} />

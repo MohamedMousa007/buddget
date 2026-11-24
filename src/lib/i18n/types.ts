@@ -2167,6 +2167,8 @@ export interface Dictionary {
     monthEndBodyDays: (n: number) => string
     savingsNudgeTitle: string
     savingsNudgeBody: string
+    savingsSkippedTitle: string
+    savingsSkippedBody: (amount: string, pocket: string) => string
     recurringDueBody: (name: string, amount: number, currency: string) => string
     recurringTomorrowBody: (name: string, amount: number, currency: string) => string
     recurringConfirmPaid: string
@@ -2435,6 +2437,8 @@ export interface Dictionary {
     relinkTitle: string
     relinkBody: string
     unlinkBody: string
+    /** Deleting one card: its history stays; a used card closes instead of disappearing. */
+    deleteCardBody: string
     relinkConfirm: string
     chooseProvider: string
     searchProviderPlaceholder: string

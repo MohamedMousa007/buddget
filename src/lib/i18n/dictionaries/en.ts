@@ -2393,6 +2393,8 @@ export const en: Dictionary = {
     monthEndBodyDays: (n) => `You\u2019ve got ${n} day${n === 1 ? '' : 's'} left in your budget month. Keep it up!`,
     savingsNudgeTitle: "Haven\u2019t saved yet this month \uD83C\uDF31",
     savingsNudgeBody: 'Even a small amount adds up. Log a saving today and keep the momentum going.',
+    savingsSkippedTitle: 'A savings instalment was skipped',
+    savingsSkippedBody: (amount, pocket) => `${amount} could not be set aside in ${pocket}: its account does not have that much available. Nothing was moved.`,
     recurringDueBody: (name, amount, currency) =>
       `${name} payment of ${amount} ${currency} is due today. Confirm payment?`,
     recurringTomorrowBody: (name, amount, currency) =>
@@ -2664,6 +2666,7 @@ export const en: Dictionary = {
     relinkTitle: 'Move this card?',
     relinkBody: 'Its past and future spending will count against {account}.',
     unlinkBody: 'Its past and future spending will no longer count against {account}.',
+    deleteCardBody: 'The card leaves your lists. Spending already recorded on it stays in your history.',
     relinkConfirm: 'Move card',
     chooseProvider: 'Choose provider',
     searchProviderPlaceholder: 'Search banks, wallets, cards…',

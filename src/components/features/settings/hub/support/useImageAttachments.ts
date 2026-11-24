@@ -5,6 +5,7 @@ import { beginNativeFlow, endNativeFlow } from '@/lib/native/appLockPolicy'
 import { attachmentProblem, MAX_ATTACHMENTS, type Attachment } from '@/lib/support/attachments'
 import { uploadSupportImage } from '@/lib/support/uploadAttachment'
 import { useSupportCopy } from '@/lib/support/supportCopy'
+import type { CarriedDraft } from './types'
 
 export interface PickedImage {
   id: string
@@ -13,10 +14,12 @@ export interface PickedImage {
   state: 'uploading' | 'ready' | 'failed'
 }
 
-/** Screenshots picked for one message: checked, uploaded straight away, previewed, removable. */
-export function useImageAttachments() {
+/** Screenshots picked for one message: checked, uploaded straight away, previewed, removable. A carried draft starts it with its already-uploaded photos. */
+export function useImageAttachments(seed?: Pick<CarriedDraft, 'attachments' | 'previews'>) {
   const copy = useSupportCopy()
-  const [items, setItems] = useState<PickedImage[]>([])
+  const [items, setItems] = useState<PickedImage[]>(() =>
+    (seed?.attachments ?? []).map((a, i) => ({ id: crypto.randomUUID(), preview: seed?.previews[i] ?? '', uploaded: a, state: 'ready' as const })),
+  )
   const [error, setError] = useState<string | null>(null)
   const [input, setInput] = useState<HTMLInputElement | null>(null)
   const itemsRef = useRef(items)

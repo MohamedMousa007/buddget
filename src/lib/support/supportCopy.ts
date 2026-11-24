@@ -21,6 +21,7 @@ export interface SupportCopy {
   failed: string
   retry: string
   closedNote: string
+  closedNotSent: string
   startNew: string
   kindLabel: string
   bug: string
@@ -32,6 +33,7 @@ export interface SupportCopy {
   detailsHint: string
   start: string
   startFailed: string
+  attachNotSaved: string
   contextNote: string
   attachType: string
   attachSize: string
@@ -70,6 +72,7 @@ const en: SupportCopy = {
   failed: 'Not sent',
   retry: 'Retry',
   closedNote: 'This conversation is closed.',
+  closedNotSent: 'Not sent: this conversation is closed.',
   startNew: 'Start a new conversation',
   kindLabel: 'What is it about?',
   bug: 'Bug',
@@ -81,6 +84,7 @@ const en: SupportCopy = {
   detailsHint: 'What happened, and what did you expect?',
   start: 'Send message',
   startFailed: 'That did not send. Check your connection and try again.',
+  attachNotSaved: 'Your message was sent, but the screenshots did not attach. Add them in the conversation.',
   contextNote: 'We attach your app version, device and language so we can help faster.',
   attachType: 'Only images can be attached.',
   attachSize: 'That image is over 5 MB.',
@@ -119,6 +123,7 @@ const ar: SupportCopy = {
   failed: 'لم تُرسل',
   retry: 'أعد المحاولة',
   closedNote: 'هذه المحادثة مغلقة.',
+  closedNotSent: 'لم تُرسل: هذه المحادثة مغلقة.',
   startNew: 'ابدأ محادثة جديدة',
   kindLabel: 'عن ماذا؟',
   bug: 'مشكلة',
@@ -130,6 +135,7 @@ const ar: SupportCopy = {
   detailsHint: 'ماذا حدث، وماذا كنت تتوقع؟',
   start: 'أرسل الرسالة',
   startFailed: 'لم تُرسل. تحقّق من الاتصال وحاول مجددًا.',
+  attachNotSaved: 'أُرسلت رسالتك، لكن لقطات الشاشة لم تُرفق. أضفها في المحادثة.',
   contextNote: 'نرفق إصدار التطبيق والجهاز واللغة لنساعدك أسرع.',
   attachType: 'يمكن إرفاق الصور فقط.',
   attachSize: 'حجم الصورة أكبر من 5 ميجابايت.',

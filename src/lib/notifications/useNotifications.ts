@@ -11,6 +11,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { selectActivePlan } from '@/lib/budget/activePlan'
 import { cycleKeyOf } from '@/lib/budget/activations'
 import { isLearning } from '@/lib/budget/learning'
+import { useSkippedInstalments } from '@/lib/savings/skippedInstalments'
 
 const READ_STORAGE_KEY = 'buddget-notifications-read'
 
@@ -23,6 +24,7 @@ export type AppNotification = {
     | 'savings_nudge'
     | 'recurring_due'
     | 'recurring_tomorrow'
+    | 'savings_skipped'
   title: string
   body: string
   severity: 'warning' | 'info' | 'critical'
@@ -83,6 +85,7 @@ export function useNotifications() {
     return plan ? isLearning(plan, st.budgetPlanActivations, cycleKeyOf(new Date(), st.settings.monthStartDay), st.settings.baseCurrency, st.exchangeRates) : false
   })
   const viewingPastOrFuture = useFinanceStore((st) => monthFilter !== cycleKeyOf(new Date(), st.settings.monthStartDay))
+  const skipped = useSkippedInstalments((st) => st.skipped)
 
   const [readIds, setReadIds] = useState<Set<string>>(() => loadReadIds())
   const [serverNotifications, setServerNotifications] = useState<ServerNotificationRow[]>([])
@@ -162,8 +165,19 @@ export function useNotifications() {
       })
     }
 
+    for (const k of skipped) {
+      list.push({
+        id: `savings_skipped:${k.ruleId}:${k.due}`,
+        type: 'savings_skipped',
+        title: t.notifications.savingsSkippedTitle,
+        body: t.notifications.savingsSkippedBody(`${k.amount} ${k.currency}`, k.pocketName),
+        severity: 'warning',
+        createdAt: k.at,
+      })
+    }
+
     return list
-  }, [monthFilter, viewingPastOrFuture, stats, t, planLearning])
+  }, [monthFilter, viewingPastOrFuture, stats, t, planLearning, skipped])
 
   const localUnread = useMemo(
     () => notifications.filter((n) => !readIds.has(n.id)).length,

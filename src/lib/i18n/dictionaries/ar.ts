@@ -2403,6 +2403,8 @@ export const ar: Dictionary = {
     monthEndBodyDays: (n) => `المتبقي في شهر الميزانية: ${arCount(n, 'day')}. واصل!`,
     savingsNudgeTitle: 'لم تدخر هذا الشهر بعد 🌱',
     savingsNudgeBody: 'حتى المبلغ الصغير يتراكم. سجل مدخراً اليوم وحافظ على الزخم.',
+    savingsSkippedTitle: 'تم تخطّي قسط ادخار',
+    savingsSkippedBody: (amount, pocket) => `تعذّر تجنيب ${amount} في ${pocket}: الحساب ليس فيه هذا المبلغ متاحًا. لم يُنقل أي مال.`,
     recurringDueBody: (name, amount, currency) =>
       `دفعة ${name} بمبلغ ${amount} ${currency} مستحقة اليوم. هل أكملت الدفع؟`,
     recurringTomorrowBody: (name, amount, currency) =>
@@ -2674,6 +2676,7 @@ export const ar: Dictionary = {
     relinkTitle: 'نقل البطاقة؟',
     relinkBody: 'مصروفاتها اللي فاتت واللي جاية هتتحسب على {account}.',
     unlinkBody: 'مصروفاتها اللي فاتت واللي جاية مش هتتحسب على {account} تاني.',
+    deleteCardBody: 'البطاقة هتختفي من قوايمك. المصروفات اللي اتسجلت عليها هتفضل في السجل.',
     relinkConfirm: 'انقل البطاقة',
     chooseProvider: 'اختر المزوّد',
     searchProviderPlaceholder: 'ابحث في البنوك والمحافظ والبطاقات…',
