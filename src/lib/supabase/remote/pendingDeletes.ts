@@ -66,7 +66,8 @@ export function deleteTimesOf(pending: PendingDeletes): ReadonlyMap<string, stri
 
 /**
  * Folds one store change into the set: an id gone from a synced list is a delete (its first delete time is kept), an id
- * that is back is an Undo. Null when nothing changed. The caller skips changes that came from the server.
+ * added back is an Undo (a row that was there before and after, such as a stale cached copy, is not). Null when nothing
+ * changed. The caller skips changes that came from the server.
  */
 export function trackDeletes(pending: PendingDeletes, prev: Lists, next: Lists, at: string): PendingDeletes | null {
   let out: PendingDeletes | null = null
@@ -76,12 +77,13 @@ export function trackDeletes(pending: PendingDeletes, prev: Lists, next: Lists, 
     if (before === after || !before || !after) continue
     const known = pending[key] ?? {}
     const live = new Set(after.map((r) => r.id))
+    const was = new Set(before.map((r) => r.id))
     let slice: Record<string, string> | null = null
     for (const r of before) {
       if (!live.has(r.id) && r.id !== DEFAULT_CASH_ID && !(r.id in known)) (slice ??= { ...known })[r.id] = at
     }
     for (const id of Object.keys(known)) {
-      if (live.has(id)) delete (slice ??= { ...known })[id]
+      if (live.has(id) && !was.has(id)) delete (slice ??= { ...known })[id]
     }
     if (!slice) continue
     out = { ...(out ?? pending), [key]: slice }

@@ -298,6 +298,23 @@ describe('finance sync flush / re-baseline', () => {
       expect(readPendingDeletes('u1')).toEqual({})
     })
 
+    it('a delete flushed while a pull is in flight stays pending until that pull is merged', async () => {
+      let answer!: (v: unknown) => void
+      vi.mocked(pullDelta).mockReturnValueOnce(new Promise((r) => { answer = r }) as never)
+      vi.mocked(applyDelta).mockImplementation((() => ({ marker: 'merged', settings: { theme: 'light' } })) as never)
+      const sync = syncFinanceNow()
+      await vi.advanceTimersByTimeAsync(0)
+      // The user deletes now; the debounced flush lands the delete while the pull's answer is still on its way.
+      writePendingDeletes('u1', { expenses: { e1: 'T' } })
+      await flushFinanceNow()
+      expect(readPendingDeletes('u1')).toEqual({ expenses: { e1: 'T' } })
+      answer({ cursor: 'c1', profile: null, expenses: { upserts: [], deletedIds: [] } })
+      await sync
+      expect([...(vi.mocked(applyDelta).mock.calls[0]![3] as Set<string>)]).toEqual(['e1'])
+      expect(readPendingDeletes('u1')).toEqual({})
+      vi.mocked(applyDelta).mockReset()
+    })
+
     it('the pull merge into the store is told about them; the server baseline fold is not', async () => {
       writePendingDeletes('u1', { expenses: { e1: 'T' } })
       h.flushDiff.mockResolvedValue(failed)

@@ -242,6 +242,12 @@ describe('pending delete set bookkeeping', () => {
     expect(trackDeletes(first, before, after, iso(T0 + 5_000))).toBeNull()
   })
 
+  it('a row that was there before and after (a stale cached copy) is not an Undo', () => {
+    const cached = { ...emptySnapshot(), expenses: [expenseAt('e1', 1, T0)] }
+    const edited = { ...emptySnapshot(), expenses: [expenseAt('e1', 1, T0), expenseAt('e2', 2, T0)] }
+    expect(trackDeletes({ expenses: { e1: iso(T0) } }, cached, edited, iso(T0 + 1))).toBeNull()
+  })
+
   it('the built-in Cash method is never recorded', () => {
     const before = { ...emptySnapshot(), paymentMethods: [{ id: 'pm_default_cash' } as PaymentMethod] }
     expect(trackDeletes({}, before, emptySnapshot(), iso(T0))).toBeNull()

@@ -30,6 +30,7 @@ import { deepEqual } from '@/lib/supabase/remote/diff'
 import { holdParkedBack } from '@/lib/supabase/remote/parkedRows'
 import {
   ackDeletes, clearPendingDeletes, deletedIdsOf, dropDeleted, hasPendingDeletes, readPendingDeletes, trackDeletes, writePendingDeletes,
+  type PendingDeletes,
 } from '@/lib/supabase/remote/pendingDeletes'
 import type { ParkedRow } from '@/lib/supabase/remote/sync'
 import { hasUnpersistedWrites, STORAGE_QUOTA_EVENT } from '@/lib/store/safeLocalStorage'
@@ -122,6 +123,17 @@ export function suspendFinanceSync(): void {
  * switch still forces the flip (belt-and-suspenders on top of clearBudgetData).
  */
 let lastPulledUserId: string | null = null
+
+/**
+ * Deletes a flush got onto the server while a pull was in flight. That pull may have read the server before the delete
+ * landed, so they stay pending (and filtered out of its merge) until it is merged.
+ */
+let pullsInFlight = 0
+const heldAcks: PendingDeletes[] = []
+function ackSentDeletes(userId: string, sent: PendingDeletes): void {
+  if (pullsInFlight > 0) heldAcks.push(sent)
+  else writePendingDeletes(userId, ackDeletes(readPendingDeletes(userId), sent))
+}
 
 /** True while the store is written from the server (a merged pull, a reset): those removals are not the user's deletes. */
 let applyingServer = false
@@ -228,13 +240,13 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     let cancelled = false
     async function pull() {
       // On native the OS status lands after mount; deciding earlier reads a stale "online" and fails in airplane mode.
-      await networkReady
-      if (cancelled) return
       // L1-B: the store is persisted on a debounce, so a reload right after a delete can boot on a copy that still has the row.
       if (useFinanceStore.getState().profile.id === userId) {
         const stale = dropDeleted(useFinanceStore.getState(), readPendingDeletes(userId))
         if (stale) fromServer(() => useFinanceStore.setState(stale))
       }
+      await networkReady
+      if (cancelled) return
       // Warm cache-first path: this user's data is already persisted in
       // localStorage, so render it instantly and reconcile in the background.
       // The reconcile goes through `syncFinanceNow()` (flush → pull → re-baseline)
@@ -393,7 +405,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         }
         if (!result.anyError) {
           // The deletes this flush carried are on the server now; one made or redone meanwhile stays for the next flush.
-          if (hasPendingDeletes(deletes)) writePendingDeletes(userId, ackDeletes(readPendingDeletes(userId), deletes))
+          if (hasPendingDeletes(deletes)) ackSentDeletes(userId, deletes)
           // Rows the server refused on their own merit stay "unsent" in the baseline; everything else is delivered.
           const delivered = adopted.size > 0 ? { ...next, incomeEvents: next.incomeEvents.filter((e) => !adopted.has(e.id)) } : next
           prevSnap.current = holdParkedBack(delivered, prev, result.parked ?? [])
@@ -687,6 +699,24 @@ async function runFullSync(
   userId: string,
   delivered: Snapshot | null,
   stillCurrent: () => boolean = () => true,
+): Promise<PullResult> {
+  pullsInFlight++
+  try {
+    return await pullAndMerge(supabase, userId, delivered, stillCurrent)
+  } finally {
+    if (--pullsInFlight === 0) {
+      // Signed out meanwhile: the wipe already forgot them.
+      if (!syncSuspended) for (const sent of heldAcks) writePendingDeletes(userId, ackDeletes(readPendingDeletes(userId), sent))
+      heldAcks.length = 0
+    }
+  }
+}
+
+async function pullAndMerge(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  delivered: Snapshot | null,
+  stillCurrent: () => boolean,
 ): Promise<PullResult> {
   // Sign-out (or a new mount) while a request was in flight: its answer must not be written back into a wiped store.
   const stale = () => syncSuspended || !stillCurrent()
