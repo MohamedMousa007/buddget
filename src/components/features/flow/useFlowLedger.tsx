@@ -35,6 +35,7 @@ import { useWeekStart } from '@/hooks/useWeekStart'
 import { smsAccountLabelKind } from '@/lib/accounts/unplacedSms'
 import { storedMethodId } from '@/lib/accounts/resolve'
 import { repaymentsReceived } from '@/lib/debts/repaymentsReceived'
+import { isBorrowedMoney } from '@/lib/income/borrowed'
 import { applyPassThrough, labelledPassThroughPairs, rememberedYesPairs } from '@/lib/spending/passThrough'
 import { firstOpenFlag, type FlagRowKind } from '@/lib/sms/flagPrompts'
 import type { SmsFlag } from '@/lib/sms/smsFlags'
@@ -287,6 +288,7 @@ export function useFlowLedger() {
       template?: IncomeSource
       event?: IncomeEvent
       legacySourceId?: string
+      linkedDebtId?: string
     }
     const incomes: IncomeLike[] = []
     for (const e of incomeEvents) {
@@ -316,6 +318,7 @@ export function useFlowLedger() {
         at: Date.parse(s.createdAt),
         paymentMethodId: s.paymentMethodId,
         legacySourceId: s.id,
+        linkedDebtId: s.linkedDebtId,
       })
     }
     for (const inc of incomes) {
@@ -325,6 +328,8 @@ export function useFlowLedger() {
       const daysLate = inc.event && recurring ? eventDaysLate(inc.event) : null
       const notLinked = Boolean(inc.event && unmatched.has(inc.event.id))
       const passedThrough = inc.event?.exclusion === 'pass_through'
+      const borrowed = isBorrowedMoney(inc.event ?? inc)
+      const notIncome = Boolean(inc.event?.exclusion) || borrowed
       const pmLabel = methodLabel(inc.paymentMethodId ? pmById.get(inc.paymentMethodId) : undefined)
       // §8.4/§8.5: only a payment method is a destination; never "Main account".
       const dest = pmLabel ? (
@@ -351,7 +356,7 @@ export function useFlowLedger() {
         date: inc.date,
         at: inc.at,
         amountBase,
-        counted: !passedThrough,
+        counted: !notIncome,
         facet: recurring ? (inc.sourceType ?? 'other') : ONE_TIME_INCOME,
         methodId: inc.paymentMethodId,
         row: {
@@ -368,6 +373,8 @@ export function useFlowLedger() {
             title: inc.name,
             titleBadge: openFlag(inc.event, 'income') ?? (passedThrough ? (
               <Badge variant="muted" size="xs" className="shrink-0">{t.flow.passThrough}</Badge>
+            ) : borrowed ? (
+              <Badge variant="muted" size="xs" className="shrink-0">{t.flow.repaymentNotIncome}</Badge>
             ) : possiblePassThrough.has(inc.id) ? (
               <Badge variant="muted" size="xs" className="shrink-0">{t.flow.possiblePassThrough}</Badge>
             ) : daysLate ? (
@@ -391,7 +398,7 @@ export function useFlowLedger() {
                 dest
               ),
             amount: amountNode('+', amountBase, false),
-            amountColor: passedThrough ? 'var(--color-brand-text-muted)' : 'var(--color-brand-green)',
+            amountColor: notIncome ? 'var(--color-brand-text-muted)' : 'var(--color-brand-green)',
             sub: sub(amountBase, ''),
           },
           swipe: {

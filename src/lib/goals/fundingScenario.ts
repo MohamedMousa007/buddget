@@ -1,9 +1,10 @@
 import type { BudgetCategory, IncomeEvent } from '@/lib/store/types'
+import { isBorrowedMoney } from '@/lib/income/borrowed'
 
 export type FundingScenario = 'A' | 'B' | 'C'
 
 export interface FundingScenarioInput {
-  incomeEvents: Pick<IncomeEvent, 'receivedDate' | 'status'>[]
+  incomeEvents: Pick<IncomeEvent, 'receivedDate' | 'status' | 'sourceType' | 'linkedDebtId' | 'exclusion'>[]
   budgetCategories: Pick<BudgetCategory, 'budgetedAmount'>[]
   budgetPlanCount: number
   /** `YYYY-MM` of the current month; income in it does not count as a full month. */
@@ -13,7 +14,7 @@ export interface FundingScenarioInput {
 /** A: budget + income. B: income history only. C: nothing yet. Only changes copy, never disables an option. */
 export function detectFundingScenario(s: FundingScenarioInput): FundingScenario {
   const hasIncome = s.incomeEvents.some(
-    (e) => e.status === 'confirmed' && e.receivedDate.slice(0, 7) < s.currentMonth,
+    (e) => e.status === 'confirmed' && !e.exclusion && !isBorrowedMoney(e) && e.receivedDate.slice(0, 7) < s.currentMonth,
   )
   const hasBudget = s.budgetPlanCount > 0 || s.budgetCategories.some((c) => c.budgetedAmount > 0)
   if (hasBudget && hasIncome) return 'A'

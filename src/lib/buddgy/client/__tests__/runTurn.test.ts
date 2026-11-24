@@ -206,3 +206,29 @@ describe('BAI-7 / BAI-10 read taint', () => {
     }
   })
 })
+
+describe('J9: the user\'s own words reach the tools', () => {
+  it('add_goal with saved_in "elsewhere" lands in the account the user named, this message or an earlier one', async () => {
+    const QNB = 'c3c3c3c3-0000-0000-0000-000000000003'
+    useFinanceStore.setState({
+      goals: [], savingsAccounts: [], savingsTransactions: [],
+      paymentMethods: [{ id: QNB, name: 'QNB Alahli', type: 'bank_account', currency: 'EGP', isDefault: false, openingBalance: 5000, openingAt: '2020-01-01T00:00:00.000Z' } as never],
+    })
+    const call: TurnEvent = { t: 'calls', parts: [], calls: [{ name: 'add_goal', args: { name: 'QA Car', target: 20000, saved: 3000, saved_in: 'elsewhere' } }] }
+    apiFetchAuth.mockResolvedValueOnce(sse([meta, call, done]))
+    const history = [{ role: 'user' as const, text: 'I saved it in my QNB Alahli account' }, { role: 'model' as const, text: 'Somewhere else then?' }]
+    const out = await runTurn({ ...base, history, text: 'make it 3000', intent: 'action', onText: () => undefined })
+    expect(out.proposals[0].preview.rows.find((r) => r.label === 'Where it is')?.value).toBe('Set aside in QNB Alahli')
+  })
+})
+
+describe('every user message of the chat reaches the tools', () => {
+  it('ctx.userTexts holds all user messages, newest first, and no model text', async () => {
+    const history = Array.from({ length: 6 }, (_, i) => [{ role: 'user' as const, text: `u${i}` }, { role: 'model' as const, text: `m${i}` }]).flat()
+    const spy = vi.spyOn(TOOLS.get('add_goal')!.write!, 'propose')
+    apiFetchAuth.mockResolvedValueOnce(sse([meta, { t: 'calls', parts: [], calls: [{ name: 'add_goal', args: { name: 'X', target: 10 } }] }, done]))
+    await runTurn({ ...base, history, text: 'now', intent: 'action', onText: () => undefined })
+    expect(spy.mock.calls[0][1].userTexts).toEqual(['now', 'u5', 'u4', 'u3', 'u2', 'u1', 'u0'])
+    spy.mockRestore()
+  })
+})

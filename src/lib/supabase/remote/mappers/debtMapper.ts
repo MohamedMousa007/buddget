@@ -78,6 +78,10 @@ export function debtToRow(d: Debt, userId: string): DebtInsert {
     installment_provider_name: d.installmentProviderName ?? null,
     linked_credit_card_debt_id: d.linkedCreditCardDebtId ?? null,
     linked_payment_method_id: serverPaymentMethodId(d.linkedPaymentMethodId),
+    principal_payment_method_id: serverPaymentMethodId(d.principalPaymentMethodId),
+    principal_amount: d.principalAmount ?? null,
+    principal_currency: (d.principalCurrency as Currency | undefined) ?? null,
+    principal_at: d.principalAt ?? null,
     credit_limit: d.creditLimit ?? null,
     // Drive the billing cycle / next due date / minimum payment. Without these the card
     // is unusable on a second device — getCurrentBillingCycleExpenses bails and the card
@@ -117,6 +121,10 @@ export function debtFromRow(row: DebtRow): Debt {
     status: (row.status as 'active' | 'cleared' | null) ?? 'active',
     clearedAt: row.cleared_at ?? undefined,
     linkedPaymentMethodId: row.linked_payment_method_id ?? undefined,
+    principalPaymentMethodId: row.principal_payment_method_id ?? undefined,
+    principalAmount: row.principal_amount ?? undefined,
+    principalCurrency: (row.principal_currency as DebtCurrency | null) ?? undefined,
+    principalAt: row.principal_at ?? undefined,
     creditLimit: row.credit_limit ?? undefined,
     paymentDueDay: row.payment_due_day ?? undefined,
     gracePeriodDays: row.grace_period_days ?? undefined,

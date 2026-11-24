@@ -1,5 +1,6 @@
 import type { FinanceStore } from '@/lib/store/types'
 import { expenseAmountInBase } from '@/lib/utils/calculations'
+import { isBorrowedMoney } from '@/lib/income/borrowed'
 
 /**
  * A question Buddgy asks of the user's own data when LIVE_APP_DATA isn't enough
@@ -43,7 +44,7 @@ export function runLookup(store: FinanceStore, q: LookupQuery): string {
     if (!events.length) return `No income found for ${range}.`
     return [
       `Income ${range}: ${events.length} entries`,
-      ...events.slice(0, MAX_ROWS).map((e) => `${e.receivedDate} · ${e.name} · ${e.currency} ${e.amount} · ${e.status}`),
+      ...events.slice(0, MAX_ROWS).map((e) => `${e.receivedDate} · ${e.name} · ${e.currency} ${e.amount} · ${e.status}${isBorrowedMoney(e) ? ' · borrowed, not income' : ''}`),
     ].join('\n')
   }
 

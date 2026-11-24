@@ -13,6 +13,7 @@ export function isPaymentMethodReferenced(s: Refs, id: string): boolean {
     || s.subscriptions.some((x) => x.paymentMethodId === id)
     || s.incomeSources.some((x) => x.paymentMethodId === id)
     || s.savingsAccounts.some((a) => a.heldInPaymentMethodId === id)
+    || s.debts.some((d) => d.principalPaymentMethodId === id)
     || s.debts.some((d) => d.linkedPaymentMethodId === id
       && (d.startingBalance > 0
         || s.debtPayments.some((p) => p.debtId === d.id)

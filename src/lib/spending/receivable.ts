@@ -1,6 +1,7 @@
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Expense, IncomeEvent } from '@/lib/store/types'
 import { tryConvertCurrency } from '@/lib/utils/currency'
+import { isBorrowedMoney } from '@/lib/income/borrowed'
 
 const DAY = 86_400_000
 const WINDOW_DAYS = 60
@@ -16,7 +17,7 @@ export function repaymentCandidates(expense: Expense, incomes: readonly IncomeEv
   const from = new Date(`${expense.date.slice(0, 10)}T00:00:00`).getTime()
   return incomes
     .filter((i) => ['confirmed', 'late', 'partial'].includes(i.status)
-      && !i.templateId && !i.linkedDebtId && !i.linkedSavingsAccountId
+      && !i.templateId && !isBorrowedMoney(i) && !i.linkedSavingsAccountId
       && String(i.currency) === accountCurrency
       && new Date(`${i.receivedDate.slice(0, 10)}T00:00:00`).getTime() >= from - DAY
       && new Date(`${i.receivedDate.slice(0, 10)}T00:00:00`).getTime() <= from + WINDOW_DAYS * DAY)

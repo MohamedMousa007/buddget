@@ -38,6 +38,9 @@ import { useActionToast } from '@/components/ui/ActionToast'
 import { useT } from '@/lib/i18n'
 import { defaultMethodId, storedMethodId } from '@/lib/accounts/resolve'
 import { recurringDueDayFor } from '@/lib/utils/recurringDebtPayments'
+import { settlePrompt } from '@/lib/prompts/settle'
+import { principalDuplicateKey } from '@/lib/debts/principalDuplicate'
+import { findPrincipalMatch, linkedExpensePatch, linkedIncomePatch, principalAccount, principalLegFields, principalMovesByDefault } from '@/lib/debts/principalLeg'
 
 type NewDebtPayload = Omit<Debt, 'id' | 'createdAt'>
 
@@ -61,9 +64,13 @@ export function useAddDebtSheet() {
     addDebtPayment,
     addDebtPaymentWithExpense,
     addRecurringDebtPayment,
+    updateExpense,
+    updateIncomeEvent,
     debts,
     debtPayments,
     expenses,
+    incomeEvents,
+    incomeSources,
     paymentMethods,
     settings,
     exchangeRates,
@@ -77,9 +84,13 @@ export function useAddDebtSheet() {
       addDebtPayment: s.addDebtPayment,
       addDebtPaymentWithExpense: s.addDebtPaymentWithExpense,
       addRecurringDebtPayment: s.addRecurringDebtPayment,
+      updateExpense: s.updateExpense,
+      updateIncomeEvent: s.updateIncomeEvent,
       debts: s.debts,
       debtPayments: s.debtPayments,
       expenses: s.expenses,
+      incomeEvents: s.incomeEvents,
+      incomeSources: s.incomeSources,
       paymentMethods: s.paymentMethods,
       settings: s.settings,
       exchangeRates: s.exchangeRates,
@@ -149,6 +160,10 @@ export function useAddDebtSheet() {
   const [paymentMethodId, setPaymentMethodId] = useState(
     () => defaultMethodId(paymentMethods)
   )
+  // Principal leg (create only): null = follow the default answer.
+  const [principalMovedChoice, setPrincipalMoved] = useState<boolean | null>(null)
+  const [principalLinkChoice, setPrincipalLinked] = useState<boolean | null>(null)
+  const [principalNow, setPrincipalNow] = useState(() => Date.now())
   const [paymentRateError, setPaymentRateError] = useState('')
   const [paymentScheduleMode, setPaymentScheduleMode] = useState<'one_time' | 'recurring'>('one_time')
   const [recurringFrequency, setRecurringFrequency] = useState<DebtRecurringFrequency>('monthly')
@@ -329,6 +344,7 @@ export function useAddDebtSheet() {
     if (!methodSeeded.current) {
       methodSeeded.current = true
       setPaymentMethodId(defaultMethodId(paymentMethods))
+      setPrincipalNow(Date.now())
     }
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [isOpen, debtSheetPaymentOnly, debtSheetPrefillDebtId, paymentMethods, isPayDebtFlow])
@@ -402,7 +418,29 @@ export function useAddDebtSheet() {
     setGoalDuration('12')
     setGoalUnit('months')
     setGoalCadence('monthly')
+    setPrincipalMoved(null)
+    setPrincipalLinked(null)
   }, [settings.baseCurrency])
+
+  // Did creating this debt move an account? Asked only for a new personal debt through a tracked account of the
+  // user's own (never a credit card, BNPL or gold). A ledger row that already is this money is linked instead.
+  const principalAcct = useMemo(
+    () => (!isEditFlow && debtType === 'personal' && !isGold ? principalAccount(paymentMethodId, paymentMethods) : null),
+    [isEditFlow, debtType, isGold, paymentMethodId, paymentMethods],
+  )
+  const principalMatch = useMemo(() => {
+    const amount = parseFloat(startingBalance)
+    if (!principalAcct || Number.isNaN(amount)) return null
+    return findPrincipalMatch({
+      direction, accountId: principalAcct.id, amount, currency: clampDebtFiatToAllowed(settings, currency),
+      at: principalNow, expenses, incomeEvents, incomeSources, monthStartDay: settings.monthStartDay, rates: exchangeRates, paymentMethods,
+    })
+  }, [principalAcct, startingBalance, direction, settings, currency, principalNow, expenses, incomeEvents, incomeSources, exchangeRates, paymentMethods])
+  // A transfer out is linked unless the user says otherwise; a credit is only ever linked on the user's own Yes.
+  const principalLinked = !!principalMatch && (principalLinkChoice ?? direction === 'they_owe')
+  // With a matching row in the ledger the safe default is No: a second leg must be the user's explicit choice.
+  const principalMoved = !!principalAcct && !principalLinked
+    && (principalMovedChoice ?? (!principalMatch && principalMovesByDefault(principalAcct, principalNow)))
 
   const canSubmitNewDebt = useMemo(() => {
     if (debtType === 'credit_card') {
@@ -523,7 +561,15 @@ export function useAddDebtSheet() {
       void _cur; void _gold; void _karat; void _via
       updateDebt(editingDebt.id, currencyLocked ? unlocked : rest)
     } else {
-      addDebt(payload)
+      const leg = principalAcct && principalMoved ? principalLegFields(principalAcct, total, payload.currency, new Date().toISOString()) : {}
+      const debtId = addDebt({ ...payload, ...leg })
+      if (principalLinked && principalMatch) {
+        if (principalMatch.kind === 'expense') updateExpense(principalMatch.id, linkedExpensePatch(debtId))
+        else updateIncomeEvent(principalMatch.id, linkedIncomePatch(debtId))
+      } else if (principalMatch && 'principalAt' in leg) {
+        // The user saw this row and booked the money apart from it: that is the answer, the duplicate check stays quiet.
+        settlePrompt(principalDuplicateKey(debtId, principalMatch.id))
+      }
     }
 
     showToast(tI18n.common.toastDebtAdded)
@@ -570,6 +616,12 @@ export function useAddDebtSheet() {
     showToast,
     tI18n,
     submit,
+    principalAcct,
+    principalMoved,
+    principalLinked,
+    principalMatch,
+    updateExpense,
+    updateIncomeEvent,
   ])
 
   const handleAddPayment = useCallback(() => {
@@ -855,6 +907,12 @@ export function useAddDebtSheet() {
     setPaymentNotes,
     paymentMethodId,
     setPaymentMethodId,
+    principalAccount: principalAcct,
+    principalMatch,
+    principalLinked,
+    setPrincipalLinked,
+    principalMoved,
+    setPrincipalMoved,
     paymentRateError,
     setPaymentRateError,
     paymentScheduleMode,

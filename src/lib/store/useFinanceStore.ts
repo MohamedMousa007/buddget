@@ -2,6 +2,7 @@ import { applyMethodExclusion, isMethodExcluded } from '@/lib/spending/exclusion
 import { removePaymentMethod } from '@/lib/accounts/removePaymentMethod'
 import { relinkNeedsConfirm } from '@/lib/accounts/cardLink'
 import { hasAccountHistory } from '@/lib/accounts/kinds'
+import { isLinkedPrincipalExpense } from '@/lib/debts/principalLeg'
 import { defaultMethodId } from '@/lib/accounts/resolve'
 import { pocketCloseAdjustments } from '@/lib/accounts/pocketCloseAdjustments'
 import { create } from 'zustand'
@@ -215,12 +216,18 @@ function migrateShowAllCurrenciesInForms(prevSettings: Record<string, unknown>):
 }
 
 /** Drops the ids that point at a deleted debt, and at the payments that went with it, keeping every expense and income row. */
-function unlinkDebt(state: Pick<FinanceStore, 'expenses' | 'incomeEvents' | 'incomeSources' | 'debtPayments'>, debtId: string) {
+function unlinkDebt(state: Pick<FinanceStore, 'expenses' | 'incomeEvents' | 'incomeSources' | 'debtPayments' | 'debts'>, debtId: string) {
   const gone = new Set(state.debtPayments.filter((p) => p.debtId === debtId).map((p) => p.id))
   const at = new Date().toISOString()
+  const debt = state.debts.find((d) => d.id === debtId)
   const touchesExpense = (e: Expense) => e.linkedDebtId === debtId || (!!e.linkedDebtPaymentId && gone.has(e.linkedDebtPaymentId))
+  // A transfer linked as the lent principal left spending only because of the debt: with the debt gone it counts again.
+  const unlinked = (e: Expense): Expense => ({
+    ...e, linkedDebtId: undefined, linkedDebtPaymentId: undefined, updatedAt: at,
+    ...(debt && isLinkedPrincipalExpense(e, debt) ? { spendExclusion: undefined } : {}),
+  })
   return {
-    expenses: state.expenses.map((e) => (touchesExpense(e) ? { ...e, linkedDebtId: undefined, linkedDebtPaymentId: undefined, updatedAt: at } : e)),
+    expenses: state.expenses.map((e) => (touchesExpense(e) ? unlinked(e) : e)),
     incomeEvents: state.incomeEvents.map((e) => (e.linkedDebtId === debtId ? { ...e, linkedDebtId: undefined, updatedAt: at } : e)),
     incomeSources: state.incomeSources.map((i) => (i.linkedDebtId === debtId ? { ...i, linkedDebtId: undefined, updatedAt: at } : i)),
   }

@@ -183,10 +183,11 @@ export interface IncomeEvent {
   /** The server's row version as pulled; echoed on push so a stale copy cannot undo a server change. */
   serverRev?: number
   /**
-   * Set when the user confirmed this credit only passed through them: it leaves income totals, the account balance
-   * still counts it, and clearing it counts it again.
+   * Set when the user confirmed this credit only passed through them (`pass_through`), or the server booked it as
+   * one side of a move between the user's own accounts (`own_transfer`): it leaves income totals, the account
+   * balance still counts it, and clearing it counts it again.
    */
-  exclusion?: 'pass_through' | null
+  exclusion?: 'pass_through' | 'own_transfer' | null
   notes?: string
   createdAt: string
   updatedAt: string
@@ -856,6 +857,17 @@ export interface Debt {
   installmentProviderName?: string
   /** When provider is `credit_card`, links to the card debt row. */
   linkedCreditCardDebtId?: string
+
+  /**
+   * Principal leg: the account the money left when lent (`they_owe`) or arrived in when borrowed (`i_owe`). Unset =
+   * creating the debt moved no account. Amount and currency are kept apart from `startingBalance` so editing the
+   * debt total never rewrites an account balance.
+   */
+  principalPaymentMethodId?: string
+  principalAmount?: number
+  principalCurrency?: DebtCurrency
+  /** Instant (ISO) the principal moved. */
+  principalAt?: string
 }
 
 export interface DebtPayment {

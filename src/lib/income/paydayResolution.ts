@@ -4,6 +4,7 @@ import { convertCurrency } from '@/lib/utils/currency'
 import { buildOccurrences, missedAfterDaysFor, type IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
 import { toISODate, type WeekendFirstDay } from '@/lib/utils/paydaySchedule'
 import type { IncomeEvent, IncomeSource } from '@/lib/store/types'
+import { isBorrowedMoney } from '@/lib/income/borrowed'
 
 /**
  * What the Flow In segment has to ask the user about — and nothing else. Payday UI shows
@@ -139,7 +140,7 @@ export function incomeMatches(
 ): IncomeMatch[] {
   const since = toISODate(new Date(today.getTime() - MATCH_LOOKBACK_DAYS * DAY))
   const credits = events
-    .filter((e) => !e.templateId && REALIZED.has(e.status) && e.receivedDate >= since && !e.linkedDebtId && !e.linkedSavingsAccountId)
+    .filter((e) => !e.templateId && REALIZED.has(e.status) && e.receivedDate >= since && !isBorrowedMoney(e) && !e.linkedSavingsAccountId)
     .sort((a, b) => b.receivedDate.localeCompare(a.receivedDate))
   const claimed = new Set<string>()
   const out: IncomeMatch[] = []

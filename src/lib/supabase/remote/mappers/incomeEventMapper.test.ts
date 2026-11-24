@@ -21,6 +21,17 @@ describe('server-stamped SMS flags (I8)', () => {
   })
 })
 
+describe('income exclusion', () => {
+  it.each(['pass_through', 'own_transfer'] as const)('%s survives a pull and the next push', (exclusion) => {
+    const pulled = incomeEventFromRow({ ...incomeEventToRow(base, 'u1'), deleted_at: null, updated_at: 'x', exclusion } as unknown as IncomeEventRow)
+    expect(pulled.exclusion).toBe(exclusion)
+    expect(incomeEventToRow(pulled, 'u1').exclusion).toBe(exclusion)
+  })
+  it('an unknown value reads as counted', () => {
+    expect(incomeEventFromRow({ ...incomeEventToRow(base, 'u1'), exclusion: 'other' } as unknown as IncomeEventRow).exclusion).toBeUndefined()
+  })
+})
+
 describe('server row version (I8 known limit)', () => {
   it('echoes serverRev when pulled and leaves the key out when absent', () => {
     const row = { ...incomeEventToRow({ ...base, serverRev: 2 }, 'u1'), deleted_at: null, updated_at: 'x' } as unknown as IncomeEventRow

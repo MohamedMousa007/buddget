@@ -34,6 +34,9 @@ export const INTERNAL_MOVE_CATEGORIES: ReadonlySet<string> = new Set<ExpenseCate
 
 export const isInternalMoveCategory = (category: string | null | undefined): boolean => category != null && INTERNAL_MOVE_CATEGORIES.has(category)
 
+/** Categories a transfer to another person is booked under (bank messages and manual rows). A purchase is never one. */
+export const PERSON_TRANSFER_CATEGORIES: ReadonlySet<string> = new Set<ExpenseCategory>(['Instapay', 'Remittance'])
+
 /** True when a category is a money-movement (excluded from spend totals/budgets/charts). */
 export function isNonSpendCategory(category: string | null | undefined): boolean {
   return category != null && NON_SPEND_CATEGORIES.has(category)

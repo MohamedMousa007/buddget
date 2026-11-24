@@ -2,6 +2,59 @@
 
 Branch `claude/qa-gaps-e2e` (from main 6c42cb52). Run locally on the owner's instruction (not the cloud runner): `next build --webpack` with `NEXT_PUBLIC_DEV_AUTH_BYPASS=0`, empty `NEXT_PUBLIC_API_BASE_URL`, `TZ=Africa/Cairo`, then `next start -p 3101`, `QA_BASE=http://localhost:3101`, one worker, no retries, phone project (390 px, touch). Live Frankfurt DB; only synthetic `qa-e2e-*@buddget-qa.test` users, all deleted (0 left at the end).
 
+## Follow-up run on `claude/qa-r3-followups` (2026-11-25)
+
+Same local setup: production build (`next build --webpack`, `NEXT_PUBLIC_DEV_AUTH_BYPASS=0`, empty `NEXT_PUBLIC_API_BASE_URL`, `TZ=Africa/Cairo`), `next start -p 3101`, one worker, no retries, phone project. No `src/` change was made in this run, so every suite ran on one bundle.
+
+| Group | Specs | Result |
+|---|---|---|
+| L1 lifecycle (new) | `round3/l-lifecycle` L1 | passed (all 10 steps, every check on screen, store and server; three fresh sign-ins rebuilt the numbers from server rows) |
+| L2, L3 (new, `test.fail`) | `round3/l-lifecycle` L2, L3 | failed as expected on findings L1-A and L1-B below |
+| Round 3 journeys | `round3/{w-money (W1-W11), j-accounts-flow, p-planner-conflicts}`, `k-accounts-flow` | 20 of 20 passed |
+| J9 Buddgy (real model) | `round3/y-buddgy-rules`, 3 runs | 3 of 3 passed |
+| Regression | `b-bank-expense`, `c-debt`, `d-pockets`, `f-goal`, `h-cards-link`, `s-system-cash`, `q-quick-add` | 20 of 20 passed |
+| Round 2 core | `round2/r1-core` | 19 of 19 passed |
+| API | `api/round3/admin-devices.spec.ts` | 4 of 4 passed |
+| SMS | `sms/multi-split.mjs` | 13 of 13 checks passed, 0 synthetic rows left |
+
+### New rows
+
+| Item | Test(s) | Result | Label |
+|---|---|---|---|
+| L1 whole lifecycle: goal with already saved in QNB, new pocket, add and withdraw, fund the goal from a pocket and from its account, release at 0 free (R8), over-free refused with the amount, lend 5,000 and repayment, achieve, delete a pocket. Net worth moves only on the loan and its repayment | `round3/l-lifecycle` L1 | pass | AV |
+| W8+ lending: the add-debt question "Did this money leave CIB now?" (screenshot) | W8 | pass | AV |
+| Borrowed money is not income: linked to the deposit that brought it, CIB holds it once, Money in 0, Flow "Not income" | W9 | pass | AV |
+| Late bank row after a debt with a leg: "Is this the 5,000 EGP you lent Omar?" on Flow; Yes leaves one debit (CIB 15,000, leg cleared, row linked); No keeps both (10,000) and is not asked again after a reload | W10, W11 | pass | AV |
+| J9 fixed (Buddgy keeps already-saved money in the named account) | `round3/y-buddgy-rules`, 3 runs | 3 of 3 pass | AV (model behaviour: unit tests are the proof) |
+| Close account fixed (button says "Close account", says it can't be reopened, no "Delete") | W1 + screenshot | pass | AV; owner to look at the screenshot |
+
+Screenshots for the owner, in `evidence/`: `w8-add-debt-left-cib-question.png`, `w10-flow-same-money-prompt.png`, `w9-borrowed-not-income-row.png`, `w1-close-account-dialog.png`.
+
+### Findings (not fixed: they change money or sync behaviour, owner's call)
+
+**L1-A. Wealth > Add money into a pocket held in an account books a transfer from another account, with no check on that account.** Pinned by L2.
+- `canCarryLeg` (`src/lib/savings/accountLeg.ts`) never offers the holder itself as "From account", so with a second tracked account the sheet defaults to it. `AddSavingsSheetV3` passes that id as `fromAccountId`, and the balance engine books a transfer into the holder.
+- `depositRefusal` (`src/lib/savings/pocketHome.ts`) checks free money only when the source is the holder. A source that is another account is never checked.
+- Seen: CIB 5,000 with a 500 pocket, QNB 1,000. Add 2,000 to the CIB pocket, nothing else touched: QNB -1,000, CIB 7,000. In L1 the same path took 14,000 out of QNB while QNB held 7,000 for a goal: QNB -1,000, and Available showed 14,000 against 6,000 real.
+- This contradicts `depositLegId`'s own comment ("defaulting to the primary would book a transfer between two accounts that never happened").
+- Fix options: (a) default a held pocket's source to its holder (no leg, a plain set-aside capped at free), or (b) keep the cross-account transfer but refuse more than the source has free. Both are money-semantics choices. L1 sets money aside through Accounts > account > Set aside, which is correct and capped.
+
+**L1-B. A pocket deleted from Wealth can come back moments later and is never deleted on the server.** Pinned by L3.
+- Seen in about 5 of 8 attempts: the confirm resolves and the row leaves the store, then comes back within about 200 ms. The server row keeps `deleted_at` null. It happens with both held and standalone pockets. It is more likely right after a page load, while the first pull is running.
+- Likely cause (not proven): `applyListWith` / `mergeList` (`src/lib/supabase/remote/delta.ts`, `merge.ts`) union a pull's upserts with the local list. A row deleted locally but not yet delivered is re-added from a delta fetched before the delete. After that it equals the delivered copy, so it is never sent as a delete.
+- This is sync conflict policy (local delete against a server copy), a deep-technical change that needs tests first. Not changed here. L1 step 10 deletes again until the pocket stays gone (0 retries on the final run) and records the count.
+
+**L1-C. Delete copy for a pocket held in an account is wrong.** It says "11,000 EGP will leave your net worth". Net worth stayed 30,000, which is correct, because the money stays in CIB. This is a copy change, so it needs a mockup.
+
+**L1-D (cosmetic).** The Flow row title for an SMS credit truncates to "Bank cr…" next to the "Not income" badge at 390 px (`w9-borrowed-not-income-row.png`).
+
+### Cleanup
+- 0 `qa-e2e-*` users left. `sms_tracking_templates_ai`: 70 before and 70 after, 0 rows created during the run (only curated and multi-split texts were posted).
+
+### Test-only corrections
+- W8 (and L1): the debt sheet shows a method field that opens the carousel, not account chips, once there is more than Cash. The shared helper `chooseMethod` (`e2e/journeys/lib/ui.ts`) uses the chip when there is one, else the carousel.
+- The service-role seed for a late Instapay row omits `category_source`. The SMS route writes only `ai_suggested` or null there, and the check constraint refuses `sms`.
+
 ## Final run (after the one product fix, on a rebuilt bundle)
 
 | Group | Specs | Result |
@@ -30,8 +83,8 @@ Branch `claude/qa-gaps-e2e` (from main 6c42cb52). Run locally on the owner's ins
    - A retired row also blocks re-learning that exact regex (`route.ts:546`). The owner may prefer to delete it; it has 0 matches, so deleting is safe.
 4. **Buddgy can put already-saved money "Somewhere else" when the user named the account (J9; 1 of 6 runs).** The user said: "I already saved 8000 EGP … that money is in my QNB Alahli account" (QNB has 5,000). The model then proposed the goal with "Where it is: Somewhere else (not tracked here)" and "Net worth rises". It did this again for 3,000, which QNB could hold. Approving that card would count money already in QNB as new money, which inflates net worth.
    - The tool does refuse more than the account holds (`resolveSavedHome` → `over_available`, unit-tested). The model then chose `elsewhere` instead of asking, against the spec's "ask the user, never guess".
-   - This is a prompt or tool-contract decision: for example, refuse `elsewhere` right after an `over_available` refusal in the same turn, or have the card name the account the user gave. It touches net worth, so it was **not changed here**.
    - The other 5 runs proposed "Set aside in QNB Alahli".
+   - **Fixed (follow-up branch `claude/qa-r3-followups`).** Root cause: `resolveSavedHome` (`src/lib/buddgy/tools/exec/goals.ts`) took `saved_in: "elsewhere"` with no check against what the user said, because tools never saw the user's words (`runTurn` built `{ now, locale }` only). The `over_available` hint also suggested "somewhere else", and `saved_in` matched only an exact name or ref. Now `runTurn` passes the user's last 4 messages (`ToolContext.userTexts`). `src/lib/goals/namedHome.ts` matches account name, label, first word and catalogue brand names, in English and Arabic. When the user named one tracked account, that account is the home even if the model sent "elsewhere" or nothing. The amount is still capped at what the account has available. If the user named two accounts, or an account plus "somewhere else", Buddgy asks. The cap refusal no longer invites "elsewhere". Unit tests were written failing first, in `goalPocket.test.ts` (J9 block) and `runTurn.test.ts`. J9 now also asserts that no "Somewhere else (not tracked here)" card appears. It passed 6 of 6 on a production build. The defect was 1 in 6 on the live model, so the unit tests are the proof and the runs only back them up.
 5. **Synthetic admin audit rows stay.** `admin_audit_log` has an immutable trigger, so the 16 rows written by the `qa-e2e-pr-r3-admin` actor (and 19 from earlier `adm` and `sup` runs today) cannot be deleted by a suite. They hold no personal data.
 
 ## Coverage map
@@ -90,7 +143,7 @@ The guide that numbers J1-J6 is not in the repo: searches of `docs/` and the PR 
 | J1-J6 (inferred: card linking, goal already-saved, reserve cap, release, Flow moves, Cash currency with balance) | H1, F2/F3, D5, D6, K1, K2 (PR #40) | pass in the regression group | AV |
 | J7 unknown account "Not mine" | J7 | pass | AV |
 | J8 full Cash currency | K2 + K3 | pass | AV |
-| J9 Buddgy respects pocket/goal rules | `round3/y-buddgy-rules` J9 (real model). Step 2 checks the `saved_in` home: pocket held in QNB with 3,000, QNB still 5,000. Step 1 only shows that no proposal set aside 8,000 in QNB; the `over_available` refusal itself is unit-level (`goals` tool tests) | 5 of 6 runs pass; 1 fails on finding 4 | AV for `saved_in` (when the model complies); refusal unit-only; **finding 4 open** |
+| J9 Buddgy respects pocket/goal rules | `round3/y-buddgy-rules` J9 (real model). Step 2 checks the `saved_in` home: pocket held in QNB with 3,000, QNB still 5,000. Step 1 only shows that no proposal set aside 8,000 in QNB; the `over_available` refusal itself is unit-level (`goals` tool tests) | 5 of 6 runs pass; 1 fails on finding 4. After the fix: 6 of 6 | AV for `saved_in`; refusal unit-only; finding 4 fixed |
 
 ## Test-only corrections made on the way (none weakened)
 - `multi-split.mjs`: a resend with a **new** capture id is a second purchase by design (QA-31), so "resend" means the same event id.

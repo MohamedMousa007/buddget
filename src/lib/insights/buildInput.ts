@@ -21,6 +21,7 @@ import { dailySpendingRate, daysElapsedInMonth, projectedMonthSpend, totalDaysIn
 import type { Debt, Expense, FinanceStore, Subscription } from '@/lib/store/types'
 import { MIN_EXPENSES } from './detectors'
 import type { InsightInput } from './types'
+import { isBorrowedMoney } from '@/lib/income/borrowed'
 
 export type InsightSource = Pick<
   FinanceStore,
@@ -107,7 +108,7 @@ export function buildInsightInput(src: InsightSource, leftToSpend: number, now: 
   }
 
   // Confirmed paydays, merged when within 3 days, newest first, only those with a full window of days after them.
-  const payDates = [...new Set(src.incomeEvents.filter((ev) => ev.status === 'confirmed' && ev.amount > 0 && ev.exclusion !== 'pass_through').map((ev) => ev.receivedDate.slice(0, 10)))].sort()
+  const payDates = [...new Set(src.incomeEvents.filter((ev) => ev.status === 'confirmed' && ev.amount > 0 && !ev.exclusion && !isBorrowedMoney(ev)).map((ev) => ev.receivedDate.slice(0, 10)))].sort()
   const merged: Date[] = []
   for (const d of payDates.map((x) => parseISO(`${x}T12:00:00`))) if (merged.length === 0 || differenceInCalendarDays(d, merged[merged.length - 1]) > 3) merged.push(d)
   let firstWeek = 0, restSum = 0, firstDays = 0, restDays = 0, paydayCount = 0, paydayPurchases = 0

@@ -1,6 +1,7 @@
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Expense, IncomeEvent } from '@/lib/store/types'
 import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
+import { PERSON_TRANSFER_CATEGORIES } from '@/lib/constants/categoryMeta'
 import { findPassThroughPairs, type MoneyLeg } from '@/lib/sms/passThrough'
 import { settlePrompt } from '@/lib/prompts/settle'
 
@@ -27,8 +28,7 @@ export function passThroughAnswer(promptState: Record<string, string> | undefine
 
 export interface LedgerPair { expenseId: string; incomeId: string }
 
-/** Categories a transfer to another person is booked under. A purchase is never one leg of a relay. */
-const OUT_CATEGORIES = new Set(['Instapay', 'Remittance'])
+const OUT_CATEGORIES = PERSON_TRANSFER_CATEGORIES
 const RECEIVED = new Set(['confirmed', 'late', 'partial'])
 /** Rows the server could not place share one "no account" bucket: the same unknown account is the likeliest reading. */
 const isKnownAccount = (id: string | undefined): id is string => Boolean(id) && id !== DEFAULT_CASH_ID

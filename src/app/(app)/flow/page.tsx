@@ -32,6 +32,7 @@ import { FlowLedger } from '@/components/features/flow/FlowLedger'
 import { IncomePrompts } from '@/components/features/flow/IncomePrompts'
 import { OwnTransferPrompts } from '@/components/features/flow/OwnTransferPrompts'
 import { SmsFlagPrompts } from '@/components/features/flow/SmsFlagPrompts'
+import { PrincipalDuplicatePrompts } from '@/components/features/flow/PrincipalDuplicatePrompts'
 import { MerchantCategoryPrompt } from '@/components/features/flow/MerchantCategoryPrompt'
 import { CarryStalePrompt } from '@/components/features/savings-v3/CarryStalePrompt'
 import { FlowPendingRow } from '@/components/features/flow/FlowPendingRow'
@@ -232,6 +233,7 @@ export default function FlowPage() {
       {segment !== 'out' ? <IncomePrompts /> : null}
       <OwnTransferPrompts />
       <SmsFlagPrompts />
+      <PrincipalDuplicatePrompts />
       <MerchantCategoryPrompt />
       <CarryStalePrompt />
 

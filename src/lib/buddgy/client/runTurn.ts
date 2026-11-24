@@ -139,7 +139,8 @@ export function executeCalls(calls: WireToolCall[], ctx: ToolContext, limit = MA
 
 export async function runTurn(args: RunTurnArgs): Promise<TurnOutcome> {
   const now = args.now ?? new Date()
-  const ctx: ToolContext = { now, locale: args.locale }
+  const userTexts = [args.text, ...args.history.flatMap((m) => (m.role === 'user' ? [m.text] : [])).reverse()]
+  const ctx: ToolContext = { now, locale: args.locale, userTexts }
   const context = buildContext({ now, route: args.route, text: args.text })
   const messages: WireMessage[] = [...args.history, { role: 'user', text: args.text }]
 

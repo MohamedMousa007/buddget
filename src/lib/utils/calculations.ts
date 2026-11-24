@@ -29,6 +29,7 @@ import { isNonSpendCategory, isNonSpendExpense } from '@/lib/constants/categoryM
 import { convertCurrency, tryConvertCurrency, tryConvertWithGold, type GoldQuote } from './currency'
 import { monthlyPaydayCount, paydayDatesForWindow } from './paydaySchedule'
 import { localDayKey, safeLocalDayKey } from './localDate'
+import { isBorrowedMoney } from '@/lib/income/borrowed'
 
 /** When set, credit card outstanding is derived from expenses + payments. */
 export type DebtBalanceContext = {
@@ -142,7 +143,7 @@ export function calculateMonthlyIncome(
       if (window && !recurringActiveForWindow(source, window.start, window.end)) continue
       const monthlyEq = source.amount * monthlyPaydayCount(source)
       total += convertCurrency(monthlyEq, source.currency, baseCurrency, rates)
-    } else if (window) {
+    } else if (window && !isBorrowedMoney(source)) {
       const { start, end } = window
       const created = parseISO(source.createdAt)
       if (isWithinInterval(created, { start, end })) {
@@ -189,7 +190,7 @@ export function projectedIncomeForMonth(
       if (!recurringActiveForWindow(source, start, end)) continue
       const expected = paydayDatesForWindow(source, start, end).length * source.amount
       total += convertCurrency(expected, source.currency, baseCurrency, rates)
-    } else if (isWithinInterval(parseISO(source.createdAt), { start, end })) {
+    } else if (!isBorrowedMoney(source) && isWithinInterval(parseISO(source.createdAt), { start, end })) {
       total += convertCurrency(source.amount, source.currency, baseCurrency, rates)
     }
   }
@@ -231,7 +232,7 @@ export function actualIncomeForMonth(
   const orphanByOcc = new Map<string, IncomeEvent>()
   for (const e of events) {
     if (e.templateId) {
-      if (e.exclusion) continue // pass-through money is not income; its payday falls back to the projection
+      if (e.exclusion || isBorrowedMoney(e)) continue // pass-through or borrowed money is not income; its payday falls back to the projection
       const t = templateById.get(e.templateId)
       const orphan = !t || !t.isRecurring || !recurringActiveForWindow(t, start, end)
       if (orphan && REALIZED_EVENT_STATUSES.has(e.status) && inWindow(e.occurrenceDate ?? e.receivedDate)) {
@@ -244,8 +245,8 @@ export function actualIncomeForMonth(
     }
     coveredSourceIds.add(e.id) // backfilled one-time events reuse their source id
     if (!inWindow(e.receivedDate)) continue
-    // A credit the user confirmed as pass-through money arrived, but is not their income.
-    if (REALIZED_EVENT_STATUSES.has(e.status) && !e.exclusion) {
+    // A credit the user confirmed as pass-through money, or borrowed money, arrived but is not their income.
+    if (REALIZED_EVENT_STATUSES.has(e.status) && !e.exclusion && !isBorrowedMoney(e)) {
       total += convertCurrency(e.amount, e.currency, baseCurrency, rates)
     }
   }
@@ -257,7 +258,7 @@ export function actualIncomeForMonth(
       const perOccurrence = convertCurrency(t.amount, t.currency, baseCurrency, rates)
       const paydayCount = paydayDatesForWindow(t, start, end).length
       // Window-test by the fulfilled payday when stamped, else by received date.
-      const evForT = events.filter((e) => e.templateId === t.id && !e.exclusion && inWindow(e.occurrenceDate ?? e.receivedDate))
+      const evForT = events.filter((e) => e.templateId === t.id && !e.exclusion && !isBorrowedMoney(e) && inWindow(e.occurrenceDate ?? e.receivedDate))
       if (evForT.length === 0) {
         if (!realizedOnly) total += perOccurrence * paydayCount // == projected; behavior preserved when no events exist
       } else {
@@ -282,7 +283,7 @@ export function actualIncomeForMonth(
         }
         total += sub + (realizedOnly ? 0 : Math.max(0, paydayCount - counted.length) * perOccurrence)
       }
-    } else if (!coveredSourceIds.has(t.id) && inWindow(t.createdAt)) {
+    } else if (!coveredSourceIds.has(t.id) && !isBorrowedMoney(t) && inWindow(t.createdAt)) {
       // One-time source with no event yet (added before Phase 6 wired event creation).
       total += convertCurrency(t.amount, t.currency, baseCurrency, rates)
     }
