@@ -79,15 +79,15 @@ Same local setup, on one bundle built at 4223e088 (`next build --webpack`, `NEXT
 | Finding | Fix | Test(s) | Result | Label |
 |---|---|---|---|---|
 | L1-A held-pocket Add money | Holder is the default source (no leg, capped at its free); another source is a transfer capped at its own free money | L2 (default CIB: CIB 5,000 with 2,500 set aside, QNB 1,000, net worth 6,000, deposit has no leg; QNB 2,000 refused "Only 1,000 EGP is available in QNB Alahli", button disabled); L1 whole lifecycle; older journeys b–s and W1–W11 unchanged | pass | AV; owner to look at `l1a-*` |
-| L1-B deleted pocket resurrected | Persisted pending-delete set; no pull re-adds an id in it | L3 × 5 (20 deletes), L1 step 10 | pass, 0 resurrections | AV |
+| L1-B deleted pocket resurrected | Persisted pending-delete set; no pull re-adds an id in it | L3 × 5 (20 deletes), L1 step 10 | pass; L3: 0 of 20 deletes came back. L1 passed but its retry count was not captured in this run | AV |
 | L1-C delete warning copy | Copy follows the net worth change | Shots: held pocket "The 500 EGP stays in CIB and becomes available again"; outside pocket "300 EGP will leave your net worth"; both in Arabic | taken | MV (copy, owner approves) |
-| L1-D Flow badge wrap | Additive `TransactionRow` variant on Flow | Shot: a long borrowed-credit title with "Not income" on its own line under it, EN and AR. A title longer than the row still ends in "…" on its own line; the badge no longer takes its space | taken | MV |
+| L1-D Flow badge wrap | Additive `TransactionRow` variant on Flow | Before/after: W9's `w9-borrowed-not-income-row.png` now reads "Bank credit" in full with "Not income" under it (it was "Bank cr…"). The `l1d-*` shots use a deliberately long title: the badge sits under it, and a title longer than the row still ends in "…" on its own line | taken | MV |
 
-Screenshots in `evidence/`: `l1a-add-money-held-default-cib-{en,ar}.png`, `l1a-add-money-transfer-refused-{en,ar}.png` (shows the "Transfer from QNB Alahli to CIB" line and the refusal), `l1c-delete-held-stays-{en,ar}.png`, `l1c-delete-outside-leaves-{en,ar}.png`, `l1d-flow-borrowed-not-income-{en,ar}.png`. W9 also refreshed `w9-borrowed-not-income-row.png`.
+Screenshots in `evidence/`: `l1a-add-money-held-default-cib-{en,ar}.png`, `l1a-add-money-transfer-refused-{en,ar}.png` (shows the "Transfer from QNB Alahli to CIB" line and the refusal), `l1c-delete-held-stays-{en,ar}.png`, `l1c-delete-outside-leaves-{en,ar}.png`, `l1d-flow-borrowed-not-income-{en,ar}.png`. W9 also refreshed `w9-borrowed-not-income-row.png`. The evidence account CIB shows 7,500 free (5,000 + the 3,000 borrowed credit - the 500 pocket), not L2's 4,500, because the same user also carries the borrowed row for the L1-D shot. In the refusal shots the Add button is greyed (disabled).
 
 ### Cleanup
 - 0 `qa-e2e-*` and 0 `qa-api-*`/`qa-sec-*` users left (0 before the run).
-- `sms_tracking_templates_ai`: 70 before and 70 after, 0 rows created. One existing active template (id 6886dd33…, created 2026-10-21) had its match count bumped once, during the `j-accounts-flow` SMS steps; nothing was learned.
+- `sms_tracking_templates_ai`: 70 before and 70 after, 0 rows created. One existing active row (id 6886dd33…, created 2026-10-21) has `updated_at` 23:00:00 UTC, during the run; its cause was not verified (no cron job names the table; the on-the-hour time points to a scheduled job rather than a suite). Nothing was learned.
 
 ## Final run (after the one product fix, on a rebuilt bundle)
 
