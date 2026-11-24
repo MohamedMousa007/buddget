@@ -60,11 +60,9 @@ export interface MembershipCopy {
     title: string
     section: string
     billedBy: string
-    manage: (store: string) => string
-    manageHint: string
-    howCancel: string
-    howCancelHint: string
-    steps: { appStore: string[]; playStore: string[] }
+    cancelRow: string
+    cancelInStore: string
+    cancelHandoff: (store: string, date: string | null) => string
     stay: {
       titleMonthly: string
       titleAnnual: string
@@ -77,10 +75,7 @@ export interface MembershipCopy {
     restore: string
     purchases: string
     seeAll: string
-    lastSaw: string
-    receipts: (store: string) => string
     problem: string
-    problemBody: (store: string) => string
     none: string
     noneHint: string
     sparksOf: (n: number) => string
@@ -264,14 +259,9 @@ const en: MembershipCopy = {
     title: 'Plan and billing',
     section: 'Billing and purchases',
     billedBy: 'Billed by',
-    manage: (store) => `Manage in ${store}`,
-    manageHint: 'Payment method, receipts, change plan or cancel',
-    howCancel: 'How to cancel',
-    howCancelHint: '3 steps in your store settings',
-    steps: {
-      appStore: ['Open Settings and tap your name.', 'Tap Subscriptions, then buddget Pro.', 'Tap Cancel Subscription.'],
-      playStore: ['Open Google Play and tap your profile.', 'Tap Payments and subscriptions, then Subscriptions.', 'Choose buddget Pro, then Cancel.'],
-    },
+    cancelRow: 'Cancel subscription',
+    cancelInStore: 'Cancel in store',
+    cancelHandoff: (store, date) => (date ? `You finish cancelling in ${store}. You keep Pro until ${date}.` : `You finish cancelling in ${store}.`),
     stay: {
       titleMonthly: 'Stay with Pro: 30% off your next 2 months',
       titleAnnual: 'Stay with Pro: 20% off your next year',
@@ -284,10 +274,7 @@ const en: MembershipCopy = {
     restore: 'Restore purchases',
     purchases: 'Purchases in buddget',
     seeAll: 'See all',
-    lastSaw: 'What buddget last saw. Your store receipts are the official record:',
-    receipts: (store) => `${store} receipts`,
     problem: 'Problem with a purchase?',
-    problemBody: (store) => `${store} handles these.`,
     none: 'No purchases yet',
     noneHint: 'Pro and Sparks you buy show here.',
     sparksOf: (n) => `${n} Sparks`,
@@ -513,14 +500,9 @@ const ar: MembershipCopy = {
     title: 'الخطة والفوترة',
     section: 'الفوترة والمشتريات',
     billedBy: 'الفوترة عبر',
-    manage: (store) => `الإدارة في ${store}`,
-    manageHint: 'وسيلة الدفع، الإيصالات، تغيير الخطة أو الإلغاء',
-    howCancel: 'كيف تلغي',
-    howCancelHint: '3 خطوات في إعدادات المتجر',
-    steps: {
-      appStore: ['افتح الإعدادات واضغط على اسمك.', 'اضغط على الاشتراكات ثم buddget Pro.', 'اضغط على إلغاء الاشتراك.'],
-      playStore: ['افتح Google Play واضغط على ملفك.', 'اضغط على المدفوعات والاشتراكات ثم الاشتراكات.', 'اختر buddget Pro ثم إلغاء.'],
-    },
+    cancelRow: 'إلغاء الاشتراك',
+    cancelInStore: 'الإلغاء في المتجر',
+    cancelHandoff: (store, date) => (date ? `تكمل الإلغاء في ${store}. تحتفظ ببرو حتى ${date}.` : `تكمل الإلغاء في ${store}.`),
     stay: {
       titleMonthly: 'ابقَ مع برو: خصم 30% على الشهرين القادمين',
       titleAnnual: 'ابقَ مع برو: خصم 20% على سنتك القادمة',
@@ -533,10 +515,7 @@ const ar: MembershipCopy = {
     restore: 'استعادة المشتريات',
     purchases: 'المشتريات في بادجت',
     seeAll: 'عرض الكل',
-    lastSaw: 'هذا آخر ما رآه بادجت. إيصالات المتجر هي السجل الرسمي:',
-    receipts: (store) => `إيصالات ${store}`,
     problem: 'مشكلة في عملية شراء؟',
-    problemBody: (store) => `${store} يتولى هذه الأمور.`,
     none: 'لا مشتريات بعد',
     noneHint: 'ما تشتريه من برو وشرارات يظهر هنا.',
     sparksOf: (n) => `${n} شرارة`,
