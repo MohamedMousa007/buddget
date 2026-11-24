@@ -31,6 +31,8 @@ import { useGoldPrice } from '@/hooks/useGoldPrice'
 import { subscribePushActions } from '@/lib/native/pushActionQueue'
 import { SMS_REVIEW_PUSH_KINDS } from '@/lib/sms/pushKinds'
 import { routeForNotifType } from '@/lib/notifications/pushRoute'
+import { ticketFromPushData } from '@/lib/support/pushCopy'
+import { openSupportThread } from '@/lib/support/openThread'
 import { requestSmsReview } from '@/lib/sms/reviewRequest'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -413,6 +415,8 @@ function SmsPushActionHandler() {
       } else if (kind === 'sms_salary_matched') {
         // No row created (matched to declared salary) — open income.
         navigate('/paydays')
+      } else if (ticketFromPushData(data) !== null) {
+        openSupportThread(ticketFromPushData(data)!)
       } else if (kind === 'notification') {
         const route = routeForNotifType(data.notifType)
         if (route) navigate(route)

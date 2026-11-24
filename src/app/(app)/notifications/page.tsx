@@ -14,6 +14,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { NeedsYouList } from '@/components/notifications/NeedsYouList'
 import { usePendingEntries } from '@/lib/alerts/usePending'
 import { cn } from '@/lib/utils'
+import { openSupportThread } from '@/lib/support/openThread'
 
 const SEVERITY_DOT: Record<'warning' | 'info' | 'critical', string> = {
   critical: 'var(--color-brand-red)',
@@ -28,7 +29,7 @@ const SEVERITY_DOT: Record<'warning' | 'info' | 'critical', string> = {
  */
 export default function NotificationsPage() {
   const t = useT()
-  const { notifications, unreadCount, markAllRead } = useNotifications()
+  const { notifications, unreadCount, markAllRead, markServerReadByIds } = useNotifications()
   const localized = useLocalizedFormatters()
   const formatRelativeTime = useCallback((iso: string) => {
     try { return localized.formatRelativeTime(iso) } catch { return '' }
@@ -115,21 +116,41 @@ export default function NotificationsPage() {
         {notifications.length > 0 ? (
           <Card render={<ul />} padding="none" divide>
             {notifications.map((n) => (
-              <li key={n.id} className="flex gap-3 px-4 py-3.5">
-                <span
-                  className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
-                  style={{ backgroundColor: SEVERITY_DOT[n.severity] }}
-                  aria-hidden
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <p className="text-sm font-medium text-[var(--color-brand-text-primary)] truncate">{n.title}</p>
-                    <span className="shrink-0 text-[0.625rem] text-[var(--color-brand-text-muted)]">
-                      {formatRelativeTime(n.createdAt)}
-                    </span>
-                  </div>
-                  <p className="mt-0.5 text-xs leading-relaxed text-[var(--color-brand-text-secondary)]">{n.body}</p>
-                </div>
+              <li key={n.id} className="flex px-4 py-3.5">
+                {(() => {
+                  const content = (
+                    <>
+                      <span
+                        className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
+                        style={{ backgroundColor: SEVERITY_DOT[n.severity] }}
+                        aria-hidden
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <p className="text-sm font-medium text-[var(--color-brand-text-primary)] truncate">{n.title}</p>
+                          <span className="shrink-0 text-[0.625rem] text-[var(--color-brand-text-muted)]">
+                            {formatRelativeTime(n.createdAt)}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-xs leading-relaxed text-[var(--color-brand-text-secondary)]">{n.body}</p>
+                      </div>
+                    </>
+                  )
+                  const ticket = n.ticketNumber
+                  if (!ticket) return <div className="flex min-w-0 flex-1 gap-3">{content}</div>
+                  return (
+                    <button
+                      type="button"
+                      className="flex min-w-0 flex-1 gap-3 text-start"
+                      onClick={() => {
+                        void markServerReadByIds([n.id])
+                        openSupportThread(ticket)
+                      }}
+                    >
+                      {content}
+                    </button>
+                  )
+                })()}
               </li>
             ))}
           </Card>

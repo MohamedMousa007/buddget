@@ -29,6 +29,8 @@ export type AppNotification = {
   createdAt: string
   /** When `type` is `recurring_due`, user can confirm/snooze from the inbox. */
   recurringId?: string
+  /** A support reply or resolution: tapping the row opens that conversation. */
+  ticketNumber?: number
 }
 
 export type ServerNotificationRow = {
@@ -192,6 +194,7 @@ export function useNotifications() {
       // Server-emitted recurring-due rows carry the recurring id so the inbox can
       // still offer confirm/snooze.
       recurringId: typeof r.metadata?.recurringId === 'string' ? r.metadata.recurringId : undefined,
+      ticketNumber: typeof r.metadata?.ticketNumber === 'number' ? r.metadata.ticketNumber : undefined,
     }))
     return [...mapped, ...notifications].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
   }, [serverNotifications, notifications])
