@@ -10,6 +10,7 @@ import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { AccountLegRow, AmountCurrencyRow, LabeledBlock, NoteField, PocketPickerField, SheetBody, SheetFooter } from '@/components/features/savings-v3/MoneySheetParts'
 import { AddHoldingSheet } from '@/components/features/savings-v3/AddHoldingSheet'
 import { useLegAccount } from '@/components/features/savings-v3/useLegAccount'
+import { useDepositGuard } from '@/components/features/savings-v3/useDepositGuard'
 import type { PocketVM } from '@/components/features/savings-v3/types'
 import { pocketCurrency, selectedPocket } from '@/components/features/savings-v3/selectedPocket'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
@@ -50,15 +51,15 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
 
   const amountNum = parseFloat(amount) || 0
   const selected = selectedPocket(pockets, selectedId, defaultAccountId)
-  const canSubmit = amountNum > 0 && !!selected
   const leg = useLegAccount(selected?.account, selected?.account.currency ?? currency)
+  const guard = useDepositGuard(selected?.account)
+  const mode = source === 'budget' ? 'allocate' : 'declare'
+  const refusal = guard.refusalFor({ amount: amountNum, currency, mode, fromAccountId: leg.accountId })
+  const canSubmit = amountNum > 0 && !!selected && !refusal
 
   const submit = () => {
-    if (!selected || amountNum <= 0) return
-    const ok = deposit(selected.account.id, amountNum, currency, note.trim() || undefined, {
-      mode: source === 'budget' ? 'allocate' : 'declare',
-      fromAccountId: leg.accountId,
-    })
+    if (!selected || amountNum <= 0 || refusal) return
+    const ok = deposit(selected.account.id, amountNum, currency, note.trim() || undefined, { mode, fromAccountId: leg.accountId })
     if (!ok) return showToast(t.moveFailed)
     onClose()
   }
@@ -98,6 +99,12 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
           </LabeledBlock>
 
           {source === 'budget' ? <AccountLegRow leg={leg} label={t.fromAccount} /> : null}
+
+          {refusal ? (
+            <p role="alert" className="text-[0.8125rem] text-[var(--color-brand-amber)]">
+              {guard.message(refusal)}{refusal === 'no_account_leg' ? ` ${t.noAccountLegHint}` : ''}
+            </p>
+          ) : null}
 
           <NoteField open={noteOpen} onOpen={() => setNoteOpen(true)} onClose={() => setNoteOpen(false)} value={note} onChange={setNote}
             labels={{ add: t.note, placeholder: t.notePlaceholder, clear: t.clearNote }} />

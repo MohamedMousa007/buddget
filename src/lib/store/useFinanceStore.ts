@@ -1,7 +1,6 @@
 import { applyMethodExclusion, isMethodExcluded } from '@/lib/spending/exclusion'
 import { removePaymentMethod } from '@/lib/accounts/removePaymentMethod'
 import { pocketCloseAdjustments } from '@/lib/accounts/pocketCloseAdjustments'
-import type { LedgerInput } from '@/lib/accounts/balance'
 import { create } from 'zustand'
 import { cycleKeyOf, prevKey, recordActivation } from '@/lib/budget/activations'
 import { selectActivePlan } from '@/lib/budget/activePlan'
@@ -71,6 +70,7 @@ import { advanceRecurringDebtDueDate, scheduledDueDate } from '@/lib/utils/recur
 import { overpaysDebt } from '@/lib/debts/overpaysDebt'
 import { withGoalDefaults } from '@/lib/goals/goalDefaults'
 import { resolveAccountLeg, incomeEventIdForTx } from '@/lib/savings/accountLeg'
+import { correctionRefusal, depositRefusal, ledgerOf } from '@/lib/savings/pocketHome'
 import { dropExpenseReceipt, restoreExpenseReceipt } from '@/lib/receipt/receiptCascade'
 import { migrateIdsToUuid } from '@/lib/store/migrations/v17_uuid_remap'
 import { resendCashDebtPayments } from '@/lib/store/migrations/v23_cash_debt_payment_resend'
@@ -1755,11 +1755,6 @@ export const useFinanceStore = create<FinanceStore>()(
             })),
           }
           // A held pocket's exits are account legs derived from its rows: freeze them before the rows go.
-          const ledgerOf = (s: FinanceStore): LedgerInput => ({
-            paymentMethods: s.paymentMethods, expenses: s.expenses, incomeEvents: s.incomeEvents, debtPayments: s.debtPayments, debts: s.debts,
-            savingsTransactions: s.savingsTransactions, savingsAccounts: s.savingsAccounts, adjustments: s.accountAdjustments,
-            convert: (a, from, to) => tryConvertCurrency(a, from, to, s.exchangeRates),
-          })
           const freeze = closing?.heldInPaymentMethodId
             ? pocketCloseAdjustments(ledgerOf(state), ledgerOf(nextState), closing.name, new Date().toISOString(), generateId)
             : []
@@ -1817,6 +1812,7 @@ export const useFinanceStore = create<FinanceStore>()(
               ? raw
               : tryConvertWithGold(raw, cIn, acc.currency, state.exchangeRates, state.settings.baseCurrency, goldQuoteOf(state))
           if (amt === null || amt <= 0) return state
+          if (depositRefusal(ledgerOf(state), acc, { amount: amt, mode: opts?.mode, paymentMethodId: opts?.paymentMethodId, fromAccountId: opts?.fromAccountId })) return state
           // Only cash deposits get an account leg; an explicit paymentMethodId (set-aside) is kept as given.
           const legId =
             opts?.paymentMethodId ??
@@ -2018,9 +2014,11 @@ export const useFinanceStore = create<FinanceStore>()(
 
       correctSavingsBalance: (accountId, newBalance, notes) => {
         const nb = Math.max(0, Number(newBalance) || 0)
+        let ok = false
         set((state) => {
           const acc = state.savingsAccounts.find((a) => a.id === accountId)
-          if (!acc) return state
+          if (!acc || correctionRefusal(ledgerOf(state), acc, nb)) return state
+          ok = true
           const diff = nb - acc.currentBalance
           if (Math.abs(diff) < balanceEpsilon(acc.currency)) return state
           const type: SavingsTransaction['type'] = diff > 0 ? 'deposit' : 'withdrawal'
@@ -2048,6 +2046,7 @@ export const useFinanceStore = create<FinanceStore>()(
             goals: reconcileGoalsForState(nextState),
           }
         })
+        return ok
       },
 
       updateSettings: (updates) =>

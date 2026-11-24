@@ -35,9 +35,10 @@ describe('W2 account legs', () => {
     expect(S().savingsTransactions[0].paymentMethodId).toBe('bank')
     expect(bal()).toBe(700)
   })
-  it('declare, explicit null, and no tracked account stamp nothing', () => {
+  it('declare and no tracked account stamp nothing; a budget deposit with no account is refused while accounts are tracked (R16)', () => {
     S().depositToSavings('p1', 100, 'EGP', undefined, { mode: 'declare' })
-    S().depositToSavings('p1', 100, 'EGP', undefined, { fromAccountId: null })
+    expect(S().depositToSavings('p1', 100, 'EGP', undefined, { fromAccountId: null })).toBe(false)
+    expect(S().savingsTransactions).toHaveLength(1)
     expect(S().savingsTransactions.every((t) => !t.paymentMethodId)).toBe(true)
     seed([pocket('p1')], [])
     S().depositToSavings('p1', 100, 'EGP')
@@ -56,9 +57,11 @@ describe('W2 account legs', () => {
     S().correctSavingsBalance('p2', 400)
     expect(bal()).toBe(1000)
   })
-  it('cross-currency account gets no leg (not FX-frozen)', () => {
+  it('cross-currency account cannot carry the leg (not FX-frozen): the budget deposit is refused, new money passes (R16)', () => {
     seed([pocket('u', { currency: 'USD' })])
-    S().depositToSavings('u', 10, 'USD')
+    expect(S().depositToSavings('u', 10, 'USD')).toBe(false)
+    expect(S().savingsTransactions).toHaveLength(0)
+    expect(S().depositToSavings('u', 10, 'USD', undefined, { mode: 'declare' })).toBe(true)
     expect(S().savingsTransactions[0].paymentMethodId).toBeUndefined()
   })
   it('pocket held in the source account gets no leg', () => {

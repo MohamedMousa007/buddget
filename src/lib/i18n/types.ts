@@ -3374,6 +3374,12 @@ export interface Dictionary {
       tipThisMonth: string
       tipOutside: string
       moveFailed: string
+      overAvailable: (amount: string, account: string) => string
+      needsAccount: (account: string) => string
+      noAccountLeg: (currency: string) => string
+      noAccountLegHint: string
+      addAsNewMoney: string
+      setAsideIn: (account: string) => string
       addCta: (amount: string, pocket: string) => string
       choosePocket: string
       searchPockets: string

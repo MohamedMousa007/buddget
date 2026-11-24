@@ -14,6 +14,7 @@ import { withDebtDerived } from '@/lib/goals/debtGoal'
 import { periodsUntil } from '@/lib/goals/goalPlan'
 import { getGoalStatus } from '@/lib/goals/goalStatus'
 import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
+import { depositRefusal, explainDepositRefusal, ledgerOf } from '@/lib/savings/pocketHome'
 import type { Currency, FinanceStore, Goal, GoalCategory, GoalFundingMode } from '@/lib/store/types'
 import { useFinanceStore, goldQuoteOf } from '@/lib/store/useFinanceStore'
 import { tryConvertCurrency, tryConvertWithGold } from '@/lib/utils/currency'
@@ -349,6 +350,11 @@ function planFund(args: Record<string, unknown>, ctx: ToolContext): FundPlan | R
   const target = pocket ?? { currency: goal.currency, name: `${goal.name} pocket` }
   const landed = inPocketCurrency(s, amount, ccy.currency, target)
   if ('error' in landed) return no(landed.error)
+  const refusal = depositRefusal(ledgerOf(s), target, { amount: landed.amount, mode })
+  if (refusal) {
+    const why = explainDepositRefusal(ledgerOf(s), target, refusal)
+    return no(why.error, why.hint)
+  }
   const { current } = progress(s, goal)
   const inGoal = tryConvertWithGold(landed.amount, target.currency, goal.currency, s.exchangeRates, s.settings.baseCurrency, goldQuoteOf(s))
   if (inGoal === null) return no(`No exchange rate from ${target.currency} to ${goal.currency}.`, 'Ask for the amount in the goal currency.')
