@@ -12,6 +12,7 @@ import { adminPost, errorMessage, useAdminQuery } from '../adminClient'
 import { ago, dateTime } from '../format'
 import { useForegroundPoll } from '@/hooks/useForegroundPoll'
 import { slaTone } from '@/lib/support/conversation'
+import { SignedImage } from '@/components/features/settings/hub/support/SignedImage'
 import { useAdminAction } from '../useAdminAction'
 import { AdminSheet } from '../ui/AdminSheet'
 import { DataTable, type Column } from '../ui/DataTable'
@@ -182,9 +183,8 @@ function TicketDetail({ id, status }: { id: string; status: AdminStatus }) {
                 {m.attachments?.length ? (
                   <div className="mt-2 flex flex-wrap gap-2">
                     {m.attachments.map((a, i) => (
-                      <a key={a.url} href={a.url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-[var(--color-brand-border)]" aria-label={`Screenshot ${i + 1}`}>
-                        {/* eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL from private storage */}
-                        <img src={a.url} alt="" loading="lazy" className="h-28 w-auto max-w-[220px] object-cover" />
+                      <a key={`${m.id}-${i}`} href={a.url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-[var(--color-brand-border)]" aria-label={`Screenshot ${i + 1}`}>
+                        <SignedImage src={a.url} className="h-28 w-auto max-w-[220px] object-cover" />
                       </a>
                     ))}
                   </div>

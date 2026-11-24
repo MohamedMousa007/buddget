@@ -31,8 +31,9 @@ test.afterAll(async () => {
   for (const u of [user, other]) if (u) await svc(`support_tickets?user_id=eq.${u.id}`, { method: 'DELETE' })
   if (staff) {
     await svc(`admin_sessions?user_id=eq.${staff.id}`, { method: 'DELETE' })
+    // The audit actor may be the staff row or the account: clear both so dropUser is never blocked.
     const st = (await svc(`admin_staff?user_id=eq.${staff.id}&select=id`)).json?.[0]?.id
-    if (st) await svc(`admin_audit_log?actor_id=eq.${st}`, { method: 'DELETE' })
+    for (const actor of [st, staff.id].filter(Boolean)) await svc(`admin_audit_log?actor_id=eq.${actor}`, { method: 'DELETE' })
   }
   for (const u of [user, other, staff]) if (u) await dropUser(u)
 })

@@ -103,7 +103,7 @@ describe.skipIf(!pgEnabled)('admin domain routes (real Postgres)', () => {
       const n = await q<{ title: string; message: string; metadata: { ticketNumber: number } }>(`select title, message, metadata from notifications where user_id=$1`, [u.id])
       expect(n).toHaveLength(1)
       expect(n[0]).toMatchObject({ message: 'Please update the app' })
-      expect(n[0]!.title).toContain('Support')
+      expect(n[0]!.title).toContain('buddget team')
       const detail = await call(ticketGet, { ...as(agent), params: { id: tk.id } })
       expect(detail.body.messages).toHaveLength(3)
       expect(await post(ticketPost, agent, { op: 'reply', message: '' }, { params: { id: tk.id } }).then((r) => r.status)).toBe(400)

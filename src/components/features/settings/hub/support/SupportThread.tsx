@@ -12,6 +12,7 @@ import { useSupportCopy } from '@/lib/support/supportCopy'
 import { cn } from '@/lib/utils'
 import { SupportComposer } from './SupportComposer'
 import { SupportCsat } from './SupportCsat'
+import { SignedImage } from './SignedImage'
 import { PHOTO_ONLY_BODY, type PendingMessage, type ThreadMessage, type ThreadTicket } from './types'
 
 const POLL_MS = 15_000
@@ -36,6 +37,8 @@ export function SupportThread({ number, onTicket, onStartNew }: { number: number
   const [messages, setMessages] = useState<ThreadMessage[] | null>(null)
   const [failed, setFailed] = useState(false)
   const [pending, setPending] = useState<PendingMessage[]>([])
+  /** Rated in this view: the CSAT card stays to say thanks even after the next poll reports it answered. */
+  const [rated, setRated] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const seen = useRef(0)
 
@@ -45,11 +48,13 @@ export function SupportThread({ number, onTicket, onStartNew }: { number: number
       if (!res.ok) throw new Error(String(res.status))
       const data = (await res.json()) as { ticket: ThreadTicket; messages: ThreadMessage[] }
       setTicket(data.ticket)
-      setMessages(data.messages)
+      setMessages((prev) => {
+        // Opening the thread (or a new reply arriving while it is open) moved the read mark on the server: the badge follows.
+        if (!prev || data.messages.length !== prev.length) void refreshSupportUnread()
+        return data.messages
+      })
       setFailed(false)
       onTicket(data.ticket)
-      // Opening the thread moved the read mark on the server: the badge follows.
-      void refreshSupportUnread()
     } catch {
       setFailed(true)
     }
@@ -96,6 +101,7 @@ export function SupportThread({ number, onTicket, onStartNew }: { number: number
         }
         if (!res.ok) throw new Error(String(res.status))
         await load()
+        // React batches this with the reload's state, so the sent message never shows twice.
         setPending((list) => list.filter((x) => x.localId !== p.localId))
       } catch {
         setPending((list) => list.map((x) => (x.localId === p.localId ? { ...x, state: 'failed' } : x)))
@@ -152,9 +158,8 @@ export function SupportThread({ number, onTicket, onStartNew }: { number: number
                   {b.images.length ? (
                     <div className={cn('mb-1 grid gap-1', b.images.length > 1 ? 'grid-cols-2' : 'grid-cols-1')}>
                       {b.images.map((src, k) => (
-                        <a key={src} href={src} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-xl" aria-label={`${copy.photo} ${k + 1}`}>
-                          {/* eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL from private storage */}
-                          <img src={src} alt="" loading="lazy" className="max-h-48 w-full object-cover outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10" />
+                        <a key={`${b.key}-${k}`} href={src} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-xl" aria-label={`${copy.photo} ${k + 1}`}>
+                          <SignedImage src={src} className="max-h-48 w-full object-cover outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10" />
                         </a>
                       ))}
                     </div>
@@ -194,7 +199,7 @@ export function SupportThread({ number, onTicket, onStartNew }: { number: number
           })}
         </ol>
         {ticket?.display_status === 'resolved' ? <p className="mx-auto mt-5 max-w-xs text-center text-xs text-[var(--color-brand-text-muted)] [text-wrap:pretty]">{copy.resolvedNote}</p> : null}
-        {ticket?.can_rate ? <div className="mt-4"><SupportCsat number={number} onDone={() => setTicket((t) => (t ? { ...t, can_rate: false } : t))} /></div> : null}
+        {ticket?.can_rate || rated ? <div className="mt-4"><SupportCsat number={number} onDone={() => setRated(true)} /></div> : null}
       </div>
       {ticket?.can_reply === false ? (
         <div className="shrink-0 space-y-2 border-t border-[var(--color-brand-border)] px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center">

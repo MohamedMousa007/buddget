@@ -47,6 +47,7 @@ export interface SupportCopy {
   loadFailed: string
   back: string
   resolvedNote: string
+  openThread: string
 }
 
 const en: SupportCopy = {
@@ -95,6 +96,7 @@ const en: SupportCopy = {
   loadFailed: 'Could not load this. Try again.',
   back: 'Back',
   resolvedNote: 'Marked resolved. Reply if you still need help and it reopens.',
+  openThread: 'Open conversation',
 }
 
 const ar: SupportCopy = {
@@ -143,6 +145,7 @@ const ar: SupportCopy = {
   loadFailed: 'تعذّر التحميل. حاول مجددًا.',
   back: 'رجوع',
   resolvedNote: 'تم وضعها كمحلولة. ردّ إن كنت ما زلت تحتاج مساعدة وستُفتح من جديد.',
+  openThread: 'افتح المحادثة',
 }
 
 export function useSupportCopy(): SupportCopy {

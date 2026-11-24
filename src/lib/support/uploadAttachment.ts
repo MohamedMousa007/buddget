@@ -13,7 +13,11 @@ export async function uploadSupportImage(file: File): Promise<Attachment | null>
     })
     if (!res.ok) return null
     const { path, signedUrl } = (await res.json()) as { path: string; signedUrl: string }
-    const put = await fetch(signedUrl, { method: 'PUT', headers: { 'Content-Type': file.type, 'x-upsert': 'false' }, body: file })
+    // Same request storage-js uploadToSignedUrl makes for a raw body; the public key satisfies the API gateway.
+    const headers: Record<string, string> = { 'Content-Type': file.type, 'x-upsert': 'false', 'cache-control': 'max-age=3600' }
+    const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+    if (key) headers.apikey = key
+    const put = await fetch(signedUrl, { method: 'PUT', headers, body: file })
     return put.ok ? { path, mime: file.type, size: file.size } : null
   } catch {
     return null
