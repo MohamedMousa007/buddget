@@ -1685,6 +1685,12 @@ export type Database = {
           notes: string | null
           payment_due_day: number | null
           person: string | null
+          principal_amount: number | null
+          principal_at: string | null
+          principal_currency:
+            | Database["public"]["Enums"]["currency_code"]
+            | null
+          principal_payment_method_id: string | null
           received_via: Database["public"]["Enums"]["debt_received_via"] | null
           relationship: string | null
           remaining_amount: number | null
@@ -1733,6 +1739,12 @@ export type Database = {
           notes?: string | null
           payment_due_day?: number | null
           person?: string | null
+          principal_amount?: number | null
+          principal_at?: string | null
+          principal_currency?:
+            | Database["public"]["Enums"]["currency_code"]
+            | null
+          principal_payment_method_id?: string | null
           received_via?: Database["public"]["Enums"]["debt_received_via"] | null
           relationship?: string | null
           remaining_amount?: number | null
@@ -1781,6 +1793,12 @@ export type Database = {
           notes?: string | null
           payment_due_day?: number | null
           person?: string | null
+          principal_amount?: number | null
+          principal_at?: string | null
+          principal_currency?:
+            | Database["public"]["Enums"]["currency_code"]
+            | null
+          principal_payment_method_id?: string | null
           received_via?: Database["public"]["Enums"]["debt_received_via"] | null
           relationship?: string | null
           remaining_amount?: number | null
@@ -1801,6 +1819,13 @@ export type Database = {
           {
             foreignKeyName: "debts_linked_payment_method_id_fkey"
             columns: ["linked_payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "debts_principal_payment_method_id_fkey"
+            columns: ["principal_payment_method_id"]
             isOneToOne: false
             referencedRelation: "payment_methods"
             referencedColumns: ["id"]

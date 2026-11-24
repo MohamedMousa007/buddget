@@ -13,7 +13,9 @@ import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { Button } from '@/components/ui/button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { goalAmountPerPayment, goalPaymentCount, type GoalFrequency, type GoalUnit } from '@/lib/debts/borrowGoal'
-import { useT } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
+import { formatLocalized } from '@/lib/i18n/dateFormat'
+import { accountTitle } from '@/components/features/accounts/accountDisplay'
 import { soft } from './heroCardShared'
 
 const MICRO = 'font-semibold text-[0.625rem] tracking-[0.08em] uppercase text-[var(--color-brand-text-muted)]'
@@ -22,6 +24,7 @@ const MICRO = 'font-semibold text-[0.625rem] tracking-[0.08em] uppercase text-[v
 const GOLD_PRICE: Record<GoldKarat, number> = { 24: 4600, 22: 4210, 21: 4025, 18: 3450 }
 export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: boolean }) {
   const dict = useT()
+  const { locale } = useLocale()
   const t = dict.debts
   const stats = useMonthlyStats()
   const isGold = d.receivedVia === 'gold'
@@ -141,6 +144,7 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
           </div>
           {/* Received via = the payment-method card carousel (§5) */}
           <PaymentMethodPicker label={d.direction === 'i_owe' ? t.fReceivedVia : t.fGivenVia} value={d.paymentMethodId} onChange={d.setPaymentMethodId} paymentMethods={d.paymentMethods} />
+          {d.principalAccount ? <PrincipalLegQuestion d={d} account={accountTitle(d.principalAccount)} matchDate={d.principalMatch ? formatLocalized(new Date(`${d.principalMatch.date}T12:00:00`), 'd MMM', locale) : null} /> : null}
         </>
       )}
 
@@ -202,6 +206,41 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
           </div>
         ) : null}
       </div>
+    </div>
+  )
+}
+
+/** Did creating the debt move the picked account? One explicit answer; a matching bank transfer is linked instead of counted twice. */
+function PrincipalLegQuestion({ d, account, matchDate }: { d: AddDebtHook; account: string; matchDate: string | null }) {
+  const t = useT().debts
+  const lent = d.direction === 'they_owe'
+  const question = lent ? t.fPrincipalLeft(account) : t.fPrincipalArrived(account)
+  const hint = d.principalLinked
+    ? (lent ? t.fPrincipalMatchOutHint(account) : t.fPrincipalMatchInHint(account))
+    : d.principalMoved ? (lent ? t.fPrincipalOutHint(account) : t.fPrincipalInHint(account)) : t.fPrincipalNoHint(account)
+  return (
+    <div className="flex flex-col gap-2">
+      {matchDate ? (
+        <div className="flex items-center justify-between gap-3 rounded-[16px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-4 py-3.5">
+          <span className="min-w-0 text-sm font-bold text-[var(--color-brand-text-primary)]">{lent ? t.fPrincipalMatchOut(matchDate) : t.fPrincipalMatchIn(matchDate)}</span>
+          <Switch size="touch" aria-label={lent ? t.fPrincipalMatchOut(matchDate) : t.fPrincipalMatchIn(matchDate)} checked={d.principalLinked} onCheckedChange={d.setPrincipalLinked} />
+        </div>
+      ) : null}
+      {d.principalLinked ? null : (
+        <>
+          <div className="text-sm font-bold text-[var(--color-brand-text-primary)]">{question}</div>
+          <SegmentedControl
+            ariaLabel={question}
+            value={d.principalMoved ? 'yes' : 'no'}
+            onChange={(v) => d.setPrincipalMoved(v === 'yes')}
+            options={[
+              { value: 'yes' as const, label: t.fPrincipalYes },
+              { value: 'no' as const, label: t.fPrincipalNo },
+            ]}
+          />
+        </>
+      )}
+      <p aria-live="polite" className="px-0.5 text-[0.75rem] text-[var(--color-brand-text-muted)]">{hint}</p>
     </div>
   )
 }

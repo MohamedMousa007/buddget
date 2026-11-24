@@ -109,6 +109,14 @@ export function computeBalances(input: LedgerInput, asOf: number = Date.now()): 
     apply(resolveAccountId(p.paymentMethodId, pms), sign * paid.amount, paid.currency, instantOf(p.occurredAt, p.date))
   }
 
+  // Principal leg: lending takes the money out of the account, borrowing puts it in. Only debts that carry one
+  // (the user said the money moved); every other debt moves an account through its payments alone.
+  for (const d of input.debts) {
+    if (!d.principalPaymentMethodId || !d.principalAt || !d.principalAmount || d.isGold) continue
+    const sign = isOwedToUser(d) ? -1 : 1
+    apply(resolveAccountId(d.principalPaymentMethodId, pms), sign * d.principalAmount, d.principalCurrency ?? d.currency, new Date(d.principalAt).getTime())
+  }
+
   const pockets = new Map(input.savingsAccounts.map((s) => [s.id, s]))
   const eventsById = new Map(input.incomeEvents.map((e) => [e.id, e]))
   const groups = new Map<string, SavingsTransaction[]>()

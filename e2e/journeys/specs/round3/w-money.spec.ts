@@ -4,6 +4,7 @@
 // received money: it credits the account, Flow marks it "Not income", Money in leaves it out. BUD-103: a cleared non-card
 // debt owes 0. BUD-87: add-money to a goal says what is left or over. Card carousel details follow the selected card.
 // Default payment method: explicit choice, else Cash; the Cash row's menu sets it as default.
+// DR-6: lending from a tracked account moves it (principal leg on the debt), the repayment moves it back.
 import type { Page } from '@playwright/test'
 import { expect, goto, localState, localWait, money, test, tile } from '../../lib/fixtures'
 import { serverRows } from '../../lib/server'
@@ -192,5 +193,60 @@ test('W7 default payment method: Cash until one is chosen, then the chosen accou
     await goto(page, '/flow')
     await addExpense(page, { amount: 12, description: 'QA W7 three', category: 'Food' })
     expect(await methodOf('QA W7 three')).toBe(cash.id)
+  })
+})
+
+test('W8 lending from a tracked account takes the money out of it; the repayment puts it back, nothing is created [DR-6]', async ({ page, user }) => {
+  const [cib] = await seed(page, user.id, 'payment_methods', [bank('CIB', 20000)])
+  await localMethod(page, cib.id)
+  await goto(page, '/accounts')
+  await expect.poll(() => netWorth(page)).toBe(20000)
+
+  await test.step('New borrow, Owed to me, 5,000 given via CIB: the sheet asks whether the money left CIB, Yes by default', async () => {
+    await goto(page, '/debts')
+    await page.getByRole('button', { name: /^(Add a debt|New debt)$/ }).first().click()
+    await dialog(page, 'Add debt').getByRole('button', { name: /^Borrow / }).click()
+    const d = dialog(page, 'New borrow')
+    await d.getByRole('radio', { name: 'Owed to me' }).click()
+    await d.getByRole('textbox', { name: 'e.g. Ahmed' }).fill('Omar')
+    await d.getByRole('textbox', { name: 'e.g. Rent help' }).fill('QA W8 lend')
+    await d.getByRole('textbox', { name: 'Amount' }).fill('5000')
+    await blur(page)
+    await d.getByRole('button', { name: 'CIB', exact: true }).first().click()
+    const ask = d.getByRole('radiogroup', { name: 'Did this money leave CIB now?' })
+    await expect(ask.getByRole('radio', { name: 'Yes' })).toBeChecked()
+    await expect(d).toContainText('It is not counted as spending.')
+    await d.getByRole('button', { name: 'Add borrow' }).click()
+    await expect(d).toBeHidden()
+  })
+
+  const debt = await localWait(page, (s) => s.debts.find((x: any) => x.name === 'QA W8 lend'))
+
+  await test.step('the leg is on the debt row; no expense and no income row was written', async () => {
+    await serverRows('debts', user.id, `id=eq.${debt.id}`, (r: any[]) => r[0]?.principal_payment_method_id === cib.id && Number(r[0]?.principal_amount) === 5000 && r[0]?.principal_currency === 'EGP' && !!r[0]?.principal_at)
+    expect(await serverRows('expenses', user.id, 'select=id&deleted_at=is.null', () => true)).toHaveLength(0)
+    expect(await serverRows('income_events', user.id, 'select=id', () => true)).toHaveLength(0)
+  })
+
+  await test.step('CIB and net worth are 5,000 lower; Money in is untouched', async () => {
+    await goto(page, '/accounts')
+    await expect(page.getByRole('button', { name: /^CIB/ }).first()).toContainText('15,000.00')
+    await expect.poll(() => netWorth(page)).toBe(15000)
+    await goto(page, '/flow')
+    expect(await tile(page, 'Money in')).toBe(0)
+  })
+
+  await test.step('Omar repays 5,000 into CIB: the account and net worth are back where they started', async () => {
+    await goto(page, '/debts')
+    await page.getByRole('button', { name: 'Log receipt from QA W8 lend' }).click()
+    const d = dialog(page, 'Record money received')
+    await d.getByRole('textbox', { name: 'Amount' }).fill('5000')
+    await d.getByRole('button', { name: 'CIB', exact: true }).first().click()
+    await blur(page)
+    await d.getByRole('button', { name: /^Receive 5,000 EGP$/ }).click()
+    await expect(d).toBeHidden()
+    await goto(page, '/accounts')
+    await expect(page.getByRole('button', { name: /^CIB/ }).first()).toContainText('20,000.00')
+    await expect.poll(() => netWorth(page)).toBe(20000)
   })
 })

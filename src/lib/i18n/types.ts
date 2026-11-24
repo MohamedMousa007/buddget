@@ -1372,6 +1372,17 @@ export interface Dictionary {
     fGoldValue: (v: string, price: string) => string
     fReceivedVia: string
     fGivenVia: string
+    fPrincipalLeft: (account: string) => string
+    fPrincipalArrived: (account: string) => string
+    fPrincipalYes: string
+    fPrincipalNo: string
+    fPrincipalOutHint: (account: string) => string
+    fPrincipalInHint: (account: string) => string
+    fPrincipalNoHint: (account: string) => string
+    fPrincipalMatchOut: (date: string) => string
+    fPrincipalMatchIn: (date: string) => string
+    fPrincipalMatchOutHint: (account: string) => string
+    fPrincipalMatchInHint: (account: string) => string
     fPayoffGoal: string
     fPayoffGoalHint: string
     fMonthly: string

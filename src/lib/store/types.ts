@@ -856,6 +856,17 @@ export interface Debt {
   installmentProviderName?: string
   /** When provider is `credit_card`, links to the card debt row. */
   linkedCreditCardDebtId?: string
+
+  /**
+   * Principal leg: the account the money left when lent (`they_owe`) or arrived in when borrowed (`i_owe`). Unset =
+   * creating the debt moved no account. Amount and currency are kept apart from `startingBalance` so editing the
+   * debt total never rewrites an account balance.
+   */
+  principalPaymentMethodId?: string
+  principalAmount?: number
+  principalCurrency?: DebtCurrency
+  /** Instant (ISO) the principal moved. */
+  principalAt?: string
 }
 
 export interface DebtPayment {

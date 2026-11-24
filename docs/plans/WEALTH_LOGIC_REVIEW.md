@@ -288,7 +288,7 @@ Tags: **DC** counted twice, **ML** money lost or under-counted, **DR** drift bet
 
 **BNPL: not verified.** The balance engine has no BNPL branch (`balance.ts`, `resolve.ts:33-46`: a BNPL method moves no account), so a purchase should reach net worth only through its installment debt and each installment through a debt payment that names an account. The debt-side code (`calculateDebtRemaining`, the installment writers) was not read for this review, so no claim is made that each event is counted once.
 
-**DR-6. Money owed to the user.** Lending 5,000 from CIB lowers the account; the receivable is not an asset (`monthlyStats.ts:261-269`). Net worth -5,000 until repaid (`balance.ts:107`). Conservative, never a double count; a product decision (section "Decisions for council").
+**DR-6. Money owed to the user.** Lending 5,000 from CIB lowers the account; the receivable is not an asset (`monthlyStats.ts:261-269`). Net worth -5,000 until repaid (`balance.ts:107`). Conservative, never a double count; a product decision (section "Decisions for council"). **Fixed 2026-11-24 (migration 0348):** the claim was not true when written, since creating a debt moved no account and only the repayment did (+5,000 from nothing). A new personal debt through a tracked account now asks whether the money moved and stores a principal leg on the debt row (`debts.principal_*`, `balance.ts`); a bank transfer that already booked it is linked instead (`src/lib/debts/principalLeg.ts`). Debts created before the fix keep no leg.
 
 ### Income
 
