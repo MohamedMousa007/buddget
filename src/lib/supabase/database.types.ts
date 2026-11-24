@@ -3177,7 +3177,7 @@ export type Database = {
           closed_at?: string | null
           color?: string
           created_at?: string
-          currency?: Database["public"]["Enums"]["currency_code"]
+          currency: Database["public"]["Enums"]["currency_code"]
           deleted_at?: string | null
           edited_at?: string
           excluded?: boolean

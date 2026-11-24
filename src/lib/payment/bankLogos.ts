@@ -63,6 +63,28 @@ export const BANK_LOGO_FILES: Record<string, string> = {
 }
 
 /**
+ * Provider (BNPL / installment / wallet) slug -> official logo file in `public/providers/`. Keys are catalogue ids where
+ * the provider is a catalogue brand, and installment slugs (`installmentProviders.ts`) otherwise (mispay, shahry, forsa).
+ * The one source for provider logos: `BrandMark` (through {@link bankLogoSrc}) and `ProviderBadge` both read it.
+ */
+export const PROVIDER_LOGO_FILES: Record<string, string> = {
+  aman: 'aman.png',
+  cashew: 'cashew.webp',
+  contact: 'contact.webp',
+  forsa: 'forsa.webp',
+  halan: 'halan.svg',
+  mispay: 'mispay.png',
+  postpay: 'postpay.png',
+  shahry: 'shahry.webp',
+  souhoola: 'souhoola.webp',
+  spotii: 'spotii.svg',
+  sympl: 'sympl.webp',
+  tabby: 'tabby.svg',
+  tamara: 'tamara.png',
+  valu: 'valu.png',
+}
+
+/**
  * Tile colour for a logo drawn light-on-dark (brand id -> the brand's own background).
  * Absent = the default white tile.
  */
@@ -70,10 +92,13 @@ export const BANK_LOGO_BG: Record<string, string> = {
   weyay: '#11042A',
 }
 
-/** The logo path for a catalogue id, or null when the bank has no file (callers keep the monogram). */
+/** The logo path for a catalogue id or provider slug (bank file first, then provider file), or null: callers keep the monogram. */
 export function bankLogoSrc(brandId: string | null | undefined): string | null {
-  const file = brandId ? BANK_LOGO_FILES[brandId] : undefined
-  return file ? `/logos/banks/${file}` : null
+  if (!brandId) return null
+  const bank = BANK_LOGO_FILES[brandId]
+  if (bank) return `/logos/banks/${bank}`
+  const provider = PROVIDER_LOGO_FILES[brandId]
+  return provider ? `/providers/${provider}` : null
 }
 
 const bgBySrc = new Map(Object.entries(BANK_LOGO_BG).map(([id, bg]) => [bankLogoSrc(id), bg]))

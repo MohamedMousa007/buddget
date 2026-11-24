@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { AmountField } from '@/components/ui/AmountField'
 import { ensureCashAccount, setOpeningBalance } from '@/lib/accounts/actions'
 import { CASH_ASK_KEY } from '@/lib/accounts/cashOnHand'
+import { cashCurrency } from '@/lib/accounts/resolve'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
@@ -18,7 +19,8 @@ export function CashOnHandSheet() {
   const dict = useT()
   const t = dict.accountsPage
   const open = useSettingsStore((s) => s.activeModal === 'askCashOnHand')
-  const currency = useFinanceStore((s) => s.settings.baseCurrency)
+  // The answer is stored in Cash's own currency, so it is asked in that currency.
+  const currency = useFinanceStore((s) => cashCurrency(s.paymentMethods, s.settings.baseCurrency))
   const [value, setValue] = useState('')
   const amount = parseFloat(value)
   const valid = Number.isFinite(amount) && amount >= 0

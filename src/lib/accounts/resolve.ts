@@ -1,6 +1,6 @@
-import type { PaymentMethod } from '@/lib/store/types'
+import type { Currency, PaymentMethod } from '@/lib/store/types'
 import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
-import { drawsOnParent, holdsBalance } from './kinds'
+import { drawsOnParent, hasAccountHistory, holdsBalance } from './kinds'
 
 /**
  * The Cash account: the oldest open real cash method, else the in-store sentinel (which has no opening
@@ -43,4 +43,24 @@ export function resolveAccountId(
     return parent && holdsBalance(parent.type) ? parent.id : null
   }
   return null
+}
+
+/** The currency Cash keeps its balance in: the real Cash row's own, else `base` (a new Cash is created in it). */
+export function cashCurrency(methods: readonly PaymentMethod[], base: Currency): Currency {
+  const id = cashAccountId(methods)
+  const cash = id && id !== DEFAULT_CASH_ID ? methods.find((m) => m.id === id) : undefined
+  return cash?.currency ?? base
+}
+
+type CashLedger = Parameters<typeof hasAccountHistory>[0] & { paymentMethods: readonly PaymentMethod[] }
+
+/**
+ * The real Cash a main-currency switch may move along with it: only while it holds nothing (no opening balance, or zero)
+ * and no row points at it, so the relabel cannot change any amount. Null otherwise: a Cash with money keeps its currency.
+ */
+export function cashThatFollowsBase(s: CashLedger): string | null {
+  const id = cashAccountId(s.paymentMethods)
+  const cash = id && id !== DEFAULT_CASH_ID ? s.paymentMethods.find((m) => m.id === id) : undefined
+  if (!cash || (cash.openingBalance ?? 0) !== 0 || hasAccountHistory(s, cash.id)) return null
+  return cash.id
 }

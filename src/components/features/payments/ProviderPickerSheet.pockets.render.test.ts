@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { PAYMENT_BRANDS } from '@/lib/payment/paymentMethodDefaults'
 import { en } from '@/lib/i18n/dictionaries/en'
 import { ProviderPickerSheet, filterPickerItems, type ProviderPickerItem } from './ProviderPickerSheet'
-import { BANK_LOGO_FILES } from '@/lib/payment/bankLogos'
+import { BANK_LOGO_FILES, PROVIDER_LOGO_FILES } from '@/lib/payment/bankLogos'
 
 // ModalShell portals into document.body; render its panel inline for the static render.
 vi.mock('@/components/modals/ModalShell', () => ({ ModalShell: ({ children }: { children: ReactNode }) => children, useModalTitleId: () => 'modal-title' }))
@@ -69,8 +69,16 @@ describe('ProviderPickerSheet, bank logos (BDG-024)', () => {
     expect(html).toContain('data-brand-logo')
   })
   it('a brand without a file keeps its tinted initials', () => {
-    const b = Object.values(PAYMENT_BRANDS).find((x) => !BANK_LOGO_FILES[x.id] && /^[A-Z]+$/.test(x.short))!
+    const b = Object.values(PAYMENT_BRANDS).find((x) => !BANK_LOGO_FILES[x.id] && !PROVIDER_LOGO_FILES[x.id] && /^[A-Z]+$/.test(x.short))!
     expect(html).toMatch(new RegExp(`>${b.short}</span>`))
     expect(html).not.toContain(`/logos/banks/${b.id}.`)
+  })
+})
+
+describe('ProviderPickerSheet, provider logos (QA bug 3)', () => {
+  it('a BNPL brand with a provider file shows its logo, not initials', () => {
+    const html = renderToStaticMarkup(h(ProviderPickerSheet, { open: true, selectedId: null, popularIds: [], onPick: noop, onClose: noop }))
+    expect(html).toContain('src="/providers/tabby.svg"')
+    expect(html).toContain(`src="/providers/${PROVIDER_LOGO_FILES.valu}"`)
   })
 })

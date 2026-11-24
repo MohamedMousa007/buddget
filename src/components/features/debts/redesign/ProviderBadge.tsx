@@ -1,35 +1,19 @@
 'use client'
 
 import { findProviderBrand } from '@/lib/constants/installmentProviders'
+import { useState } from 'react'
 import { useT } from '@/lib/i18n'
+import { bankLogoSrc } from '@/lib/payment/bankLogos'
 
 /**
- * Provider logo badge. Renders the provider's OFFICIAL logo (from `public/providers/`)
- * when one exists — used for nominative identification of the user's plan — else an
- * original brand-coloured monogram badge. Shown on the installment card, the
- * provider-picker grid, and the Add-installment provider field.
+ * Provider logo badge. Renders the provider's OFFICIAL logo (`PROVIDER_LOGO_FILES` in `src/lib/payment/bankLogos.ts`,
+ * the one map `BrandMark` reads too) when one exists, used for nominative identification of the user's plan, else an
+ * original brand-coloured monogram badge. A logo that fails to load falls back to the monogram. Shown on the installment
+ * card, the provider-picker grid, and the Add-installment provider field.
  *
- * To add/replace a logo: drop the file in `public/providers/<slug>.<ext>` and add the
- * slug → path entry below. Prefer the provider's official brand-kit asset; follow its
- * usage guidelines, don't recolor/distort it, and never imply an endorsement.
+ * To add/replace a logo: drop the file in `public/providers/<slug>.<ext>` and add it to `PROVIDER_LOGO_FILES`. Prefer the
+ * provider's official brand-kit asset; follow its usage guidelines, don't recolor/distort it, and never imply an endorsement.
  */
-const OFFICIAL_LOGOS: Record<string, string> = {
-  tabby: '/providers/tabby.svg',
-  tamara: '/providers/tamara.png',
-  valu: '/providers/valu.png',
-  sympl: '/providers/sympl.webp',
-  souhoola: '/providers/souhoola.webp',
-  halan: '/providers/halan.svg',
-  spotii: '/providers/spotii.svg',
-  mispay: '/providers/mispay.png',
-  cashew: '/providers/cashew.webp',
-  forsa: '/providers/forsa.webp',
-  aman: '/providers/aman.png',
-  shahry: '/providers/shahry.webp',
-  contact: '/providers/contact.webp',
-  postpay: '/providers/postpay.png',
-}
-
 /** Short monogram for a provider (original wordmark-style fallback). */
 function monogram(name: string): string {
   const clean = name.replace(/[^A-Za-z ]/g, '').trim()
@@ -52,7 +36,9 @@ export function ProviderBadge({ slug, name, color, size = 40, className }: Provi
   const brand = findProviderBrand(slug)
   const label = name ?? brand?.name ?? 'Other'
   const c = color ?? brand?.color ?? 'var(--color-brand-text-muted)'
-  const logo = slug ? OFFICIAL_LOGOS[slug] : undefined
+  const src = bankLogoSrc(slug)
+  const [failed, setFailed] = useState<string | null>(null)
+  const logo = src && src !== failed ? src : null
 
   if (logo) {
     return (
@@ -61,7 +47,7 @@ export function ProviderBadge({ slug, name, color, size = 40, className }: Provi
         style={{ width: size, height: size, borderRadius: size * 0.26 }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element -- static provider logo, no optimization needed */}
-        <img src={logo} alt={t.common.logoAlt(label)} className="h-full w-full object-contain" style={{ padding: size * 0.12 }} />
+        <img src={logo} alt={t.common.logoAlt(label)} onError={() => setFailed(logo)} className="h-full w-full object-contain" style={{ padding: size * 0.12 }} />
       </span>
     )
   }

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { PAYMENT_BRANDS, resolvePaymentBrandKey } from './paymentMethodDefaults'
-import { BANK_LOGO_BG, BANK_LOGO_FILES, bankLogoBg, bankLogoForName, bankLogoSrc } from './bankLogos'
+import { BANK_LOGO_BG, BANK_LOGO_FILES, PROVIDER_LOGO_FILES, bankLogoBg, bankLogoForName, bankLogoSrc } from './bankLogos'
 
 const DIR = join(__dirname, '../../../public/logos/banks')
 const files = readdirSync(DIR).filter((f) => !f.startsWith('.'))
@@ -76,7 +76,7 @@ describe('bank logos (BDG-024)', () => {
   })
 
   it('a brand without a file, an unknown id and generic names get no logo', () => {
-    const without = Object.keys(PAYMENT_BRANDS).find((id) => !BANK_LOGO_FILES[id])!
+    const without = Object.keys(PAYMENT_BRANDS).find((id) => !BANK_LOGO_FILES[id] && !PROVIDER_LOGO_FILES[id])!
     expect(bankLogoSrc(without)).toBeNull()
     expect(bankLogoSrc('no-such-bank')).toBeNull()
     expect(bankLogoSrc(null)).toBeNull()
@@ -100,5 +100,29 @@ describe('bank logos (BDG-024)', () => {
       expect(b.subarray(1, 4).toString('latin1'), f).toBe('PNG')
       expect(Math.max(b.readUInt32BE(16), b.readUInt32BE(20)), f).toBeLessThanOrEqual(512)
     }
+  })
+})
+
+describe('provider logos share the one map (QA bug 3)', () => {
+  const PDIR = join(__dirname, '../../../public/providers')
+  const pfiles = readdirSync(PDIR).filter((f) => !f.startsWith('.'))
+
+  it('the provider map and public/providers list the same files, each named after its key', () => {
+    expect(Object.values(PROVIDER_LOGO_FILES).sort()).toEqual([...pfiles].sort())
+    for (const [id, file] of Object.entries(PROVIDER_LOGO_FILES)) expect(file, id).toMatch(new RegExp(`^${id}\\.(svg|png|webp)$`))
+  })
+
+  it('catalogue BNPL and wallet brands with a provider file resolve through bankLogoSrc and their name', () => {
+    const hits = Object.keys(PROVIDER_LOGO_FILES).filter((id) => PAYMENT_BRANDS[id])
+    expect(hits.sort()).toEqual(['aman', 'cashew', 'contact', 'halan', 'postpay', 'souhoola', 'spotii', 'sympl', 'tabby', 'tamara', 'valu'])
+    for (const id of hits) {
+      expect(bankLogoSrc(id), id).toBe(`/providers/${PROVIDER_LOGO_FILES[id]}`)
+      expect(bankLogoForName(PAYMENT_BRANDS[id].name), id).toBe(`/providers/${PROVIDER_LOGO_FILES[id]}`)
+    }
+  })
+
+  it('installment-only slugs resolve too, and a bank file still wins', () => {
+    expect(bankLogoSrc('mispay')).toBe('/providers/mispay.png')
+    expect(bankLogoSrc('cib')).toBe('/logos/banks/cib.svg')
   })
 })
