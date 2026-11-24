@@ -301,6 +301,8 @@ describe('record_debt_payment', () => {
     useFinanceStore.setState({ debts: [debt(D_OWED, { direction: 'they_owe', startingBalance: 400 })] })
     const p = write('record_debt_payment').propose({ debt: refOf(D_OWED), amount: 100 }, ctx)
     expect(p.ok && p.proposal.preview.effect).toMatch(/not as spending/)
+    expect(p.ok && p.proposal.summary).toMatch(/received from/)
+    expect(p.ok && p.proposal.preview.title).toMatch(/^Record money received/)
     proposeApply('record_debt_payment', { debt: refOf(D_OWED), amount: 100 })
     expect(st().debtPayments).toHaveLength(1)
     expect(st().expenses).toHaveLength(0)
@@ -369,7 +371,7 @@ describe('clear_debt', () => {
   it('marks the debt cleared, stops its reminder and undoes both', () => {
     useFinanceStore.setState({ recurringDebtPayments: [schedule()] })
     const p = write('clear_debt').propose({ debt: refOf(D_LOAN) }, ctx)
-    expect(p.ok && p.proposal.preview.effect).toMatch(/stays unpaid/)
+    expect(p.ok && p.proposal.preview.effect).toMatch(/written off/)
     const { applied } = proposeApply('clear_debt', { debt: refOf(D_LOAN) })
     expect(st().debts[0]).toMatchObject({ status: 'cleared', clearedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) })
     expect(st().recurringDebtPayments[0].isActive).toBe(false)

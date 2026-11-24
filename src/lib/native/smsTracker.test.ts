@@ -17,6 +17,9 @@ const mocks = vi.hoisted(() => ({
   getStatus: vi.fn() as Mock<SmsCapacitorPlugin['getStatus']>,
   peekPendingQueue: vi.fn() as Mock<SmsCapacitorPlugin['peekPendingQueue']>,
   removePending: vi.fn() as Mock<SmsCapacitorPlugin['removePending']>,
+  getSecureItem: vi.fn() as Mock<(opts: { key: string }) => Promise<{ value: string | null; unavailable?: boolean }>>,
+  setSecureItem: vi.fn() as Mock<(opts: { key: string; value: string }) => Promise<void>>,
+  getInstallKey: vi.fn() as Mock<SmsCapacitorPlugin['getInstallKey']>,
   fetch: vi.fn() as Mock<typeof globalThis.fetch>,
 }))
 
@@ -33,6 +36,9 @@ vi.mock('@capacitor/core', () => ({
     getStatus: mocks.getStatus,
     peekPendingQueue: mocks.peekPendingQueue,
     removePending: mocks.removePending,
+    getSecureItem: mocks.getSecureItem,
+    setSecureItem: mocks.setSecureItem,
+    getInstallKey: mocks.getInstallKey,
   })),
 }))
 
@@ -293,7 +299,7 @@ describe('drainAndSubmitPendingSms', () => {
     expect(mocks.removePending).not.toHaveBeenCalled()
   })
 
-  it('never forwards SMS owned by another account (leaves them queued) and drops unstamped ones unsent', async () => {
+  it('never forwards SMS owned by another account, and keeps an unstamped one queued for an account never seen draining here', async () => {
     mocks.peekPendingQueue.mockResolvedValue({ items: [
       { message: 'mine', sender: 'CIB', receivedAt: '2026-07-01T00:00:00Z', source: 'sms', userId: 'user-B' },
       { message: 'theirs', sender: 'NBE', receivedAt: '2026-07-01T00:01:00Z', source: 'sms', userId: 'user-A' },
@@ -305,16 +311,40 @@ describe('drainAndSubmitPendingSms', () => {
     const bodies = mocks.fetch.mock.calls.map((c) => JSON.parse((c[1] as RequestInit).body as string).message)
     expect(bodies).toEqual(['mine'])
     const removed = mocks.removePending.mock.calls.flatMap((c) => c[0].items.map((i) => i.message))
-    expect(removed).toContain('legacy')
-    expect(removed).not.toContain('theirs')
+    expect(removed).toEqual(['mine'])
   })
 
-  it('drops unstamped items even when nothing else is queued, without any network call', async () => {
+  it('BUD-42: an unstamped message goes with the account that last drained on this phone, and is removed only once accepted', async () => {
+    const legacy = { message: 'legacy', sender: 'HSBC', receivedAt: '2026-07-01T00:02:00Z', source: 'sms', userId: '' }
+    mocks.peekPendingQueue.mockResolvedValue({ items: [] })
+    let sms = await freshModule()
+    await sms.drainAndSubmitPendingSms('jwt', 'user-B')
+    mocks.peekPendingQueue.mockResolvedValue({ items: [legacy] })
+    mocks.fetch.mockResolvedValue(new Response('{}', { status: 200 }))
+    sms = await freshModule()
+    await sms.drainAndSubmitPendingSms('jwt', 'user-B')
+    expect(mocks.fetch.mock.calls.map((c) => JSON.parse((c[1] as RequestInit).body as string).message)).toEqual(['legacy'])
+    expect(mocks.removePending.mock.calls.flatMap((c) => c[0].items.map((i) => i.message))).toEqual(['legacy'])
+  })
+
+  it('BUD-42: another account signing in after the last owner never receives an unstamped message, and it stays queued', async () => {
+    mocks.peekPendingQueue.mockResolvedValue({ items: [] })
+    let sms = await freshModule()
+    await sms.drainAndSubmitPendingSms('jwt', 'user-A')
     mocks.peekPendingQueue.mockResolvedValue({ items: [{ message: 'legacy', sender: 'HSBC', receivedAt: '2026-07-01T00:02:00Z', source: 'sms', userId: '' }] })
-    const sms = await freshModule()
+    sms = await freshModule()
     await sms.drainAndSubmitPendingSms('jwt', 'user-B')
     expect(mocks.fetch).not.toHaveBeenCalled()
-    expect(mocks.removePending).toHaveBeenCalledTimes(1)
+    expect(mocks.removePending).not.toHaveBeenCalled()
+    // Still not B's on B's next drain: the owner was settled when the message was first seen.
+    sms = await freshModule()
+    await sms.drainAndSubmitPendingSms('jwt', 'user-B')
+    expect(mocks.fetch).not.toHaveBeenCalled()
+    // A, the account that had drained before it was seen, gets it back.
+    mocks.fetch.mockResolvedValue(new Response('{}', { status: 200 }))
+    sms = await freshModule()
+    await sms.drainAndSubmitPendingSms('jwt', 'user-A')
+    expect(mocks.fetch.mock.calls.map((c) => JSON.parse((c[1] as RequestInit).body as string).message)).toEqual(['legacy'])
   })
 
   it('replays the SMS arrival time, not the drain time', async () => {
@@ -483,5 +513,62 @@ describe('plugin load', () => {
     const [a, b, c] = await Promise.all([sms.getSmsBridgeStatus(), sms.getSmsBridgeStatus(), sms.getSmsBridgeStatus()])
     expect([a, b, c]).toEqual([status, status, status])
     expect(mocks.getStatus).toHaveBeenCalledTimes(3)
+  })
+})
+
+describe('BUD-42 sign-out boundary', () => {
+  it('after a sign-out, the next account never inherits an unstamped message seen first after it', async () => {
+    mocks.peekPendingQueue.mockResolvedValue({ items: [] })
+    let sms = await freshModule()
+    await sms.drainAndSubmitPendingSms('jwt', 'user-A')
+    await sms.clearSmsCredentials()
+    mocks.peekPendingQueue.mockResolvedValue({ items: [{ message: 'legacy', sender: 'HSBC', receivedAt: '2026-07-01T00:02:00Z', source: 'sms', userId: '' }] })
+    mocks.fetch.mockResolvedValue(new Response('{}', { status: 200 }))
+    sms = await freshModule()
+    await sms.drainAndSubmitPendingSms('jwt', 'user-B')
+    expect(mocks.fetch).not.toHaveBeenCalled()
+    expect(mocks.removePending).not.toHaveBeenCalled()
+    // Not A's either: it was first seen after A signed out.
+    sms = await freshModule()
+    await sms.drainAndSubmitPendingSms('jwt', 'user-A')
+    expect(mocks.fetch).not.toHaveBeenCalled()
+  })
+})
+
+describe('nativeInstallKey (BUD-107)', () => {
+  it('iOS: returns the stored key without writing', async () => {
+    mocks.getSecureItem.mockResolvedValue({ value: 'b'.repeat(64) })
+    const sms = await freshModule()
+    expect(await sms.nativeInstallKey('ios')).toBe('b'.repeat(64))
+    expect(mocks.setSecureItem).not.toHaveBeenCalled()
+  })
+
+  it('iOS: creates and stores a 64-hex key only when the read succeeded and found none', async () => {
+    mocks.getSecureItem.mockResolvedValue({ value: null })
+    const sms = await freshModule()
+    const key = await sms.nativeInstallKey('ios')
+    expect(key).toMatch(/^[0-9a-f]{64}$/)
+    expect(mocks.setSecureItem).toHaveBeenCalledWith({ key: 'install_key', value: key })
+  })
+
+  it('iOS: a refused Keychain read (before first unlock) never overwrites the real key', async () => {
+    mocks.getSecureItem.mockResolvedValue({ value: null, unavailable: true })
+    const sms = await freshModule()
+    expect(await sms.nativeInstallKey('ios')).toBeNull()
+    expect(mocks.setSecureItem).not.toHaveBeenCalled()
+  })
+
+  it('a rejected read (older build) returns null quietly, without writing or raising an SMS error', async () => {
+    mocks.getSecureItem.mockRejectedValue(new Error('unknown key'))
+    const sms = await freshModule()
+    expect(await sms.nativeInstallKey('ios')).toBeNull()
+    expect(mocks.setSecureItem).not.toHaveBeenCalled()
+    expect(sms.getSmsNativeError()).toBeNull()
+  })
+
+  it('Android: returns the native hashed key', async () => {
+    mocks.getInstallKey.mockResolvedValue({ key: 'c'.repeat(64) })
+    const sms = await freshModule()
+    expect(await sms.nativeInstallKey('android')).toBe('c'.repeat(64))
   })
 })

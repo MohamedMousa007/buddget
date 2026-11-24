@@ -20,7 +20,7 @@ import { AdminSheet } from '../ui/AdminSheet'
 import { Field } from '../ui/Field'
 import { KeyValue, Loading, Notice, PageHeader, Panel } from '../ui/Panel'
 import { Pill, StatusPill } from '../ui/Pill'
-import { useStepUp } from '../ui/StepUp'
+import { confirmedInApp, useStepUp } from '../ui/StepUp'
 import type { AdminStatus } from '../types'
 
 interface Overview {
@@ -464,9 +464,10 @@ function ToolsTab({ id, data, banned, can, onChange }: { id: string; data: Overv
         {can('users.reset') ? (
           <Panel title="Reset account" description="Erases all of their data and starts them fresh. They stay signed up with their plan and sign-in; every device clears its copy on its next sync.">
             <Button variant="destructive" size="touch" loading={busy === 'reset'} onClick={async () => {
-              const proof = await stepUp('Resetting an account erases all of its data. Confirm it’s you.')
+              const confirm = { title: 'Reset this account?', body: `All of ${data.auth.email ?? id}’s data is erased and cannot be recovered. They keep their sign-in.`, destructive: true, confirmLabel: 'Erase and reset' }
+              const proof = await stepUp('Resetting an account erases all of its data. Confirm it’s you.', confirm)
               if (!proof) return
-              void run('reset', { op: 'reset_data', ...proof }, { success: 'Account reset', confirm: { title: 'Reset this account?', body: `All of ${data.auth.email ?? id}’s data is erased and cannot be recovered. They keep their sign-in.`, destructive: true, confirmLabel: 'Erase and reset' } })
+              void run('reset', { op: 'reset_data', ...proof }, { success: 'Account reset', confirm: confirmedInApp(proof) ? undefined : confirm })
             }}><RotateCcw />Reset account</Button>
           </Panel>
         ) : null}
@@ -474,9 +475,10 @@ function ToolsTab({ id, data, banned, can, onChange }: { id: string; data: Overv
         {can('users.delete') ? (
           <Panel title="Danger zone" description="Permanent. Deletes the buddget app account and all of their data. If they are on the team, their portal access stays; remove them under Team & roles.">
             <Button variant="destructive-solid" size="touch" loading={busy === 'delete'} onClick={async () => {
-              const proof = await stepUp('Deleting a user is permanent. Confirm it’s you.')
+              const confirm = { title: 'Delete this user forever?', body: `${data.auth.email ?? id} and all their data will be erased. Portal access, if they have any, is not touched.`, destructive: true, confirmLabel: 'Delete forever' }
+              const proof = await stepUp('Deleting a user is permanent. Confirm it’s you.', confirm)
               if (!proof) return
-              if (await run('delete', { op: 'delete', ...proof }, { success: 'User deleted', confirm: { title: 'Delete this user forever?', body: `${data.auth.email ?? id} and all their data will be erased. Portal access, if they have any, is not touched.`, destructive: true, confirmLabel: 'Delete forever' } })) adminNavigate('users')
+              if (await run('delete', { op: 'delete', ...proof }, { success: 'User deleted', confirm: confirmedInApp(proof) ? undefined : confirm })) adminNavigate('users')
             }}><Trash2 />Delete user</Button>
           </Panel>
         ) : null}

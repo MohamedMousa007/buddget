@@ -101,9 +101,10 @@ public class SmsCapacitorPlugin: CAPInstancePlugin, CAPBridgedPlugin {
         call.resolve()
     }
 
-    /// Biometric sign-in / admin unlock secrets, same Keychain service. Only these names are accepted;
+    /// Biometric sign-in / admin unlock secrets and the reinstall-proof install key (BUD-107), same Keychain service
+    /// (ThisDeviceOnly: it survives a reinstall but never moves to another phone). Only these names are accepted;
     /// clearCredentials and clearState leave them alone.
-    private static let secureItemKeys: Set<String> = ["biometric_secret", "admin_biometric_secret"]
+    private static let secureItemKeys: Set<String> = ["biometric_secret", "admin_biometric_secret", "install_key"]
 
     private func secureKey(_ call: CAPPluginCall) -> String? {
         guard let key = call.getString("key"), Self.secureItemKeys.contains(key) else {
@@ -124,8 +125,15 @@ public class SmsCapacitorPlugin: CAPInstancePlugin, CAPBridgedPlugin {
 
     @objc func getSecureItem(_ call: CAPPluginCall) {
         guard let key = secureKey(call) else { return }
-        let value = SmsKeychain.read(key).flatMap { String(data: $0, encoding: .utf8) }
-        if let value { call.resolve(["value": value]) } else { call.resolve(["value": NSNull()]) }
+        switch SmsKeychain.readResult(key) {
+        case .found(let data):
+            if let value = String(data: data, encoding: .utf8) { call.resolve(["value": value]) } else { call.resolve(["value": NSNull(), "unavailable": true]) }
+        case .missing:
+            call.resolve(["value": NSNull()])
+        case .unavailable:
+            // Locked before first unlock, or a Keychain error: the item may exist, so the caller must not write a new one.
+            call.resolve(["value": NSNull(), "unavailable": true])
+        }
     }
 
     @objc func removeSecureItem(_ call: CAPPluginCall) {

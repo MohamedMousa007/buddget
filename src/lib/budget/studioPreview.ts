@@ -12,7 +12,19 @@ import { repairDraft } from '@/lib/budget/validate'
 export function studioFacts(live: FactsSlice, answers: Record<string, FlowValue>, intent: FlowIntent, made: ReadonlySet<string> = new Set(), now = new Date()): BudgetFacts {
   const fresh = buildFactsFromStore(live, now, { remembered: false })
   const all = { ...live.profile.financialProfile?.budgetProfile, ...answers }
-  return applyAnswers({ ...fresh, debts: fresh.debts.filter((d) => !made.has(d.id)), goals: fresh.goals.filter((g) => !made.has(g.id)) }, all, intent)
+  return applyAnswers(planRecords(fresh, answers, made), all, intent)
+}
+
+/**
+ * The tracked debts and goals this plan counts: not the records this run just created (the answers carry them richer), and
+ * none at all when the person said they are not right ("I owe nothing", "no goal"). The records themselves are untouched.
+ */
+export function planRecords(f: BudgetFacts, answers: Record<string, FlowValue>, made: ReadonlySet<string> = new Set()): BudgetFacts {
+  return {
+    ...f,
+    debts: answers.confirmDebts === false ? [] : f.debts.filter((d) => !made.has(d.id)),
+    goals: answers.confirmGoals === false ? [] : f.goals.filter((g) => !made.has(g.id)),
+  }
 }
 
 /** What the validator checks a draft against. */

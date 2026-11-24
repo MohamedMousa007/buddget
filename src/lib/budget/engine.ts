@@ -107,17 +107,20 @@ function fixedLines(f: BudgetFacts, bench: Benchmark, income: number): DraftLine
       })
     )
   }
-  if (owns && !f.rentIncludesUtilities) {
+  // One utilities line at most: a tracked utilities bill is the real figure, then what the person stated, then a typical one.
+  const trackedUtilities = f.bills.some((b) => b.expenseCategories?.includes('Utilities'))
+  if (owns && !f.rentIncludesUtilities && !trackedUtilities) {
+    const stated = f.utilitiesMonthly !== undefined && f.utilitiesMonthly > 0
     lines.push(
       line({
         block: 'bills',
         name: 'Utilities',
         icon: 'zap',
-        amount: benchmarkUtilities(bench, f, income),
+        amount: stated ? Math.round(f.utilitiesMonthly as number) : benchmarkUtilities(bench, f, income),
         essential: true,
         expenseCategories: ['Utilities'],
-        rationale: `Typical ${bench.label} utilities for a ${f.household} household, since rent excludes them`,
-        confidence: 'estimated',
+        rationale: stated ? 'Electricity, water and gas, as you told Buddgy' : `Typical ${bench.label} utilities for a ${f.household} household, since rent excludes them`,
+        ...(stated ? {} : { confidence: 'estimated' as const }),
       })
     )
   }

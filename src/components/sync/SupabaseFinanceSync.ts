@@ -51,10 +51,10 @@ const fingerprintTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const pendingFingerprints = new Map<string, Snapshot>()
 function savePendingFingerprint(userId: string, snap: Snapshot): void {
   if (pendingFingerprints.get(userId) !== snap) return
-  pendingFingerprints.delete(userId)
   // Signed out meanwhile: the wipe already removed this user's fingerprint, and nothing of theirs may come back.
-  if (syncSuspended) return
-  saveFingerprint(userId, snap)
+  if (syncSuspended) { pendingFingerprints.delete(userId); return }
+  // Held back while the finance store write is only in memory: stays pending, retried by the next baseline or page hide.
+  if (saveFingerprint(userId, snap)) pendingFingerprints.delete(userId)
 }
 /**
  * S8d-6: a reload inside the idle delay booted on the previous fingerprint and re-sent rows the server already had.

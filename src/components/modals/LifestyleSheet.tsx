@@ -56,7 +56,7 @@ export function LifestyleSheet() {
 
   return (
     <ModalShell open={isOpen} onBackdropClick={() => setActiveModal(null)} padContent>
-      <div className="p-5">
+      <div className="pt-1">
         <V3SheetHeader title={t.onboarding.lifestyleTitle} onClose={() => setActiveModal(null)} />
         <p className="text-xs text-[var(--color-brand-text-muted)] mb-4 -mt-1">
           {t.onboarding.lifestyleSubtitle}
@@ -134,7 +134,7 @@ function PickerGroup<T extends string>({
               size="segment"
               selected={active}
               onClick={() => onChange(opt.value)}
-              className="min-h-10 justify-start text-start text-sm"
+              className="h-auto min-h-11 justify-start whitespace-normal py-2 text-start text-sm leading-snug"
             >
               {opt.label}
             </OptionChip>

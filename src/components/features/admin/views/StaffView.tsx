@@ -19,7 +19,7 @@ import { DataTable, type Column } from '../ui/DataTable'
 import { Field } from '../ui/Field'
 import { Loading, Notice, PageHeader, Panel } from '../ui/Panel'
 import { Pill, StatusPill } from '../ui/Pill'
-import { useStepUp } from '../ui/StepUp'
+import { confirmedInApp, useStepUp } from '../ui/StepUp'
 import type { AdminStatus } from '../types'
 
 interface Member {
@@ -342,8 +342,8 @@ function MemberSheet({ member, data, canManage, onClose, onDone }: { member: Mem
   const editable = canManage && !member.isOwner && (data.roles.find((r) => r.key === member.role_key)?.rank ?? 0) > data.actorRank
 
   const guarded = async (key: string, body: Record<string, unknown>, why: string, opts: Parameters<typeof run>[2]) => {
-    const proof = await stepUp(why)
-    if (proof) await run(key, { ...body, id: member.id, ...proof }, opts)
+    const proof = await stepUp(why, opts?.confirm)
+    if (proof) await run(key, { ...body, id: member.id, ...proof }, confirmedInApp(proof) ? { ...opts, confirm: undefined } : opts)
   }
 
   return (
@@ -398,8 +398,9 @@ function RoleSheet({ role, data, onClose, onDone }: { role: Role; data: StaffDat
           if (proof) await run('role', { op: 'upsert_role', ...proof, role: { key: r.key, name: r.name, description: r.description, permissions: r.permissions, rank: r.rank } }, { success: 'Role saved' })
         }}>Save role</Button>
         {!isNew ? <Button variant="destructive" size="touch" onClick={async () => {
-          const proof = await stepUp('Deleting a role changes what staff can do. Confirm it’s you.')
-          if (proof) await run('delrole', { op: 'delete_role', key: r.key, ...proof }, { success: 'Role deleted', confirm: { title: `Delete ${r.name}?`, destructive: true } })
+          const confirm = { title: `Delete ${r.name}?`, destructive: true }
+          const proof = await stepUp('Deleting a role changes what staff can do. Confirm it’s you.', confirm)
+          if (proof) await run('delrole', { op: 'delete_role', key: r.key, ...proof }, { success: 'Role deleted', confirm: confirmedInApp(proof) ? undefined : confirm })
         }}>Delete role</Button> : null}
       </div>
     </AdminSheet>

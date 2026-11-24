@@ -2,6 +2,8 @@ import type { ServiceClient } from '@/lib/supabase/service'
 
 /** How far apart two captures of one text may be and still be one possible second copy (I5). */
 export const SECOND_COPY_WINDOW_MS = 3 * 60_000
+/** Two automations on one phone fire for one message within seconds of each other (BUD-104 saw 17 s). */
+export const SAME_PHONE_COPY_MS = 30_000
 
 export interface CopyRow {
   id: string
@@ -10,6 +12,8 @@ export interface CopyRow {
   captured_at: string | null
   expense_id: string | null
   income_id: string | null
+  device_id?: string | null
+  sender?: string | null
 }
 
 type Ordered = Pick<CopyRow, 'id' | 'received_at'>
@@ -53,6 +57,20 @@ export function secondCopyVerdict(i: { hasReference: boolean; hasBalance: boolea
 }
 
 /**
+ * Whether a later copy has the shape of one message caught twice by this phone: the same device, no sender on either
+ * (the iPhone Shortcut path), seconds apart. Two real payments can look exactly like this, so it only changes how the
+ * question is put to the user; the copy is still booked and flagged (BUD-104).
+ */
+export function isSamePhoneRecapture(
+  self: { deviceId: string | null; sender: string | null; receivedAt: string },
+  other: Pick<CopyRow, 'device_id' | 'sender' | 'received_at'>,
+): boolean {
+  if (!self.deviceId || self.deviceId !== other.device_id) return false
+  if ((self.sender ?? '').trim() || (other.sender ?? '').trim()) return false
+  return Math.abs(Date.parse(self.receivedAt) - Date.parse(other.received_at)) <= SAME_PHONE_COPY_MS
+}
+
+/**
  * The live copy that already stands for this message's text, when this message is its second copy. Read AFTER this
  * message's own claim row exists, so two simultaneous requests see each other and exactly one of them stands down.
  * Rows that failed or were rejected never booked anything and are not copies. A claim still `processing` is returned
@@ -66,7 +84,7 @@ export async function findStandingCopy(
   if (!Number.isFinite(at)) return null
   const { data } = await service
     .from('sms_parse_log')
-    .select('id, status, received_at, captured_at, expense_id, income_id')
+    .select('id, status, received_at, captured_at, expense_id, income_id, device_id, sender')
     .eq('user_id', i.userId)
     .eq('body_hash', i.bodyHash)
     .eq('is_duplicate', false)

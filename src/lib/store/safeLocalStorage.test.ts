@@ -72,6 +72,8 @@ describe('safeLocalStorage unpersisted state (OFS-8)', () => {
     s.fill()
     store.setItem('k', 'v')
     expect(hasUnpersistedWrites()).toBe(true)
+    expect(hasUnpersistedWrites('k')).toBe(true)
+    expect(hasUnpersistedWrites('other')).toBe(false)
     s.free()
     store.setItem('k', 'v2')
     expect(hasUnpersistedWrites()).toBe(false)

@@ -6,6 +6,7 @@ import { useAuth } from '@/components/auth/auth-context'
 import { useAssetPrices } from '@/hooks/useAssetPrices'
 import { useDailyNetWorthSnapshot } from '@/hooks/useDailyNetWorthSnapshot'
 import { useNetWorth } from '@/hooks/useNetWorth'
+import { netWorthBasisOf } from '@/lib/savings/netWorth'
 import { snapshotDay, snapshotStampKey } from '@/lib/savings/netWorthSnapshot'
 import { buildWealth } from '@/lib/savings/wealthModel'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -30,7 +31,7 @@ function SnapshotWriter({ onWritten }: { onWritten: () => void }) {
     () => buildWealth({ accounts: savingsAccounts, holdings: investmentHoldings, lookup, baseCurrency: base, rates: exchangeRates, goldPricePerGram, goldOk: goldPriceAvailable !== false }),
     [savingsAccounts, investmentHoldings, lookup, base, exchangeRates, goldPricePerGram, goldPriceAvailable],
   )
-  useDailyNetWorthSnapshot(nw.netWorth, base, dataReady && !model.anyUnpriced && !nw.netWorthIncomplete, nw.accountsTotal != null ? 'accounts' : 'legacy', onWritten)
+  useDailyNetWorthSnapshot(nw.netWorth, base, dataReady && !model.anyUnpriced && !nw.netWorthIncomplete, netWorthBasisOf(nw), onWritten)
   return null
 }
 

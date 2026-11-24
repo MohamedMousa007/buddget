@@ -9,6 +9,7 @@ const h = vi.hoisted(() => ({
   dispatch: vi.fn(),
   gemini: null as null | Record<string, unknown>,
   deviceId: null as string | null,
+  realCurated: false,
 }))
 
 vi.mock('server-only', () => ({}))
@@ -29,7 +30,10 @@ vi.mock('@/lib/sms/meteredAi', () => ({ withSmsAiQuota: async () => ({ denied: t
 vi.mock('@/lib/sms/statsOutbox', () => ({ recordSmsStats: async () => {} }))
 vi.mock('@/lib/sms/currencyResolver', () => ({ resolveCurrency: async () => ({ currency: 'EGP', provisional: false }) }))
 vi.mock('@/lib/sms/negativeCache', async (orig) => ({ ...(await orig<typeof import('@/lib/sms/negativeCache')>()), isKnownNonTransaction: async () => false }))
-vi.mock('@/lib/sms/patterns', async (orig) => ({ ...(await orig<typeof import('@/lib/sms/patterns')>()), matchCuratedPattern: () => h.curated }))
+vi.mock('@/lib/sms/patterns', async (orig) => {
+  const real = await orig<typeof import('@/lib/sms/patterns')>()
+  return { ...real, matchCuratedPattern: (...a: Parameters<typeof real.matchCuratedPattern>) => (h.realCurated ? real.matchCuratedPattern(...a) : h.curated) }
+})
 vi.mock('@/lib/sms/dispatch', async (orig) => ({ ...(await orig<typeof import('@/lib/sms/dispatch')>()), createSmsTransaction: h.dispatch }))
 
 /** An in-memory log whose filters really filter and whose two partial unique indexes really refuse a second live row. */
@@ -108,6 +112,7 @@ beforeEach(() => {
   h.db = {}
   h.seq = 0
   h.deviceId = null
+  h.realCurated = false
   h.curated = curated()
   h.dispatch.mockReset().mockImplementation(async (_s: unknown, input: Row) => {
     const expense = { id: `exp-${h.seq++}`, user_id: 'u1', sms_log_id: input.logId, sms_flags: (input.smsFlags as string[] | undefined) ?? null }
@@ -354,5 +359,82 @@ describe('BDG-008: first_sms_at is this phone\'s verified fact', () => {
     h.db.user_devices = [{ user_id: 'u1', device_id: 'phone-a', first_sms_at: null, last_sms_at: null }]
     await post({ message: PLAIN, receivedAt: '2026-10-27T10:00:00+03:00', eventId: EVT(1) })
     expect(device('phone-a')).toMatchObject({ first_sms_at: null, last_sms_at: null })
+  })
+})
+
+describe('BUD-104: one message caught twice by this phone', () => {
+  const at = (s: number) => new Date(Date.parse('2026-11-15T16:23:11Z') + s * 1000).toISOString()
+
+  it('books and flags the copy 17 s later, never drops it, and lets the question say it was caught twice', async () => {
+    h.deviceId = 'phone-a'
+    await post({ sender: '', message: PLAIN, receivedAt: at(0), eventId: EVT(1) })
+    const second = await (await post({ sender: '', message: PLAIN, receivedAt: at(17), eventId: EVT(2) })).json()
+    expect(second.duplicate).toBeUndefined()
+    expect(h.dispatch).toHaveBeenCalledTimes(2)
+    expect(flagsOn(claims()[1].id)).toEqual(['possible_duplicate', 'dup_hint:same_phone'])
+    expect(claims()[1].sms_flags).toEqual(['possible_duplicate', 'dup_hint:same_phone'])
+  })
+
+  it('a copy with a named sender gets the plain question', async () => {
+    h.deviceId = 'phone-a'
+    await post({ message: PLAIN, receivedAt: at(0), eventId: EVT(1) })
+    await post({ message: PLAIN, receivedAt: at(17), eventId: EVT(2) })
+    expect(flagsOn(claims()[1].id)).toEqual(['possible_duplicate'])
+  })
+})
+
+describe('QA-32: one message, two movements', () => {
+  const TWO = 'Account ***3307 was debited EGP 100.00 for purchase at UBER on 16-11-2026 08:00. Account ***3307 was debited EGP 250.00 for purchase at STARBUCKS on 16-11-2026 08:30'
+  beforeEach(() => { h.realCurated = true })
+
+  it('books each movement on its own claim and answers with both', async () => {
+    const res = await post({ message: TWO, receivedAt: '2026-11-16T08:31:00+02:00', eventId: EVT(1) })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(h.dispatch.mock.calls.map((c) => [c[1].amount, c[1].cleanTitle])).toEqual([[100, 'UBER'], [250, 'STARBUCKS']])
+    expect(body.segments).toHaveLength(2)
+    expect(body.expenseId).toBe(body.segments[0].expenseId)
+    const live = claims().filter((r) => !r.is_duplicate)
+    expect(live).toHaveLength(2)
+    expect(new Set(live.map((r) => r.sms_hash)).size).toBe(2)
+    expect(new Set(live.map((r) => r.body_hash)).size).toBe(2)
+  })
+
+  it('a retry of the whole message books nothing again', async () => {
+    await post({ message: TWO, receivedAt: '2026-11-16T08:31:00+02:00', eventId: EVT(1) })
+    const again = await (await post({ message: TWO, receivedAt: '2026-11-16T08:31:00+02:00', eventId: EVT(1) })).json()
+    expect(h.dispatch).toHaveBeenCalledTimes(2)
+    expect(again.segments.map((s: Row) => s.duplicate)).toEqual([true, true])
+  })
+
+  it('a later piece that fails is the answer, so the phone retries; the retry books only that piece', async () => {
+    h.dispatch.mockImplementationOnce(async (_s: unknown, input: Row) => {
+      ;(h.db.expenses ??= []).push({ id: 'exp-first', user_id: 'u1', sms_log_id: input.logId, sms_flags: null })
+      return { outcome: 'posted', kind: 'purchase', expenseId: 'exp-first', incomeId: null, debtPaymentId: null, category: null, confirmReason: null, matchedSourceId: null, linkedSubscriptionId: null, error: null }
+    }).mockImplementationOnce(async () => { throw new Error('db down') })
+    const failed = await post({ message: TWO, receivedAt: '2026-11-16T08:31:00+02:00', eventId: EVT(1) })
+    expect(failed.status).toBe(500)
+    const retry = await (await post({ message: TWO, receivedAt: '2026-11-16T08:31:00+02:00', eventId: EVT(1) })).json()
+    expect(retry.segments[0]).toMatchObject({ duplicate: true, expenseId: 'exp-first' })
+    expect(h.dispatch.mock.calls.map((c) => c[1].amount)).toEqual([100, 250, 250])
+  })
+
+  it('a message no curated pattern cuts that still states two movements is held, flagged, and never taught', async () => {
+    h.realCurated = false
+    h.curated = null
+    process.env.GEMINI_API_KEY = 'test-key'
+    const reading = { is_transaction: true, amount: 20, currency: 'EGP', confidence: 0.95, kind: 'purchase', merchant: 'CAFE' }
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(reading) }] } }] }), { status: 200 })))
+    try {
+      const SHOP = 'Card **1234 purchase EGP 20.00 at CAFE. Card **1234 purchase EGP 35.00 at DELI.'
+      const res = await (await post({ message: SHOP, receivedAt: '2026-11-16T08:31:00+02:00', eventId: EVT(1) })).json()
+      expect(res).toMatchObject({ ok: true, held: true, reason: 'multi_amount' })
+      expect(h.dispatch).not.toHaveBeenCalled()
+      expect(claims()[0]).toMatchObject({ awaiting_confirmation: true, failure_code: 'multi_amount', sms_flags: ['multi_amount'] })
+      expect(claims()[0].learn_status).not.toBe('pending')
+    } finally {
+      vi.unstubAllGlobals()
+      process.env.GEMINI_API_KEY = ''
+    }
   })
 })

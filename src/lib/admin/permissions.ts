@@ -8,6 +8,17 @@ export const OWNER_EMAIL = 'm.mousaofficial@gmail.com'
 
 export const OWNER_ROLE = 'owner'
 
+/**
+ * TEMPORARY while the app is pre-public (BUD-94): these roles confirm risky actions with an in-app popup instead of
+ * the emailed code. Matched by role key, never rank, so a custom role can't inherit it. Revert: set to [].
+ * Covers every `stepUp()` call (14): users reset_data, delete, data export; staff upsert_role, set_role_permissions,
+ * delete_role, role/permission change on update, reset_credentials, remove; publishing a security email; AI throttle
+ * off; maintenance on; min_app_version; SMS pattern-review sign-off.
+ */
+export const INAPP_CONFIRM_ROLES: readonly string[] = [OWNER_ROLE, 'admin']
+
+export const confirmsInApp = (roleKey: string | null | undefined): boolean => !!roleKey && INAPP_CONFIRM_ROLES.includes(roleKey)
+
 export const PERMISSIONS = {
   'overview.view': 'See the executive dashboard',
   'analytics.view': 'See growth, engagement and retention analytics',

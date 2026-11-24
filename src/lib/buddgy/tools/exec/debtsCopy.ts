@@ -36,6 +36,7 @@ interface DebtLabels {
   addInstallment: string
   addCard: string
   payDebt: string
+  receiveDebt: string
   changeDebt: string
   clearDebt: string
   deleteDebt: string
@@ -88,12 +89,13 @@ const EN: DebtLabels = {
   addInstallment: 'Add installment plan',
   addCard: 'Add credit card',
   payDebt: 'Record debt payment',
+  receiveDebt: 'Record money received',
   changeDebt: 'Change debt',
   clearDebt: 'Mark debt as cleared',
   deleteDebt: 'Delete debt',
   deletePayment: 'Delete debt payment',
   duplicate: 'Looks like a debt you already have.',
-  clearEffect: (r) => `${r} stays unpaid and the debt moves to cleared.`,
+  clearEffect: (r) => `${r} is written off and no longer counts as owed.`,
   deleteEffect: (p, s, e, plans) =>
     [
       `${p} payment record${p === 1 ? '' : 's'} and ${s} payment reminder${s === 1 ? '' : 's'} will be deleted.`,
@@ -147,12 +149,13 @@ const AR: DebtLabels = {
   addInstallment: 'إضافة خطة تقسيط',
   addCard: 'إضافة بطاقة ائتمان',
   payDebt: 'تسجيل سداد دين',
+  receiveDebt: 'تسجيل مبلغ مستلم',
   changeDebt: 'تعديل دين',
   clearDebt: 'تحديد الدين كمسدد',
   deleteDebt: 'حذف دين',
   deletePayment: 'حذف دفعة دين',
   duplicate: 'يبدو أن عندك دينًا مطابقًا.',
-  clearEffect: (r) => `يبقى ${r} غير مسدد وينتقل الدين إلى المسددة.`,
+  clearEffect: (r) => `يُشطب ${r} ولا يُحسب ضمن المستحق.`,
   deleteEffect: (p, s, e, plans) =>
     [
       `سيتم حذف ${p} من سجلات السداد و${s} من التذكيرات.`,

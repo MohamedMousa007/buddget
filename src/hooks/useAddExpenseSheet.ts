@@ -11,7 +11,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { shouldAskCashOnHand } from '@/lib/accounts/cashOnHand'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
-import type { Currency, PaymentMethod, SpendExclusion } from '@/lib/store/types'
+import type { Currency, Expense, PaymentMethod, SpendExclusion } from '@/lib/store/types'
 import { matchPaymentMethodForExpense } from '@/lib/modals/matchPaymentMethodForExpense'
 import { usePlanCategories } from '@/hooks/usePlanCategories'
 import { useActionToast } from '@/components/ui/ActionToast'
@@ -27,12 +27,8 @@ function firstOfNextMonth(): string {
 }
 
 /** Default funding card for BNPL installments — a non-BNPL method (can't fund Tabby from Tabby). */
-function nonBnplDefaultId(pms: PaymentMethod[]): string {
-  return (
-    pms.find((m) => m.isDefault && m.type !== 'bnpl')?.id ||
-    pms.find((m) => m.type !== 'bnpl')?.id ||
-    ''
-  )
+function nonBnplDefaultId(pms: PaymentMethod[], expenses: readonly Expense[]): string {
+  return defaultMethodId(pms.filter((m) => m.type !== 'bnpl'), expenses)
 }
 
 export function useAddExpenseSheet() {
@@ -64,7 +60,7 @@ export function useAddExpenseSheet() {
   const [category, setCategory] = useState<string>('')
   const [subcategory, setSubcategory] = useState<string | undefined>(undefined)
   const [paymentMethodId, setPaymentMethodId] = useState(
-    defaultMethodId(paymentMethods)
+    defaultMethodId(paymentMethods, expenses)
   )
   const [notes, setNotes] = useState('')
   const [spendExclusion, setSpendExclusion] = useState<SpendExclusion | undefined>(undefined)
@@ -76,7 +72,7 @@ export function useAddExpenseSheet() {
   const [splitInstallments, setSplitInstallments] = useState(false)
   const [installmentCount, setInstallmentCount] = useState(4)
   const [installmentFirstDue, setInstallmentFirstDue] = useState(firstOfNextMonth())
-  const [fundingMethodId, setFundingMethodId] = useState(nonBnplDefaultId(paymentMethods))
+  const [fundingMethodId, setFundingMethodId] = useState(nonBnplDefaultId(paymentMethods, expenses))
   const selectedPm = paymentMethods.find((m) => m.id === paymentMethodId)
   const isBnplPurchase = selectedPm?.type === 'bnpl'
   const splitIssue = isBnplPurchase && splitInstallments ? bnplSplitIssue({ fundingMethodId, firstDue: installmentFirstDue, purchaseDate: date }) : null
@@ -135,7 +131,7 @@ export function useAddExpenseSheet() {
     setCurrency(settings.baseCurrency)
     setCategory('')
     setSubcategory(undefined)
-    setPaymentMethodId(defaultMethodId(paymentMethods))
+    setPaymentMethodId(defaultMethodId(paymentMethods, useFinanceStore.getState().expenses))
     setNotes('')
     setSpendExclusion(undefined)
     setOwedBy('')
@@ -143,7 +139,7 @@ export function useAddExpenseSheet() {
     setSplitInstallments(false)
     setInstallmentCount(4)
     setInstallmentFirstDue(firstOfNextMonth())
-    setFundingMethodId(nonBnplDefaultId(paymentMethods))
+    setFundingMethodId(nonBnplDefaultId(paymentMethods, useFinanceStore.getState().expenses))
   }, [paymentMethods, settings.baseCurrency])
 
   // A 3-decimal amount (KWD 1.234) must not outlive a switch to a 2-decimal currency.

@@ -185,6 +185,7 @@ export interface Dictionary {
     toastIncomeAdded: string
     toastDebtAdded: string
     toastDebtPaymentRecorded: string
+    toastRepaymentReceived: string
     toastSavingsDeposited: string
     ariaSwapCurrencies: string
     pressBackAgainToExit: string
@@ -281,6 +282,10 @@ export interface Dictionary {
     spentWith: (card: string) => string
     recent: string
     noActivity: string
+    noCardActivity: string
+    usesBalance: (account: string) => string
+    cardOutstanding: string
+    cardLimit: string
     whatBankShows: string
     matchesBuddget: string
     vsBuddget: (diff: string) => string
@@ -1327,6 +1332,13 @@ export interface Dictionary {
     fDate: string
     fNextDue: string
     fPaymentMethod: string
+    fReceivedInto: string
+    fPayTitle: string
+    fReceiveTitle: string
+    fPayCta: (amt: string, cur: string) => string
+    fReceiveCta: (amt: string, cur: string) => string
+    fSchedulePay: string
+    fScheduleReceive: string
     fRecurring: string
     fRecurringHint: string
     fNotes: string
@@ -2768,6 +2780,9 @@ export interface Dictionary {
       addMoneyTitle: (name: string) => string
       addMoneyAmount: string
       addMoneyCta: string
+      addLeft: (amount: string) => string
+      addOver: (amount: string) => string
+      addExact: string
       checkpointsAria: (pct: number, reached: number) => string
       emptyFilter: string
       insightMilestones: (n: number) => string
@@ -3111,6 +3126,9 @@ export interface Dictionary {
     passThrough: string
     returnedOn: (d: string) => string
     oneTimeCaption: string
+    repaymentCaption: string
+    repaymentReceived: (person: string) => string
+    repaymentNotIncome: string
     askBuddgy: string
   }
 
@@ -3217,6 +3235,7 @@ export interface Dictionary {
       badgeTopup: string
       duplicateTitle: string
       duplicateBody: (detail: string) => string
+      duplicateSamePhoneBody: (detail: string) => string
       duplicateRemove: string
       duplicateKeep: string
       duplicateRemoved: string

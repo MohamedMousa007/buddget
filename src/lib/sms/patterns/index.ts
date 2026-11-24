@@ -95,7 +95,7 @@ export function normalizeSender(sender: string): string {
   return sender.trim().toUpperCase()
 }
 
-export function matchCuratedPattern(message: string, sender: string | null, receivedAt: string | null = null): CuratedMatch | null {
+function findCurated(message: string, sender: string | null, receivedAt: string | null): { pattern: CuratedPattern; match: CuratedMatch } | null {
   const normalized = sender ? normalizeSender(sender) : null
 
   // Sender-matched institution first — the strongest routing signal.
@@ -110,8 +110,29 @@ export function matchCuratedPattern(message: string, sender: string | null, rece
   for (const set of ordered) {
     for (const pattern of set.patterns) {
       const match = tryPattern(message, set, pattern, receivedAt)
-      if (match) return match
+      if (match) return { pattern, match }
     }
   }
   return null
+}
+
+export function matchCuratedPattern(message: string, sender: string | null, receivedAt: string | null = null): CuratedMatch | null {
+  return findCurated(message, sender, receivedAt)?.match ?? null
+}
+
+/**
+ * One message that states several movements in the same curated wording ("debited 100 at UBER … debited 250 at
+ * STARBUCKS"), cut into one text per movement, in order. The matcher reads only the first statement, so without this
+ * every later one is lost (QA-32). A cut starts where a statement starts, so text before the first one stays with it.
+ * Each piece must match the same pattern on its own, or the message is returned whole. One statement: `[message]`.
+ */
+export function splitCuratedSegments(message: string, sender: string | null, receivedAt: string | null = null): string[] {
+  const found = findCurated(message, sender, receivedAt)
+  if (!found) return [message]
+  const flags = found.pattern.regex.flags.includes('g') ? found.pattern.regex.flags : `${found.pattern.regex.flags}g`
+  const starts = [...message.matchAll(new RegExp(found.pattern.regex.source, flags))].map((m) => m.index ?? 0)
+  if (starts.length < 2) return [message]
+  const segments = starts.map((start, i) => message.slice(i === 0 ? 0 : start, starts[i + 1] ?? message.length).trim())
+  const whole = segments.every((s) => findCurated(s, sender, receivedAt)?.pattern.id === found.pattern.id)
+  return whole ? segments : [message]
 }

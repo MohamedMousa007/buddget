@@ -17,7 +17,11 @@ export interface SelfReport {
   sessionId?: string | null
   /** The on-device SMS queue: captured messages the server has not accepted yet. */
   smsQueue?: { pending: number; oldestAt: string | null; lastResult: string | null; evicted?: number }
+  /** Survives a reinstall (Keychain / hashed ANDROID_ID): a new device_id with a live row's key is that same phone. */
+  installKey?: string | null
 }
+
+export const INSTALL_KEY_PATTERN = /^[0-9a-f]{64}$/
 
 const UNIQUE_VIOLATION = '23505'
 export const MAX_LIVE_DEVICES = 20
@@ -74,8 +78,12 @@ export async function upsertSelf(service: ServiceClient, userId: string, deviceI
   const others = (all ?? []).filter((d) => d.device_id !== deviceId && !d.revoked_at)
   const main = others.find((d) => d.is_main)
 
+  const installKey = report.installKey && INSTALL_KEY_PATTERN.test(report.installKey) ? report.installKey : null
+
   if (!existing) {
-    if (others.length >= MAX_LIVE_DEVICES) return { revoked: false as const, device: null }
+    // A reinstall: the old row hands its roles to this one and is deleted, so the phone never appears twice (BUD-107).
+    const predecessor = installKey ? others.find((d) => d.install_key === installKey) : undefined
+    if (!predecessor && others.length >= MAX_LIVE_DEVICES) return { revoked: false as const, device: null }
     const name = defaultDeviceName(report.platform, report.model)
     const row = {
       user_id: userId, device_id: deviceId, platform: report.platform, model: report.model ?? null,
@@ -84,8 +92,17 @@ export async function upsertSelf(service: ServiceClient, userId: string, deviceI
       push_permission: report.pushPermission ?? null,
       session_id: report.sessionId ?? null,
     }
-    let { error } = await service.from('user_devices').insert({ ...row, is_main: !main })
-    if (error?.code === UNIQUE_VIOLATION && !main) ({ error } = await service.from('user_devices').insert({ ...row, is_main: false }))
+    if (predecessor) {
+      // The key moves with the roles inside the RPC; the unique index allows one live row per key.
+      const { error } = await service.from('user_devices').insert({ ...row, is_main: false })
+      if (!error) await service.rpc('devices_supersede', { p_user: userId, p_old: predecessor.device_id, p_new: deviceId })
+      const { data } = await service.from('user_devices').select('*').eq('user_id', userId).eq('device_id', deviceId).single()
+      return { revoked: false as const, device: data }
+    }
+    // Only sent when present, so a build without the key never depends on the column.
+    const keyed = installKey ? { ...row, install_key: installKey } : row
+    let { error } = await service.from('user_devices').insert({ ...keyed, is_main: !main })
+    if (error?.code === UNIQUE_VIOLATION && !main) ({ error } = await service.from('user_devices').insert({ ...keyed, is_main: false }))
     if (!error && main) {
       await emitNotification(service, {
         userId, category: 'device_joined', severity: 'info', dedupeKey: `device-joined:${deviceId}`,
@@ -100,6 +117,8 @@ export async function upsertSelf(service: ServiceClient, userId: string, deviceI
       ...(report.sessionId ? { session_id: report.sessionId } : {}),
       ...(report.smsQueue ? { sms_queue_pending: report.smsQueue.pending, sms_queue_oldest_at: report.smsQueue.oldestAt, sms_last_result: report.smsQueue.lastResult, sms_queue_reported_at: now, ...(report.smsQueue.evicted !== undefined ? { sms_evicted_count: report.smsQueue.evicted } : {}) } : {}),
     }).eq('user_id', userId).eq('device_id', deviceId)
+    // Phones from before install_key learn theirs on the next heartbeat; a clash with another live row is left alone.
+    if (installKey && !existing.install_key) await service.from('user_devices').update({ install_key: installKey }).eq('user_id', userId).eq('device_id', deviceId)
     const stale = main && Date.now() - Date.parse(main.last_seen_at) > STALE_MAIN_DAYS * 86_400_000
     if (!existing.is_main && stale && report.pushPermission !== 'denied') await promoteMain(service, userId, main.device_id, 'stale', deviceId)
     else if (!existing.is_main && !main && report.pushPermission !== 'denied') await setMain(service, userId, deviceId)

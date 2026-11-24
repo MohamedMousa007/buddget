@@ -12,16 +12,7 @@ import { useLedgerInput } from '@/lib/accounts/useAccounts'
 import { accountsBasisFor } from '@/lib/accounts/netWorthBasis'
 import { cycleKeyFor } from '@/lib/settings/payCycle'
 
-/**
- * Net worth snapshot: savings + investments (account balances) + this month's cash flow − debt.
- *
- * The flow term is CASH movement (`stats.cashOutflow`), not accrual spend. It used
- * `totalSpentExcludingSavings`, which double-counted anything already carried by the
- * balance sheet: a 240 credit-card charge hit flow AND outstanding (−480), a BNPL
- * purchase hit flow AND its installment debt (−600), and a savings deposit raised the
- * balance while its income never left flow (+300 from nothing). Each event now moves net
- * worth exactly once — see {@link calculateCashOutflow}.
- */
+/** Net worth: pockets + investments + tracked account balances − debt (see {@link computeNetWorth}). */
 export function useNetWorth() {
   useRates()
   // Net worth is a statement about now: browsing an earlier month on Flow must not change it.
@@ -63,8 +54,6 @@ export function useNetWorth() {
         goldPricePerGram,
         goldPriceAvailable,
         lookup,
-        monthlyIncome: stats.receivedIncome,
-        cashOutflow: stats.cashOutflow,
         debtRemaining: stats.debtRemainingTotal,
       }),
     [
@@ -76,8 +65,6 @@ export function useNetWorth() {
       exchangeRates,
       goldPricePerGram,
       goldPriceAvailable,
-      stats.receivedIncome,
-      stats.cashOutflow,
       stats.debtRemainingTotal,
       basis,
     ],

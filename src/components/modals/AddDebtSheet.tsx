@@ -11,6 +11,7 @@ import { AddBorrowForm } from '@/components/features/debts/redesign/AddBorrowFor
 import { AddInstallmentForm } from '@/components/features/debts/redesign/AddInstallmentForm'
 import { PayDebtForm } from '@/components/features/debts/redesign/PayDebtForm'
 import { useT } from '@/lib/i18n'
+import { isOwedToUser } from '@/lib/debts/debtDirection'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Button } from '@/components/ui/button'
 import { SelectableCard } from '@/components/ui/SelectableCard'
@@ -61,8 +62,10 @@ export function AddDebtSheet() {
   const isFormUI = d.isEditFlow || (!isPayUI && familyStep === 'form')
 
   const payShowsForm = isPayUI && !(d.isPayDebtFlow && d.payDebtStep === 'select')
+  // Money owed to you comes in: the sheet records a receipt, never a payment out (BUD-90).
+  const receiving = d.selectedDebt ? isOwedToUser(d.selectedDebt) : false
   const title = isPayUI
-    ? payShowsForm ? 'Make a payment' : tp.title
+    ? payShowsForm ? (receiving ? t.debts.fReceiveTitle : t.debts.fPayTitle) : tp.title
     : d.isEditFlow
       ? d.debtType === 'installment' ? 'Edit installment' : 'Edit borrow'
       : familyStep === 'pick'
@@ -73,10 +76,11 @@ export function AddDebtSheet() {
   const canSubmit = isPayUI
     ? !!(d.selectedDebtId && d.paymentAmount && payAmt > 0)
     : d.canSubmitNewDebt
+  const payAmtLabel = !Number.isNaN(payAmt) && payAmt > 0 ? formatWhole(payAmt) : ''
   const cta = isPayUI
     ? d.paymentScheduleMode === 'recurring'
-      ? 'Schedule payment'
-      : `Pay ${!Number.isNaN(payAmt) && payAmt > 0 ? formatWhole(payAmt) : ''} ${d.paymentCurrency}`.replace(/\s+/g, ' ').trim()
+      ? receiving ? t.debts.fScheduleReceive : t.debts.fSchedulePay
+      : (receiving ? t.debts.fReceiveCta : t.debts.fPayCta)(payAmtLabel, d.paymentCurrency).replace(/\s+/g, ' ').trim()
     : d.isEditFlow ? 'Save changes' : d.debtType === 'installment' ? 'Add plan' : 'Add borrow'
 
   const onSubmit = isPayUI ? d.handleAddPayment : d.handleAddDebt

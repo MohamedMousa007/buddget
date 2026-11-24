@@ -7,6 +7,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { budgetMonthKeyFor } from '@/lib/utils/calculations'
 import { useNetWorthPath } from '@/hooks/useNetWorthHistory'
 import { useNetWorth } from '@/hooks/useNetWorth'
+import { netWorthBasisOf } from '@/lib/savings/netWorth'
 import { buildInsightInput } from './buildInput'
 import { heroAnswer } from './detectors'
 import { computeInsights } from './rank'
@@ -35,7 +36,7 @@ export function useInsights() {
   const src = useInsightSource()
   const stats = useMonthlyStats(budgetMonthKeyFor(new Date(), src.settings.monthStartDay))
   const nw = useNetWorth()
-  const netWorthPath = useNetWorthPath(nw.baseCurrency, nw.accountsTotal != null ? 'accounts' : 'legacy', !nw.netWorthIncomplete)
+  const netWorthPath = useNetWorthPath(nw.baseCurrency, netWorthBasisOf(nw), !nw.netWorthIncomplete)
   return useMemo(() => {
     const input = { ...buildInsightInput(src, stats.leftToSpend, new Date(), !stats.incomeBlocked), netWorthPath }
     return { input, hero: heroAnswer(input), insights: computeInsights(input), stats }

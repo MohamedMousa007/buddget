@@ -51,6 +51,8 @@ export interface BudgetFacts {
   investInterest: boolean
   /** Other fixed monthly costs the user described in words (school fees, remittances); each becomes a bills line. */
   extraCommitments?: Array<{ name: string; amount: number }>
+  /** Monthly electricity, water and gas the user stated; replaces the typical utilities figure. */
+  utilitiesMonthly?: number
   /** How the money is earned; self-employed income needs a tax reserve and a longer safety net. */
   incomeType?: 'salary' | 'freelance' | 'business' | 'seasonal' | 'mixed' | 'benefits' | 'allowance'
   /** The job may end or change soon, so the safety net targets at least six months. */

@@ -66,7 +66,7 @@ const payment = (over: Partial<DebtPayment> = {}): DebtPayment => ({
   ...over,
 })
 
-/** Mirrors useNetWorth: savings + investments + (income − cashOutflow) − debtRemaining. */
+/** Cash-flow model (savings + income − cashOutflow − debtRemaining): checks that `calculateCashOutflow` moves money once per event. */
 function netWorthOf(s: {
   expenses?: Expense[]
   debts?: Debt[]

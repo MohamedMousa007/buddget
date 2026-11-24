@@ -12,13 +12,9 @@ export interface NetWorthInput {
   goldPricePerGram: number
   goldPriceAvailable: boolean
   lookup: PriceLookup
-  /** This cycle's figures from the monthly stats. */
-  monthlyIncome: number
-  cashOutflow: number
   debtRemaining: number
   /**
-   * Sum of tracked account balances in base currency. When present it replaces the monthly-flow term
-   * (accounts carry cash across months, so a flow term would double count) and the pockets listed in
+   * Sum of tracked account balances in base currency; absent (0) when no account is tracked. The pockets listed in
    * `heldInPocketIds` are skipped (their money already sits inside an account balance).
    */
   accountsBasis?: number
@@ -33,8 +29,6 @@ export interface NetWorthResult {
   totalSavings: number
   totalInvestments: number
   totalDebt: number
-  monthlyIncome: number
-  monthlyFlow: number
   /** Tracked accounts total (base currency), when the accounts basis is in use. */
   accountsTotal: number | null
   baseCurrency: Currency
@@ -43,11 +37,8 @@ export interface NetWorthResult {
 }
 
 /**
- * Net worth snapshot: savings + investments (account balances) + this month's cash flow − debt.
- *
- * The flow term is CASH movement (`cashOutflow`), not accrual spend: accrual double-counted anything
- * already carried by the balance sheet (a card charge hit flow AND outstanding), so each event now
- * moves net worth exactly once — see {@link calculateCashOutflow}.
+ * Net worth: pockets + investments + tracked account balances − debt. Only balances count: with no tracked
+ * account, cash the app cannot see is not guessed from this month's income and spending.
  */
 export function computeNetWorth(i: NetWorthInput): NetWorthResult {
   const { settings, exchangeRates } = i
@@ -76,8 +67,7 @@ export function computeNetWorth(i: NetWorthInput): NetWorthResult {
   if (holdingsInBase === null) valuationIncomplete = true
   else totalInvestments += holdingsInBase
 
-  const monthlyFlow = i.monthlyIncome - i.cashOutflow
-  const netWorth = totalSavings + totalInvestments + (i.accountsBasis ?? monthlyFlow) - i.debtRemaining
+  const netWorth = totalSavings + totalInvestments + (i.accountsBasis ?? 0) - i.debtRemaining
 
   const netWorthSecondary =
     settings.showSecondaryCurrency && settings.secondaryCurrency
@@ -94,11 +84,18 @@ export function computeNetWorth(i: NetWorthInput): NetWorthResult {
     totalSavings,
     totalInvestments,
     totalDebt: i.debtRemaining,
-    monthlyIncome: i.monthlyIncome,
-    monthlyFlow,
     accountsTotal: i.accountsBasis ?? null,
     baseCurrency: base,
     netWorthGoldIncomplete,
     netWorthIncomplete: netWorthGoldIncomplete || valuationIncomplete,
   }
 }
+
+/**
+ * What a saved snapshot measured, so the trend only compares like with like: `accounts` (tracked balances counted),
+ * `assets` (no tracked account: pockets, investments and debt only), `legacy` (old rows that added this month's flow).
+ */
+export type NetWorthBasis = 'legacy' | 'accounts' | 'assets'
+
+export const netWorthBasisOf = (nw: Pick<NetWorthResult, 'accountsTotal'>): Exclude<NetWorthBasis, 'legacy'> =>
+  nw.accountsTotal != null ? 'accounts' : 'assets'

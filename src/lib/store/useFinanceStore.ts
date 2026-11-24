@@ -1,5 +1,6 @@
 import { applyMethodExclusion, isMethodExcluded } from '@/lib/spending/exclusion'
 import { removePaymentMethod } from '@/lib/accounts/removePaymentMethod'
+import { defaultMethodId } from '@/lib/accounts/resolve'
 import { pocketCloseAdjustments } from '@/lib/accounts/pocketCloseAdjustments'
 import type { LedgerInput } from '@/lib/accounts/balance'
 import { create } from 'zustand'
@@ -1084,7 +1085,7 @@ export const useFinanceStore = create<FinanceStore>()(
           cancelledAt: null,
         }
         const fallbackPm =
-          st.paymentMethods.find((m) => m.isDefault)?.id || st.paymentMethods[0]?.id || ''
+          defaultMethodId(st.paymentMethods, st.expenses)
         const re = buildRecurringExpenseFromSubscription(sub, recurringExpenseId, fallbackPm)
         set((state) => ({
           subscriptions: [...state.subscriptions, sub],
@@ -1113,7 +1114,7 @@ export const useFinanceStore = create<FinanceStore>()(
           const merged2: Subscription = { ...merged, nextBillingDate: nextBilling ?? merged.nextBillingDate }
           const updatedSubs = state.subscriptions.map((s) => (s.id === id ? merged2 : s))
           const fallbackPm =
-            state.paymentMethods.find((m) => m.isDefault)?.id || state.paymentMethods[0]?.id || ''
+            defaultMethodId(state.paymentMethods, state.expenses)
           let recurring = state.recurringExpenses
           if (sub.linkedRecurringExpenseId) {
             recurring = state.recurringExpenses.map((re) =>
@@ -1212,7 +1213,7 @@ export const useFinanceStore = create<FinanceStore>()(
           amount: charge?.amount ?? chargeAmount(sub),
           currency: sub.currency,
           paymentMethodId:
-            sub.paymentMethodId || paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || '',
+            sub.paymentMethodId || defaultMethodId(paymentMethods, expenses),
           isRecurring: true,
           linkedSubscriptionId: id,
         })
@@ -1296,7 +1297,7 @@ export const useFinanceStore = create<FinanceStore>()(
           const merged2 = { ...merged, nextBillingDate: nextBilling ?? merged.nextBillingDate }
           const subs = state.subscriptions.map((s) => (s.id === id ? merged2 : s))
           const fallbackPm =
-            state.paymentMethods.find((m) => m.isDefault)?.id || state.paymentMethods[0]?.id || ''
+            defaultMethodId(state.paymentMethods, state.expenses)
           let recurring = state.recurringExpenses
           if (sub.linkedRecurringExpenseId) {
             recurring = state.recurringExpenses.map((re) =>

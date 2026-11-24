@@ -37,6 +37,7 @@ export const staffBody = z.object({
   id: z.string().optional(),
   code: z.string().optional(),
   stepUpPassword: z.string().optional(),
+  confirmed: z.boolean().optional(),
   email: z.string().optional(),
   displayName: z.string().optional(),
   department: z.string().optional(),

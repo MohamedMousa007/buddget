@@ -5,12 +5,12 @@ import { contentDedupeKey } from '@/lib/server/notificationDedupe'
 import { emitNotification } from '@/lib/server/emitNotification'
 import { sendNativePush } from '@/lib/server/sendNativePush'
 import { isFeatureOverrideKey, isLimitKey } from '@/lib/entitlements/limits'
-import { can, OWNER_ROLE, type Permission } from '@/lib/admin/permissions'
+import { can, type Permission } from '@/lib/admin/permissions'
 import { requireSupabasePublishableKey, requireSupabaseUrl } from '@/lib/supabase/env'
 import { appOrigin } from '@/lib/apiBase'
 import { bad, guardAdmin, json, maskEmail, readJson } from '@/lib/server/admin/guard'
 import { STEP_UP_ERROR, stepUp } from '@/lib/server/admin/stepUp'
-import { blockedTarget, UUID_RE } from '@/lib/server/admin/targets'
+import { blockedTarget, selfAllowedOnApp, UUID_RE } from '@/lib/server/admin/targets'
 import { allowUserAction, auditPiiRead } from '@/lib/server/admin/staffActionGuards'
 import type { Json } from '@/lib/supabase/database.types'
 
@@ -69,8 +69,8 @@ type Op =
   | { op: 'remove_biometric' }
   | { op: 'send_password_reset' }
   | { op: 'verify_email' }
-  | { op: 'reset_data'; code?: string; stepUpPassword?: string }
-  | { op: 'delete'; code?: string; stepUpPassword?: string }
+  | { op: 'reset_data'; code?: string; stepUpPassword?: string; confirmed?: boolean }
+  | { op: 'delete'; code?: string; stepUpPassword?: string; confirmed?: boolean }
 
 const REQUIRES: Record<Op['op'], Permission> = {
   note: 'users.edit',
@@ -107,9 +107,9 @@ export async function POST(req: Request, { params }: Params) {
   if (!target.user) return bad('User not found.', 404)
   const email = target.user.email ?? null
 
-  // The owner may empty any buddget app account, their own and staff members' included; the portal account is a separate thing.
-  const ownerOnApp = ctx.role.key === OWNER_ROLE && (body.op === 'reset_data' || body.op === 'delete')
-  const blocked = await blockedTarget(ctx, id, { allowSelf: ownerOnApp })
+  // The owner may empty any buddget app account, staff members' included; the portal account is a separate thing.
+  const self = id === ctx.user.id
+  const blocked = await blockedTarget(ctx, id, { allowSelf: selfAllowedOnApp(ctx.role.key, body.op) })
   if (blocked) return bad(blocked, 403)
 
   const log = (action: string, summary: string, metadata?: Record<string, unknown>) =>
@@ -249,7 +249,7 @@ export async function POST(req: Request, { params }: Params) {
     case 'reset_data': {
       if (!(await stepUp(ctx, body))) return bad(STEP_UP_ERROR, 401)
       const errors = [...(await wipeUserData(ctx.service, id)), ...(await removeAvatarObject(ctx.service, id)), ...(await stampDataReset(ctx.service, id))]
-      await log('user.reset_data', 'Reset account and erased all data', { partialErrors: errors })
+      await log('user.reset_data', self ? 'Reset their own account and erased all data' : 'Reset account and erased all data', { partialErrors: errors, self })
       if (errors.length > 0) return bad('Part of the reset failed. Run it again.', 500)
       return json({ ok: true })
     }

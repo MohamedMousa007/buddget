@@ -33,3 +33,47 @@ describe('QA-18: the expense filter offers one Cash and still finds old rows', (
     expect(storedMethodId('pm_default_cash', [sentinel, realCash])).toBe('c1')
   })
 })
+
+describe('BUD-87: which method a payment defaults to', () => {
+  const now = Date.parse('2026-11-24T12:00:00Z')
+  const bank = { id: 'b1', name: 'Bank', type: 'bank_account', isDefault: false, createdAt: '2026-01-01' } as PaymentMethod
+  const wallet = { id: 'w1', name: 'Wallet', type: 'wallet', isDefault: false, createdAt: '2026-02-01' } as PaymentMethod
+  const sms = (paymentMethodId: string, date: string) => ({ paymentMethodId, date, smsLogId: `log-${paymentMethodId}-${date}` })
+
+  it('the user\'s own choice wins, untracked Cash included, over the method bank messages use', () => {
+    const chosenCash = { ...realCash, isDefault: true }
+    expect(defaultMethodId([sentinel, chosenCash, bank], [sms('b1', '2026-11-20')], now)).toBe('c1')
+    expect(defaultMethodId([{ ...card, isDefault: true }, bank], [sms('b1', '2026-11-20')], now)).toBe('k1')
+  })
+
+  it('with no choice, the method bank messages book to most beats Cash', () => {
+    const expenses = [sms('b1', '2026-11-20'), sms('w1', '2026-11-21'), sms('w1', '2026-11-22')]
+    expect(defaultMethodId([sentinel, realCash, bank, wallet], expenses, now)).toBe('w1')
+  })
+
+  it('a tie goes to the method with the latest message', () => {
+    expect(defaultMethodId([sentinel, bank, wallet], [sms('b1', '2026-11-22'), sms('w1', '2026-11-21')], now)).toBe('b1')
+  })
+
+  it('the built-in Cash\'s seeded mark is not a choice', () => {
+    expect(defaultMethodId([sentinel, bank], [sms('b1', '2026-11-20')], now)).toBe('b1')
+  })
+
+  it('skips provisional, excluded, closed and BNPL methods, old messages and hand-entered expenses', () => {
+    const methods = [
+      sentinel,
+      { ...bank, provisional: true },
+      { ...wallet, excluded: true },
+      { id: 'n1', name: 'Tabby', type: 'bnpl', isDefault: false } as PaymentMethod,
+      { id: 'x1', name: 'Old', type: 'bank_account', isDefault: false, closedAt: '2026-10-01' } as PaymentMethod,
+      card,
+    ]
+    const expenses = [sms('b1', '2026-11-20'), sms('w1', '2026-11-20'), sms('n1', '2026-11-20'), sms('x1', '2026-11-20'), sms('k1', '2026-08-01'), { paymentMethodId: 'k1', date: '2026-11-20' }]
+    expect(defaultMethodId(methods, expenses, now)).toBe('pm_default_cash')
+  })
+
+  it('no messages: Cash, else the first open method', () => {
+    expect(defaultMethodId([bank, realCash], [], now)).toBe('c1')
+    expect(defaultMethodId([bank, wallet], [], now)).toBe('b1')
+  })
+})
