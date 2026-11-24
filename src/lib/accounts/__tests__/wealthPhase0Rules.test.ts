@@ -73,6 +73,18 @@ describe('Phase 0 wealth rules, through the real store actions', () => {
       expect(netWorth()).toBe(11500)
     })
 
+    it('a pocket held in an account that is not the main one is still funded from its own holder when no source is named', () => {
+      // H is the main (oldest) account; the pocket lives in L. A default deposit must not book a transfer H -> L.
+      useFinanceStore.setState({ savingsAccounts: [pocket('Fun', 0, { heldInPaymentMethodId: 'L' })] })
+      expect(S().depositToSavings('Fun', 400, 'EGP')).toBe(true)
+      expect(S().savingsTransactions[0].paymentMethodId).toBeUndefined()
+      expect(acct('H').balance).toBe(10000)
+      expect(acct('L').balance).toBe(1000)
+      expect(acct('L').free).toBe(600)
+      expect(S().depositToSavings('Fun', 601, 'EGP')).toBe(false)
+      expect(netWorth()).toBe(11000)
+    })
+
     it('round trip: reserve then release leaves every number where it started', () => {
       setAside('H', 'Trip', 1000, 'EGP')
       expect(S().withdrawFromSavings('Trip', 1000, 'EGP', undefined, 'income', { toAccountId: null })).toBe(true)
@@ -185,6 +197,15 @@ describe('Phase 0 wealth rules, through the real store actions', () => {
       S().deleteSavingsTransaction(S().savingsTransactions[0].id)
       expect(acct('H').balance).toBe(10000)
       expect(netWorth()).toBe(11500)
+    })
+
+    it('a user who tracks only Cash has no main account to debit and keeps today\'s leg-less budget deposit', () => {
+      useFinanceStore.setState({ paymentMethods: [pm('Cash', 900, { type: 'cash' })], savingsAccounts: [pocket('Q', 500)] })
+      expect(S().depositToSavings('Q', 100, 'EGP')).toBe(true)
+      expect(S().savingsTransactions[0].paymentMethodId).toBeUndefined()
+      expect(S().depositToSavings('Q', 100, 'EGP', undefined, { fromAccountId: 'Cash' })).toBe(true)
+      expect(S().savingsTransactions[1].paymentMethodId).toBe('Cash')
+      expect(acct('Cash').balance).toBe(800)
     })
 
     it('a user who tracks no account keeps today\'s leg-less budget deposit', () => {

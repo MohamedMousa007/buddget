@@ -70,7 +70,7 @@ import { advanceRecurringDebtDueDate, scheduledDueDate } from '@/lib/utils/recur
 import { overpaysDebt } from '@/lib/debts/overpaysDebt'
 import { withGoalDefaults } from '@/lib/goals/goalDefaults'
 import { resolveAccountLeg, incomeEventIdForTx } from '@/lib/savings/accountLeg'
-import { correctionRefusal, depositRefusal, ledgerOf } from '@/lib/savings/pocketHome'
+import { correctionRefusal, depositLegId, depositRefusal, ledgerOf } from '@/lib/savings/pocketHome'
 import { dropExpenseReceipt, restoreExpenseReceipt } from '@/lib/receipt/receiptCascade'
 import { migrateIdsToUuid } from '@/lib/store/migrations/v17_uuid_remap'
 import { resendCashDebtPayments } from '@/lib/store/migrations/v23_cash_debt_payment_resend'
@@ -1814,9 +1814,7 @@ export const useFinanceStore = create<FinanceStore>()(
           if (amt === null || amt <= 0) return state
           if (depositRefusal(ledgerOf(state), acc, { amount: amt, mode: opts?.mode, paymentMethodId: opts?.paymentMethodId, fromAccountId: opts?.fromAccountId })) return state
           // Only cash deposits get an account leg; an explicit paymentMethodId (set-aside) is kept as given.
-          const legId =
-            opts?.paymentMethodId ??
-            (opts?.mode === 'declare' ? undefined : resolveAccountLeg(state.paymentMethods, acc, opts?.fromAccountId, acc.currency))
+          const legId = depositLegId(state.paymentMethods, acc, { mode: opts?.mode, paymentMethodId: opts?.paymentMethodId, fromAccountId: opts?.fromAccountId })
           const tx: SavingsTransaction = {
             id: opts?.txId ?? generateId(),
             accountId,

@@ -2,7 +2,7 @@ import type { FinanceStore, PaymentMethod, SavingsAccount } from '@/lib/store/ty
 import { computeBalances, type LedgerInput } from '@/lib/accounts/balance'
 import { isTracked } from '@/lib/accounts/kinds'
 import { resolveAccountId } from '@/lib/accounts/resolve'
-import { resolveAccountLeg } from './accountLeg'
+import { primaryTrackedAccount, resolveAccountLeg } from './accountLeg'
 import { balanceEpsilon } from './balanceMath'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 
@@ -32,7 +32,7 @@ export function availableIn(accountId: string, ledger: LedgerInput): number {
  * Why a deposit must not be written:
  * - `over_available`: a reserve of more than the holding account has free.
  * - `needs_account`: outside money aimed at a reserved pocket with no account named; it must arrive in the account first.
- * - `no_account_leg`: a budget deposit that no tracked account can fund, so it would raise net worth from nothing.
+ * - `no_account_leg`: a budget deposit the user's main account cannot fund, so it would raise net worth from nothing.
  */
 export type DepositRefusal = 'over_available' | 'needs_account' | 'no_account_leg'
 
@@ -44,6 +44,19 @@ export interface DepositIntent {
   mode?: 'allocate' | 'declare'
   paymentMethodId?: string
   fromAccountId?: string | null
+}
+
+/**
+ * The account leg a deposit carries. An explicit `paymentMethodId` is kept as given; declared money has none; a budget
+ * deposit takes the requested account, else the primary tracked one. A pocket set aside in an account, with no source
+ * named, is funded from that account's own money (no leg): defaulting to the primary would book a transfer between
+ * two accounts that never happened.
+ */
+export function depositLegId(methods: readonly PaymentMethod[], pocket: GuardedPocket, intent: Omit<DepositIntent, 'amount'>): string | undefined {
+  if (intent.paymentMethodId) return intent.paymentMethodId
+  if (intent.mode === 'declare') return undefined
+  if (intent.fromAccountId === undefined && pocketHome(pocket, methods).kind === 'reserved') return undefined
+  return resolveAccountLeg(methods, pocket, intent.fromAccountId, pocket.currency)
 }
 
 /** More than the holder has free, compared in the holder's currency. An amount with no rate is not refused. */
@@ -58,7 +71,7 @@ function exceedsAvailable(ledger: LedgerInput, pocket: GuardedPocket, accountId:
 export function depositRefusal(ledger: LedgerInput, pocket: GuardedPocket, intent: DepositIntent): DepositRefusal | null {
   const methods = ledger.paymentMethods
   const declared = intent.mode === 'declare'
-  const legId = intent.paymentMethodId ?? (declared ? undefined : resolveAccountLeg(methods, pocket, intent.fromAccountId, pocket.currency))
+  const legId = depositLegId(methods, pocket, intent)
   const home = pocketHome(pocket, methods)
   if (home.kind === 'reserved') {
     if (!legId && declared) return 'needs_account'
@@ -66,8 +79,9 @@ export function depositRefusal(ledger: LedgerInput, pocket: GuardedPocket, inten
     const fromHolder = !legId || resolveAccountId(legId, methods) === home.accountId
     return fromHolder && exceedsAvailable(ledger, pocket, home.accountId, intent.amount) ? 'over_available' : null
   }
-  // With no tracked account net worth has no accounts side, and the leg-less budget deposit keeps its legacy meaning.
-  return !legId && !declared && methods.some(isTracked) ? 'no_account_leg' : null
+  // Refused only when a primary account exists and cannot carry the leg. With none (nothing tracked, or only Cash or a
+  // prepaid card) the default deposit never had a leg, and it keeps that meaning.
+  return !legId && !declared && primaryTrackedAccount(methods) !== null ? 'no_account_leg' : null
 }
 
 /** Raising a reserved pocket's amount by hand is a reserve too; lowering it always passes. */
