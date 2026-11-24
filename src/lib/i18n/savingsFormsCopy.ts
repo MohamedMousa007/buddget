@@ -18,8 +18,6 @@ export interface SavingsFormsCopy {
     inItNow: string
     currency: string
     colour: string
-    alsoPayment: string
-    alsoPaymentSub: string
     create: string
   }
   zakat: {
@@ -111,8 +109,6 @@ export const savingsFormsCopyEn: SavingsFormsCopy = {
     inItNow: 'What’s in it now',
     currency: 'Currency',
     colour: 'Colour',
-    alsoPayment: 'Also add as a payment method',
-    alsoPaymentSub: 'So you can spend from it too',
     create: 'Create pocket',
   },
   zakat: {
@@ -205,8 +201,6 @@ export const savingsFormsCopyAr: SavingsFormsCopy = {
     inItNow: 'ما فيها الآن',
     currency: 'العملة',
     colour: 'اللون',
-    alsoPayment: 'إضافتها أيضاً كطريقة دفع',
-    alsoPaymentSub: 'لتتمكن من الإنفاق منها أيضاً',
     create: 'إنشاء الجيب',
   },
   zakat: {

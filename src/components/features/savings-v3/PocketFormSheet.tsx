@@ -7,10 +7,8 @@ import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { AmountField } from '@/components/ui/AmountField'
 import { CurrencyField } from '@/components/ui/CurrencyField'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { DatePickerField } from '@/components/ui/DatePickerField'
-import { Switch } from '@/components/ui/switch'
 import { ColorSwatchRow } from '@/components/ui/ColorSwatchRow'
 import { PAYMENT_BRANDS, QUICK_ADD_BLEND, brandIssuesType, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -22,7 +20,7 @@ import type { Currency, PaymentMethod } from '@/lib/store/types'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { useT } from '@/lib/i18n'
 import { useAccounts } from '@/lib/accounts/useAccounts'
-import { pocketHolderId } from '@/lib/savings/pocketHolder'
+import { linkedPocketCurrency, pocketHolderId } from '@/lib/savings/pocketHolder'
 import { splitMoney } from '@/components/features/accounts/accountDisplay'
 
 export interface PocketFormSheetProps {
@@ -61,9 +59,10 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod, onCr
   const [maturity, setMaturity] = useState('')
   const [name, setName] = useState(decomposed?.provider ?? kindLabel)
   const [balance, setBalance] = useState('')
-  const [currency, setCurrency] = useState<Currency>(linkedMethod?.currency ?? baseCurrency)
+  // From an account the currency is the account's own and the field is locked.
+  const [pickedCurrency, setCurrency] = useState<Currency>(baseCurrency)
+  const currency = linkedMethod ? linkedPocketCurrency(linkedMethod, paymentMethods) : pickedCurrency
   const [color, setColor] = useState(def.color)
-  const [alsoPayment, setAlsoPayment] = useState(false)
   // Emergency cover is a threshold over ALL savings now (set on the emergency card), not per pocket.
 
   // Provider chips from the app-wide catalogue, filtered to what THIS pocket kind can hold
@@ -179,7 +178,7 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod, onCr
             </div>
             <div style={{ width: 104 }}>
               <label style={micro}>{pf.currency}</label>
-              <CurrencyField value={currency} onChange={(c) => setCurrency(c as unknown as Currency)}
+              <CurrencyField value={currency} onChange={(c) => setCurrency(c as unknown as Currency)} disabled={fromPM}
                 className="mt-2 h-12 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 font-mono-numbers text-sm font-semibold text-[var(--color-brand-text-primary)] w-full" />
             </div>
           </div>
@@ -190,10 +189,6 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod, onCr
               <ColorSwatchRow value={color} onChange={setColor} />
             </div>
           </div>
-
-          {(def.kind === 'bank' || def.kind === 'wallet') && (
-            <ToggleRow title={pf.alsoPayment} sub={pf.alsoPaymentSub} on={alsoPayment} onToggle={setAlsoPayment} />
-          )}
         </div>
 
         <div className="px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))]">
@@ -203,19 +198,5 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod, onCr
         </div>
       </div>
     </ModalShell>
-  )
-}
-
-function ToggleRow({ title, sub, on, onToggle }: { title: string; sub: string; on: boolean; onToggle: (v: boolean) => void }) {
-  return (
-    <Card variant="elevated" padding="none" role="button" tabIndex={0} onClick={() => onToggle(!on)}
-      className="flex w-full cursor-pointer items-center justify-between p-3.5 text-start">
-      <div>
-        <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
-        <p className="text-xs text-[var(--color-brand-text-muted)]">{sub}</p>
-      </div>
-      {/* Canonical app switch; row handles the tap so the thumb is display-only. */}
-      <Switch checked={on} onCheckedChange={onToggle} className="pointer-events-none shrink-0" />
-    </Card>
   )
 }
