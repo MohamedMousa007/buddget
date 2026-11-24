@@ -57,8 +57,6 @@ export interface FlowItem {
   /** Category (out) or income-type chip value (in). */
   facet: string
   methodId?: string
-  /** An own-account move (ATM, transfer, top-up, exchange): listed only while the Not counted chip is on. */
-  internal?: boolean
   row: FlowLedgerRow
 }
 
@@ -130,7 +128,6 @@ export function useFlowLedger() {
       amtMin: s.amtMin,
       amtMax: s.amtMax,
       range: s.range,
-      showMoves: s.showMoves,
     })),
   )
   const previews = usePendingSmsPreviews()
@@ -160,7 +157,8 @@ export function useFlowLedger() {
     [filters.range, monthFilter, settings.monthStartDay, weekStart],
   )
 
-  /** Every item in the range, before segment and filters. */
+  /** Every item in the range, before segment and filters. Own-account moves (ATM, transfer, top-up, exchange) are not
+   *  listed in Flow at all, so they never count toward its empty states or category options; they stay in the ledger. */
   const all = useMemo<FlowItem[]>(() => {
     const pmById = new Map(paymentMethods.map((m) => [m.id, m]))
     const sourceById = new Map(incomeSources.map((s) => [s.id, s]))
@@ -196,6 +194,7 @@ export function useFlowLedger() {
     for (const e of expenses) {
       const date = e.date.slice(0, 10)
       if (!inRange(date, resolved)) continue
+      if (!e.refundKind && isInternalMoveCategory(e.category)) continue
       items.push(expenseItem(e, date))
     }
 
@@ -213,7 +212,6 @@ export function useFlowLedger() {
         at: instantOf(e.occurredAt, date),
         amountBase: gross,
         counted: !dim && !nonSpend,
-        internal: !dim && isInternalMoveCategory(e.category),
         facet: e.category,
         methodId: e.paymentMethodId,
         row: {
@@ -469,7 +467,6 @@ export function useFlowLedger() {
     () =>
       all
         .filter((i) => {
-          if (i.internal && !filters.showMoves) return false
           if (filters.segment === 'in' && i.dir !== 'in') return false
           if (filters.segment === 'out' && i.dir !== 'out') return false
           // The segment filters first; a category then narrows spending (it never empties In).
