@@ -72,3 +72,7 @@ Prompt: `docs/plans/QA_NIGHT_MASTER_PROMPT.md`. Branch: `claude/qa-bugs-wealth-l
 | D16 | Bug 15 Cash currency change with balance | Ask amount in new currency (prefilled converted), record via balance adjustment; follow main currency only while empty | Orchestrator |
 | D17 | Seeded AED Cash row | Realign only if zero balance and zero transactions | Orchestrator |
 | D8 | Local Playwright vs cloud-runner rule | Local, per owner's chat instruction 2026-11-24 | Owner |
+
+## Council: Round 3 follow-ups (2026-11-24)
+- **Q1 money lent / borrowed (debt principal leg).** Architect, Skeptic, Critic: fix now, guarded — store the account on the debt, one explicit "Did this money leave CIB now?" question (default yes only for today/after opening), link an existing SMS transfer instead of a second debit, existing debts untouched, receivable stays out of net worth (D7). Pragmatist dissent: copy-only tonight, the leg tomorrow (deep change, migration). Verdict: guarded fix, with mandatory tests. Finding: DR-6's "lending lowers the account" was false in code; repayments minted money.
+- **Q2 Close account confirm.** Unanimous: pass `confirmLabel` (button "Close account" / «إغلاق الحساب»), keep it red, body says it can't be reopened from the app (no reopen exists). Shipped e77d0138.
