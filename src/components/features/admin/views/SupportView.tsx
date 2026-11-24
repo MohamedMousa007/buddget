@@ -10,6 +10,8 @@ import { SelectField } from '@/components/ui/SelectField'
 import { adminNavigate, useAdminRoute } from '../adminRouter'
 import { adminPost, errorMessage, useAdminQuery } from '../adminClient'
 import { ago, dateTime } from '../format'
+import { useForegroundPoll } from '@/hooks/useForegroundPoll'
+import { slaTone } from '@/lib/support/conversation'
 import { useAdminAction } from '../useAdminAction'
 import { AdminSheet } from '../ui/AdminSheet'
 import { DataTable, type Column } from '../ui/DataTable'
@@ -24,17 +26,29 @@ interface Ticket {
   priority: string; status: string; assignee_id: string | null; source: string; tags: string[]
   kind: string; severity: string; votes: number; board_state: string; board_title: string | null; board_summary: string | null; triage_state: string; linear_issue_url: string | null; sla_first_response_due: string | null
   created_at: string; updated_at: string; first_response_at: string | null; resolved_at: string | null
+  last_message_at: string | null; last_message_from: string | null; last_message_preview: string | null
+  unread?: boolean; needs_reply?: boolean; waiting_since?: string | null
+  csat_rating: number | null; csat_comment?: string | null; csat_at?: string | null
+  platform?: string | null; app_version?: string | null; context?: Record<string, unknown> | null
 }
 interface ListData { tickets: Ticket[]; staff: Array<{ id: string; name: string }>; counts: Record<string, number>; me: string }
-interface Message { id: string; author_type: string; author_label: string | null; body: string; internal: boolean; created_at: string }
+interface Message { id: string; author_type: string; author_label: string | null; body: string; internal: boolean; created_at: string; attachments?: Array<{ url: string; mime: string }> }
 
 const VIEWS = [
-  { value: 'active', label: 'Active' }, { value: 'mine', label: 'Mine' }, { value: 'unassigned', label: 'Unassigned' }, { value: 'triage', label: 'Needs triage' },
+  { value: 'needs_reply', label: 'Needs reply' }, { value: 'active', label: 'Active' }, { value: 'mine', label: 'Mine' }, { value: 'unassigned', label: 'Unassigned' }, { value: 'triage', label: 'Needs triage' },
   { value: 'resolved', label: 'Resolved' }, { value: 'closed', label: 'Closed' },
 ] as const
 const PRIORITIES = ['low', 'normal', 'high', 'urgent'].map((v) => ({ value: v, label: v }))
 const STATUSES = ['open', 'pending', 'resolved', 'closed'].map((v) => ({ value: v, label: v }))
 const CATEGORIES = ['general', 'bug', 'sms', 'sync', 'billing', 'account', 'feature', 'other'].map((v) => ({ value: v, label: v }))
+const SLA_PILL = { ok: 'neutral', warn: 'warn', breach: 'bad' } as const
+const CONTEXT_LABELS: Array<[string, string]> = [['osVersion', 'OS'], ['device', 'Device'], ['route', 'Screen'], ['locale', 'Language'], ['timezone', 'Time zone']]
+
+/** How long the user has waited for the team, coloured past 24h (warn) and 48h (breach). */
+function Waiting({ since, now }: { since: string | null | undefined; now: number }) {
+  if (!since) return <span className="text-[var(--color-brand-text-muted)]">—</span>
+  return <span title={dateTime(since)}><Pill tone={SLA_PILL[slaTone(since, now)]}>{ago(since)}</Pill></span>
+}
 
 export default function SupportView({ status }: { status: AdminStatus }) {
   const route = useAdminRoute()
@@ -43,7 +57,8 @@ export default function SupportView({ status }: { status: AdminStatus }) {
 }
 
 function TicketList({ status }: { status: AdminStatus }) {
-  const [view, setView] = useState<(typeof VIEWS)[number]['value']>('active')
+  const [view, setView] = useState<(typeof VIEWS)[number]['value']>('needs_reply')
+  const [now] = useState(() => Date.now())
   const [q, setQ] = useState('')
   const [creating, setCreating] = useState(false)
   const { data, error, loading, refresh } = useAdminQuery<ListData>(`/api/admin/support/tickets?view=${view}${q ? `&q=${encodeURIComponent(q)}` : ''}`)
@@ -51,7 +66,19 @@ function TicketList({ status }: { status: AdminStatus }) {
   const names = new Map(data?.staff.map((s) => [s.id, s.name]))
 
   const columns: Column<Ticket>[] = [
-    { key: 'subject', header: 'Ticket', cell: (t) => <div className="min-w-0"><p className="truncate font-medium text-[var(--color-brand-text-primary)]"><span className="font-mono-numbers text-[var(--color-brand-text-muted)]">#{t.number}</span> {t.subject}</p><p className="truncate text-xs text-[var(--color-brand-text-muted)]">{t.requester_email ?? 'No email'} · {t.kind} · {t.category}{t.severity === 'high' || t.severity === 'critical' ? ` · ${t.severity}` : ''}</p></div> },
+    {
+      key: 'subject', header: 'Ticket', cell: (t) => (
+        <div className="flex min-w-0 items-start gap-2">
+          <span className={t.unread ? 'mt-1.5 size-2 shrink-0 rounded-full bg-[var(--color-brand-primary)]' : 'mt-1.5 size-2 shrink-0'} role={t.unread ? 'img' : undefined} aria-label={t.unread ? 'Unread reply' : undefined} />
+          <div className="min-w-0">
+            <p className={`truncate text-[var(--color-brand-text-primary)] ${t.unread ? 'font-semibold' : 'font-medium'}`}><span className="font-mono-numbers text-[var(--color-brand-text-muted)]">#{t.number}</span> {t.subject}</p>
+            {t.last_message_preview ? <p dir="auto" className="truncate text-xs text-[var(--color-brand-text-secondary)]">{t.last_message_from === 'staff' ? 'Team: ' : ''}{t.last_message_preview}</p> : null}
+            <p className="truncate text-xs text-[var(--color-brand-text-muted)]">{t.requester_email ?? 'No email'} · {t.kind} · {t.category}{t.severity === 'high' || t.severity === 'critical' ? ` · ${t.severity}` : ''}{t.csat_rating ? ` · CSAT ${t.csat_rating > 0 ? '+' : '−'}` : ''}</p>
+          </div>
+        </div>
+      ),
+    },
+    { key: 'waiting', header: 'Waiting', cell: (t) => <Waiting since={t.waiting_since} now={now} /> },
     { key: 'status', header: 'Status', cell: (t) => <StatusPill status={t.status} /> },
     { key: 'priority', header: 'Priority', cell: (t) => <StatusPill status={t.priority} /> },
     { key: 'assignee', header: 'Owner', cell: (t) => <span className="text-[var(--color-brand-text-secondary)]">{t.assignee_id ? (names.get(t.assignee_id) ?? 'Teammate') : <span className="text-[var(--color-brand-amber)]">Unassigned</span>}</span> },
@@ -65,6 +92,7 @@ function TicketList({ status }: { status: AdminStatus }) {
       <div className="space-y-6">
         {data ? (
           <KpiGrid>
+            <StatTile compact label="Needs reply" value={data.counts.needsReply ?? 0} tone={data.counts.needsReply ? 'negative' : 'default'} />
             <StatTile compact label="Active" value={data.counts.active ?? 0} />
             <StatTile compact label="Mine" value={data.counts.mine ?? 0} />
             <StatTile compact label="Unassigned" value={data.counts.unassigned ?? 0} tone={data.counts.unassigned ? 'negative' : 'default'} />
@@ -80,7 +108,7 @@ function TicketList({ status }: { status: AdminStatus }) {
           <DataTable
             rows={data?.tickets ?? []} columns={columns} rowKey={(t) => t.id} loading={loading}
             onRowClick={(t) => adminNavigate('support', { ticket: t.id })}
-            empty={<div className="px-5 py-12 text-center text-sm text-[var(--color-brand-text-muted)]">Inbox zero. Nothing in this view.</div>}
+            empty={<div className="px-5 py-12 text-center text-sm text-[var(--color-brand-text-muted)]">{view === 'needs_reply' ? 'Nobody is waiting on us. Every conversation has the team’s latest word.' : 'Inbox zero. Nothing in this view.'}</div>}
           />
         </Panel>
       </div>
@@ -124,6 +152,8 @@ function TicketDetail({ id, status }: { id: string; status: AdminStatus }) {
   const [internal, setInternal] = useState(false)
   const macros = useAdminQuery<{ macros: Array<{ title: string; body: string }> }>('/api/admin/support/macros')
   const reload = async () => { await detail.refresh() }
+  // A user reply lands while the ticket is open: pick it up without a reload.
+  useForegroundPoll(() => void detail.refresh(), 30_000, true)
   const { run, busy } = useAdminAction(`/api/admin/support/tickets/${id}`, reload)
   const perms = new Set(status.permissions ?? [])
   const can = (p: string) => perms.has('*') || perms.has(p)
@@ -148,7 +178,17 @@ function TicketDetail({ id, status }: { id: string; status: AdminStatus }) {
                   {m.internal ? <Pill tone="warn"><Lock className="size-3" aria-hidden />Internal</Pill> : null}
                   <time title={dateTime(m.created_at)}>{ago(m.created_at)}</time>
                 </div>
-                <p className="whitespace-pre-wrap break-words text-sm text-[var(--color-brand-text-primary)]">{m.body}</p>
+                <p dir="auto" className="whitespace-pre-wrap break-words text-sm text-[var(--color-brand-text-primary)]">{m.body}</p>
+                {m.attachments?.length ? (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {m.attachments.map((a, i) => (
+                      <a key={a.url} href={a.url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-[var(--color-brand-border)]" aria-label={`Screenshot ${i + 1}`}>
+                        {/* eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL from private storage */}
+                        <img src={a.url} alt="" loading="lazy" className="h-28 w-auto max-w-[220px] object-cover" />
+                      </a>
+                    ))}
+                  </div>
+                ) : null}
               </li>
             ))}
           </ol>
@@ -157,7 +197,7 @@ function TicketDetail({ id, status }: { id: string; status: AdminStatus }) {
               {!internal && macros.data?.macros.length ? (
                 <SelectField aria-label="Saved reply" value="" className="h-12 w-full" placeholder="Insert a saved reply" items={macros.data.macros.map((m) => ({ value: m.title, label: m.title }))} onChange={(v) => { const m = macros.data?.macros.find((x) => x.title === v); if (m) setText((t) => (t ? `${t}\n\n${m.body}` : m.body)) }} />
               ) : null}
-              <Textarea aria-label="Reply" rows={4} placeholder={internal ? 'Write an internal note — the user will not see this' : 'Reply to the user — they get an in-app notification'} value={text} onChange={(e) => setText(e.target.value)} />
+              <Textarea aria-label="Reply" rows={4} placeholder={internal ? 'Write an internal note — the user will not see this' : 'Reply to the user — they get a push in their language. {{first_name}} becomes their first name.'} value={text} onChange={(e) => setText(e.target.value)} />
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <SegmentedControl ariaLabel="Reply type" fill={false} value={internal ? 'note' : 'reply'} onChange={(v) => setInternal(v === 'note')} options={[{ value: 'reply', label: 'Reply to user' }, { value: 'note', label: 'Internal note' }]} />
                 <Button size="touch" loading={busy === 'reply'} disabled={!text.trim() || (!internal && !ticket.user_id)} onClick={async () => { if (await run('reply', { op: 'reply', message: text, internal }, { success: internal ? 'Note added' : 'Reply sent' })) setText('') }}>
@@ -182,6 +222,22 @@ function TicketDetail({ id, status }: { id: string; status: AdminStatus }) {
                   onChange={(v) => void run('assignee', { op: 'update', assigneeId: v || null }, { success: 'Owner updated' })} />
               </Field>
             </div>
+          </Panel>
+          <Panel title="Context" description="Attached automatically when the user wrote in.">
+            <dl className="divide-y divide-[var(--color-brand-border)]">
+              <KeyValue label="Platform">{ticket.platform || '—'}</KeyValue>
+              <KeyValue label="App version">{ticket.app_version || '—'}</KeyValue>
+              {CONTEXT_LABELS.map(([k, label]) => <KeyValue key={k} label={label}>{typeof ticket.context?.[k] === 'string' && ticket.context[k] ? String(ticket.context[k]) : '—'}</KeyValue>)}
+            </dl>
+          </Panel>
+          <Panel title="Satisfaction">
+            {ticket.csat_rating ? (
+              <div className="space-y-2">
+                <Pill tone={ticket.csat_rating > 0 ? 'good' : 'bad'}>{ticket.csat_rating > 0 ? 'Good' : 'Not good'}</Pill>
+                {ticket.csat_comment ? <p dir="auto" className="whitespace-pre-wrap text-sm text-[var(--color-brand-text-primary)]">{ticket.csat_comment}</p> : null}
+                {ticket.csat_at ? <p className="text-xs text-[var(--color-brand-text-muted)]">{dateTime(ticket.csat_at)}</p> : null}
+              </div>
+            ) : <p className="text-sm text-[var(--color-brand-text-muted)]">{ticket.status === 'resolved' || ticket.status === 'closed' ? 'Asked in the app; no answer yet.' : 'Asked once the ticket is resolved.'}</p>}
           </Panel>
           <Panel title="Requester">
             <dl className="divide-y divide-[var(--color-brand-border)]">

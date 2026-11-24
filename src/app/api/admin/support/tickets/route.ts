@@ -1,6 +1,7 @@
 import { readValidated, ticketCreateBody } from '@/lib/server/admin/bodySchemas'
 import { bad, guardAdmin, json, maskIf } from '@/lib/server/admin/guard'
 import { UUID_RE } from '@/lib/server/admin/targets'
+import { isUnreadForStaff, needsReply as needsReplyRule } from '@/lib/support/conversation'
 
 const STATUSES = ['open', 'pending', 'resolved', 'closed']
 const PRIORITIES = ['low', 'normal', 'high', 'urgent']
@@ -11,17 +12,19 @@ export async function GET(req: Request) {
   if (!g.ok) return g.res
   const { ctx } = g
   const url = new URL(req.url)
-  const view = url.searchParams.get('view') ?? 'active'
+  const view = url.searchParams.get('view') ?? 'needs_reply'
   const assignee = url.searchParams.get('assignee')
   const priority = url.searchParams.get('priority')
   const search = url.searchParams.get('q')?.trim()
 
   let q = ctx.service
     .from('support_tickets')
-    .select('id, number, user_id, requester_email, subject, category, priority, status, assignee_id, source, tags, kind, severity, triage_state, linear_issue_url, sla_first_response_due, created_at, updated_at, first_response_at, resolved_at')
-    .order('created_at', { ascending: false })
+    .select('id, number, user_id, requester_email, subject, category, priority, status, assignee_id, source, tags, kind, severity, triage_state, linear_issue_url, sla_first_response_due, created_at, updated_at, first_response_at, resolved_at, last_message_at, last_message_from, last_message_preview, staff_last_read_at, csat_rating')
     .limit(200)
-  if (view === 'active') q = q.in('status', ['open', 'pending'])
+  // Needs reply: the user spoke last on an open conversation, longest waiting first (partial index). Others: newest first.
+  q = view === 'needs_reply' ? q.order('last_message_at', { ascending: true }) : q.order('created_at', { ascending: false })
+  if (view === 'needs_reply') q = q.in('status', ['open', 'pending']).eq('last_message_from', 'user')
+  else if (view === 'active') q = q.in('status', ['open', 'pending'])
   else if (view === 'mine') q = q.in('status', ['open', 'pending']).eq('assignee_id', ctx.staff.id)
   else if (view === 'unassigned') q = q.in('status', ['open', 'pending']).is('assignee_id', null)
   else if (view === 'triage') q = q.in('status', ['open', 'pending']).eq('triage_state', 'needs_human')
@@ -30,10 +33,11 @@ export async function GET(req: Request) {
   if (priority && PRIORITIES.includes(priority)) q = q.eq('priority', priority)
   if (search) q = q.or(`subject.ilike.%${search.replace(/[%,()]/g, '')}%,requester_email.ilike.%${search.replace(/[%,()]/g, '')}%`)
 
-  const [tickets, staff, counts] = await Promise.all([
+  const [tickets, staff, counts, needsReply] = await Promise.all([
     q,
     ctx.service.from('admin_staff').select('id, display_name, email').eq('status', 'active'),
     ctx.service.rpc('admin_ticket_counts'),
+    ctx.service.from('support_tickets').select('id', { count: 'exact', head: true }).in('status', ['open', 'pending']).eq('last_message_from', 'user'),
   ])
   if (tickets.error) return bad('Could not load tickets.', 500)
 
@@ -41,9 +45,16 @@ export async function GET(req: Request) {
   const sum = (pred: (r: (typeof rows)[number]) => boolean) => rows.filter(pred).reduce((a, r) => a + r.n, 0)
   const isOpen = (r: (typeof rows)[number]) => r.status === 'open' || r.status === 'pending'
   return json({
-    tickets: (tickets.data ?? []).map((t) => ({ ...t, requester_email: maskIf(ctx, t.requester_email) })),
+    tickets: (tickets.data ?? []).map((t) => ({
+      ...t,
+      requester_email: maskIf(ctx, t.requester_email),
+      unread: isUnreadForStaff(t),
+      needs_reply: needsReplyRule(t),
+      waiting_since: needsReplyRule(t) ? t.last_message_at : null,
+    })),
     staff: (staff.data ?? []).map((s) => ({ id: s.id, name: s.display_name ?? s.email })),
     counts: {
+      needsReply: needsReply.count ?? 0,
       active: sum(isOpen),
       mine: sum((r) => isOpen(r) && r.assignee_id === ctx.staff.id),
       unassigned: sum((r) => isOpen(r) && !r.assignee_id),
