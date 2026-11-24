@@ -1629,6 +1629,8 @@ export const en: Dictionary = {
     previewItems: ['You spend 40% more in the week after payday.', 'Your internet bill went up 50.', '3 bills are due before payday.'],
     lockSheet: { title: 'This one is part of Pro', body: 'Pro opens every pattern, the year view, the what-if and your monthly recap. Your daily amount, bills and debts stay free.', cta: 'See Pro', later: 'Not now' },
     newBadge: 'New',
+    reminderTitle: 'Insights',
+    reminderBody: 'Something new in your money. Take a look.',
     share: {
       button: 'Share this recap',
       title: 'My last cycle',

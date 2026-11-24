@@ -2,6 +2,7 @@
 
 import { BillingHost } from '@/components/features/billing/BillingHost'
 import { NetWorthSnapshotHost } from '@/components/features/wealth/NetWorthSnapshotHost'
+import { InsightsReminderHost } from '@/components/features/insights/InsightsReminderHost'
 import { Suspense, lazy, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { Sidebar } from './Sidebar'
@@ -350,6 +351,7 @@ export function AppShell({ children }: AppShellProps) {
       <HeldMessagesHost />
       <BillingHost />
       <NetWorthSnapshotHost />
+      <InsightsReminderHost />
       <SubscriptionPlanChangeBanner />
       <TopNoticeRegion>
         <BannerStack />

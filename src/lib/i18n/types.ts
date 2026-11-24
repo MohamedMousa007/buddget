@@ -1513,6 +1513,8 @@ export interface Dictionary {
     previewItems: string[]
     lockSheet: { title: string; body: string; cta: string; later: string }
     newBadge: string
+    reminderTitle: string
+    reminderBody: string
     share: { button: string; title: string; spent: (pct: number | null, up: boolean) => string; kept: (share: number, positive: boolean) => string; top: (name: string) => string; purchases: (n: number) => string; foot: string }
     heroLearning: (days: number) => string
     cellSpent: string
