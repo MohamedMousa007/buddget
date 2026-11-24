@@ -12,6 +12,7 @@ import { AccountRow } from '@/components/features/accounts/AccountRow'
 import { sharesProvider } from '@/components/features/accounts/accountDisplay'
 import { AccountDetailSheet } from '@/components/features/accounts/AccountDetailSheet'
 import { AddAccountSheet } from '@/components/features/accounts/AddAccountSheet'
+import { CashCurrencySheet } from '@/components/features/accounts/CashCurrencySheet'
 import { BrandMark } from '@/components/features/accounts/BrandMark'
 import { FixGapSheet } from '@/components/features/accounts/FixGapSheet'
 import { DetectedAccountsSheet } from '@/components/features/accounts/DetectedAccountsSheet'
@@ -40,6 +41,7 @@ type Sheet =
   | { kind: 'fix'; id: string }
   | { kind: 'card'; id: string }
   | { kind: 'edit'; id: string }
+  | { kind: 'cashCurrency'; id: string }
   | { kind: 'editCard'; id: string; cardId: string }
   | { kind: 'add'; cash?: boolean }
   | { kind: 'found' }
@@ -157,11 +159,14 @@ export default function AccountsPage() {
         <>
           <AccountDetailSheet key={`d-${open.method.id}`} open={sheet?.kind === 'detail'} onClose={close} account={open} masked={listMasked}
             onMove={(mode) => setSheet({ kind: 'move', id: open.method.id, mode })} onUpdate={() => setSheet({ kind: 'update', id: open.method.id })}
-            onAddCard={() => setSheet({ kind: 'card', id: open.method.id })} onEdit={() => setSheet({ kind: 'edit', id: open.method.id })}
+            onAddCard={() => setSheet({ kind: 'card', id: open.method.id })} onEdit={() => setSheet({ kind: open.method.type === 'cash' ? 'cashCurrency' : 'edit', id: open.method.id })}
             onEditCard={(cardId) => setSheet({ kind: 'editCard', id: open.method.id, cardId })} />
           <MoveMoneySheet key={`m-${open.method.id}-${sheet?.kind === 'move' ? sheet.mode : ''}`} open={sheet?.kind === 'move'} onClose={close}
             accounts={model.accounts} initialAccountId={open.method.id} initialMode={sheet?.kind === 'move' ? sheet.mode : 'cash'} initialAmount={sheet?.kind === 'move' ? sheet.amount : undefined}
             onDone={() => { const g = gaps[open.method.id]; if (g && sheet?.kind === 'move' && sheet.fromGap) { snoozeGap(open.method.id, g.reportedAt); refresh() } }} />
+          {open.method.type === 'cash' ? (
+            <CashCurrencySheet key={`c-${open.method.id}-${sheet?.kind === 'cashCurrency'}`} open={sheet?.kind === 'cashCurrency'} onClose={close} account={open} />
+          ) : null}
           <UpdateBalanceSheet key={`u-${open.method.id}`} open={sheet?.kind === 'update'} onClose={close} account={open}
             onDone={() => { const g = gaps[open.method.id]; if (g) { snoozeGap(open.method.id, g.reportedAt); refresh() } }} />
           {gaps[open.method.id] ? (

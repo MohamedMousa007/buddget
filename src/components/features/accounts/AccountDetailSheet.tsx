@@ -2,7 +2,7 @@
 
 import { categoryLabel } from '@/lib/i18n/categoryLabel'
 import { useMemo, useState } from 'react'
-import { Banknote, MoreVertical, Pencil, PiggyBank, RefreshCw, ShoppingBag, Star, Trash2 } from 'lucide-react'
+import { Banknote, Coins, MoreVertical, Pencil, PiggyBank, RefreshCw, ShoppingBag, Star, Trash2 } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { PaymentCardCarousel } from '@/components/features/payments/PaymentCardCarousel'
@@ -18,6 +18,8 @@ import { canBeParent } from '@/lib/accounts/kinds'
 import { resolveAccountId } from '@/lib/accounts/resolve'
 import type { AccountView } from '@/lib/accounts/useAccounts'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { useCashCurrencyCopy } from '@/lib/i18n/cashCurrencyCopy'
 import { MASK } from '@/lib/privacy/mask'
 import { UsageMeter } from '@/components/features/usage/UsageMeter'
 import { useBalanceView } from '@/lib/accounts/useBalanceView'
@@ -36,6 +38,7 @@ interface AccountDetailSheetProps {
   onMove: (mode: MoveMode) => void
   onUpdate: () => void
   onAddCard: () => void
+  /** Edit the account (for Cash: change its currency). */
   onEdit: () => void
   /** Edit one of the account's cards (the setup sheet in edit mode). */
   onEditCard: (cardId: string) => void
@@ -47,6 +50,9 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
   const { locale } = useLocale()
   const t = tAll.accountsPage
   const confirm = useConfirm()
+  const cashCopy = useCashCurrencyCopy()
+  const setEditingExpenseId = useSettingsStore((s) => s.setEditingExpenseId)
+  const setActiveModal = useSettingsStore((s) => s.setActiveModal)
   const updatePaymentMethod = useFinanceStore((s) => s.updatePaymentMethod)
   const deletePaymentMethod = useFinanceStore((s) => s.deletePaymentMethod)
   const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null)
@@ -71,7 +77,7 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
 
   const isCash = method.type === 'cash'
   const manageItems = [
-    ...(isCash ? [] : [{ label: tAll.paymentMethods.edit, icon: <Pencil size={17} />, onSelect: onEdit }]),
+    isCash ? { label: cashCopy.menuItem, icon: <Coins size={17} />, onSelect: onEdit } : { label: tAll.paymentMethods.edit, icon: <Pencil size={17} />, onSelect: onEdit },
     ...(method.isDefault ? [] : [{ label: tAll.paymentMethods.setDefault, icon: <Star size={17} />, onSelect: () => updatePaymentMethod(isCash ? ensureCashAccount() : method.id, { isDefault: true }) }]),
     ...(isCash ? [] : [{
       label: t.closeAccount, icon: <Trash2 size={17} />, destructive: true,
@@ -113,7 +119,7 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
             </V3SheetHeader.Extra>
           ) : null}
         </V3SheetHeader>
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto pb-3 pt-2">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y pb-3 pt-2">
           {canBeParent(method.type) ? (
             <div className="px-5">
               {cards.length > 0 ? (
@@ -178,6 +184,7 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
               <p className="px-5 py-3 text-sm text-[var(--color-brand-text-muted)]">{t.noActivity}</p>
             ) : activity.map((e) => (
               <TransactionRow key={e.id} icon={<ShoppingBag className="size-5" aria-hidden />} title={e.description || categoryLabel(tAll, e.category)}
+                onClick={() => { onClose(); setEditingExpenseId(e.id); setActiveModal('editExpense') }}
                 subtitle={formatLocalized(new Date(instantOf(e.occurredAt, e.date)), 'MMM d', locale)}
                 amount={masked ? MASK : `−${splitMoney(e.amount, String(e.currency)).int}`} />
             ))}
