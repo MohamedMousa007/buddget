@@ -3263,6 +3263,12 @@ export interface Dictionary {
     ownTransferOk: string
     ownTransferAccountTitle: (tail: string) => string
     ownTransferAccountBody: (detail: string) => string
+    principalDupLentTitle: (amount: string, person: string) => string
+    principalDupBorrowedTitle: (amount: string, person: string) => string
+    principalDupBody: (detail: string, account: string) => string
+    principalDupYes: string
+    principalDupNo: string
+    principalDupDone: string
     smsFlags: {
       badgeDuplicate: string
       badgeDate: string

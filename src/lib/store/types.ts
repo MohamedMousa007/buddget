@@ -183,10 +183,11 @@ export interface IncomeEvent {
   /** The server's row version as pulled; echoed on push so a stale copy cannot undo a server change. */
   serverRev?: number
   /**
-   * Set when the user confirmed this credit only passed through them: it leaves income totals, the account balance
-   * still counts it, and clearing it counts it again.
+   * Set when the user confirmed this credit only passed through them (`pass_through`), or the server booked it as
+   * one side of a move between the user's own accounts (`own_transfer`): it leaves income totals, the account
+   * balance still counts it, and clearing it counts it again.
    */
-  exclusion?: 'pass_through' | null
+  exclusion?: 'pass_through' | 'own_transfer' | null
   notes?: string
   createdAt: string
   updatedAt: string

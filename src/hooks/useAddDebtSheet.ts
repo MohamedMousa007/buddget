@@ -38,6 +38,8 @@ import { useActionToast } from '@/components/ui/ActionToast'
 import { useT } from '@/lib/i18n'
 import { defaultMethodId, storedMethodId } from '@/lib/accounts/resolve'
 import { recurringDueDayFor } from '@/lib/utils/recurringDebtPayments'
+import { settlePrompt } from '@/lib/prompts/settle'
+import { principalDuplicateKey } from '@/lib/debts/principalDuplicate'
 import { findPrincipalMatch, linkedExpensePatch, linkedIncomePatch, principalAccount, principalLegFields, principalMovesByDefault } from '@/lib/debts/principalLeg'
 
 type NewDebtPayload = Omit<Debt, 'id' | 'createdAt'>
@@ -68,6 +70,7 @@ export function useAddDebtSheet() {
     debtPayments,
     expenses,
     incomeEvents,
+    incomeSources,
     paymentMethods,
     settings,
     exchangeRates,
@@ -87,6 +90,7 @@ export function useAddDebtSheet() {
       debtPayments: s.debtPayments,
       expenses: s.expenses,
       incomeEvents: s.incomeEvents,
+      incomeSources: s.incomeSources,
       paymentMethods: s.paymentMethods,
       settings: s.settings,
       exchangeRates: s.exchangeRates,
@@ -429,10 +433,11 @@ export function useAddDebtSheet() {
     if (!principalAcct || Number.isNaN(amount)) return null
     return findPrincipalMatch({
       direction, accountId: principalAcct.id, amount, currency: clampDebtFiatToAllowed(settings, currency),
-      at: principalNow, expenses, incomeEvents, paymentMethods,
+      at: principalNow, expenses, incomeEvents, incomeSources, monthStartDay: settings.monthStartDay, rates: exchangeRates, paymentMethods,
     })
-  }, [principalAcct, startingBalance, direction, settings, currency, principalNow, expenses, incomeEvents, paymentMethods])
-  const principalLinked = !!principalMatch && (principalLinkChoice ?? true)
+  }, [principalAcct, startingBalance, direction, settings, currency, principalNow, expenses, incomeEvents, incomeSources, exchangeRates, paymentMethods])
+  // A transfer out is linked unless the user says otherwise; a credit is only ever linked on the user's own Yes.
+  const principalLinked = !!principalMatch && (principalLinkChoice ?? direction === 'they_owe')
   // With a matching row in the ledger the safe default is No: a second leg must be the user's explicit choice.
   const principalMoved = !!principalAcct && !principalLinked
     && (principalMovedChoice ?? (!principalMatch && principalMovesByDefault(principalAcct, principalNow)))
@@ -561,6 +566,9 @@ export function useAddDebtSheet() {
       if (principalLinked && principalMatch) {
         if (principalMatch.kind === 'expense') updateExpense(principalMatch.id, linkedExpensePatch(debtId))
         else updateIncomeEvent(principalMatch.id, linkedIncomePatch(debtId))
+      } else if (principalMatch && 'principalAt' in leg) {
+        // The user saw this row and booked the money apart from it: that is the answer, the duplicate check stays quiet.
+        settlePrompt(principalDuplicateKey(debtId, principalMatch.id))
       }
     }
 

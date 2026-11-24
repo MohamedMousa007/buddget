@@ -72,7 +72,7 @@ export function incomeEventFromRow(row: IncomeEventRow): IncomeEvent {
     smsLogId: row.sms_log_id ?? undefined,
     smsFlags: row.sms_flags ?? undefined,
     smsFlagsAck: row.sms_flags_ack ?? undefined,
-    exclusion: row.exclusion === 'pass_through' ? 'pass_through' : undefined,
+    exclusion: row.exclusion === 'pass_through' || row.exclusion === 'own_transfer' ? row.exclusion : undefined,
     notes: row.notes ?? undefined,
     occurredAt: row.occurred_at ?? undefined,
     serverRev: row.server_rev ?? undefined,

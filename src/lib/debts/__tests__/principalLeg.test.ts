@@ -77,6 +77,7 @@ describe('debt principal leg', () => {
   }
   const match = (direction: 'i_owe' | 'they_owe', amount = 5000) => findPrincipalMatch({
     direction, accountId: cib, amount, currency: base(), at: Date.now(), expenses: s().expenses, incomeEvents: s().incomeEvents, paymentMethods: s().paymentMethods,
+    incomeSources: s().incomeSources, monthStartDay: s().settings.monthStartDay, rates: s().exchangeRates,
   })
 
   beforeEach(() => {
@@ -284,9 +285,11 @@ describe('debt principal leg', () => {
       const id = create('i_owe', { leg: false })
       s().updateIncomeEvent(m!.id, linkedIncomePatch(id))
       expect(bal()).toBe(START + 5000)
-      // Known limit: a linked deposit stays in income exactly as before the link, the same as "borrowed money" income rows.
-      expect(stats().totalIncome).toBe(incomeBefore)
-      expect(s().incomeEvents.find((x) => x.id === ev.id)).toMatchObject({ linkedDebtId: id, sourceType: 'debt' })
+      // Borrowed money is not income (council Q3): the link takes the deposit out of income and keeps its own type.
+      expect(incomeBefore).toBe(5000)
+      expect(stats().totalIncome).toBe(0)
+      expect(s().incomeEvents.find((x) => x.id === ev.id)!.linkedDebtId).toBe(id)
+      expect(s().incomeEvents.find((x) => x.id === ev.id)!.sourceType).toBe(ev.sourceType)
       expect(match('i_owe')).toBeNull()
     })
 

@@ -1,4 +1,5 @@
-import type { Debt, Expense, IncomeEvent, PaymentMethod } from '@/lib/store/types'
+import type { Debt, Expense, IncomeEvent, IncomeSource, PaymentMethod } from '@/lib/store/types'
+import { paydayCandidates } from '@/lib/income/paydayResolution'
 import { DEFAULT_CASH_ID, isTracked } from '@/lib/accounts/kinds'
 import { resolveAccountId } from '@/lib/accounts/resolve'
 import { instantOf, minorUnit } from '@/lib/accounts/balance'
@@ -31,6 +32,9 @@ export type PrincipalMatch = { kind: 'expense' | 'income'; id: string; date: str
  * The ledger row that already is this debt's money: a transfer out of the account (lending) or a one-off credit into
  * it (borrowing) with the same amount and currency, a few days around `at`, not yet tied to anything. Linking it
  * instead of adding a principal leg keeps the account from moving twice for one transfer. Closest in time wins.
+ *
+ * A credit that is, or could be, a paycheck is never offered as the borrowed money: one tied to a recurring source,
+ * one typed as salary, or one that plausibly fills an open payday. Linking it would take a salary out of income.
  */
 export function findPrincipalMatch(args: {
   direction: Debt['direction']
@@ -40,9 +44,19 @@ export function findPrincipalMatch(args: {
   at: number
   expenses: readonly Expense[]
   incomeEvents: readonly IncomeEvent[]
+  incomeSources: readonly IncomeSource[]
+  monthStartDay: number
+  rates: Record<string, number>
   paymentMethods: readonly PaymentMethod[]
+  /** Rows never offered: the user already said they are not this debt's money. */
+  skipIds?: ReadonlySet<string>
+  today?: Date
 }): PrincipalMatch | null {
-  const { accountId, amount, currency, at, paymentMethods: pms } = args
+  const { accountId, amount, currency, at, paymentMethods: pms, skipIds } = args
+  const today = args.today ?? new Date()
+  const couldBePayday = (i: IncomeEvent) =>
+    i.sourceType === 'salary'
+    || paydayCandidates(i, [...args.incomeSources], [...args.incomeEvents], args.monthStartDay, args.rates, today).some((c) => c.plausible)
   if (!(amount > 0)) return null
   const u = minorUnit(currency)
   const sameMoney = (a: number, c: string) => String(c) === currency && Math.round(a * u) === Math.round(amount * u)
@@ -51,7 +65,7 @@ export function findPrincipalMatch(args: {
   if (args.direction === 'they_owe') {
     for (const e of args.expenses) {
       if (!PERSON_TRANSFER_CATEGORIES.has(e.category) || e.spendExclusion || e.refundKind || e.refundedAt || e.fundedFromSavingsTxId) continue
-      if (e.linkedDebtId || e.linkedDebtPaymentId || e.isDebtPayment) continue
+      if (e.linkedDebtId || e.linkedDebtPaymentId || e.isDebtPayment || skipIds?.has(e.id)) continue
       // A message the server could not place debits no account: linking it would leave the loan with no leg at all.
       if (!e.paymentMethodId || e.paymentMethodId === DEFAULT_CASH_ID) continue
       if (resolveAccountId(e.paymentMethodId, pms) !== accountId || !sameMoney(e.amount, e.currency)) continue
@@ -60,10 +74,10 @@ export function findPrincipalMatch(args: {
     }
   } else {
     for (const i of args.incomeEvents) {
-      if (!RECEIVED.has(i.status) || i.templateId || i.linkedDebtId || i.linkedSavingsAccountId || i.exclusion) continue
+      if (!RECEIVED.has(i.status) || i.templateId || i.linkedDebtId || i.linkedSavingsAccountId || i.exclusion || i.sourceType === 'debt' || skipIds?.has(i.id)) continue
       if (!i.paymentMethodId || resolveAccountId(i.paymentMethodId, pms) !== accountId || !sameMoney(i.amount, i.currency)) continue
       const t = instantOf(i.occurredAt, i.receivedDate)
-      if (near(t)) found.push({ kind: 'income', id: i.id, date: i.receivedDate.slice(0, 10), gap: Math.abs(t - at) })
+      if (near(t) && !couldBePayday(i)) found.push({ kind: 'income', id: i.id, date: i.receivedDate.slice(0, 10), gap: Math.abs(t - at) })
     }
   }
   found.sort((a, b) => a.gap - b.gap)
@@ -79,13 +93,12 @@ export function principalLegFields(account: Pick<PaymentMethod, 'id'>, amount: n
 
 /**
  * What linking a matched row to its debt writes. The transfer out stays in the ledger and keeps its account debit,
- * but leaves spending (lent money is not consumption). The credit keeps its account credit and is marked as borrowed
- * money, the same shape "borrowed money" income already has.
+ * but leaves spending (lent money is not consumption). The credit keeps its account credit and leaves income through
+ * the link alone (`isBorrowedMoney`): its own type is untouched, so dropping the link counts it again as what it was.
  */
 export const linkedExpensePatch = (debtId: string): Pick<Expense, 'linkedDebtId' | 'spendExclusion'> =>
   ({ linkedDebtId: debtId, spendExclusion: 'manual' })
-export const linkedIncomePatch = (debtId: string): Pick<IncomeEvent, 'linkedDebtId' | 'sourceType'> =>
-  ({ linkedDebtId: debtId, sourceType: 'debt' })
+export const linkedIncomePatch = (debtId: string): Pick<IncomeEvent, 'linkedDebtId'> => ({ linkedDebtId: debtId })
 
 /** A transfer that was linked to a lent debt as its principal (never a payment row, never a BNPL purchase). */
 export const isLinkedPrincipalExpense = (e: Pick<Expense, 'linkedDebtId' | 'isDebtPayment' | 'linkedDebtPaymentId' | 'spendExclusion'>, debt: Pick<Debt, 'id' | 'direction' | 'debtType'>): boolean =>

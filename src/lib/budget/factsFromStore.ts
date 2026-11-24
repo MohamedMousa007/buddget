@@ -15,6 +15,7 @@ import { buildGoalProgressContext } from '@/lib/goals/computeGoalProgress'
 import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
 import { calculateCategorySpending, filterExpensesByMonth, projectedIncomeForMonth } from '@/lib/utils/calculations'
 import { convertCurrency } from '@/lib/utils/currency'
+import { isBorrowedMoney } from '@/lib/income/borrowed'
 
 export type FactsSlice = Pick<
   FinanceStore,
@@ -58,7 +59,7 @@ export function monthlyIncomeHistory(events: IncomeEvent[], base: Currency, rate
   return Array.from({ length: INCOME_MONTHS }, (_, n) => shiftMonth(current, -(INCOME_MONTHS - n)))
     .map((key) =>
       events
-        .filter((e) => e.status === 'confirmed' && e.receivedDate.startsWith(key))
+        .filter((e) => e.status === 'confirmed' && !e.exclusion && !isBorrowedMoney(e) && e.receivedDate.startsWith(key))
         .reduce((s, e) => s + convertCurrency(e.amount, e.currency, base, rates), 0)
     )
     .filter((total) => total > 0)

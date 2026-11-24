@@ -53,6 +53,15 @@ describe('buildInsightInput on a realistic store', () => {
     expect(input.paydays.count).toBeGreaterThanOrEqual(3)
     expect(input.paydays.liftPct).toBeGreaterThan(25)
   })
+  it('a borrowed deposit is not a payday', () => {
+    const src = fixture()
+    const borrowed = { id: 'b1', name: 'From Omar', amount: 9000, currency: 'EGP', receivedDate: '2026-09-10', status: 'confirmed', createdAt: '', updatedAt: '' }
+    const withBorrowed = (extra: object) => buildInsightInput({ ...src, incomeEvents: [...src.incomeEvents, { ...borrowed, ...extra }] } as unknown as InsightSource, 3000, NOW).paydays
+    expect(withBorrowed({}).purchases).not.toBe(input.paydays.purchases)
+    expect(withBorrowed({ linkedDebtId: 'd9' })).toEqual(input.paydays)
+    expect(withBorrowed({ sourceType: 'debt' })).toEqual(input.paydays)
+    expect(withBorrowed({ exclusion: 'own_transfer' })).toEqual(input.paydays)
+  })
   it('keeps unassigned bank texts out of card and cash', () => {
     expect(input.pay.unassigned).toBeGreaterThan(0)
     expect(input.pay.cash).toBeGreaterThan(0)

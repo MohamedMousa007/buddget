@@ -18,6 +18,7 @@ import { localTodayISO } from '@/lib/utils/localDate'
 import { deriveDefaultPaydays, sourcePaydayDays, toISODate } from '@/lib/utils/paydaySchedule'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { addMonths, format, parseISO } from 'date-fns'
+import { isBorrowedMoney } from '@/lib/income/borrowed'
 
 /** Same as the income sheet writes: days a paycheck may drift before it reads as missed. */
 const PAYDAY_DRIFT_DAYS = 7
@@ -98,7 +99,7 @@ const list_income: ReadImpl = (args, ctx) => {
     currency: s.settings.baseCurrency,
     sources: rows,
     ...(s.incomeSources.length > LIST_CAP ? { more: s.incomeSources.length - LIST_CAP } : {}),
-    oneTime: oneTime.slice(0, LIST_CAP).map((e) => ({ name: e.name, amount: r2(e.amount), cur: e.currency, date: e.receivedDate })),
+    oneTime: oneTime.slice(0, LIST_CAP).map((e) => ({ name: e.name, amount: r2(e.amount), cur: e.currency, date: e.receivedDate, ...(isBorrowedMoney(e) ? { borrowed: true as const } : {}) })),
     ...(oneTime.length > LIST_CAP ? { oneTimeMore: oneTime.length - LIST_CAP } : {}),
   }
 }

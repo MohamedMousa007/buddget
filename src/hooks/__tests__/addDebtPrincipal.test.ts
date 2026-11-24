@@ -26,6 +26,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useAddDebtSheet } from '@/hooks/useAddDebtSheet'
 import { computeBalances } from '@/lib/accounts/balance'
+import { pendingPrincipalDuplicates } from '@/lib/debts/principalDuplicate'
 
 const DAY = 86_400_000
 const st = () => useFinanceStore.getState()
@@ -34,6 +35,7 @@ const cibBalance = () => computeBalances({
   paymentMethods: st().paymentMethods, expenses: st().expenses, incomeEvents: st().incomeEvents, debts: st().debts, debtPayments: st().debtPayments,
   savingsTransactions: [], savingsAccounts: [], adjustments: [], convert: (a: number) => a,
 }).get('cib')?.balance
+const deposit = { id: 'i1', name: 'Transfer in', amount: 5000, currency: 'EGP', sourceType: 'other', receivedDate: iso(1).slice(0, 10), occurredAt: iso(1), status: 'confirmed', paymentMethodId: 'cib', smsLogId: 'sms2', createdAt: iso(1), updatedAt: iso(1) }
 const transfer = { id: 'e1', date: iso(1).slice(0, 10), occurredAt: iso(1), description: 'IPN', category: 'Instapay', amount: 5000, currency: 'EGP', paymentMethodId: 'cib', isRecurring: false, smsLogId: 'sms1', createdAt: iso(1) }
 
 afterEach(cleanupLite)
@@ -105,6 +107,50 @@ describe('add debt: principal leg (DR-6)', () => {
     expect(st().expenses[0].linkedDebtId).toBeUndefined()
     expect(st().expenses[0].spendExclusion).toBeUndefined()
     expect(cibBalance()).toBe(10000)
+  })
+
+  it('booking the money apart from a row the form showed is the answer: the duplicate check does not ask about it', () => {
+    useFinanceStore.setState({ expenses: [transfer] as never })
+    const h = lendForm()
+    h.act(() => h.result.current.setPrincipalLinked(false))
+    h.act(() => h.result.current.setPrincipalMoved(true))
+    h.act(() => h.result.current.handleAddDebt())
+    const args = { debts: st().debts, expenses: st().expenses, incomeEvents: st().incomeEvents, incomeSources: st().incomeSources, paymentMethods: st().paymentMethods, monthStartDay: 1, rates: {} }
+    expect(pendingPrincipalDuplicates({ ...args, promptState: {} })).toHaveLength(1)
+    expect(pendingPrincipalDuplicates({ ...args, promptState: st().settings.promptState })).toEqual([])
+  })
+
+  it('borrowing: a matching deposit is shown but never linked by default, and no second credit is booked', () => {
+    useFinanceStore.setState({ incomeEvents: [deposit] as never })
+    const h = lendForm()
+    h.act(() => h.result.current.setDirection('i_owe'))
+    expect(h.result.current.principalMatch).toMatchObject({ kind: 'income', id: 'i1' })
+    expect(h.result.current.principalLinked).toBe(false)
+    expect(h.result.current.principalMoved).toBe(false)
+    h.act(() => h.result.current.handleAddDebt())
+    expect(st().debts[0].principalPaymentMethodId).toBeUndefined()
+    expect(st().incomeEvents[0].linkedDebtId).toBeUndefined()
+    expect(cibBalance()).toBe(25000)
+  })
+
+  it('borrowing: switching the link on ties the deposit to the debt, keeps its type and credits the account once', () => {
+    useFinanceStore.setState({ incomeEvents: [deposit] as never })
+    const h = lendForm()
+    h.act(() => h.result.current.setDirection('i_owe'))
+    h.act(() => h.result.current.setPrincipalLinked(true))
+    h.act(() => h.result.current.handleAddDebt())
+    const debt = st().debts[0]
+    expect(debt.principalPaymentMethodId).toBeUndefined()
+    expect(st().incomeEvents[0]).toMatchObject({ linkedDebtId: debt.id, sourceType: 'other' })
+    expect(cibBalance()).toBe(25000)
+  })
+
+  it('borrowing: a salary deposit is never offered, so the default books the leg', () => {
+    useFinanceStore.setState({ incomeEvents: [{ ...deposit, sourceType: 'salary' }] as never })
+    const h = lendForm()
+    h.act(() => h.result.current.setDirection('i_owe'))
+    expect(h.result.current.principalMatch).toBeNull()
+    expect(h.result.current.principalLinked).toBe(false)
   })
 
   it('a credit card is never asked and never gets a leg', () => {

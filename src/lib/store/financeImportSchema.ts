@@ -185,7 +185,7 @@ export const importDataSchema = z.object({
         linkedDebtId: z.string().optional(),
         sharedPlanId: z.string().uuid().nullable().optional(),
         smsLogId: z.string().nullable().optional(),
-        exclusion: z.literal('pass_through').nullable().optional(),
+        exclusion: z.enum(['pass_through', 'own_transfer']).nullable().optional(),
         notes: z.string().optional(),
         createdAt: z.string(),
         updatedAt: z.string().optional(),
