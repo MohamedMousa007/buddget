@@ -214,6 +214,8 @@ describe('debt principal leg', () => {
       expect(bal()).toBe(START - 5000)
       expect(netWorth()).toBe(nw - 5000)
       expect(stats().totalSpentExcludingSavings).toBe(0)
+      // The transfer is real cash that left: it stays in the month's cash outflow, as every spend-excluded row does.
+      expect(stats().cashOutflow).toBe(5000)
       const linked = s().expenses.find((x) => x.id === e.id)!
       expect(linked).toMatchObject({ linkedDebtId: id, spendExclusion: 'manual', category: 'Instapay', smsLogId: e.smsLogId })
       expect(isReportSpendRow(linked)).toBe(false)
@@ -277,10 +279,13 @@ describe('debt principal leg', () => {
       expect(match('they_owe')).toBeNull()
       const m = match('i_owe')
       expect(m).toEqual({ kind: 'income', id: ev.id, date: ev.receivedDate })
+      const incomeBefore = stats().totalIncome
 
       const id = create('i_owe', { leg: false })
       s().updateIncomeEvent(m!.id, linkedIncomePatch(id))
       expect(bal()).toBe(START + 5000)
+      // Known limit: a linked deposit stays in income exactly as before the link, the same as "borrowed money" income rows.
+      expect(stats().totalIncome).toBe(incomeBefore)
       expect(s().incomeEvents.find((x) => x.id === ev.id)).toMatchObject({ linkedDebtId: id, sourceType: 'debt' })
       expect(match('i_owe')).toBeNull()
     })
