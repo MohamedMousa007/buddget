@@ -14,7 +14,7 @@ import { withDebtDerived } from '@/lib/goals/debtGoal'
 import { periodsUntil } from '@/lib/goals/goalPlan'
 import { getGoalStatus } from '@/lib/goals/goalStatus'
 import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
-import { availableIn, depositRefusal, explainDepositRefusal, ledgerOf } from '@/lib/savings/pocketHome'
+import { availableIn, depositRefusal, explainDepositRefusal, ledgerOf, pocketHome } from '@/lib/savings/pocketHome'
 import { createGoalPocket, ELSEWHERE, goalHomeAccounts, savedHomeProblem } from '@/lib/goals/goalPocket'
 import { accountsNamedIn, userNamedHome } from '@/lib/goals/namedHome'
 import type { Currency, FinanceStore, Goal, GoalCategory, GoalFundingMode, PaymentMethod } from '@/lib/store/types'
@@ -25,6 +25,8 @@ import { localTodayISO } from '@/lib/utils/localDate'
 
 const FUNDING_MODES: readonly GoalFundingMode[] = ['share', 'fixed', 'manual']
 const RECENT_MS = 2 * 60_000
+/** The user messages that answer "where is the money" when the model sends nothing or a name. */
+const RECENT_USER_TEXTS = 4
 const r2 = (n: number) => Math.round(n * 100) / 100
 const GOAL_HINT = 'Find it with list_goals first.'
 const SAVING_CATEGORIES = GOAL_CATEGORIES.map((c) => c.value).filter((v) => v !== 'debt_freedom' && v !== 'spending_control') as GoalCategory[]
@@ -104,7 +106,9 @@ function resolveSavedHome(s: FinanceStore, currency: Currency, saved: number, in
   if (accounts.length === 0) return {}
   const choices = [...accounts.map((a) => ({ id: refOf(a.id), label: a.name })), { id: ELSEWHERE, label: elsewhereLabel }]
   const ask = (error: string) => no(error, 'Ask the user whether it is inside one of these accounts or somewhere else that is not tracked here, then send saved_in. Never guess.', choices)
-  const said = userNamedHome(ctx.userTexts, accounts)
+  const recent = userNamedHome(ctx.userTexts?.slice(0, RECENT_USER_TEXTS), accounts)
+  // "elsewhere" must not override an account named anywhere earlier in the chat.
+  const said = input === ELSEWHERE && recent.named.length === 0 && !recent.outside ? userNamedHome(ctx.userTexts, accounts) : recent
   const named = said.named.length === 1 && !said.outside ? said.named[0] : undefined
   const unclear = said.named.length > 1 || (said.named.length > 0 && said.outside)
 
@@ -374,6 +378,8 @@ const update_goal: WriteImpl = {
 interface FundPlan {
   goal: Goal
   pocketId: string | null
+  /** The tracked account declared money already sits in; the pocket is set aside there. */
+  homeId?: string
   amount: number
   currency: Currency
   mode: 'allocate' | 'declare'
@@ -396,10 +402,21 @@ function planFund(args: Record<string, unknown>, ctx: ToolContext): FundPlan | R
   const mode = args.mode === 'declare' ? 'declare' : 'allocate'
 
   const pocket = s.savingsAccounts.find((a) => goal.linkedSavingsAccountIds.includes(a.id) && isEligibleCarryPocket(a))
-  const target = pocket ?? { currency: goal.currency, name: `${goal.name} pocket` }
-  const landed = inPocketCurrency(s, amount, ccy.currency, target)
+  const landed = inPocketCurrency(s, amount, ccy.currency, pocket ?? { currency: goal.currency, name: `${goal.name} pocket` })
   if ('error' in landed) return no(landed.error)
-  const refusal = depositRefusal(ledgerOf(s), target, { amount: landed.amount, mode })
+  const where = mode === 'declare' ? resolveSavedHome(s, pocket?.currency ?? goal.currency, landed.amount, args.saved_in, L.elsewhere, ctx) : {}
+  if ('ok' in where) return where
+  const held = pocket ? pocketHome(pocket, s.paymentMethods) : null
+  if (pocket && where.home && (held?.kind === 'reserved' ? held.accountId : ELSEWHERE) !== where.home) {
+    const at = held?.kind === 'reserved' ? s.paymentMethods.find((m) => m.id === held.accountId)?.name : null
+    return no(
+      `${pocket.name} is ${at ? `set aside inside ${at}` : 'held outside the tracked accounts'}, so this money cannot be added to it as it is.`,
+      at ? `Ask the user to move the money into ${at} first, or to send it from ${at}.` : 'Ask the user whether the money is really in that account; it cannot join an outside pocket without being counted twice.',
+    )
+  }
+  const homeId = where.account?.id
+  const target = pocket ?? { currency: goal.currency, name: `${goal.name} pocket`, ...(homeId ? { heldInPaymentMethodId: homeId } : {}) }
+  const refusal = depositRefusal(ledgerOf(s), target, { amount: landed.amount, mode, ...(homeId ? { paymentMethodId: homeId } : {}) })
   if (refusal) {
     const why = explainDepositRefusal(ledgerOf(s), target, refusal)
     return no(why.error, why.hint)
@@ -414,15 +431,16 @@ function planFund(args: Record<string, unknown>, ctx: ToolContext): FundPlan | R
     { label: L.amount, value: money(amount, ccy.currency) },
     { label: L.pocket, value: target.name },
     { label: L.source, value: L.sources[mode] },
+    ...(where.home ? [{ label: L.savedIn, value: where.account ? L.setAsideIn(where.account.name) : L.elsewhere }] : []),
     ...(goal.targetAmount ? [{ label: L.saved, before: money(current, goal.currency), value: money(after, goal.currency) }] : []),
   ]
   const effect = [
-    mode === 'allocate' ? L.allocateEffect(money(inBase, s.settings.baseCurrency)) : L.declareEffect,
+    mode === 'allocate' ? L.allocateEffect(money(inBase, s.settings.baseCurrency)) : where.account ? L.reservedEffect(where.account.name) : L.declareEffect,
     pocket ? '' : L.newPocket(target.name),
     goal.targetAmount && current + 0.01 < goal.targetAmount && after + 0.01 >= goal.targetAmount ? L.willAchieve : '',
   ].filter(Boolean).join(' ')
 
-  const clean = { goal: refOf(goal.id), amount, currency: ccy.currency, mode }
+  const clean = { goal: refOf(goal.id), amount, currency: ccy.currency, mode, ...(where.home ? { saved_in: where.account ? refOf(where.account.id) : ELSEWHERE } : {}) }
   const proposal = makeProposal({
       tool: 'add_to_goal',
       args: clean,
@@ -440,7 +458,7 @@ function planFund(args: Record<string, unknown>, ctx: ToolContext): FundPlan | R
         effect,
       },
     })
-  return { goal, pocketId: pocket?.id ?? null, amount, currency: ccy.currency, mode, proposal }
+  return { goal, pocketId: pocket?.id ?? null, homeId, amount, currency: ccy.currency, mode, proposal }
 }
 
 const add_to_goal: WriteImpl = {
@@ -457,11 +475,11 @@ const add_to_goal: WriteImpl = {
     let pocketId = plan.pocketId
     let created: string | null = null
     if (!pocketId) {
-      pocketId = s.addSavingsAccount({ name: `${goal.name} pocket`, category: 'savings', type: 'vault', currency: goal.currency })
+      pocketId = s.addSavingsAccount({ name: `${goal.name} pocket`, category: 'savings', type: 'vault', currency: goal.currency, ...(plan.homeId ? { heldInPaymentMethodId: plan.homeId } : {}) })
       created = pocketId
       s.updateGoal(goal.id, { linkedSavingsAccountIds: [...goal.linkedSavingsAccountIds, pocketId] })
     }
-    s.depositToSavings(pocketId, plan.amount, plan.currency, goal.name, { mode: plan.mode })
+    s.depositToSavings(pocketId, plan.amount, plan.currency, goal.name, { mode: plan.mode, ...(plan.homeId ? { paymentMethodId: plan.homeId } : {}) })
     if (!posted(before)) {
       if (created) {
         fin().updateGoal(goal.id, { linkedSavingsAccountIds: goal.linkedSavingsAccountIds })

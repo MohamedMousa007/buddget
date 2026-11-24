@@ -61,6 +61,7 @@ export const goalsSpecs: ToolSpec[] = [
         amount: num(),
         currency: str('default is the goal currency'),
         mode: oneOf(['allocate', 'declare'], 'allocate = from this month budget (default); declare = money already owned'),
+        saved_in: str('for declare: where that money is, an account ref from the choices, or "elsewhere" if it is in no tracked account; ask the user, never guess'),
       },
       ['goal', 'amount'],
     ),

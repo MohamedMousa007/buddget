@@ -221,3 +221,14 @@ describe('J9: the user\'s own words reach the tools', () => {
     expect(out.proposals[0].preview.rows.find((r) => r.label === 'Where it is')?.value).toBe('Set aside in QNB Alahli')
   })
 })
+
+describe('every user message of the chat reaches the tools', () => {
+  it('ctx.userTexts holds all user messages, newest first, and no model text', async () => {
+    const history = Array.from({ length: 6 }, (_, i) => [{ role: 'user' as const, text: `u${i}` }, { role: 'model' as const, text: `m${i}` }]).flat()
+    const spy = vi.spyOn(TOOLS.get('add_goal')!.write!, 'propose')
+    apiFetchAuth.mockResolvedValueOnce(sse([meta, { t: 'calls', parts: [], calls: [{ name: 'add_goal', args: { name: 'X', target: 10 } }] }, done]))
+    await runTurn({ ...base, history, text: 'now', intent: 'action', onText: () => undefined })
+    expect(spy.mock.calls[0][1].userTexts).toEqual(['now', 'u5', 'u4', 'u3', 'u2', 'u1', 'u0'])
+    spy.mockRestore()
+  })
+})

@@ -232,3 +232,82 @@ describe('J9: Buddgy never puts money the user placed in a tracked account "some
     expect(homeRow(tool().propose(goal(3000, 'elsewhere'), said('somewhere else, not tracked here')))).toBe('Somewhere else (not tracked here)')
   })
 })
+
+describe('add_to_goal "money I already had": the same rule as a new goal', () => {
+  const QNB = 'c3c3c3c3-0000-0000-0000-000000000003'
+  const CIB = 'a1a1a1a1-0000-0000-0000-000000000001'
+  const tool = () => TOOLS.get('add_to_goal')!.write!
+  const said = (...userTexts: string[]): ToolContext => ({ now: new Date('2026-10-19T12:00:00'), locale: 'en', userTexts })
+  const applyCtx: ToolContext = { now: new Date('2026-10-19T12:00:00'), locale: 'en', revising: true }
+  const fund = (amount: number, saved_in?: string) => ({ goal: 'Car', amount, mode: 'declare', ...(saved_in === undefined ? {} : { saved_in }) })
+  const homeRow = (p: ReturnType<ReturnType<typeof tool>['propose']>) => (p.ok ? p.proposal.preview.rows.find((r) => r.label === 'Where it is')?.value : undefined)
+  beforeEach(() => {
+    useFinanceStore.setState({
+      paymentMethods: [pm(QNB, { name: 'QNB Alahli', openingBalance: 5000 }), pm(CIB, { name: 'CIB' })],
+      savingsAccounts: [], savingsTransactions: [], goals: [],
+    })
+    newGoal()
+  })
+
+  it('the user names QNB, the model sends "elsewhere": set aside in QNB, net worth unchanged', () => {
+    const before = netWorth()
+    const p = tool().propose(fund(2000, 'elsewhere'), said('I already have 2000 in my QNB Alahli account for the car'))
+    expect(homeRow(p)).toBe('Set aside in QNB Alahli')
+    if (!p.ok) return
+    expect(p.proposal.args.saved_in).toBe(refOf(QNB))
+    expect(p.proposal.preview.effect).not.toMatch(/Net worth rises/)
+    expect(tool().apply(p.proposal, applyCtx).ok).toBe(true)
+    expect(S().savingsAccounts[0]).toMatchObject({ heldInPaymentMethodId: QNB, currentBalance: 2000 })
+    expect(acct(QNB).free).toBe(3000)
+    expect(netWorth()).toBe(before)
+  })
+
+  it('more than QNB has available is refused, with no "elsewhere" way out', () => {
+    const p = tool().propose(fund(6000, 'elsewhere'), said('the 6000 is in QNB'))
+    expect(p.ok).toBe(false)
+    if (p.ok) return
+    expect(p.error).toContain('5,000')
+    expect(p.choices?.some((c) => c.id === 'elsewhere') ?? false).toBe(false)
+  })
+
+  it('no saved_in and nothing named: asks, accounts first, then somewhere else', () => {
+    const p = tool().propose(fund(2000), said('add 2000 I already had'))
+    expect(p.ok).toBe(false)
+    if (!p.ok) expect(p.choices?.map((c) => c.label)).toEqual(['QNB Alahli', 'CIB', 'Somewhere else (not tracked here)'])
+  })
+
+  it('"elsewhere" when the user names nothing tracked: outside, net worth rises once', () => {
+    const before = netWorth()
+    const p = tool().propose(fund(2000, 'elsewhere'), said('it was a gift, cash from my uncle at his house'))
+    expect(homeRow(p)).toBe('Somewhere else (not tracked here)')
+    if (p.ok) expect(tool().apply(p.proposal, applyCtx).ok).toBe(true)
+    expect(netWorth()).toBe(before + 2000)
+  })
+
+  it('a pocket already set aside in QNB takes more QNB money; one held outside cannot', () => {
+    const before = netWorth()
+    const first = tool().propose(fund(1000, refOf(QNB)), said())
+    if (first.ok) tool().apply(first.proposal, applyCtx)
+    const again = tool().propose(fund(500, 'QNB'), said())
+    expect(homeRow(again)).toBe('Set aside in QNB Alahli')
+    if (again.ok) expect(tool().apply(again.proposal, applyCtx).ok).toBe(true)
+    expect(S().savingsAccounts).toHaveLength(1)
+    expect(S().savingsAccounts[0].currentBalance).toBe(1500)
+    expect(netWorth()).toBe(before)
+    expect(tool().propose(fund(500, refOf(CIB)), said()).ok).toBe(false)
+  })
+
+  it('"budget" money never asks where it is', () => {
+    expect(tool().propose({ goal: 'Car', amount: 100 }, said()).ok).toBe(true)
+  })
+})
+
+describe('the whole chat counts when the model sends "elsewhere"', () => {
+  it('QNB named six user messages ago still wins over "elsewhere"', () => {
+    const QNB = 'c3c3c3c3-0000-0000-0000-000000000003'
+    useFinanceStore.setState({ paymentMethods: [pm(QNB, { name: 'QNB Alahli', openingBalance: 5000 })], goals: [], savingsAccounts: [] })
+    const texts = ['ok', 'yes', 'the car one', 'sure', 'go on', 'my savings for it are in QNB Alahli']
+    const p = TOOLS.get('add_goal')!.write!.propose({ name: 'Car', target: 9000, saved: 1000, saved_in: 'elsewhere' }, { now: new Date('2026-10-19T12:00:00'), locale: 'en', userTexts: texts })
+    expect(p.ok && p.proposal.preview.rows.find((r) => r.label === 'Where it is')?.value).toBe('Set aside in QNB Alahli')
+  })
+})

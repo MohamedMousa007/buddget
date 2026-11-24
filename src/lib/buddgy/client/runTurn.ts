@@ -83,8 +83,6 @@ interface CallsResult {
 const MAX_RESULT_CHARS = 5000
 const MIN_RESULT_CHARS = 300
 const REQUEST_SLACK_CHARS = 2000
-/** How many of the user's latest messages a tool may read, e.g. to see which account they named. */
-const USER_TEXTS = 4
 
 function clampResult(response: unknown, limit: number): unknown {
   const json = JSON.stringify(response)
@@ -141,7 +139,7 @@ export function executeCalls(calls: WireToolCall[], ctx: ToolContext, limit = MA
 
 export async function runTurn(args: RunTurnArgs): Promise<TurnOutcome> {
   const now = args.now ?? new Date()
-  const userTexts = [args.text, ...args.history.flatMap((m) => (m.role === 'user' ? [m.text] : [])).reverse()].slice(0, USER_TEXTS)
+  const userTexts = [args.text, ...args.history.flatMap((m) => (m.role === 'user' ? [m.text] : [])).reverse()]
   const ctx: ToolContext = { now, locale: args.locale, userTexts }
   const context = buildContext({ now, route: args.route, text: args.text })
   const messages: WireMessage[] = [...args.history, { role: 'user', text: args.text }]
