@@ -2,7 +2,7 @@
 
 import { categoryLabel } from '@/lib/i18n/categoryLabel'
 import { useMemo, useState } from 'react'
-import { Banknote, MoreVertical, Pencil, PiggyBank, RefreshCw, ShoppingBag, Star, Trash2 } from 'lucide-react'
+import { Banknote, Coins, MoreVertical, Pencil, PiggyBank, RefreshCw, ShoppingBag, Star, Trash2 } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { PaymentCardCarousel } from '@/components/features/payments/PaymentCardCarousel'
@@ -14,10 +14,12 @@ import { IconButton } from '@/components/ui/IconButton'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { closeAccount, ensureCashAccount } from '@/lib/accounts/actions'
 import { instantOf } from '@/lib/accounts/balance'
+import { cardDetails, sheetActivity } from '@/lib/accounts/cardDetails'
 import { canBeParent } from '@/lib/accounts/kinds'
-import { resolveAccountId } from '@/lib/accounts/resolve'
 import type { AccountView } from '@/lib/accounts/useAccounts'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { useCashCurrencyCopy } from '@/lib/i18n/cashCurrencyCopy'
 import { MASK } from '@/lib/privacy/mask'
 import { UsageMeter } from '@/components/features/usage/UsageMeter'
 import { useBalanceView } from '@/lib/accounts/useBalanceView'
@@ -36,38 +38,48 @@ interface AccountDetailSheetProps {
   onMove: (mode: MoveMode) => void
   onUpdate: () => void
   onAddCard: () => void
+  /** Edit the account (for Cash: change its currency). */
   onEdit: () => void
+  /** Edit one of the account's cards (the setup sheet in edit mode). */
+  onEditCard: (cardId: string) => void
 }
 
 /** One account, card first: its own cards, the balance split into free and set aside, three actions, activity. */
-export function AccountDetailSheet({ open, onClose, account, masked, onMove, onUpdate, onAddCard, onEdit }: AccountDetailSheetProps) {
+export function AccountDetailSheet({ open, onClose, account, masked, onMove, onUpdate, onAddCard, onEdit, onEditCard }: AccountDetailSheetProps) {
   const tAll = useT()
   const { locale } = useLocale()
   const t = tAll.accountsPage
   const confirm = useConfirm()
+  const cashCopy = useCashCurrencyCopy()
+  const setEditingExpenseId = useSettingsStore((s) => s.setEditingExpenseId)
+  const setActiveModal = useSettingsStore((s) => s.setActiveModal)
   const updatePaymentMethod = useFinanceStore((s) => s.updatePaymentMethod)
+  const deletePaymentMethod = useFinanceStore((s) => s.deletePaymentMethod)
   const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null)
+  const [cardMenu, setCardMenu] = useState<{ id: string; anchor: DOMRect } | null>(null)
   const expenses = useFinanceStore((s) => s.expenses)
   const methods = useFinanceStore((s) => s.paymentMethods)
-  const [active, setActive] = useState(0)
+  const debts = useFinanceStore((s) => s.debts)
+  const debtPayments = useFinanceStore((s) => s.debtPayments)
+  const rates = useFinanceStore((s) => s.exchangeRates)
   const { method, balance, cards } = account
+  // The selection belongs to one account: opening another starts on its first card (BUD-103).
+  const [selected, setSelected] = useState({ accountId: method.id, index: 0 })
+  const active = selected.accountId === method.id ? selected.index : 0
+  const setActive = (index: number) => setSelected({ accountId: method.id, index })
   const cur = String(method.currency)
   const card = cards[active]
+  const details = useMemo(() => (card ? cardDetails(card, debts, expenses, debtPayments, rates) : null), [card, debts, expenses, debtPayments, rates])
   const uc = useUsageCopy().balance
   const live = useBalanceView(method.id, open, method.type === 'cash')
   const fmt = (n: number) => (masked ? MASK : splitMoney(n, cur).int + splitMoney(n, cur).dec)
 
-  // Bank messages attribute to a card only by its last four digits, so a card without digits owns nothing: fall back to the account's recent activity instead of an empty list.
-  const { activity, cardOwns } = useMemo(() => {
-    const live = expenses.filter((e) => !e.refundedAt)
-    const own = card ? live.filter((e) => e.paymentMethodId === card.id) : []
-    const mine = own.length > 0 ? own : live.filter((e) => resolveAccountId(e.paymentMethodId, methods) === method.id)
-    return { activity: mine.sort((a, b) => instantOf(b.occurredAt, b.date) - instantOf(a.occurredAt, a.date)).slice(0, 5), cardOwns: own.length > 0 }
-  }, [expenses, methods, card, method.id])
+  // The list follows the card on the carousel, empty included; the add-card slot shows the whole account.
+  const activity = useMemo(() => sheetActivity(card, method.id, expenses, methods), [expenses, methods, card, method.id])
 
   const isCash = method.type === 'cash'
   const manageItems = [
-    ...(isCash ? [] : [{ label: tAll.paymentMethods.edit, icon: <Pencil size={17} />, onSelect: onEdit }]),
+    isCash ? { label: cashCopy.menuItem, icon: <Coins size={17} />, onSelect: onEdit } : { label: tAll.paymentMethods.edit, icon: <Pencil size={17} />, onSelect: onEdit },
     ...(method.isDefault ? [] : [{ label: tAll.paymentMethods.setDefault, icon: <Star size={17} />, onSelect: () => updatePaymentMethod(isCash ? ensureCashAccount() : method.id, { isDefault: true }) }]),
     ...(isCash ? [] : [{
       label: t.closeAccount, icon: <Trash2 size={17} />, destructive: true,
@@ -78,6 +90,21 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
       },
     }]),
   ]
+
+  // The same card actions as Profile → Cards, so both screens manage a card the same way.
+  const menuCard = cardMenu ? cards.find((c) => c.id === cardMenu.id) ?? null : null
+  const cardItems = menuCard ? [
+    { label: tAll.paymentMethods.edit, icon: <Pencil size={17} />, onSelect: () => onEditCard(menuCard.id) },
+    ...(menuCard.isDefault ? [] : [{ label: tAll.paymentMethods.setDefault, icon: <Star size={17} />, onSelect: () => updatePaymentMethod(menuCard.id, { isDefault: true }) }]),
+    {
+      label: tAll.paymentMethods.delete, icon: <Trash2 size={17} />, destructive: true,
+      onSelect: async () => {
+        if (!(await confirm({ title: tAll.paymentMethods.delete, body: tAll.paymentMethods.deleteCardBody, destructive: true }))) return
+        deletePaymentMethod(menuCard.id)
+        setActive(0)
+      },
+    },
+  ] : []
 
   const heldPct = balance && balance.balance > 0 ? Math.min(100, (balance.held / balance.balance) * 100) : 0
   return (
@@ -94,11 +121,30 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
             </V3SheetHeader.Extra>
           ) : null}
         </V3SheetHeader>
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto pb-3 pt-2">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y pb-3 pt-2">
           {canBeParent(method.type) ? (
             <div className="px-5">
               {cards.length > 0 ? (
-                <PaymentCardCarousel methods={cards} active={active} onActiveChange={setActive} defaultLabel="" hint="" onAddCard={onAddCard} addLabel={t.addACard} />
+                <>
+                <PaymentCardCarousel methods={cards} active={active} onActiveChange={setActive} defaultLabel="" hint="" onAddCard={onAddCard} addLabel={t.addACard} onMenu={(id, anchor) => setCardMenu({ id, anchor })} />
+                {card && details ? (
+                  <div dir="auto" aria-live="polite" className="mt-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3.5">
+                    <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">
+                      {[tAll.paymentMethodTypes[card.type], card.label?.trim() || (card.last4 ? `•• ${card.last4}` : ''), String(card.currency)].filter(Boolean).join(' · ')}
+                    </p>
+                    {details.kind === 'debit' ? (
+                      <p className="mt-1 text-xs text-[var(--color-brand-text-secondary)]">{t.usesBalance(accountTitle(method))}</p>
+                    ) : details.kind === 'credit' && details.outstanding !== null ? (
+                      <div className="mt-2 flex justify-between gap-3 text-[0.8125rem]">
+                        <span><span className="text-[var(--color-brand-text-secondary)]">{t.cardOutstanding}</span> <b dir="ltr" className="font-mono-numbers">{masked ? MASK : splitMoney(details.outstanding, details.currency).int}</b></span>
+                        {details.limit !== null ? (
+                          <span><span className="text-[var(--color-brand-text-secondary)]">{t.cardLimit}</span> <b dir="ltr" className="font-mono-numbers">{masked ? MASK : splitMoney(details.limit, details.currency).int}</b></span>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+                </>
               ) : (
                 <Button variant="outline" size="cta-block" onClick={onAddCard}>{t.addACard}</Button>
               )}
@@ -154,11 +200,12 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
             <Button variant="secondary" size="cta-block" className="h-14 flex-col gap-1 text-xs" onClick={onUpdate}><RefreshCw aria-hidden />{t.update}</Button>
           </div>
           <div>
-            <p className="mb-1 px-5 text-[0.8125rem] font-bold text-[var(--color-brand-text-secondary)]">{card && cardOwns ? t.spentWith(accountTitle(card)) : t.recent}</p>
+            <p className="mb-1 px-5 text-[0.8125rem] font-bold text-[var(--color-brand-text-secondary)]">{card ? t.spentWith(accountTitle(card)) : t.recent}</p>
             {activity.length === 0 ? (
-              <p className="px-5 py-3 text-sm text-[var(--color-brand-text-muted)]">{t.noActivity}</p>
+              <p className="px-5 py-3 text-sm text-[var(--color-brand-text-muted)]">{card ? t.noCardActivity : t.noActivity}</p>
             ) : activity.map((e) => (
               <TransactionRow key={e.id} icon={<ShoppingBag className="size-5" aria-hidden />} title={e.description || categoryLabel(tAll, e.category)}
+                onClick={() => { onClose(); setEditingExpenseId(e.id); setActiveModal('editExpense') }}
                 subtitle={formatLocalized(new Date(instantOf(e.occurredAt, e.date)), 'MMM d', locale)}
                 amount={masked ? MASK : `−${splitMoney(e.amount, String(e.currency)).int}`} />
             ))}
@@ -166,6 +213,8 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
         </div>
       </div>
       <CardActionMenu anchor={menuAnchor} items={manageItems} onClose={() => setMenuAnchor(null)} zClassName="z-[110]" />
+      <CardActionMenu anchor={menuCard && cardMenu ? cardMenu.anchor : null} items={cardItems} onClose={() => setCardMenu(null)} zClassName="z-[110]"
+        title={menuCard ? `${accountTitle(menuCard)}${menuCard.last4 ? ` ••${menuCard.last4}` : ''}` : undefined} />
     </ModalShell>
   )
 }

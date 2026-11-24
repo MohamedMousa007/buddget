@@ -17,6 +17,7 @@ import { POCKET_KINDS, type PocketKind } from '@/lib/savings/pocketKinds'
 import type { Currency, FinanceStore, GoldKarat, InvestmentAssetType, InvestmentHolding, SavingsAccount } from '@/lib/store/types'
 import { useFinanceStore, goldQuoteOf } from '@/lib/store/useFinanceStore'
 import { canDeletePocket } from '@/lib/savings/canDeletePocket'
+import { correctionRefusal, depositRefusal, explainDepositRefusal, ledgerOf } from '@/lib/savings/pocketHome'
 import { tryConvertCurrency, tryConvertWithGold } from '@/lib/utils/currency'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { computeMonthlyStats } from '@/lib/utils/monthlyStats'
@@ -119,8 +120,6 @@ const get_net_worth: ReadImpl = () => {
     goldPricePerGram: s.goldPricePerGram,
     goldPriceAvailable: s.goldPriceAvailable,
     lookup: priceLookup(),
-    monthlyIncome: stats.receivedIncome,
-    cashOutflow: stats.cashOutflow,
     debtRemaining: stats.debtRemainingTotal,
   })
   return {
@@ -129,7 +128,7 @@ const get_net_worth: ReadImpl = () => {
     savings: r0(nw.totalSavings),
     investments: r0(nw.totalInvestments),
     debt: r0(nw.totalDebt),
-    ...(nw.accountsTotal !== null ? { accounts_total: r0(nw.accountsTotal) } : { month_flow: r0(nw.monthlyFlow) }),
+    ...(nw.accountsTotal !== null ? { accounts_total: r0(nw.accountsTotal) } : { no_tracked_accounts: true }),
     ...(nw.netWorthIncomplete ? { incomplete: true } : {}),
   }
 }
@@ -230,6 +229,12 @@ const deposit_to_savings: WriteImpl = {
     if (args.mode !== undefined && args.mode !== 'allocate' && args.mode !== 'declare') return no('mode must be allocate or declare.')
     const mode: Mode = args.mode === 'declare' ? 'declare' : 'allocate'
     const { pocket, amount, currency, landed } = m
+    // The store would refuse these quietly; say why, so the money is never reported as moved.
+    const refusal = depositRefusal(ledgerOf(s), pocket, { amount: landed, mode })
+    if (refusal) {
+      const why = explainDepositRefusal(ledgerOf(s), pocket, refusal)
+      return no(why.error, why.hint)
+    }
     const inBase = convertGold(s, amount, currency, s.settings.baseCurrency)
     const goals = goalNames(s, pocket.id)
     const rows: PreviewRow[] = [
@@ -400,6 +405,10 @@ const correct_savings_balance: WriteImpl = {
     const balance = num(args.balance)
     if (balance === undefined || balance < 0) return no('The balance cannot be negative.')
     if (Math.abs(balance - p.currentBalance) < 0.0001) return no(`${p.name} already holds that amount.`)
+    if (correctionRefusal(ledgerOf(s), p, balance)) {
+      const why = explainDepositRefusal(ledgerOf(s), p, 'over_available')
+      return no(why.error, why.hint)
+    }
     const note = text(args.note, 80)
     return ok(
       makeProposal({

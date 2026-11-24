@@ -11,6 +11,7 @@ import { CurrencyField } from '@/components/ui/CurrencyField'
 import { FieldButton } from '@/components/ui/FieldButton'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { ensureCashAccount, setOpeningBalance } from '@/lib/accounts/actions'
+import { cashCurrency } from '@/lib/accounts/resolve'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { PAYMENT_BRANDS, QUICK_ADD, QUICK_ADD_BLEND, PAYMENT_TYPE_META, composePaymentMethodName, resolvePaymentBrandKey } from '@/lib/payment/paymentMethodDefaults'
@@ -42,6 +43,8 @@ export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', p
   const t = useT().accountsPage
   const tp = useT().paymentMethods
   const base = useFinanceStore((s) => s.settings.baseCurrency)
+  // Cash's balance is stored in Cash's own currency, so it is asked in that currency too.
+  const cashCur = useFinanceStore((s) => cashCurrency(s.paymentMethods, s.settings.baseCurrency))
   const addPaymentMethod = useFinanceStore((s) => s.addPaymentMethod)
   const [kind, setKind] = useState<Kind>(initialKind)
   const prefillBrand = prefill ? resolvePaymentBrandKey(prefill.provider) : null
@@ -124,7 +127,7 @@ export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', p
           ) : null}
           <div>
             <div className={`mx-0.5 mb-2 ${microClassName}`}>{t.balanceToday}</div>
-            <AmountField value={balance} onChange={setBalance} currency={isCash ? base : currency} placeholder="0" />
+            <AmountField value={balance} onChange={setBalance} currency={isCash ? cashCur : currency} placeholder="0" />
           </div>
         </div>
         <div className="space-y-2 px-5 pb-5 pt-2">

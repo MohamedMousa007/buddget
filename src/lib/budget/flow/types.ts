@@ -18,6 +18,26 @@ export interface FlowState {
   entities?: Record<string, string>
   /** Index of the furthest module reached. Questions in earlier modules are never asked again. */
   cursor: number
+  /** A description that disagrees with what the app holds, waiting for the person to choose. Kept in the draft so a restart asks again. */
+  pending?: PendingDescription
+}
+
+/** One place the typed description and the app's own data disagree. `app` is a count for debts and goals. */
+export interface FlowConflict {
+  id: string
+  app: FlowValue
+  typed: FlowValue
+  source: 'tracked' | 'earlier'
+}
+
+export type ConflictChoice = 'app' | 'typed'
+
+export interface PendingDescription {
+  found: Record<string, FlowValue>
+  conflicts: FlowConflict[]
+  choices: Record<string, ConflictChoice>
+  /** The person wrote amounts in this currency and no rate was known, so they were not used. */
+  unconverted?: string
 }
 
 export interface FlowNode {

@@ -16,19 +16,20 @@ export interface NotifyDecision {
 
 /**
  * The lookup alone. `ask` names the other phones that already get notifications, so the caller asks the user; otherwise
- * go ahead. The main phone and an account with no other notifier are never asked. Unknown state (offline) goes ahead as
- * it always did, so a failed lookup never blocks the prompt.
+ * go ahead. The main phone, a phone that already chose "notify here too" and an account with no other notifier are never
+ * asked. `quiet` says this phone already chose to stay quiet: boot honours it, Settings still asks so the switch can turn
+ * it back on. Unknown state (offline) goes ahead as it always did, so a failed lookup never blocks the prompt.
  */
-export async function notifyCheck(): Promise<{ ask: false; explicit: boolean } | { ask: true; names: string }> {
+export async function notifyCheck(): Promise<{ ask: false; explicit: boolean } | { ask: true; names: string; quiet: boolean }> {
   if (!isNative()) return { ask: false, explicit: false }
   const id = await getOrCreateDeviceId()
   const payload = id ? await fetchDevices() : null
   if (!payload || !id) return { ask: false, explicit: false }
   const me = payload.devices.find((x) => x.deviceId === id)
-  if (me?.isMain) return { ask: false, explicit: false }
+  if (me?.isMain || me?.notify === true) return { ask: false, explicit: false }
   const others = otherNotifiers(payload, id)
   if (others.length === 0) return { ask: false, explicit: Boolean(me) }
-  return { ask: true, names: others.map((o) => o.name).join(', ') }
+  return { ask: true, names: others.map((o) => o.name).join(', '), quiet: me?.notify === false }
 }
 
 /** Settings' switch: the same check, asked with the confirm dialog (nothing else is open there). */

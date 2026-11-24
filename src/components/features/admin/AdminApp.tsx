@@ -134,7 +134,7 @@ export function AdminApp() {
   }
 
   return (
-    <StepUpProvider>
+    <StepUpProvider roleKey={status.staff?.role}>
       <AdminShell status={status} onLock={() => void lock()}>
         <Suspense fallback={<Card padding="lg"><Loading rows={6} /></Card>}>
           <View status={status} />

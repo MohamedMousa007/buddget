@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
-  aiReadingGrounded, computeSmsHash, claimInProgressResponse, isClaimInFlight, maskOtpDigits, checkCreditSender, heldForConfirmation, nonTransactionReason, smsLocalDay, smsPlausibilityIssue, toSupportedCurrency, isStaleClaim, computeNeighbourSmsHashes, hasPostedTransaction, resolveSmsDay, computeBodyHash, captureSecond, isPlausibleAmount, dayDiffersFromCapture,
+  aiReadingGrounded, computeSmsHash, claimInProgressResponse, isClaimInFlight, maskOtpDigits, checkCreditSender, heldForConfirmation, nonTransactionReason, smsLocalDay, smsPlausibilityIssue, toSupportedCurrency, isStaleClaim, computeNeighbourSmsHashes, hasPostedTransaction, resolveSmsDay, computeBodyHash, captureSecond, isPlausibleAmount, dayDiffersFromCapture, segmentIdentity,
 } from './ingestGuards'
 import { parseSmsDay, matchCuratedPattern } from './patterns'
 
@@ -242,5 +242,18 @@ describe('aiReadingGrounded (QA-14)', () => {
   })
   it('a debit only needs its amount printed', () => {
     expect(aiReadingGrounded(120.5, 'purchase', 'Purchase of 120.50 EGP at Test Shop card ending 1234')).toBe(true)
+  })
+})
+
+describe('segmentIdentity (QA-32)', () => {
+  const body = 'Account ***3307 was debited EGP 40.00 for purchase at CAFE. Account ***3307 was debited EGP 40.00 for purchase at CAFE.'
+  it('a single-movement message hashes exactly as before', () => {
+    expect(computeBodyHash(segmentIdentity(body, 0, 1))).toBe(computeBodyHash(body))
+  })
+  it('twin pieces of one message are two claims, and a retry cuts the same way', () => {
+    const ids = [0, 1].map((i) => segmentIdentity(body, i, 2))
+    expect(computeBodyHash(ids[0])).not.toBe(computeBodyHash(ids[1]))
+    expect(computeSmsHash(ids[0], '2026-11-16T08:31:00Z', 'evt')).not.toBe(computeSmsHash(ids[1], '2026-11-16T08:31:00Z', 'evt'))
+    expect(segmentIdentity(body, 1, 2)).toBe(ids[1])
   })
 })

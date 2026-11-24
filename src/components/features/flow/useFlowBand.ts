@@ -91,7 +91,7 @@ export function useFlowBand({
     const moneyIn =
       rangePreset === 'month'
         ? stats.receivedIncome
-        : all.filter((i) => i.dir === 'in').reduce((s, i) => s + i.amountBase, 0)
+        : all.filter((i) => i.dir === 'in' && i.counted).reduce((s, i) => s + i.amountBase, 0)
     const spent = stats.totalSpentExcludingSavings
     const budget = stats.totalExpenseBudget
     const totalDays = totalDaysInMonth(monthFilter, monthStartDay)

@@ -9,7 +9,8 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
-import { useT } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
+import { transactionTime } from '@/lib/time/transactionTime'
 import type { Currency, IncomeEvent, IncomeEventStatus, IncomeSourceType } from '@/lib/store/types'
 import { Input } from '@/components/ui/input'
 import { AmountField } from '@/components/ui/AmountField'
@@ -109,6 +110,7 @@ function useDeleteIncomeEvent(event: IncomeEvent, onDone: () => void) {
 function IncomeEventDetail({ event, onClose, onEdit }: { event: IncomeEvent; onClose: () => void; onEdit: () => void }) {
   const shortDate = useShortDate()
   const t = useT()
+  const { locale } = useLocale()
   const { incomeSources, paymentMethods, updateIncomeEvent } = useFinanceStore(
     useShallow((s) => ({ incomeSources: s.incomeSources, paymentMethods: s.paymentMethods, updateIncomeEvent: s.updateIncomeEvent })),
   )
@@ -126,6 +128,8 @@ function IncomeEventDetail({ event, onClose, onEdit }: { event: IncomeEvent; onC
     ? { label: t.income.factPaidInto, value: pm }
     : { label: t.income.factPaidInto, value: t.income.notRecorded, valueTone: 'var(--color-brand-text-muted)', sub: t.income.setAccount, subTone: 'var(--color-brand-primary-ink)' }
   const payday = event.occurrenceDate ?? event.receivedDate
+  const time = transactionTime(event.occurredAt, event.receivedDate, locale)
+  const received = time ? `${shortDate(event.receivedDate)} · ${time}` : shortDate(event.receivedDate)
 
   const facts: Fact[] = recurring
     ? [
@@ -146,14 +150,14 @@ function IncomeEventDetail({ event, onClose, onEdit }: { event: IncomeEvent; onC
         },
         {
           label: t.income.factArrived,
-          value: shortDate(event.receivedDate),
+          value: received,
           ...(daysLate ? { sub: t.income.daysAfterPayday(daysLate), subTone: 'var(--color-brand-amber)' } : {}),
         },
         paidInto,
         { label: t.income.factRecordedFrom, value: event.smsLogId ? t.income.recordedSms : t.income.recordedManual },
       ]
     : [
-        { label: t.income.factReceived, value: shortDate(event.receivedDate) },
+        { label: t.income.factReceived, value: received },
         paidInto,
         event.exclusion === 'pass_through'
           ? {

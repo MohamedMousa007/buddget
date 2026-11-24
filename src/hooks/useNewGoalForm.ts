@@ -12,6 +12,9 @@ import { addMonthsIso, computePace, monthsUntil } from '@/lib/goals/goalPlan'
 import { averageMonthlySpend, fieldAdvice } from '@/lib/goals/fieldAdvice'
 import { trackedDebtIds } from '@/lib/goals/debtGoal'
 import { clearDraft, loadDraft, saveDraft, type NewGoalDraft } from '@/lib/goals/newGoalDraft'
+import { createGoalPocket, goalHomeAccounts, savedHomeProblem } from '@/lib/goals/goalPocket'
+import { useLedgerInput } from '@/lib/accounts/useAccounts'
+import { computeBalances } from '@/lib/accounts/balance'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import {
   calculateDebtRemaining,
@@ -68,6 +71,7 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
   )
   const [frequency, setFrequency] = useState(draft?.frequency ?? 'monthly')
   const [alreadySaved, setAlreadySaved] = useState(draft?.alreadySaved ?? '')
+  const [savedHome, setSavedHome] = useState<string | null>(draft?.savedHome ?? null)
   const [fundingMode, setFundingMode] = useState(draft?.fundingMode ?? 'share')
   const [sharePicked, setSharePicked] = useState<number | null>(draft?.sharePct ?? null)
   const [fixedAmount, setFixedAmount] = useState(draft?.fixedAmount ?? '')
@@ -77,6 +81,15 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
   const [saveError, setSaveError] = useState(false)
   const submitted = useRef(false)
   const submitOnce = useSubmitOnce()
+
+  // "Where is this money?": the tracked accounts that could already contain the saved amount, in the goal's currency.
+  const ledger = useLedgerInput()
+  // The same list the validation reads, so a required answer always has its question on screen.
+  const homeAccounts = useMemo(() => {
+    const balances = computeBalances(ledger)
+    return goalHomeAccounts(ledger.paymentMethods, currency).map((method) => ({ method, free: balances.get(method.id)?.free ?? 0 }))
+  }, [ledger, currency])
+  const savedProblem = savedHomeProblem(ledger, currency, num(alreadySaved), savedHome)
 
   const activeDebts = useMemo(() => s.debts.filter((d) => d.status !== 'cleared'), [s.debts])
   const kind = goalKind(category)
@@ -165,19 +178,20 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
   useEffect(() => {
     if (submitted.current) return
     saveDraft({
-      step, category, name, targetAmount, currency, targetDate, frequency, alreadySaved, fundingMode, sharePct: sharePicked,
+      step, category, name, targetAmount, currency, targetDate, frequency, alreadySaved, savedHome, fundingMode, sharePct: sharePicked,
       fixedAmount, monthlySpendingLimit: limit, spendingCategory, linkedDebtIds,
     })
-  }, [step, category, name, targetAmount, currency, targetDate, frequency, alreadySaved, fundingMode, sharePicked, fixedAmount, limit, spendingCategory, linkedDebtIds])
+  }, [step, category, name, targetAmount, currency, targetDate, frequency, alreadySaved, savedHome, fundingMode, sharePicked, fixedAmount, limit, spendingCategory, linkedDebtIds])
 
   const running = s.goals.filter((g) => g.status === 'active' && g.category !== 'spending_control' && g.category !== 'debt_freedom')
   const nextPriority = s.goals.reduce((m, g) => Math.max(m, g.priority + 1), 0)
   const otherShare = running.filter((g) => g.fundingMode === 'share').reduce((sum, g) => sum + (g.sharePct ?? 0), 0)
 
   const canNext2 =
-    kind === 'limit' ? num(limit) > 0 : kind === 'debt' ? linkedDebtIds.length > 0 && debtsOwed > 0 : target > 0 && name.trim().length > 0
+    kind === 'limit' ? num(limit) > 0 : kind === 'debt' ? linkedDebtIds.length > 0 && debtsOwed > 0 : target > 0 && name.trim().length > 0 && !savedProblem
 
   const submit = useCallback(() => {
+    if (kind === 'save' && savedProblem) return setStep(2)
     if (!submitOnce.claim()) return
     const st = useFinanceStore.getState()
     const goalName = name.trim() || defaultGoalName(category, cat.goalNames)
@@ -214,10 +228,12 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
           monthlyContribution: fundingMode === 'fixed' && num(fixedAmount) > 0 ? num(fixedAmount) : null,
           frequency,
         })
-        const pocketId = st.addSavingsAccount({ name: cat.goalPocketName(goalName), category: 'savings', type: 'vault', currency: ccy })
-        st.updateGoal(goalId, { linkedSavingsAccountIds: [pocketId] })
-        if (num(alreadySaved) > 0) {
-          st.depositToSavings(pocketId, num(alreadySaved), ccy, goalName, { mode: 'declare', source: 'goal_opening' })
+        const made = createGoalPocket(st, { goalId, pocketName: cat.goalPocketName(goalName), goalName, currency: ccy, saved: num(alreadySaved), home: savedHome })
+        // The saved amount was refused (the account changed since the step was validated): never keep a goal showing 0.
+        if (!made.savedRecorded) {
+          st.deleteGoal(goalId)
+          st.deleteSavingsAccount(made.pocketId)
+          throw new Error('saved amount not recorded')
         }
       }
     } catch {
@@ -228,12 +244,13 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
     submitted.current = true
     clearDraft()
     onDone()
-  }, [name, category, currency, nextPriority, kind, limit, spendingCategory, target, debtsOwed, linkedDebtIds, alreadySaved, targetDate, fundingMode, sharePct, fixedAmount, frequency, onDone, cat, submitOnce])
+  }, [name, category, currency, nextPriority, kind, limit, spendingCategory, target, debtsOwed, linkedDebtIds, alreadySaved, savedHome, savedProblem, targetDate, fundingMode, sharePct, fixedAmount, frequency, onDone, cat, submitOnce])
 
   return {
     now, step, setStep, category, pickCategory, kind, name, setName, targetAmount, setTargetAmount,
     currency, setCurrency: (c: Currency) => setCurrency(clampFiatToAllowed(s.settings, c)),
     targetDate, setTargetDate, frequency, setFrequency, alreadySaved, setAlreadySaved,
+    savedHome, setSavedHome, homeAccounts, savedProblem,
     fundingMode, setFundingMode, sharePct, setSharePct, fixedAmount, setFixedAmount,
     limit, setLimit, spendingCategory, setSpendingCategory,
     advice, activeDebts, tracked, linkable, linkInstead, linkedDebtIds, toggleDebt, debtsOwed,

@@ -1,5 +1,6 @@
 import type { AIAction } from '@/lib/ai/gemini'
 import { settlesWithoutExpense } from '@/lib/debts/debtDirection'
+import { defaultMethodId, storedMethodId } from '@/lib/accounts/resolve'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { ambiguityMessage, checkAmount, checkCategory, checkDate, matchByHint, type HintMatch } from '@/lib/ai/legacyGuards'
 import { tryConvertCurrency } from '@/lib/utils/currency'
@@ -11,6 +12,8 @@ import {
 } from '@/lib/utils/calculations'
 import { EXPENSE_CATEGORIES, EXPENSE_ENTRY_CATEGORIES, PAYMENT_METHOD_TYPES } from '@/lib/constants/finance'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
+import type { LedgerInput } from '@/lib/accounts/balance'
+import { depositRefusal, explainDepositRefusal, ledgerOf } from '@/lib/savings/pocketHome'
 import {
   defaultColorForPaymentMethodType,
   defaultIconEmojiForPaymentMethodType,
@@ -256,6 +259,7 @@ export function buildAIActionHandlerContext(store: FinanceStore): AIActionHandle
     settings: store.settings,
     exchangeRates: store.exchangeRates,
     goldPricePerGram: store.goldPricePerGram,
+    ledger: ledgerOf(store),
     addExpense: store.addExpense,
     updateExpense: store.updateExpense,
     deleteExpense: store.deleteExpense,
@@ -296,6 +300,8 @@ export interface AIActionHandlerContext {
   settings: AppSettings
   exchangeRates: Record<string, number>
   goldPricePerGram: number
+  /** The balance engine's input, for the deposit guard. Absent = the guard is skipped (the store still refuses). */
+  ledger?: LedgerInput
   addExpense: FinanceStore['addExpense']
   updateExpense: FinanceStore['updateExpense']
   deleteExpense: FinanceStore['deleteExpense']
@@ -336,6 +342,21 @@ export function findPaymentMethod(
     ctx.paymentMethods[0] ||
     null
   )
+}
+
+/** A deposit the store would refuse, in words; null when it will be written (or when the caller gave no ledger to check). */
+function depositProblem(
+  ctx: AIActionHandlerContext,
+  pocket: Pick<SavingsAccount, 'heldInPaymentMethodId' | 'currency'>,
+  amount: number,
+  currency: string,
+): string | null {
+  if (!ctx.ledger) return null
+  const landed = currency === pocket.currency ? amount : ctx.ledger.convert(amount, currency, pocket.currency) ?? amount
+  const refusal = depositRefusal(ctx.ledger, pocket, { amount: landed })
+  if (!refusal) return null
+  const why = explainDepositRefusal(ctx.ledger, pocket, refusal)
+  return refusal === 'no_account_leg' ? `${why.error} Add it from the Wealth page as money from outside the budget.` : why.error
 }
 
 export function validateActionItem(
@@ -412,7 +433,9 @@ export function validateActionItem(
     const name = String(getField(d, 'name') || '').trim()
     const amt = Number(getField(d, 'amount')) || 0
     if (!name || amt <= 0) return 'Savings holding needs a name and a positive amount.'
-    return null
+    // The new pocket is funded by a budget deposit: check it before creating anything, or an empty pocket is left behind.
+    const currency = clampFiatToAllowed(ctx.settings, String(getField(d, 'currency') || ctx.settings.baseCurrency) as Currency)
+    return depositProblem(ctx, { currency }, amt, currency)
   }
   if (action === 'update_budget_category') {
     const cat = String(getField(d, 'category') || '')
@@ -507,7 +530,10 @@ export function validateActionItem(
       return `${action} needs data.account (savings account name).`
     }
     if ((Number(getField(d, 'amount')) || 0) <= 0) return `${action} needs a positive data.amount.`
-    return targetProblem(ctx, action, d)
+    const problem = targetProblem(ctx, action, d)
+    if (problem || action === 'withdraw_savings') return problem
+    const acc = resolved<SavingsAccount>(ctx, action, d)
+    return acc ? depositProblem(ctx, acc, Number(getField(d, 'amount')) || 0, String(getField(d, 'currency') || acc.currency)) : null
   }
   if (action === 'add_savings_account') {
     if (!String(getField(d, 'name') || '').trim()) return 'add_savings_account needs data.name.'
@@ -605,18 +631,25 @@ export function executeActionItem(
     if (isDebtFullyPaid(debt, ctx.debtPayments, bctx)) return
     const remainingExec = calculateDebtRemainingRaw(debt, ctx.debtPayments, bctx)
     if (amountInDebtUnit > remainingExec + 1e-6) return
+    const pmHint = getField(d, 'paymentMethod', 'payment_method')
+    const pm = findPaymentMethod(ctx, pmHint)
+    const noExpense = settlesWithoutExpense(debt)
+    // With no expense the payment itself is the account leg (money received, or a card paid): it needs its account,
+    // the default one when none was named, as the sheet does. With an expense, the expense carries the account;
+    // tagging both would move the balance twice.
+    const legId = pmHint && pm ? pm.id : storedMethodId(defaultMethodId(ctx.paymentMethods), ctx.paymentMethods)
     ctx.addDebtPayment({
       debtId: debt.id,
       date: dateStr,
       amountPaid: amountInDebtUnit,
+      ...(noExpense && legId ? { paymentMethodId: legId } : {}),
       paymentCurrency,
       originalAmount,
       amountInPrimary: amountInBase,
       rateAtEntry,
       notes: getField(d, 'notes') as string | undefined,
     })
-    if (settlesWithoutExpense(debt)) return
-    const pm = findPaymentMethod(ctx, getField(d, 'paymentMethod', 'payment_method'))
+    if (noExpense) return
     ctx.addExpense({
       date: dateStr,
       description: `Debt payment – ${debt.person}`,
@@ -659,7 +692,8 @@ export function executeActionItem(
   }
   if (action === 'clear_debt') {
     const debt = resolved<Debt>(ctx, action, d)
-    if (debt) ctx.clearDebt(debt.id)
+    // A credit card revolves: it is never cleared (Buddgy refuses it too), or its balance would leave debt and net worth.
+    if (debt && debt.debtType !== 'credit_card') ctx.clearDebt(debt.id)
     return
   }
   if (action === 'add_income') {

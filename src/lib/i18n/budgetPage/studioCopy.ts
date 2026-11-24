@@ -1,6 +1,6 @@
 import type { FlowStage } from '@/lib/budget/flow/flow'
 import { flowCopyAr, flowCopyEn, type FlowQuestionCopy } from './flowCopy'
-import { arCount } from '@/lib/i18n/arPlural'
+import { arCount, arPlural } from '@/lib/i18n/arPlural'
 
 export type StudioQuestionCopy = FlowQuestionCopy
 
@@ -34,7 +34,46 @@ export interface BudgetStudioCopy {
     understood: (n: number) => string
     change: string
     cont: string
+    /** Characters left, shown near the cap. */
+    left: (n: number) => string
+    failed: string
+    quota: string
+    /** The text was read but held nothing the plan can use. */
+    empty: string
+    retry: string
+    skip: string
+    /** Row note: the person kept the app's value over what they typed. */
+    keptRecords: string
+    edit: string
+    /** Things the text said that do not apply to this person; they are asked if they matter. */
+    dropped: (labels: string) => string
+    unconverted: (currency: string) => string
+    utilities: string
+    holdings: Record<'gold' | 'stocks' | 'crypto' | 'property', string>
+    holdingNote: string
   }
+  /** The choice shown when the description and the app's data disagree. */
+  conflict: {
+    counter: (i: number, n: number) => string
+    title: (label: string) => string
+    hint: string
+    tracked: string
+    earlier: string
+    typed: string
+    keep: string
+    back: string
+    debtsTitle: string
+    debtsApp: (n: number) => string
+    debtsNone: string
+    moreDebtsTitle: string
+    moreDebtsSame: (n: number) => string
+    moreDebtsExtra: (kinds: string) => string
+    goalsTitle: string
+    goalsApp: (n: number) => string
+    goalsNone: string
+  }
+  /** The sheet that edits a cost or holding picked out of the description. */
+  extraSheet: { title: string; name: string; amount: string; total: string; save: string; remove: string }
   /** Names given to the records the studio creates from the answers. */
   entities: { income: string; savings: string; debts: Record<string, string>; goals: Record<string, string> }
   saved: string
@@ -103,9 +142,42 @@ const en: BudgetStudioCopy = {
     examples: ['I work for a company, rent a flat, no debts', 'Freelancer, income changes a lot, I live with family', 'I own my home, owe a card, want to save'],
     cta: 'Continue',
     understood: (n) => (n === 1 ? 'I picked up 1 thing' : `I picked up ${n} things`),
-    change: 'I will ask about the rest. Tap the list icon any time to change an answer.',
+    change: 'Tap a line to change it. I will ask about the rest.',
     cont: 'Looks right, continue',
+    left: (n) => (n === 1 ? '1 character left' : `${n} characters left`),
+    failed: 'I could not read that just now. Your text is still here.',
+    quota: 'Buddgy has read a lot today. Try again later, or carry on and answer the questions.',
+    empty: 'I could not pick anything out of that. Add amounts like your pay or rent, or carry on with the questions.',
+    retry: 'Try again',
+    skip: 'Continue without it',
+    keptRecords: 'Kept your records',
+    edit: 'Change',
+    dropped: (labels) => `Not used for now: ${labels}. I will ask if it matters.`,
+    unconverted: (currency) => `Your amounts were in ${currency} and I have no rate for it, so I did not use them. I will ask for them.`,
+    utilities: 'Electricity, water and gas',
+    holdings: { gold: 'Gold', stocks: 'Stocks', crypto: 'Crypto', property: 'Property' },
+    holdingNote: 'Noted, not counted as cash savings. Add it in Wealth to track its value.',
   },
+  conflict: {
+    counter: (i, n) => `${i} of ${n} to check`,
+    title: (label) => `${label}: which is right?`,
+    hint: 'What you wrote does not match what Buddgy already has. Pick the one to plan with.',
+    tracked: 'In Buddget',
+    earlier: 'Your earlier answer',
+    typed: 'What you just wrote',
+    keep: 'Keep my records for now',
+    back: 'Previous',
+    debtsTitle: 'Your debts: which is right?',
+    debtsApp: (n) => (n === 1 ? 'I track 1 debt for you' : `I track ${n} debts for you`),
+    debtsNone: 'I owe nothing',
+    moreDebtsTitle: 'Are the debts you wrote new?',
+    moreDebtsSame: (n) => (n === 1 ? 'They are the 1 debt you track' : `They are the ${n} debts you track`),
+    moreDebtsExtra: (kinds) => `They are extra: ${kinds}`,
+    goalsTitle: 'Your goals: which is right?',
+    goalsApp: (n) => (n === 1 ? 'Keep my 1 goal' : `Keep my ${n} goals`),
+    goalsNone: 'No goal for this plan',
+  },
+  extraSheet: { title: 'Change this cost', name: 'Name', amount: 'Each month', total: 'Total value', save: 'Save', remove: 'Remove' },
   entities: {
     income: 'Salary',
     savings: 'Savings',
@@ -185,9 +257,42 @@ const ar: BudgetStudioCopy = {
     examples: ['أعمل في شركة، أستأجر شقة، بلا ديون', 'عمل حر، دخلي يتغير كثيرًا، أعيش مع العائلة', 'أملك منزلي، عليّ بطاقة، وأريد الادخار'],
     cta: 'متابعة',
     understood: (n) => (n === 1 ? 'التقطتُ معلومة واحدة' : `التقطتُ ${n} معلومات`),
-    change: 'سأسألك عن الباقي. اضغط على أيقونة القائمة في أي وقت لتغيير إجابة.',
+    change: 'اضغط على أي سطر لتغييره. سأسألك عن الباقي.',
     cont: 'صحيح، تابع',
+    left: (n) => `متبقٍ ${n} حرف`,
+    failed: 'لم أستطع قراءة ذلك الآن. نصك ما زال هنا.',
+    quota: 'قرأ بادجي الكثير اليوم. حاول لاحقًا، أو تابع وأجب عن الأسئلة.',
+    empty: 'لم ألتقط شيئًا مما كتبت. أضف مبالغ مثل راتبك أو إيجارك، أو تابع مع الأسئلة.',
+    retry: 'حاول مجددًا',
+    skip: 'تابع بدونه',
+    keptRecords: 'أبقيتُ سجلاتك',
+    edit: 'تغيير',
+    dropped: (labels) => `لم أستخدمه الآن: ${labels}. سأسألك إن كان مهمًا.`,
+    unconverted: (currency) => `كانت مبالغك بـ ${currency} وليس لدي سعر صرف لها، فلم أستخدمها. سأسألك عنها.`,
+    utilities: 'الكهرباء والمياه والغاز',
+    holdings: { gold: 'ذهب', stocks: 'أسهم', crypto: 'عملات رقمية', property: 'عقار' },
+    holdingNote: 'سجّلته، ولا يُحسب ضمن المدخرات النقدية. أضفه في الثروة لمتابعة قيمته.',
   },
+  conflict: {
+    counter: (i, n) => `${i} من ${n} للتأكد`,
+    title: (label) => `${label}: أيهما الصحيح؟`,
+    hint: 'ما كتبته لا يطابق ما لدى بادجي. اختر ما نخطط به.',
+    tracked: 'في Buddget',
+    earlier: 'إجابتك السابقة',
+    typed: 'ما كتبته الآن',
+    keep: 'أبقِ سجلاتي الآن',
+    back: 'السابق',
+    debtsTitle: 'ديونك: أيهما الصحيح؟',
+    debtsApp: (n) => `أتابع لك ${arCount(n, 'debt')}`,
+    debtsNone: 'لا أدين بشيء',
+    moreDebtsTitle: 'هل الديون التي كتبتها جديدة؟',
+    moreDebtsSame: (n) => `هي نفسها (${arCount(n, 'debt')} أتابعها)`,
+    moreDebtsExtra: (kinds) => `إضافية: ${kinds}`,
+    goalsTitle: 'أهدافك: أيهما الصحيح؟',
+    goalsApp: (n) => `أبقِ ${arPlural(n, { one: 'هدفي', two: 'هدفيّ الاثنين', few: 'أهدافي', many: 'أهدافي' })} (${n})`,
+    goalsNone: 'لا هدف لهذه الخطة',
+  },
+  extraSheet: { title: 'غيّر هذه التكلفة', name: 'الاسم', amount: 'شهريًا', total: 'القيمة الإجمالية', save: 'حفظ', remove: 'إزالة' },
   entities: {
     income: 'الراتب',
     savings: 'المدخرات',

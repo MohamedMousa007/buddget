@@ -8,7 +8,7 @@ vi.mock('@/lib/server/userData', () => ({ removeAvatarObject: vi.fn(), stampData
 vi.mock('@/lib/server/emitNotification', () => ({ emitNotification: vi.fn() }))
 vi.mock('@/lib/server/sendNativePush', () => ({ sendNativePush: vi.fn() }))
 vi.mock('@/lib/server/admin/stepUp', () => ({ STEP_UP_ERROR: 'step', stepUp: async () => true }))
-vi.mock('@/lib/server/admin/targets', () => ({ blockedTarget: async () => null, UUID_RE: /^[0-9a-f-]{36}$/i }))
+vi.mock('@/lib/server/admin/targets', () => ({ blockedTarget: async () => null, selfAllowedOnApp: () => false, UUID_RE: /^[0-9a-f-]{36}$/i }))
 vi.mock('@/lib/server/admin/staffActionGuards', () => ({ allowUserAction: async () => true, auditPiiRead: vi.fn() }))
 vi.mock('@/lib/server/admin/guard', () => {
   const table = () => {
@@ -30,7 +30,7 @@ vi.mock('@/lib/server/admin/guard', () => {
     auth: { admin: { getUserById: async () => ({ data: { user: { email: 'a@b.co', banned_until: h.banned } } }), updateUserById: async () => ({ error: null }) } },
   }
   return {
-    guardAdmin: async () => ({ ok: true, ctx: { service, permissions: ['*'], role: { key: 'owner' }, staff: { id: 's1', email: 'o@x.co', display_name: null }, audit: h.audit } }),
+    guardAdmin: async () => ({ ok: true, ctx: { service, user: { id: 'u-staff', email: 'o@x.co' }, permissions: ['*'], role: { key: 'owner' }, staff: { id: 's1', email: 'o@x.co', display_name: null }, audit: h.audit } }),
     json: (b: unknown, status = 200) => Response.json(b, { status }),
     bad: (m: string, status = 400) => Response.json({ error: m }, { status }),
     maskEmail: (e: string | null) => e,

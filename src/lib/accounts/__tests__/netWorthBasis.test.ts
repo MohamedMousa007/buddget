@@ -23,4 +23,11 @@ describe('accountsBasisFor', () => {
     expect(r).toMatchObject({ accountsBasis: 1500 })
     expect([...((r as unknown as { heldInPocketIds: Set<string> }).heldInPocketIds)]).toEqual(['p'])
   })
+  it('BUD-100: a closed account leaves the total and its pocket counts on its own', () => {
+    const closed = { ...bank, closedAt: '2026-11-01T00:00:00Z' } as PaymentMethod
+    const pocket = { id: 'p', heldInPaymentMethodId: 'b' } as SavingsAccount
+    const r = accountsBasisFor(ledger([closed, usd], [pocket]), 'EGP')
+    expect(r).toMatchObject({ accountsBasis: 500 })
+    expect([...((r as unknown as { heldInPocketIds: Set<string> }).heldInPocketIds)]).toEqual([])
+  })
 })

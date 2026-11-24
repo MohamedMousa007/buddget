@@ -46,3 +46,12 @@ export function knownFromStore(f: BudgetFacts, fp: FinancialProfile | null | und
   if ((f.averageCycles ?? 0) > 0 && f.monthlyIncome > 0) k.hasHistory = true
   return k
 }
+
+export type KnownSource = 'tracked' | 'earlier'
+
+/** Where each known value came from: the app's own records, or an answer remembered from an earlier plan. */
+export function knownSources(f: BudgetFacts, fp: FinancialProfile | null | undefined, tracksAccounts = false): Record<string, KnownSource> {
+  const all = knownFromStore(f, fp, tracksAccounts)
+  const live = knownFromStore(f, fp ? { ...fp, budgetProfile: undefined } : fp, tracksAccounts)
+  return Object.fromEntries(Object.keys(all).map((id) => [id, live[id] !== undefined && live[id] === all[id] ? 'tracked' : 'earlier']))
+}

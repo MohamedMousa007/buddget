@@ -5,6 +5,8 @@ import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
 import { triage } from '@/lib/support/triage'
 import { isRateLimited } from '@/lib/server/rateLimit'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import type { Json } from '@/lib/supabase/database.types'
+import { ownAttachments } from '@/lib/support/attachments'
 
 const PER_HOUR = 10
 
@@ -19,8 +21,11 @@ const bodySchema = z.object({
       appVersion: z.string().max(20).optional(),
       platform: z.enum(['ios', 'android', 'web']).optional(),
       device: z.string().max(60).optional(),
+      osVersion: z.string().max(30).optional(),
+      timezone: z.string().max(60).optional(),
     })
     .default({}),
+  attachments: z.unknown().optional(),
 })
 
 /**
@@ -42,6 +47,8 @@ export async function POST(request: Request) {
   const parsed = bodySchema.safeParse(json)
   if (!parsed.success) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   const { chosen, title, description, context } = parsed.data
+  const attachments = ownAttachments(uid, parsed.data.attachments)
+  if (!attachments) return NextResponse.json({ error: 'Invalid attachment' }, { status: 400 })
 
   const service = createServiceRoleClient()
   if (await isRateLimited(service, `support-submit:${uid}`, 3600, PER_HOUR)) return NextResponse.json({ error: 'Too many requests, try again later' }, { status: 429 })
@@ -68,7 +75,7 @@ export async function POST(request: Request) {
     p_confidence: t.confidence,
     p_platform: platform ?? '',
     p_version: version ?? '',
-    p_context: { route: context.route, locale: context.locale, device: context.device },
+    p_context: { route: context.route, locale: context.locale, device: context.device, osVersion: context.osVersion, timezone: context.timezone },
     p_to_linear: false,
   })
   const row = data?.[0]
@@ -76,5 +83,18 @@ export async function POST(request: Request) {
     console.error('[support/submit] failed', error?.message)
     return NextResponse.json({ error: 'Could not send that. Try again.' }, { status: 500 })
   }
-  return NextResponse.json({ ok: true, number: row.ticket_number })
+  // support_submit takes no attachments: they go on its first message right after. The ticket stands either way,
+  // so a failure here is reported to the client instead of being hidden behind ok.
+  let attachmentsSaved: boolean | undefined
+  if (attachments.length) {
+    const { data: saved, error: attachError } = await service
+      .from('support_ticket_messages')
+      .update({ attachments: attachments as unknown as Json })
+      .eq('ticket_id', row.ticket_id)
+      .eq('author_type', 'user')
+      .select('id')
+    attachmentsSaved = !attachError && (saved?.length ?? 0) > 0
+    if (!attachmentsSaved) console.error('[support/submit] attachments not saved', attachError?.message)
+  }
+  return NextResponse.json({ ok: true, number: row.ticket_number, ...(attachmentsSaved === undefined ? {} : { attachmentsSaved }) })
 }

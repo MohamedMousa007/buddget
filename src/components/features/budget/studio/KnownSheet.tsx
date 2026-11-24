@@ -10,6 +10,8 @@ export interface KnownRow {
   id: string
   label: string
   value: string
+  /** A short line under the label, such as "Kept your records". */
+  note?: string
 }
 
 export interface KnownSheetProps {

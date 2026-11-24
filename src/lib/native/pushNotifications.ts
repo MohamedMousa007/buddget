@@ -1,6 +1,6 @@
 'use client'
 
-import { getOrCreateDeviceId } from '@/lib/native/deviceId'
+import { getInstallKey, getOrCreateDeviceId } from '@/lib/native/deviceId'
 import { withNativeFlow } from '@/lib/native/appLockPolicy'
 import { isNative, getPlatform, isIOS } from '@/lib/native/isNative'
 import { apiUrl } from '@/lib/apiBase'
@@ -175,6 +175,7 @@ export async function postPushToken(token: string, args: RegisterArgs, opts: { d
           deviceModel:
             typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 200) : null,
           deviceId: await getOrCreateDeviceId(),
+          installKey: await getInstallKey(),
           ...(args.notify !== undefined ? { notify: args.notify } : {}),
         }),
       })

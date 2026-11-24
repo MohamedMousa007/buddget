@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useAuth } from '@/components/auth/auth-context'
 import { createClient } from '@/lib/supabase/client'
+import type { NetWorthBasis } from '@/lib/savings/netWorth'
 import { dailySnapshotDue, snapshotDay, snapshotStampKey } from '@/lib/savings/netWorthSnapshot'
 
 const SETTLE_MS = 3000
@@ -12,7 +13,7 @@ const SETTLE_MS = 3000
  * One upsert on the table's own (user, day) key, so the Wealth page's own write the same day replaces it, never doubles it.
  * `onWritten` fires after the row is saved, so the caller can stop computing.
  */
-export function useDailyNetWorthSnapshot(netWorth: number, currency: string, ready: boolean, basis: 'legacy' | 'accounts', onWritten?: () => void): void {
+export function useDailyNetWorthSnapshot(netWorth: number, currency: string, ready: boolean, basis: NetWorthBasis, onWritten?: () => void): void {
   const { user } = useAuth()
   const userId = user?.id
 

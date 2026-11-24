@@ -8,6 +8,8 @@ import { useEditExpenseForm } from '@/hooks/useEditExpenseForm'
 import { ReceiptDetailSheet } from '@/components/receipt/ReceiptDetailSheet'
 import { useLinkedDelete } from '@/hooks/useLinkedDelete'
 import { ExpenseSheetForm } from '@/components/features/expenses/ExpenseSheetForm'
+import { useLocale } from '@/lib/i18n'
+import { transactionTime } from '@/lib/time/transactionTime'
 
 export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClose: () => void }) {
   const f = useEditExpenseForm(expense, onClose)
@@ -15,6 +17,9 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
   const [repaidOpen, setRepaidOpen] = useState(false)
   const [receiptOpen, setReceiptOpen] = useState(false)
   const hasReceipt = useFinanceStore((s) => !!expense.receiptId && s.receipts.some((r) => r.id === expense.receiptId))
+  const { locale } = useLocale()
+  // The recorded time belongs to the saved day: once the date is changed in the form it no longer applies.
+  const time = f.date === expense.date ? transactionTime(expense.occurredAt, expense.date, locale) : null
 
   const isDirty =
     f.date !== expense.date ||
@@ -65,6 +70,7 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
       onClose={onClose}
       isDirty={isDirty}
       onDiscard={onDiscard}
+      time={time}
       refundedAt={expense.refundedAt}
       refundKind={expense.refundKind}
       onMarkRepaid={expense.spendExclusion === 'for_someone' ? () => setRepaidOpen(true) : undefined}

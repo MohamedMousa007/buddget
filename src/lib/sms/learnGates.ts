@@ -17,6 +17,7 @@ import { normalizeSmsText } from '@/lib/sms/normalizeDigits'
 import { perUserLiteralKinds } from '@/lib/sms/literalLeaks'
 import { replayCandidate, type ReplayCase } from '@/lib/sms/replayHarness'
 import { isSmsExpenseKind } from '@/lib/sms/smsKinds'
+import { looksMultiTransaction } from '@/lib/sms/multiAmount'
 
 export type GateFailure =
   | 'gate_no_match'
@@ -30,6 +31,7 @@ export type GateFailure =
   | 'gate_per_user_literal'
   | 'gate_replay_regression'
   | 'gate_unknown_kind'
+  | 'gate_multi_amount'
 
 export type GateResult = { ok: true } | { ok: false; status: GateFailure; detail?: string }
 
@@ -84,6 +86,8 @@ export function runLearnGates(
   }
 
   if (!isSmsExpenseKind(rules.kind)) return { ok: false, status: 'gate_unknown_kind', detail: String(rules.kind).slice(0, 40) }
+  // A message that states several movements teaches a regex that reads only the first one, for every user (QA-32).
+  if (looksMultiTransaction(message)) return { ok: false, status: 'gate_multi_amount' }
 
   // ---- L4: greediness -----------------------------------------------------
   // Checked first because it is a property of the regex alone and needs no match.

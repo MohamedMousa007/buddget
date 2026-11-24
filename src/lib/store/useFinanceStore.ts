@@ -1,7 +1,9 @@
 import { applyMethodExclusion, isMethodExcluded } from '@/lib/spending/exclusion'
 import { removePaymentMethod } from '@/lib/accounts/removePaymentMethod'
+import { relinkNeedsConfirm } from '@/lib/accounts/cardLink'
+import { hasAccountHistory } from '@/lib/accounts/kinds'
+import { defaultMethodId } from '@/lib/accounts/resolve'
 import { pocketCloseAdjustments } from '@/lib/accounts/pocketCloseAdjustments'
-import type { LedgerInput } from '@/lib/accounts/balance'
 import { create } from 'zustand'
 import { cycleKeyOf, prevKey, recordActivation } from '@/lib/budget/activations'
 import { selectActivePlan } from '@/lib/budget/activePlan'
@@ -71,6 +73,7 @@ import { advanceRecurringDebtDueDate, scheduledDueDate } from '@/lib/utils/recur
 import { overpaysDebt } from '@/lib/debts/overpaysDebt'
 import { withGoalDefaults } from '@/lib/goals/goalDefaults'
 import { resolveAccountLeg, incomeEventIdForTx } from '@/lib/savings/accountLeg'
+import { correctionRefusal, depositLegId, depositRefusal, ledgerOf } from '@/lib/savings/pocketHome'
 import { dropExpenseReceipt, restoreExpenseReceipt } from '@/lib/receipt/receiptCascade'
 import { migrateIdsToUuid } from '@/lib/store/migrations/v17_uuid_remap'
 import { resendCashDebtPayments } from '@/lib/store/migrations/v23_cash_debt_payment_resend'
@@ -622,7 +625,14 @@ export const useFinanceStore = create<FinanceStore>()(
         const key = (m: Pick<PaymentMethod, 'name' | 'type' | 'currency' | 'last4'>) =>
           [m.name.trim().toLowerCase(), m.type, m.currency, m.last4 ?? ''].join('|')
         const twin = get().paymentMethods.find((m) => m.id !== 'pm_default_cash' && !m.closedAt && key(m) === key(method))
-        if (twin) return twin.id
+        if (twin) {
+          // Adding an existing standalone card under an account links that card instead of dropping the link (D6), unless
+          // it is a used debit card: moving its spending needs the user's confirm from the edit sheet (D5), so it stays as is.
+          if (method.parentId && !twin.parentId && !relinkNeedsConfirm(twin, method.parentId, hasAccountHistory(get(), twin.id))) {
+            get().updatePaymentMethod(twin.id, { parentId: method.parentId })
+          }
+          return twin.id
+        }
         const pmId = generateId()
         const nowIso = new Date().toISOString()
         const newMethod: PaymentMethod = { ...method, id: pmId, createdAt: nowIso, updatedAt: nowIso }
@@ -1084,7 +1094,7 @@ export const useFinanceStore = create<FinanceStore>()(
           cancelledAt: null,
         }
         const fallbackPm =
-          st.paymentMethods.find((m) => m.isDefault)?.id || st.paymentMethods[0]?.id || ''
+          defaultMethodId(st.paymentMethods, st.expenses)
         const re = buildRecurringExpenseFromSubscription(sub, recurringExpenseId, fallbackPm)
         set((state) => ({
           subscriptions: [...state.subscriptions, sub],
@@ -1113,7 +1123,7 @@ export const useFinanceStore = create<FinanceStore>()(
           const merged2: Subscription = { ...merged, nextBillingDate: nextBilling ?? merged.nextBillingDate }
           const updatedSubs = state.subscriptions.map((s) => (s.id === id ? merged2 : s))
           const fallbackPm =
-            state.paymentMethods.find((m) => m.isDefault)?.id || state.paymentMethods[0]?.id || ''
+            defaultMethodId(state.paymentMethods, state.expenses)
           let recurring = state.recurringExpenses
           if (sub.linkedRecurringExpenseId) {
             recurring = state.recurringExpenses.map((re) =>
@@ -1212,7 +1222,7 @@ export const useFinanceStore = create<FinanceStore>()(
           amount: charge?.amount ?? chargeAmount(sub),
           currency: sub.currency,
           paymentMethodId:
-            sub.paymentMethodId || paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || '',
+            sub.paymentMethodId || defaultMethodId(paymentMethods, expenses),
           isRecurring: true,
           linkedSubscriptionId: id,
         })
@@ -1296,7 +1306,7 @@ export const useFinanceStore = create<FinanceStore>()(
           const merged2 = { ...merged, nextBillingDate: nextBilling ?? merged.nextBillingDate }
           const subs = state.subscriptions.map((s) => (s.id === id ? merged2 : s))
           const fallbackPm =
-            state.paymentMethods.find((m) => m.isDefault)?.id || state.paymentMethods[0]?.id || ''
+            defaultMethodId(state.paymentMethods, state.expenses)
           let recurring = state.recurringExpenses
           if (sub.linkedRecurringExpenseId) {
             recurring = state.recurringExpenses.map((re) =>
@@ -1751,11 +1761,6 @@ export const useFinanceStore = create<FinanceStore>()(
             })),
           }
           // A held pocket's exits are account legs derived from its rows: freeze them before the rows go.
-          const ledgerOf = (s: FinanceStore): LedgerInput => ({
-            paymentMethods: s.paymentMethods, expenses: s.expenses, incomeEvents: s.incomeEvents, debtPayments: s.debtPayments, debts: s.debts,
-            savingsTransactions: s.savingsTransactions, savingsAccounts: s.savingsAccounts, adjustments: s.accountAdjustments,
-            convert: (a, from, to) => tryConvertCurrency(a, from, to, s.exchangeRates),
-          })
           const freeze = closing?.heldInPaymentMethodId
             ? pocketCloseAdjustments(ledgerOf(state), ledgerOf(nextState), closing.name, new Date().toISOString(), generateId)
             : []
@@ -1813,10 +1818,9 @@ export const useFinanceStore = create<FinanceStore>()(
               ? raw
               : tryConvertWithGold(raw, cIn, acc.currency, state.exchangeRates, state.settings.baseCurrency, goldQuoteOf(state))
           if (amt === null || amt <= 0) return state
+          if (depositRefusal(ledgerOf(state), acc, { amount: amt, mode: opts?.mode, paymentMethodId: opts?.paymentMethodId, fromAccountId: opts?.fromAccountId })) return state
           // Only cash deposits get an account leg; an explicit paymentMethodId (set-aside) is kept as given.
-          const legId =
-            opts?.paymentMethodId ??
-            (opts?.mode === 'declare' ? undefined : resolveAccountLeg(state.paymentMethods, acc, opts?.fromAccountId, acc.currency))
+          const legId = depositLegId(state.paymentMethods, acc, { mode: opts?.mode, paymentMethodId: opts?.paymentMethodId, fromAccountId: opts?.fromAccountId })
           const tx: SavingsTransaction = {
             id: opts?.txId ?? generateId(),
             accountId,
@@ -2014,9 +2018,11 @@ export const useFinanceStore = create<FinanceStore>()(
 
       correctSavingsBalance: (accountId, newBalance, notes) => {
         const nb = Math.max(0, Number(newBalance) || 0)
+        let ok = false
         set((state) => {
           const acc = state.savingsAccounts.find((a) => a.id === accountId)
-          if (!acc) return state
+          if (!acc || correctionRefusal(ledgerOf(state), acc, nb)) return state
+          ok = true
           const diff = nb - acc.currentBalance
           if (Math.abs(diff) < balanceEpsilon(acc.currency)) return state
           const type: SavingsTransaction['type'] = diff > 0 ? 'deposit' : 'withdrawal'
@@ -2044,6 +2050,7 @@ export const useFinanceStore = create<FinanceStore>()(
             goals: reconcileGoalsForState(nextState),
           }
         })
+        return ok
       },
 
       updateSettings: (updates) =>

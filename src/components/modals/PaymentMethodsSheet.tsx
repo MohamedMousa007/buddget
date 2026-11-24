@@ -124,7 +124,7 @@ export function PaymentMethodsSheet() {
                   destructive: true,
                   onSelect: async () => {
                     const children = paymentMethods.filter((m) => m.parentId === menuCard.id).length
-                    if (!(await confirm({ title: t.paymentMethods.delete, body: t.accountsPage.closeAccountBody(children), destructive: true }))) return
+                    if (!(await confirm({ title: t.paymentMethods.delete, body: children > 0 ? t.accountsPage.closeAccountBody(children) : t.paymentMethods.deleteCardBody, destructive: true }))) return
                     deletePaymentMethod(menuCard.id)
                     setActive(0)
                   },

@@ -30,6 +30,10 @@ interface Labels {
   noPocket: string
   duplicate: string
   limit: string
+  savedIn: string
+  setAsideIn: (account: string) => string
+  elsewhere: string
+  reservedEffect: (account: string) => string
 }
 
 const EN: Labels = {
@@ -59,6 +63,10 @@ const EN: Labels = {
   noPocket: 'Only the goal is removed. Your accounts are not touched.',
   duplicate: 'You already have a goal with this name.',
   limit: 'Monthly limit',
+  savedIn: 'Where it is',
+  setAsideIn: (a) => `Set aside in ${a}`,
+  elsewhere: 'Somewhere else (not tracked here)',
+  reservedEffect: (a) => `The saved money stays in ${a}. Net worth does not change.`,
 }
 
 const AR: Labels = {
@@ -88,6 +96,10 @@ const AR: Labels = {
   noPocket: 'يُحذف الهدف فقط. حساباتك لا تتأثر.',
   duplicate: 'لديك هدف بهذا الاسم بالفعل.',
   limit: 'الحد الشهري',
+  savedIn: 'مكان المال',
+  setAsideIn: (a) => `مجنّب في ${a}`,
+  elsewhere: 'في مكان آخر (غير مسجَّل هنا)',
+  reservedEffect: (a) => `يبقى المال المدّخر في ${a}. ثروتك الصافية لا تتغيّر.`,
 }
 
 export const goalLabels = (locale: BuddgyLocale): Labels => (locale === 'ar' ? AR : EN)

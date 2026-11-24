@@ -1,4 +1,4 @@
-import type { PaymentMethod } from '@/lib/store/types'
+import type { Currency, PaymentMethod } from '@/lib/store/types'
 import { isTracked } from '@/lib/accounts/kinds'
 import { resolveAccountId } from '@/lib/accounts/resolve'
 
@@ -9,4 +9,12 @@ import { resolveAccountId } from '@/lib/accounts/resolve'
 export function pocketHolderId(method: PaymentMethod, methods: readonly PaymentMethod[], pocketCurrency: string): string | undefined {
   const holder = methods.find((m) => m.id === resolveAccountId(method.id, methods))
   return holder && isTracked(holder) && !holder.closedAt && String(holder.currency) === pocketCurrency ? holder.id : undefined
+}
+
+/**
+ * The currency of a pocket created from this method: that of the account the money sits in (a debit card's parent).
+ * The form locks it, because another currency would drop the holder and count the same money a second time.
+ */
+export function linkedPocketCurrency(method: PaymentMethod, methods: readonly PaymentMethod[]): Currency {
+  return (methods.find((m) => m.id === resolveAccountId(method.id, methods)) ?? method).currency
 }

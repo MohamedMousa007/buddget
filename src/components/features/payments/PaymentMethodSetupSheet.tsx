@@ -38,6 +38,10 @@ import { FieldButton } from '@/components/ui/FieldButton'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { isSavableTail } from '@/lib/accounts/identity/accountRef'
 import { useReattribute } from '@/lib/accounts/useReattribute'
+import { linkableAccounts, linksToAccount, matchLinkedAccount, relinkNeedsConfirm, savedParentId } from '@/lib/accounts/cardLink'
+import { hasAccountHistory } from '@/lib/accounts/kinds'
+import { AccountPicker } from '@/components/features/accounts/AccountPicker'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 
 /** Banks, wallets and cash have their own sheet; this one only adds cards, and edits an account's look, never its kind. */
 const CARD_TYPES: PaymentMethodType[] = ['debit_card', 'credit_card', 'prepaid_card']
@@ -80,6 +84,14 @@ export function PaymentMethodSetupSheet({
   const addPaymentMethod = useFinanceStore((s) => s.addPaymentMethod)
   const updatePaymentMethod = useFinanceStore((s) => s.updatePaymentMethod)
   const updateDebt = useFinanceStore((s) => s.updateDebt)
+  const paymentMethods = useFinanceStore((s) => s.paymentMethods)
+  const confirm = useConfirm()
+  const linkable = useMemo(() => {
+    const list = linkableAccounts(paymentMethods)
+    // An edited card keeps showing its current account even if that one has since closed.
+    const current = editing?.parentId && !list.some((a) => a.id === editing.parentId) ? paymentMethods.find((m) => m.id === editing.parentId) : undefined
+    return current ? [...list, current] : list
+  }, [paymentMethods, editing])
 
   const [brandId, setBrandId] = useState<string | null>(null)
   const [providerName, setProviderName] = useState('')
@@ -94,6 +106,8 @@ export function PaymentMethodSetupSheet({
   const [themePicked, setThemePicked] = useState(false)
   const [isDefault, setIsDefault] = useState(false)
   const [providerSheetOpen, setProviderSheetOpen] = useState(false)
+  const [linkedId, setLinkedId] = useState<string | undefined>(undefined)
+  const [curTouched, setCurTouched] = useState(false)
   // Credit-card debt terms (only when type === 'credit_card').
   const [ccLimit, setCcLimit] = useState('')
   const [ccOutstanding, setCcOutstanding] = useState('')
@@ -105,7 +119,7 @@ export function PaymentMethodSetupSheet({
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- initialise form when the sheet opens */
     if (open && !prevOpen.current) {
-      setProviderSheetOpen(false); setThemePicked(false)
+      setProviderSheetOpen(false); setThemePicked(false); setCurTouched(false)
       if (editing) {
         const { provider, tag: decTag } = decomposePaymentMethodName(editing.name, editing.last4)
         // A label an older version folded into the name ("CIB · Salary") is shown as the label it always was.
@@ -113,7 +127,7 @@ export function PaymentMethodSetupSheet({
         setBrandId(null); setProviderName(provider); setType(editing.type)
         setLast4(editing.last4 ?? ''); setLabel(savedLabel); setAliases(editing.last4Aliases ?? [])
         setIdMode(savedLabel ? 'label' : editing.last4 ? 'last4' : 'none')
-        setCurCode(editing.currency); setIsDefault(editing.isDefault)
+        setCurCode(editing.currency); setIsDefault(editing.isDefault); setLinkedId(editing.parentId)
         const look = cardLook(editing)
         setCardStyle(look.style); setCardTheme(look.theme)
         // Load the linked credit-card debt's terms so they're editable here.
@@ -129,7 +143,7 @@ export function PaymentMethodSetupSheet({
           const parentBrandId = resolvePaymentBrandKey(accountTitle(parent))
           setBrandId(parentBrandId); setProviderName(accountTitle(parent))
           setType('debit_card'); setLast4(''); setLabel(''); setIdMode('none')
-          setCurCode(parent.currency); setIsDefault(false)
+          setCurCode(parent.currency); setIsDefault(false); setLinkedId(parent.id)
           const look = cardLook(parent)
           setCardStyle(look.style); setCardTheme(look.theme)
         } else {
@@ -150,6 +164,7 @@ export function PaymentMethodSetupSheet({
           setIdMode(prefill?.last4 && allowsLast4(pfType) ? 'last4' : 'none')
           const suggestedParent = prefill?.parentId ? useFinanceStore.getState().paymentMethods.find((m) => m.id === prefill.parentId) : undefined
           setCurCode((prefill?.currency as Currency | undefined) ?? suggestedParent?.currency ?? baseCurrency); setCardStyle('bank'); setCardTheme(null); setIsDefault(false)
+          setLinkedId(pfType === 'debit_card' ? suggestedParent?.id : undefined)
         }
       }
       if (lockType) setType(lockType)
@@ -170,7 +185,20 @@ export function PaymentMethodSetupSheet({
     // prepaid card may be unnumbered, and only some wallets issue a card at all.
     const storedValue = t === 'prepaid_card' || t === 'wallet'
     setIdMode(allowsLast4(t) && !storedValue ? 'last4' : 'none')
-    setCardTheme(null); setCurCode(cur); setProviderSheetOpen(false)
+    setCardTheme(null); setProviderSheetOpen(false)
+    relink(b.name, cur)
+  }
+  // A provider the user picks re-checks the link (never on open, so an SMS or account prefill stands). The card takes the account's currency until the user sets one.
+  const relink = (provider: string, cur: Currency) => {
+    const next = matchLinkedAccount(provider, String(cur), linkable)
+    setLinkedId(next)
+    const acc = next ? linkable.find((a) => a.id === next) : undefined
+    setCurCode(!curTouched && acc ? acc.currency : cur)
+  }
+  const pickLinked = (id: string) => {
+    const acc = linkable.find((a) => a.id === id)
+    setLinkedId(acc?.id)
+    if (acc && !curTouched) setCurCode(acc.currency)
   }
   // Types the chosen provider can plausibly issue (a bank offers account + cards,
   // Tabby only BNPL). Custom providers keep the full list. The current type is always
@@ -187,6 +215,7 @@ export function PaymentMethodSetupSheet({
   }
   const setCustomProvider = (term: string) => {
     setBrandId('__custom'); setProviderName(term.trim()); setProviderSheetOpen(false)
+    relink(term.trim(), curCode)
   }
 
   const brand = brandId && brandId !== '__custom' ? PAYMENT_BRANDS[brandId] : null
@@ -199,8 +228,15 @@ export function PaymentMethodSetupSheet({
   const dayInvalid = type === 'credit_card' && cardDayError(ccStatementDay)
   const canSave = hasProvider && !dayInvalid && (idMode !== 'last4' || isSavableTail(last4))
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!canSave) return
+    const parentId = savedParentId(type, linkedId)
+    if (editing && relinkNeedsConfirm(editing, parentId, hasAccountHistory(useFinanceStore.getState(), editing.id))) {
+      const target = parentId ?? editing.parentId
+      const name = accountTitle(paymentMethods.find((m) => m.id === target) ?? editing)
+      const body = (parentId ? t.paymentMethods.relinkBody : t.paymentMethods.unlinkBody).replace('{account}', name)
+      if (!(await confirm({ title: t.paymentMethods.relinkTitle, body, confirmLabel: t.paymentMethods.relinkConfirm }))) return
+    }
     const provider = providerName.trim()
     // The digits survive a switch to Label: SMS matching reads them even when a label is what the user sees.
     const use4 = idMode !== 'none' && last4.length > 0 && isSavableTail(last4)
@@ -211,11 +247,10 @@ export function PaymentMethodSetupSheet({
     const payload = { name, type, currency: curCode, color, cardStyle, cardTheme: effectiveTheme, isDefault, ...(use4 ? { last4 } : {}), ...(words ? { label: words } : {}) }
     let pmId: string
     if (editing) {
-      updatePaymentMethod(editing.id, { ...payload, last4: use4 ? last4 : undefined, last4Aliases: aliases.length > 0 ? aliases : undefined, label: words || undefined })
+      updatePaymentMethod(editing.id, { ...payload, last4: use4 ? last4 : undefined, last4Aliases: aliases.length > 0 ? aliases : undefined, label: words || undefined, ...(CARD_TYPES.includes(editing.type) ? { parentId } : {}) })
       pmId = editing.id
     } else {
       // A credit_card PM auto-creates its linked credit-card debt in the store.
-      const parentId = parentAccountId ?? (type === 'debit_card' ? prefill?.parentId : undefined)
       pmId = addPaymentMethod(parentId ? { ...payload, parentId } : payload)
     }
     // Persist the credit-card terms onto the linked credit-card debt.
@@ -357,12 +392,23 @@ export function PaymentMethodSetupSheet({
               />
               {editing ? <AccountAliasChips aliases={aliases} onRemove={(d) => setAliases((a) => a.filter((x) => x !== d))} /> : null}
 
+              {/* Linked account: debit and credit cards only; None keeps the card standalone */}
+              {linksToAccount(type) && linkable.length > 0 ? (
+                <Card variant="elevated" radius="sm" padding="none" className="px-3">
+                  <AccountPicker
+                    accounts={linkable.map((m) => ({ method: m, cards: [], balance: null }))}
+                    value={linkedId ?? ''} onChange={pickLinked}
+                    label={t.paymentMethods.linkedAccount} noneLabel={t.paymentMethods.linkedNone} showBalance={false}
+                  />
+                </Card>
+              ) : null}
+
               {/* Currency */}
               <div>
                 <div className={`mx-0.5 mb-2 ${microClassName}`}>
                   {t.paymentMethods.currency}
                 </div>
-                <CurrencyField value={curCode} onChange={(c) => setCurCode(c as unknown as Currency)} zIndexClassName={z.currency} className={ACCOUNT_CURRENCY_FIELD_CLASS} />
+                <CurrencyField value={curCode} onChange={(c) => { setCurCode(c as unknown as Currency); setCurTouched(true) }} zIndexClassName={z.currency} className={ACCOUNT_CURRENCY_FIELD_CLASS} />
               </div>
 
               {/* Credit-card terms (debt fields) — only for the credit_card type */}

@@ -148,24 +148,39 @@ export function flowReadiness(s: FlowState): { percent: number; canBuild: boolea
   return { percent, canBuild, enough: canBuild && percent >= 85 }
 }
 
+/** Already investing is a fact about the person, not an offer the plan makes, so the offer's gate never drops it. */
+const isFact = (id: string, v: FlowValue | undefined) => id === 'investing' && v === 'already'
+
+/** Described answers that are not questions of their own: costs and holdings told in words. */
+export const DESCRIBED_EXTRAS = ['commitments', 'utilities', 'holdings'] as const
+
 /**
  * The part of a free-text description that is a real question for this person. Answers are judged in question order, so
  * a "yes" unlocks the amounts that follow it, and anything the app already holds is not answered a second time.
  */
-export function acceptDescribed(s: FlowState, found: Record<string, FlowValue>): { state: FlowState; kept: string[] } {
+export function acceptDescribed(s: FlowState, found: Record<string, FlowValue>): { state: FlowState; kept: string[]; dropped: string[] } {
   let acc = s
   const kept: string[] = []
+  const dropped: string[] = []
   for (const x of NODES) {
     const v = found[x.id]
-    if (v === undefined || x.control === 'confirm' || isKnown(acc, x) || (x.when && !x.when(acc))) continue
+    if (v === undefined || x.control === 'confirm') continue
+    if (isKnown(acc, x)) continue
+    if (x.when && !x.when(acc) && !isFact(x.id, v)) {
+      dropped.push(x.id)
+      continue
+    }
     acc = answer(acc, x.id, v)
     kept.push(x.id)
   }
-  if (found.commitments !== undefined) {
-    acc = answer(acc, 'commitments', found.commitments)
-    kept.push('commitments')
+  for (const id of DESCRIBED_EXTRAS) {
+    if (found[id] === undefined) continue
+    acc = answer(acc, id, found[id])
+    kept.push(id)
   }
-  return { state: acc, kept }
+  // With debts already tracked, "more debts" carries the typed ones; the plain question does not apply.
+  const noise = new Set(kept.includes('moreDebts') ? ['hasDebts'] : [])
+  return { state: acc, kept, dropped: dropped.filter((id) => !noise.has(id)) }
 }
 
 const isGroupMember = (head: FlowNode) => (x: FlowNode) => x.group === head.group
@@ -201,7 +216,7 @@ export function screenNodes(s: FlowState, head: FlowNode, values: Record<string,
 export function pruneInapplicable(s: FlowState): FlowState {
   let cur = s
   for (let pass = 0; pass < 6; pass++) {
-    const stale = NODES.filter((x) => (x.id in cur.a || cur.skipped.includes(x.id)) && x.control !== 'confirm' && x.when && !x.when(cur)).map((x) => x.id)
+    const stale = NODES.filter((x) => (x.id in cur.a || cur.skipped.includes(x.id)) && x.control !== 'confirm' && x.when && !x.when(cur) && !isFact(x.id, cur.a[x.id])).map((x) => x.id)
     if (stale.length === 0) return cur
     cur = { ...cur, a: Object.fromEntries(Object.entries(cur.a).filter(([k]) => !stale.includes(k))), skipped: cur.skipped.filter((k) => !stale.includes(k)) }
   }

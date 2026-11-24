@@ -54,6 +54,9 @@ interface OverlayPromptBannerProps {
   index: number
   count: number
   counterLabel: string
+  /** Makes each pager dot a 44px button that shows that card; `dotLabel` names it for screen readers. */
+  onSelectIndex?: (i: number) => void
+  dotLabel?: (i: number) => string
   className?: string
 }
 
@@ -76,6 +79,8 @@ function OverlayPromptBanner({
   index,
   count,
   counterLabel,
+  onSelectIndex,
+  dotLabel,
   className,
 }: OverlayPromptBannerProps) {
   return (
@@ -111,7 +116,28 @@ function OverlayPromptBanner({
           </Button>
         ))}
       </div>
-      {count > 1 ? (
+      {count > 1 && onSelectIndex ? (
+        <div className="flex items-center justify-center">
+          {Array.from({ length: count }).map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              aria-label={dotLabel?.(i)}
+              aria-current={i === index || undefined}
+              onClick={() => onSelectIndex(i)}
+              className="flex size-11 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]"
+            >
+              <span
+                className={cn(
+                  'h-[5px] rounded-full',
+                  i === index ? 'w-3.5 bg-[var(--color-brand-primary)]' : 'w-[5px] bg-[var(--color-brand-border-strong)]',
+                )}
+              />
+            </button>
+          ))}
+          <span className="ms-1.5 font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-muted)]" aria-hidden>{counterLabel}</span>
+        </div>
+      ) : count > 1 ? (
         <div className="mt-1 flex items-center justify-center gap-[5px]" aria-hidden>
           {Array.from({ length: count }).map((_, i) => (
             <span

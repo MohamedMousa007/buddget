@@ -1,6 +1,8 @@
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import type { PaymentMethod } from '@/lib/store/types'
+import type { Currency, FinanceStore, PaymentMethod } from '@/lib/store/types'
 import { localTodayISO } from '@/lib/utils/localDate'
+import { tryConvertCurrency } from '@/lib/utils/currency'
+import { computeBalances, type LedgerInput } from './balance'
 import { DEFAULT_CASH_ID, isTracked } from './kinds'
 import { removePaymentMethod } from './removePaymentMethod'
 import { cashAccountId } from './resolve'
@@ -88,4 +90,25 @@ export function closeAccount(accountId: string): void {
     const removal = removePaymentMethod(s, accountId, 'close')
     return removal ? { paymentMethods: removal.paymentMethods } : {}
   })
+}
+
+const ledgerOf = (s: FinanceStore): LedgerInput => ({
+  paymentMethods: s.paymentMethods, expenses: s.expenses, incomeEvents: s.incomeEvents, debtPayments: s.debtPayments, debts: s.debts,
+  savingsTransactions: s.savingsTransactions, savingsAccounts: s.savingsAccounts, adjustments: s.accountAdjustments,
+  convert: (a, from, to) => tryConvertCurrency(a, from, to, s.exchangeRates),
+})
+
+/**
+ * Cash moves to another currency. Untracked Cash is relabelled. Tracked Cash's opening balance and adjustments are bare
+ * numbers in the account's currency, so a relabel alone would silently reinterpret them (1,000 AED read as 1,000 EGP):
+ * the user's amount in the new currency is recorded as an explicit adjustment against what the engine reads once
+ * relabelled, so the balance ends at exactly that amount (the same adjustment path as Update balance).
+ */
+export function changeCashCurrency(id: string, to: Currency, amountInNew: number): void {
+  const before = store().paymentMethods.find((m) => m.id === id)
+  if (!before || before.type !== 'cash' || before.currency === to) return
+  store().updatePaymentMethod(id, { currency: to })
+  if (!isTracked(before)) return
+  const current = computeBalances(ledgerOf(store())).get(id)?.balance ?? 0
+  updateBalance(id, current, amountInNew)
 }

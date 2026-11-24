@@ -8,6 +8,8 @@ import { useActionToast } from '@/components/ui/ActionToast'
 import { useT } from '@/lib/i18n'
 import { IconButton } from '@/components/ui/IconButton'
 import { Button } from '@/components/ui/button'
+import { openSupportThread } from '@/lib/support/openThread'
+import { useSupportCopy } from '@/lib/support/supportCopy'
 import {
   confirmRecurringDebtPayment,
   snoozeRecurringDebtPayment,
@@ -35,6 +37,7 @@ export function NotificationInbox({
   variant?: NotificationInboxVariant
 }) {
   const t = useT()
+  const support = useSupportCopy()
   const wrapRef = useRef<HTMLDivElement>(null)
   const toast = useActionToast()
   const [open, setOpen] = useState(false)
@@ -115,6 +118,11 @@ export function NotificationInbox({
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">{n.title}</p>
                         <p className="mt-0.5 text-xs leading-relaxed text-[var(--color-brand-text-secondary)]">{n.body}</p>
+                        {n.ticketNumber ? (
+                          <Button variant="link" size="sm" className="mt-1 h-auto px-0" onClick={() => { setOpen(false); openSupportThread(n.ticketNumber!) }}>
+                            {support.openThread}
+                          </Button>
+                        ) : null}
                         {n.type === 'recurring_due' && n.recurringId ? (
                           <div className="mt-2 flex flex-wrap gap-2">
                             <Button

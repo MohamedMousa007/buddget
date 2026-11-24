@@ -12,7 +12,7 @@ import { createElement } from 'react'
 interface AccountRowProps {
   account: AccountView
   masked: boolean
-  /** Negative = money the ledger cannot explain; turns the row into an exception. */
+  /** Bank minus ledger. Negative = money is missing, positive = the bank shows more; either turns the row into an exception. */
   gap?: number
   /** Another account has the same provider: the currency moves into the subtitle where it can be read. */
   shared?: boolean
@@ -32,7 +32,7 @@ export function AccountRow({ account, masked, gap, shared = false, onOpen, onFix
   const sub = method.excluded
     ? dict.exclusion.reasonMethod
     : hasGap
-    ? t.missingFindIt(splitMoney(Math.abs(gap), cur).int)
+    ? (gap > 0 ? t.extraFindIt : t.missingFindIt)(splitMoney(Math.abs(gap), cur).int)
     : balance
       ? accountSubtitle(method, shared) ?? (method.type === 'wallet' ? t.typeWallet : '')
       : t.addBalanceToInclude

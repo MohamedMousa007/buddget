@@ -6,11 +6,21 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { EmailCodeInput } from '../auth/EmailCodeInput'
 import { EMAIL_OTP_LENGTH } from '@/lib/auth/otp'
+import { confirmsInApp } from '@/lib/admin/permissions'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { AdminSheet } from './AdminSheet'
 
-/** What the server's `stepUp` accepts: a fresh emailed code or the admin password. Spread it into the request body. */
-export type StepUpProof = { code: string } | { stepUpPassword: string }
-type Ask = (reason: string) => Promise<StepUpProof | null>
+/**
+ * What the server's `stepUp` accepts: a fresh emailed code, the admin password, or (roles in INAPP_CONFIRM_ROLES only)
+ * an in-app confirmation. Spread it into the request body.
+ */
+export type StepUpProof = { code: string } | { stepUpPassword: string } | { confirmed: true }
+/** Title, text and button for the in-app popup (text defaults to the reason); the code sheet ignores them. */
+export interface StepUpPopup { title?: string; body?: string; confirmLabel?: string }
+type Ask = (reason: string, popup?: StepUpPopup) => Promise<StepUpProof | null>
+
+/** True when the proof already was the user's explicit confirmation, so the caller must not ask a second time. */
+export const confirmedInApp = (proof: StepUpProof): boolean => 'confirmed' in proof
 const StepUpContext = createContext<Ask | null>(null)
 
 /** Dangerous actions re-ask for an emailed code (or the admin password) even inside an unlocked session. */
@@ -20,14 +30,20 @@ export function useStepUp(): Ask {
   return ask
 }
 
-export function StepUpProvider({ children }: { children: ReactNode }) {
+export function StepUpProvider({ roleKey, children }: { roleKey?: string | null; children: ReactNode }) {
+  const confirm = useConfirm()
+  const inApp = confirmsInApp(roleKey)
   const [reason, setReason] = useState<string | null>(null)
   const [code, setCode] = useState('')
   const [password, setPassword] = useState('')
   const [usePassword, setUsePassword] = useState(false)
   const resolver = useRef<((proof: StepUpProof | null) => void) | null>(null)
 
-  const ask = useCallback<Ask>((why) => {
+  const ask = useCallback<Ask>(async (why, popup = {}) => {
+    if (inApp) {
+      const ok = await confirm({ title: popup.title ?? 'Confirm this action', body: popup.body ?? why, destructive: true, confirmLabel: popup.confirmLabel ?? 'Confirm' })
+      return ok ? { confirmed: true } : null
+    }
     setCode('')
     setPassword('')
     setUsePassword(false)
@@ -35,7 +51,7 @@ export function StepUpProvider({ children }: { children: ReactNode }) {
     return new Promise((resolve) => {
       resolver.current = resolve
     })
-  }, [])
+  }, [inApp, confirm])
 
   const settle = (value: StepUpProof | null) => {
     resolver.current?.(value)

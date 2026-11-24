@@ -742,6 +742,9 @@ export function totalDebtRemainingDetail(
   let total = 0
   let incomplete = false
   for (const debt of debts) {
+    // A cleared debt is settled or written off: whatever its payments leave over is no longer owed (BUD-39).
+    // A credit card revolves and is never really cleared, so its outstanding always counts.
+    if (debt.status === 'cleared' && debt.debtType !== 'credit_card') continue
     const remaining = calculateDebtRemaining(debt, debtPayments, balanceCtx)
     if (remaining > 0 && goldDebtUnpriced(debt, goldPricePerGram, goldPriceAvailable)) incomplete = true
     total += calculateDebtRemainingInBaseCurrency(

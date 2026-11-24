@@ -3177,7 +3177,7 @@ export type Database = {
           closed_at?: string | null
           color?: string
           created_at?: string
-          currency?: Database["public"]["Enums"]["currency_code"]
+          currency: Database["public"]["Enums"]["currency_code"]
           deleted_at?: string | null
           edited_at?: string
           excluded?: boolean
@@ -5517,6 +5517,7 @@ export type Database = {
       }
       support_ticket_messages: {
         Row: {
+          attachments: Json
           author_label: string | null
           author_staff_id: string | null
           author_type: string
@@ -5527,6 +5528,7 @@ export type Database = {
           ticket_id: string
         }
         Insert: {
+          attachments?: Json
           author_label?: string | null
           author_staff_id?: string | null
           author_type: string
@@ -5537,6 +5539,7 @@ export type Database = {
           ticket_id: string
         }
         Update: {
+          attachments?: Json
           author_label?: string | null
           author_staff_id?: string | null
           author_type?: string
@@ -5573,11 +5576,17 @@ export type Database = {
           board_title: string | null
           category: string
           context: Json
+          csat_at: string | null
+          csat_comment: string | null
+          csat_rating: number | null
           created_at: string
           duplicate_of: string | null
           first_response_at: string | null
           id: string
           kind: string
+          last_message_at: string | null
+          last_message_from: string | null
+          last_message_preview: string | null
           linear_issue_id: string | null
           linear_issue_url: string | null
           number: number
@@ -5586,6 +5595,7 @@ export type Database = {
           requester_email: string | null
           resolved_at: string | null
           severity: string
+          staff_last_read_at: string | null
           sla_first_response_due: string | null
           sla_resolution_due: string | null
           source: string
@@ -5596,6 +5606,7 @@ export type Database = {
           triage_state: string
           updated_at: string
           user_id: string | null
+          user_last_read_at: string | null
           votes: number
         }
         Insert: {
@@ -5607,11 +5618,17 @@ export type Database = {
           board_title?: string | null
           category?: string
           context?: Json
+          csat_at?: string | null
+          csat_comment?: string | null
+          csat_rating?: number | null
           created_at?: string
           duplicate_of?: string | null
           first_response_at?: string | null
           id?: string
           kind?: string
+          last_message_at?: string | null
+          last_message_from?: string | null
+          last_message_preview?: string | null
           linear_issue_id?: string | null
           linear_issue_url?: string | null
           number?: never
@@ -5620,6 +5637,7 @@ export type Database = {
           requester_email?: string | null
           resolved_at?: string | null
           severity?: string
+          staff_last_read_at?: string | null
           sla_first_response_due?: string | null
           sla_resolution_due?: string | null
           source?: string
@@ -5630,6 +5648,7 @@ export type Database = {
           triage_state?: string
           updated_at?: string
           user_id?: string | null
+          user_last_read_at?: string | null
           votes?: number
         }
         Update: {
@@ -5641,11 +5660,17 @@ export type Database = {
           board_title?: string | null
           category?: string
           context?: Json
+          csat_at?: string | null
+          csat_comment?: string | null
+          csat_rating?: number | null
           created_at?: string
           duplicate_of?: string | null
           first_response_at?: string | null
           id?: string
           kind?: string
+          last_message_at?: string | null
+          last_message_from?: string | null
+          last_message_preview?: string | null
           linear_issue_id?: string | null
           linear_issue_url?: string | null
           number?: never
@@ -5654,6 +5679,7 @@ export type Database = {
           requester_email?: string | null
           resolved_at?: string | null
           severity?: string
+          staff_last_read_at?: string | null
           sla_first_response_due?: string | null
           sla_resolution_due?: string | null
           source?: string
@@ -5664,6 +5690,7 @@ export type Database = {
           triage_state?: string
           updated_at?: string
           user_id?: string | null
+          user_last_read_at?: string | null
           votes?: number
         }
         Relationships: [
@@ -5735,6 +5762,7 @@ export type Database = {
           created_at: string
           device_id: string
           first_sms_at: string | null
+          install_key: string | null
           is_main: boolean
           last_seen_at: string
           last_sms_at: string | null
@@ -5759,6 +5787,7 @@ export type Database = {
           created_at?: string
           device_id: string
           first_sms_at?: string | null
+          install_key?: string | null
           is_main?: boolean
           last_seen_at?: string
           last_sms_at?: string | null
@@ -5783,6 +5812,7 @@ export type Database = {
           created_at?: string
           device_id?: string
           first_sms_at?: string | null
+          install_key?: string | null
           is_main?: boolean
           last_seen_at?: string
           last_sms_at?: string | null
@@ -6557,6 +6587,10 @@ export type Database = {
           p_transaction_id: string
         }
         Returns: string
+      }
+      devices_supersede: {
+        Args: { p_new: string; p_old: string; p_user: string }
+        Returns: boolean
       }
       detect_zero_variance_templates: {
         Args: { p_min_matches?: number }

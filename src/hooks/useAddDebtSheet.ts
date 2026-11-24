@@ -15,7 +15,7 @@ import {
 } from '@/lib/utils/calculations'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { isBnplPlan } from '@/lib/debt/bnpl'
-import { settlesWithoutExpense } from '@/lib/debts/debtDirection'
+import { isOwedToUser, settlesWithoutExpense } from '@/lib/debts/debtDirection'
 import { parseCardDay, parseCardPercent } from '@/lib/debts/cardTerms'
 import { reconcileDebtSchedule } from '@/lib/debts/recurringDebtDueHandlers'
 import { MAX_INSTALLMENT_COUNT, settleInstallmentAmount } from '@/lib/debts/installmentPlan'
@@ -634,7 +634,7 @@ export function useAddDebtSheet() {
         notes: paymentNotes || undefined,
       })
       reconcileDebtSchedule(selectedDebtId, { amount, currency: payCur })
-      showToast(tI18n.common.toastDebtPaymentRecorded)
+      showToast(isOwedToUser(selectedDebt) ? tI18n.common.toastRepaymentReceived : tI18n.common.toastDebtPaymentRecorded)
       resetForm()
       closeSheet()
       return

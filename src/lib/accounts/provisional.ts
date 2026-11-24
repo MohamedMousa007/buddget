@@ -104,10 +104,14 @@ export function confirmProvisionalWithBank(id: string, brandKey: string): (() =>
   return () => store().updatePaymentMethod(id, { ...before, provisional: true })
 }
 
-/** Not mine: it stays as an excluded account, so its messages stop counting and it is not re-created. Returns Undo. */
+/**
+ * Not mine: it stays as a closed, excluded account. Closed keeps it off the Accounts list; the row still answers to its
+ * digits on the server (only closed provisional rows are skipped), so its messages land on it, stop counting, and no new
+ * provisional account is created. Returns Undo.
+ */
 export function rejectProvisional(id: string): () => void {
-  store().updatePaymentMethod(id, { provisional: false, excluded: true })
-  return () => store().updatePaymentMethod(id, { provisional: true, excluded: false })
+  store().updatePaymentMethod(id, { provisional: false, excluded: true, isDefault: false, closedAt: new Date().toISOString() })
+  return () => store().updatePaymentMethod(id, { provisional: true, excluded: false, closedAt: undefined })
 }
 
 /**

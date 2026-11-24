@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { SelectableCard } from '@/components/ui/SelectableCard'
+import { useDepositGuard } from '@/components/features/savings-v3/useDepositGuard'
 
 export interface EditSavingsAccountSheetProps {
   open: boolean
@@ -73,8 +74,12 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
     if (!currencyLocked) setCurrency(pickDefaultSavingsCurrency(settings, st))
   }
 
+  const guard = useDepositGuard(account)
+  const typedBalance = parseFloat(balance)
+  const refusal = Number.isFinite(typedBalance) ? guard.correctionRefusalFor(typedBalance) : null
+
   const submit = () => {
-    if (!name.trim()) return
+    if (!name.trim() || refusal) return
     const resolvedIcon = savingsType === 'other' ? otherIcon : SAVINGS_TYPE_ICONS[savingsType]
     updateSavingsAccount(account.id, {
       name: name.trim(),
@@ -167,6 +172,7 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
               aria-label={t.savings.sheetUpdateTitle}
               className={cn('mt-1 h-12', inputClass)}
             />
+            {refusal ? <p role="alert" className="mt-1 text-[0.8125rem] text-[var(--color-brand-amber)]">{guard.message(refusal)}</p> : null}
           </div>
 
           <div>
@@ -195,7 +201,7 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
             />
           </div>
 
-          <Button size="cta-block" onClick={submit}>
+          <Button size="cta-block" onClick={submit} disabled={!!refusal}>
             {t.common.save}
           </Button>
         </div>

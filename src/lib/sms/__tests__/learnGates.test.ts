@@ -150,3 +150,18 @@ describe('ReDoS guard', () => {
     expect(res).toMatchObject({ ok: false, status: 'gate_regex_unsafe' })
   })
 })
+
+describe('L0 — one message, several movements (QA-32)', () => {
+  const TWO = 'Account ***3307 was debited EGP 100.00 for purchase at UBER on 16-11-2026 08:00. Account ***3307 was debited EGP 250.00 for purchase at STARBUCKS on 16-11-2026 08:30'
+  const rules: MappingRules = { amount: { group: 1, removeCommas: true }, kind: 'purchase' }
+
+  it('never teaches a template from a message that states two movements', () => {
+    const res = runLearnGates(TWO, 'debited\\s+EGP\\s+([\\d,]+\\.\\d{2})', rules, expected(100))
+    expect(res).toMatchObject({ ok: false, status: 'gate_multi_amount' })
+  })
+
+  it('a single movement with its balance clause still passes this gate', () => {
+    const res = runLearnGates(HSBC_PURCHASE, 'EGP\\s+([\\d,]+\\.\\d{2})-', rules, expected(715))
+    expect(res).not.toMatchObject({ status: 'gate_multi_amount' })
+  })
+})

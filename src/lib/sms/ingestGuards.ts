@@ -51,6 +51,15 @@ export function computeBodyHash(message: string): string {
 }
 
 /**
+ * The text a message's hashes are taken over when it is processed as piece `index` of `total` (QA-32). One piece is
+ * the message itself, so a single-movement message hashes exactly as before. Several pieces carry their ordinal, so
+ * two identical statements in one message are two claims, and a retry of the message cuts and hashes the same way.
+ */
+export function segmentIdentity(rawMessage: string, index: number, total: number): string {
+  return total > 1 ? `${rawMessage}|seg:${index}` : rawMessage
+}
+
+/**
  * The capture time the phone reported, cut to the whole second, or null when it sent none or an unreadable one. Never
  * the server clock: a retry would get a different value and the same-capture index would never match.
  */

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/auth/auth-context'
 import { createClient } from '@/lib/supabase/client'
+import type { NetWorthBasis } from '@/lib/savings/netWorth'
 import { buildNetWorthTrend, type NetWorthTrend } from '@/lib/savings/netWorthTrend'
 
 export type { NetWorthTrend }
@@ -17,7 +18,7 @@ const isoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padSt
  * (one row per day) once it has settled, and the last 30 days are read back. Null until there
  * are two snapshots in the base currency — never a made-up trend.
  */
-export function useNetWorthTrend(netWorth: number, currency: string, ready: boolean, basis: 'legacy' | 'accounts' = 'legacy'): NetWorthTrend | null {
+export function useNetWorthTrend(netWorth: number, currency: string, ready: boolean, basis: NetWorthBasis = 'assets'): NetWorthTrend | null {
   const { user } = useAuth()
   // Keyed by currency and basis: a trend read for another one is never shown.
   const [loaded, setLoaded] = useState<{ key: string; trend: NetWorthTrend | null } | null>(null)

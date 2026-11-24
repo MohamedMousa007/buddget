@@ -12,6 +12,7 @@ import { useShortDate } from '@/hooks/useShortDate'
 import { useT } from '@/lib/i18n'
 import { formatFlex } from '@/lib/utils/formatters'
 import { selectFlagPrompts, type FlagPromptTarget } from '@/lib/sms/flagPrompts'
+import { isSamePhoneCopy } from '@/lib/sms/smsFlags'
 import { syncFinanceNow } from '@/components/sync/SupabaseFinanceSync'
 import { markDepositIncome, markWalletOwn, undoTopupRepair } from '@/lib/sms/flagActions'
 import type { Expense, IncomeEvent } from '@/lib/store/types'
@@ -120,7 +121,7 @@ export function SmsFlagPrompts() {
         ...base,
         icon: Copy,
         title: copy.duplicateTitle,
-        description: copy.duplicateBody(detail),
+        description: (isSamePhoneCopy(row.smsFlags) ? copy.duplicateSamePhoneBody : copy.duplicateBody)(detail),
         actions: [
           { label: copy.duplicateRemove, variant: 'default', onPress: () => (e ? void removeExpense(e) : removeIncome(inc!)) },
           { label: copy.duplicateKeep, variant: 'secondary', onPress: dismiss },

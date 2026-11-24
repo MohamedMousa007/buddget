@@ -1,10 +1,12 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Landmark, Plus } from 'lucide-react'
+import { Landmark, MoreVertical, Plus, Star } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { CardActionMenu } from '@/components/ui/CardActionMenu'
+import { IconButton } from '@/components/ui/IconButton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { AccountsHero } from '@/components/features/accounts/AccountsHero'
@@ -12,6 +14,7 @@ import { AccountRow } from '@/components/features/accounts/AccountRow'
 import { sharesProvider } from '@/components/features/accounts/accountDisplay'
 import { AccountDetailSheet } from '@/components/features/accounts/AccountDetailSheet'
 import { AddAccountSheet } from '@/components/features/accounts/AddAccountSheet'
+import { CashCurrencySheet } from '@/components/features/accounts/CashCurrencySheet'
 import { BrandMark } from '@/components/features/accounts/BrandMark'
 import { FixGapSheet } from '@/components/features/accounts/FixGapSheet'
 import { DetectedAccountsSheet } from '@/components/features/accounts/DetectedAccountsSheet'
@@ -21,6 +24,7 @@ import { MoveMoneySheet, type MoveMode } from '@/components/features/accounts/Mo
 import { UnplacedSmsSheet } from '@/components/features/accounts/UnplacedSmsSheet'
 import { UpdateBalanceSheet } from '@/components/features/accounts/UpdateBalanceSheet'
 import { PaymentMethodSetupSheet } from '@/components/features/payments/PaymentMethodSetupSheet'
+import { ensureCashAccount } from '@/lib/accounts/actions'
 import { snoozeGap, useAccountGaps } from '@/lib/accounts/useAccountGaps'
 import { useAccounts } from '@/lib/accounts/useAccounts'
 import { unplacedSmsExpenses } from '@/lib/accounts/unplacedSms'
@@ -32,6 +36,7 @@ import { totalDebtRemainingInBase } from '@/lib/utils/calculations'
 import { useT } from '@/lib/i18n'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
 import { createElement } from 'react'
+import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
 
 type Sheet =
   | { kind: 'detail'; id: string }
@@ -40,6 +45,8 @@ type Sheet =
   | { kind: 'fix'; id: string }
   | { kind: 'card'; id: string }
   | { kind: 'edit'; id: string }
+  | { kind: 'cashCurrency'; id: string }
+  | { kind: 'editCard'; id: string; cardId: string }
   | { kind: 'add'; cash?: boolean }
   | { kind: 'found' }
   | { kind: 'unplaced' }
@@ -69,6 +76,11 @@ export default function AccountsPage() {
   const { toggle } = useToggleHideAll()
   const { debts, debtPayments, expenses, settings, exchangeRates, goldPricePerGram, goldPriceAvailable } = useFinanceStore((s) => s)
   const [sheet, setSheet] = useState<Sheet | null>(null)
+  const [cashMenu, setCashMenu] = useState<DOMRect | null>(null)
+  const paymentMethods = useFinanceStore((s) => s.paymentMethods)
+  const updatePaymentMethod = useFinanceStore((s) => s.updatePaymentMethod)
+  // The built-in Cash's seeded mark is not a choice (BUD-87), so only a real Cash row counts as already the default.
+  const cashIsDefault = paymentMethods.some((m) => m.type === 'cash' && m.isDefault && m.id !== DEFAULT_CASH_ID && !m.closedAt)
   const accountPrefill = useSettingsStore((s) => s.accountPrefill)
   const clearAccountPrefill = useSettingsStore((s) => s.clearAccountPrefill)
 
@@ -81,6 +93,7 @@ export default function AccountsPage() {
   const banks = model.accounts.filter((a) => a.method.type === 'bank_account' || a.method.type === 'prepaid_card')
   const wallets = model.accounts.filter((a) => a.method.type === 'wallet' || a.method.type === 'cash')
   const open = sheet && 'id' in sheet ? model.accounts.find((a) => a.method.id === sheet.id) : undefined
+  const editCard = sheet?.kind === 'editCard' && open ? open.cards.find((c) => c.id === sheet.cardId) : undefined
   const close = () => { setSheet(null); clearAccountPrefill(); setFoundOpen(false) }
   const foundSheetOpen = sheet?.kind === 'found' || foundOpen
   const addOpen = sheet?.kind === 'add' || accountPrefill !== null
@@ -95,16 +108,26 @@ export default function AccountsPage() {
   )
 
   // Every user has a Cash; until it has a balance it waits here, on the empty page too (docs/SYSTEM_CASH_PLAN.md).
+  // Untracked Cash can still be the default payment (BUD-87): its menu sits beside the row's tap target, not inside it.
   const cashRow = model.needsCash ? (
-          <button type="button" onClick={() => setSheet({ kind: 'add', cash: true })} data-raw-button-ok="a whole-row tap target, sized by its content"
-            className="flex min-h-[72px] w-full items-center gap-3.5 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 text-start">
-            <BrandMark name="Cash" color="var(--color-brand-sunken)" icon={createElement(paymentTypeIcon('cash'), { className: 'size-5', 'aria-hidden': true })} />
-            <span className="min-w-0 flex-1">
-              <span className="block text-base font-semibold text-[var(--color-brand-text-primary)]">{t.typeCash}</span>
-              <span className="block text-[0.8125rem] text-[var(--color-brand-text-muted)]">{t.addBalanceToInclude}</span>
-            </span>
-            <span className="text-sm font-semibold text-[var(--color-brand-primary-ink)]">{t.setBalance}</span>
-          </button>
+          <div className="flex min-h-[72px] w-full items-center gap-1 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] pe-2">
+            <button type="button" onClick={() => setSheet({ kind: 'add', cash: true })} data-raw-button-ok="a whole-row tap target, sized by its content"
+              className="flex min-h-[72px] min-w-0 flex-1 items-center gap-3.5 ps-4 text-start">
+              <BrandMark name="Cash" color="var(--color-brand-sunken)" icon={createElement(paymentTypeIcon('cash'), { className: 'size-5', 'aria-hidden': true })} />
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-semibold text-[var(--color-brand-text-primary)]">{t.typeCash}</span>
+                <span className="block text-[0.8125rem] text-[var(--color-brand-text-muted)]">{t.addBalanceToInclude}</span>
+              </span>
+              <span className="text-sm font-semibold text-[var(--color-brand-primary-ink)]">{t.setBalance}</span>
+            </button>
+            {cashIsDefault ? null : (
+              <IconButton aria-label={all.common.moreActions} aria-haspopup="menu" aria-expanded={cashMenu !== null} onClick={(e) => setCashMenu(e.currentTarget.getBoundingClientRect())}>
+                <MoreVertical size={18} />
+              </IconButton>
+            )}
+            <CardActionMenu anchor={cashMenu} onClose={() => setCashMenu(null)}
+              items={[{ label: all.paymentMethods.setDefault, icon: <Star size={17} />, onSelect: () => updatePaymentMethod(ensureCashAccount(), { isDefault: true }) }]} />
+          </div>
   ) : null
 
   if (model.accounts.length === 0) {
@@ -155,10 +178,14 @@ export default function AccountsPage() {
         <>
           <AccountDetailSheet key={`d-${open.method.id}`} open={sheet?.kind === 'detail'} onClose={close} account={open} masked={listMasked}
             onMove={(mode) => setSheet({ kind: 'move', id: open.method.id, mode })} onUpdate={() => setSheet({ kind: 'update', id: open.method.id })}
-            onAddCard={() => setSheet({ kind: 'card', id: open.method.id })} onEdit={() => setSheet({ kind: 'edit', id: open.method.id })} />
+            onAddCard={() => setSheet({ kind: 'card', id: open.method.id })} onEdit={() => setSheet({ kind: open.method.type === 'cash' ? 'cashCurrency' : 'edit', id: open.method.id })}
+            onEditCard={(cardId) => setSheet({ kind: 'editCard', id: open.method.id, cardId })} />
           <MoveMoneySheet key={`m-${open.method.id}-${sheet?.kind === 'move' ? sheet.mode : ''}`} open={sheet?.kind === 'move'} onClose={close}
             accounts={model.accounts} initialAccountId={open.method.id} initialMode={sheet?.kind === 'move' ? sheet.mode : 'cash'} initialAmount={sheet?.kind === 'move' ? sheet.amount : undefined}
             onDone={() => { const g = gaps[open.method.id]; if (g && sheet?.kind === 'move' && sheet.fromGap) { snoozeGap(open.method.id, g.reportedAt); refresh() } }} />
+          {open.method.type === 'cash' ? (
+            <CashCurrencySheet key={`c-${open.method.id}-${sheet?.kind === 'cashCurrency'}`} open={sheet?.kind === 'cashCurrency'} onClose={close} account={open} />
+          ) : null}
           <UpdateBalanceSheet key={`u-${open.method.id}`} open={sheet?.kind === 'update'} onClose={close} account={open}
             onDone={() => { const g = gaps[open.method.id]; if (g) { snoozeGap(open.method.id, g.reportedAt); refresh() } }} />
           {gaps[open.method.id] ? (
@@ -167,6 +194,10 @@ export default function AccountsPage() {
           ) : null}
           <PaymentMethodSetupSheet open={sheet?.kind === 'card'} editing={null} baseCurrency={settings.baseCurrency} parentAccountId={open.method.id} nested onClose={close} />
           <PaymentMethodSetupSheet key={`e-${open.method.id}`} open={sheet?.kind === 'edit'} editing={open.method} baseCurrency={settings.baseCurrency} nested onClose={close} />
+          {editCard ? (
+            <PaymentMethodSetupSheet key={`ec-${editCard.id}`} open editing={editCard} baseCurrency={settings.baseCurrency} nested
+              onClose={() => setSheet({ kind: 'detail', id: open.method.id })} />
+          ) : null}
         </>
       ) : null}
       <AddAccountSheet key={addKey} open={addOpen} prefill={accountPrefill ?? undefined} initialKind={sheet?.kind === 'add' && sheet.cash ? 'cash' : 'bank_account'} onClose={close} onAddCard={(id) => setSheet({ kind: 'card', id })} />

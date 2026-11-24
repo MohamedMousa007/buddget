@@ -64,6 +64,8 @@ export interface ExpenseSheetFormProps {
   isDirty?: boolean
   /** Edit-only: revert every field to the loaded snapshot. */
   onDiscard?: () => void
+  /** Edit-only: the recorded time of day, shown after the date in the date pill (`transactionTime`). */
+  time?: string | null
   /** Edit-only: set when this expense was reversed — shows a charged/refunded line. */
   refundedAt?: string
   refundKind?: 'refunded' | 'declined'
@@ -115,6 +117,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
     onClose,
     isDirty,
     onDiscard,
+    time,
     refundedAt,
     refundKind,
     installment,
@@ -200,6 +203,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
             >
               <Calendar className="size-3.5 text-[var(--color-brand-text-muted)]" />
               {formatDatePillLabel(date, locale, t.expenseForm.today)}
+              {time ? <span className="font-mono-numbers text-[var(--color-brand-text-muted)]">· {time}</span> : null}
             </OptionChip>
           </V3SheetHeader.Extra>
         </V3SheetHeader>

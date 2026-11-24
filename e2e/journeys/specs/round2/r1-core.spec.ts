@@ -187,21 +187,29 @@ test('R08 pages: Notifications, Settings, Security, Profile, Help/feedback rende
   await expect(page.getByRole('dialog').or(page.locator('main')).first()).toContainText(/device|This device/i)
 })
 
-test('R09 feedback: sheet opens and posts one request (mocked, nothing stored)', async ({ page, user }) => {
+test('R09 feedback: Messages > New message posts one request with device context and opens the thread (mocked, nothing stored)', async ({ page, user }) => {
   void user
   const posts: any[] = []
   await page.route(/\/api\/support\/submit(\?|$)/, async (route) => {
-    if (route.request().method() === 'POST') { posts.push(route.request().postDataJSON()); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) }) }
+    if (route.request().method() === 'POST') { posts.push(route.request().postDataJSON()); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, number: 1 }) }) }
     return route.continue()
   })
-  // Send feedback lives on Settings > Help & feedback since the grouped Settings redesign (b69d8b3a).
+  await page.route(/\/api\/support\/tickets\/1(\?|$)/, (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ ticket: { number: 1, subject: 'QA R09 mocked feedback', display_status: 'open', can_reply: true, can_rate: false, csat_rating: null }, messages: [{ id: 'm1', author_type: 'user', author_name: null, body: 'QA R09 mocked feedback', created_at: new Date().toISOString(), attachments: [] }] }),
+  }))
+  // Feedback lives on Settings > Help & feedback > Messages (support conversations, migration 0346).
   await goto(page, '/settings/help')
-  await page.getByRole('button', { name: /^Send feedback/ }).click()
+  await page.getByRole('button', { name: /^Messages/ }).click()
   const d = page.getByRole('dialog').last()
   await expect(d).toBeVisible()
-  await d.getByRole('textbox').first().fill('QA R09 mocked feedback')
-  await d.getByRole('button', { name: /^Send Report/ }).click()
+  await d.getByRole('button', { name: /^New message/ }).first().click()
+  await d.getByRole('textbox', { name: 'Subject' }).fill('QA R09 mocked feedback')
+  await d.getByRole('button', { name: /^Send message/ }).click()
   await expect.poll(() => posts.length, { timeout: 10_000 }).toBe(1)
+  expect(posts[0].context).toMatchObject({ platform: 'web', locale: 'en' })
+  await expect(d.getByRole('textbox', { name: 'Write a message' })).toBeVisible()
 })
 
 test('R10 Pro, Rewards, Invite, Founders with selling off: no dead loading state, no purchase button', async ({ page }) => {

@@ -4,7 +4,7 @@ import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
 import { DEVICE_ID_HEADER } from '@/lib/auth/deviceIdConstants'
 import { DEVICE_ID_PATTERN } from '@/lib/auth/resolveDeviceId'
-import { upsertSelf } from '@/lib/server/devices/registry'
+import { INSTALL_KEY_PATTERN, upsertSelf } from '@/lib/server/devices/registry'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
 const selfSchema = z.object({
@@ -14,6 +14,7 @@ const selfSchema = z.object({
   collects: z.boolean().optional(),
   collectsSms: z.boolean().optional(),
   pushPermission: z.enum(['granted', 'denied']).nullish(),
+  installKey: z.string().regex(INSTALL_KEY_PATTERN).nullish(),
   smsQueue: z.object({ pending: z.number().int().min(0).max(100_000), oldestAt: z.string().max(40).nullable(), lastResult: z.string().max(60).nullable(), evicted: z.number().int().min(0).max(1_000_000).optional() }).optional(),
 })
 

@@ -16,6 +16,7 @@ import { canAny, type Permission } from '@/lib/admin/permissions'
 import { cn } from '@/lib/utils'
 import { adminNavigate, useAdminRoute } from './adminRouter'
 import { AdminSearchButton } from './AdminSearch'
+import { SupportDeskBadge } from './SupportDeskBadge'
 import { Pill } from './ui/Pill'
 import type { AdminStatus } from './types'
 
@@ -65,6 +66,7 @@ export function AdminShell({ status, onLock, children }: { status: AdminStatus; 
                   >
                     <NavIcon name={item.icon} />
                     {item.label}
+                    {item.section === 'support' ? <SupportDeskBadge /> : null}
                   </a>
                 </li>
               )

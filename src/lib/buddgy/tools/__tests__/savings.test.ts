@@ -121,10 +121,10 @@ describe('list_savings and get_net_worth', () => {
     expect(r.total_savings).toBe(41200)
   })
 
-  it('computes net worth with the app model: savings + investments + flow - debt', () => {
+  it('computes net worth with the app model: savings + investments - debt, no month flow (BUD-100)', () => {
     useAssetPricesStore.setState({ prices: Object.fromEntries([price('XAU_21K', 'EGP', 4000)]) })
     useFinanceStore.setState({ investmentHoldings: [holding(H1)] })
-    expect(read('get_net_worth')).toMatchObject({ currency: 'EGP', net_worth: 41200, savings: 1200, investments: 40000, debt: 0, month_flow: 0 })
+    expect(read('get_net_worth')).toMatchObject({ currency: 'EGP', net_worth: 41200, savings: 1200, investments: 40000, debt: 0, no_tracked_accounts: true })
   })
 
   it('net worth parts add up with a tracked account (accounts replaces month_flow)', () => {
@@ -135,6 +135,7 @@ describe('list_savings and get_net_worth', () => {
     const r = read('get_net_worth') as Record<string, number>
     expect(r.accounts_total).toBe(680)
     expect(r.month_flow).toBeUndefined()
+    expect(r.no_tracked_accounts).toBeUndefined()
     expect(r.savings + r.investments + r.accounts_total - r.debt).toBe(r.net_worth)
   })
 
@@ -149,7 +150,7 @@ describe('list_savings and get_net_worth', () => {
     expect(r.accounts_total).toBe(HIDDEN)
   })
 
-  it('net worth counts money that arrived, not a payday still ahead this month', () => {
+  it('income never reaches net worth without a tracked account (BUD-100)', () => {
     useSettingsStore.setState({ monthFilter: '2026-10' })
     useFinanceStore.setState({
       incomeSources: [{
@@ -157,7 +158,9 @@ describe('list_savings and get_net_worth', () => {
         dayOfMonth: 25, effectiveStart: '2026-01-01', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
       }],
     })
-    expect(read('get_net_worth')).toMatchObject({ month_flow: 0 })
+    const r = read('get_net_worth') as Record<string, unknown>
+    expect(r.month_flow).toBeUndefined()
+    expect(r).toMatchObject({ net_worth: Number(r.savings) + Number(r.investments) - Number(r.debt), no_tracked_accounts: true })
   })
 
   it('caps long lists', () => {

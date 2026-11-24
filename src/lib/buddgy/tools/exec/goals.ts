@@ -14,7 +14,9 @@ import { withDebtDerived } from '@/lib/goals/debtGoal'
 import { periodsUntil } from '@/lib/goals/goalPlan'
 import { getGoalStatus } from '@/lib/goals/goalStatus'
 import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
-import type { Currency, FinanceStore, Goal, GoalCategory, GoalFundingMode } from '@/lib/store/types'
+import { availableIn, depositRefusal, explainDepositRefusal, ledgerOf } from '@/lib/savings/pocketHome'
+import { createGoalPocket, ELSEWHERE, goalHomeAccounts, savedHomeProblem } from '@/lib/goals/goalPocket'
+import type { Currency, FinanceStore, Goal, GoalCategory, GoalFundingMode, PaymentMethod } from '@/lib/store/types'
 import { useFinanceStore, goldQuoteOf } from '@/lib/store/useFinanceStore'
 import { tryConvertCurrency, tryConvertWithGold } from '@/lib/utils/currency'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
@@ -91,6 +93,28 @@ const futureDate = (v: unknown, ctx: ToolContext): string | Refusal => {
   return date
 }
 
+/**
+ * Where a new goal's already-saved money is. While a tracked account could contain it the answer is required and
+ * never guessed: counting money that is already in an account as new would raise net worth from nothing.
+ */
+function resolveSavedHome(s: FinanceStore, currency: Currency, saved: number, input: unknown, elsewhereLabel: string): { home?: string; account?: PaymentMethod } | Refusal {
+  const accounts = saved > 0 ? goalHomeAccounts(s.paymentMethods, currency) : []
+  if (accounts.length === 0 || input === ELSEWHERE) return accounts.length ? { home: ELSEWHERE } : {}
+  const choices = [...accounts.map((a) => ({ id: refOf(a.id), label: a.name })), { id: ELSEWHERE, label: elsewhereLabel }]
+  if (input === undefined || input === '') {
+    return no('Where is the money that is already saved?', 'Ask the user whether it is inside one of these accounts or somewhere else that is not tracked here, then send saved_in. Never guess.', choices)
+  }
+  const hit = pick(accounts, input, (a) => a.name, 'account', 'Send saved_in as one of the choices, or "elsewhere".')
+  if ('error' in hit) return no(hit.error.error, 'Send saved_in as one of the choices, or "elsewhere".', choices)
+  if (savedHomeProblem(ledgerOf(s), currency, saved, hit.item.id) === 'over_available') {
+    return no(
+      `${hit.item.name} only has ${money(availableIn(hit.item.id, ledgerOf(s)), currency)} available, less than the saved amount.`,
+      'Ask for a smaller saved amount, or whether the money is somewhere else.',
+    )
+  }
+  return { home: hit.item.id, account: hit.item }
+}
+
 const add_goal: WriteImpl = {
   propose(args, ctx) {
     const s = fin()
@@ -114,15 +138,21 @@ const add_goal: WriteImpl = {
     }
     const saved = args.saved === undefined ? 0 : num(args.saved)
     if (saved === undefined || saved < 0) return no('The amount already saved cannot be negative.')
+    const where = resolveSavedHome(s, ccy.currency, saved, args.saved_in, L.elsewhere)
+    if ('ok' in where) return where
 
     const duplicate = s.goals.some((g) => g.name.trim().toLowerCase() === name.toLowerCase())
-    const clean = { name, target, currency: ccy.currency, category, ...(date ? { date } : {}), ...(saved > 0 ? { saved } : {}) }
+    const clean = {
+      name, target, currency: ccy.currency, category, ...(date ? { date } : {}), ...(saved > 0 ? { saved } : {}),
+      ...(where.home ? { saved_in: where.account ? refOf(where.account.id) : ELSEWHERE } : {}),
+    }
     const rows: PreviewRow[] = [
       { label: L.name, value: name },
       { label: L.target, value: money(target, ccy.currency) },
       { label: L.category, value: goalCategoryName(ctx.locale, category) },
       ...(date ? [{ label: L.date, value: date }] : []),
       ...(saved > 0 ? [{ label: L.saved, value: money(saved, ccy.currency) }] : []),
+      ...(where.home ? [{ label: L.savedIn, value: where.account ? L.setAsideIn(where.account.name) : L.elsewhere }] : []),
     ]
     const fields: EditableField[] = [
       { key: 'name', label: L.name, kind: 'text', value: name },
@@ -142,7 +172,7 @@ const add_goal: WriteImpl = {
           title: L.addGoal,
           rows,
           fields,
-          effect: [L.newPocket(`${name} pocket`), duplicate ? L.duplicate : ''].filter(Boolean).join(' '),
+          effect: [L.newPocket(`${name} pocket`), where.account ? L.reservedEffect(where.account.name) : where.home ? L.declareEffect : '', duplicate ? L.duplicate : ''].filter(Boolean).join(' '),
         },
       }),
     )
@@ -181,10 +211,13 @@ const add_goal: WriteImpl = {
       monthlyContribution: null,
       frequency: 'monthly',
     })
-    const pocketId = s.addSavingsAccount({ name: `${name} pocket`, category: 'savings', type: 'vault', currency: ccy })
-    s.updateGoal(goalId, { linkedSavingsAccountIds: [pocketId] })
-    if (typeof a.saved === 'number' && a.saved > 0) {
-      s.depositToSavings(pocketId, a.saved, ccy, name, { mode: 'declare', source: 'goal_opening' })
+    const saved = typeof a.saved === 'number' ? a.saved : 0
+    const where = resolveSavedHome(s, ccy, saved, a.saved_in, '')
+    const { pocketId, savedRecorded } = createGoalPocket(s, { goalId, pocketName: `${name} pocket`, goalName: name, currency: ccy, saved, home: 'ok' in where ? null : where.home })
+    if (!savedRecorded) {
+      fin().deleteGoal(goalId)
+      fin().deleteSavingsAccount(pocketId)
+      return { ok: false, error: 'The saved amount could not be recorded, so the goal was not added.' }
     }
     return {
       ok: true,
@@ -349,6 +382,11 @@ function planFund(args: Record<string, unknown>, ctx: ToolContext): FundPlan | R
   const target = pocket ?? { currency: goal.currency, name: `${goal.name} pocket` }
   const landed = inPocketCurrency(s, amount, ccy.currency, target)
   if ('error' in landed) return no(landed.error)
+  const refusal = depositRefusal(ledgerOf(s), target, { amount: landed.amount, mode })
+  if (refusal) {
+    const why = explainDepositRefusal(ledgerOf(s), target, refusal)
+    return no(why.error, why.hint)
+  }
   const { current } = progress(s, goal)
   const inGoal = tryConvertWithGold(landed.amount, target.currency, goal.currency, s.exchangeRates, s.settings.baseCurrency, goldQuoteOf(s))
   if (inGoal === null) return no(`No exchange rate from ${target.currency} to ${goal.currency}.`, 'Ask for the amount in the goal currency.')

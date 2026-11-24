@@ -47,7 +47,7 @@ export function useIncomeResolution() {
 /**
  * Registers Flow's income questions with the prompt stack: a stray credit that is probably
  * a payday ("Looks like … — link it?", one at a time, most recent first) and paydays past
- * their grace window. Mounted by Flow only while the In segment shows, so a calm month costs
+ * their grace window. Mounted by Flow on All and In (not Out), so a calm month costs
  * zero payday pixels anywhere.
  */
 export function IncomePrompts() {

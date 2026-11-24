@@ -37,6 +37,7 @@ export async function POST(request: Request) {
       dedupeKey: `ticket:${ticket.id}:resolved`,
       ...renderServerCopy(await getUserDictionary(service, ticket.user_id), { kind: 'support_resolved', subject: ticket.subject, number: ticket.number }),
       metadata: { ticketNumber: ticket.number },
+      push: { data: { kind: 'support_resolved', ticketNumber: String(ticket.number) } },
     })
   }
   return NextResponse.json({ ok: true })

@@ -78,6 +78,11 @@ export function NativeBootstrap({ session }: NativeBootstrapProps) {
         }
         // A phone that is not the main one asks first when another phone already gets notifications: the same sheet, its second step.
         const check = await notifyCheck()
+        // "Keep this one quiet" is stored on the server too, so it survives a sign-out that cleared the local opt-out.
+        if (check.ask && check.quiet) {
+          useSettingsStore.getState().setPushOptOut(true)
+          return
+        }
         if (check.ask) {
           setOtherPhones(check.names)
           setAskPush(true)

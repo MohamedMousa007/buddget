@@ -185,6 +185,7 @@ export interface Dictionary {
     toastIncomeAdded: string
     toastDebtAdded: string
     toastDebtPaymentRecorded: string
+    toastRepaymentReceived: string
     toastSavingsDeposited: string
     ariaSwapCurrencies: string
     pressBackAgainToExit: string
@@ -281,6 +282,10 @@ export interface Dictionary {
     spentWith: (card: string) => string
     recent: string
     noActivity: string
+    noCardActivity: string
+    usesBalance: (account: string) => string
+    cardOutstanding: string
+    cardLimit: string
     whatBankShows: string
     matchesBuddget: string
     vsBuddget: (diff: string) => string
@@ -306,6 +311,22 @@ export interface Dictionary {
     addTheExpense: string
     moveIntoPocket: string
     remindMeLater: string
+    extraFindIt: (amount: string) => string
+    extraTitle: (amount: string) => string
+    extraSub: string
+    extraWord: string
+    whereDidItComeFrom: string
+    incomeNotLogged: string
+    incomeNotLoggedSub: string
+    addAsIncome: string
+    transferIn: string
+    transferInSub: string
+    recordTransfer: string
+    pocketNeverLeft: string
+    pocketNeverLeftSub: (amount: string) => string
+    undoPocketDeposit: string
+    correctBalance: string
+    correctBalanceSub: string
     addAccountTitle: string
     chooseBank: string
     accountName: string
@@ -1327,6 +1348,13 @@ export interface Dictionary {
     fDate: string
     fNextDue: string
     fPaymentMethod: string
+    fReceivedInto: string
+    fPayTitle: string
+    fReceiveTitle: string
+    fPayCta: (amt: string, cur: string) => string
+    fReceiveCta: (amt: string, cur: string) => string
+    fSchedulePay: string
+    fScheduleReceive: string
     fRecurring: string
     fRecurringHint: string
     fNotes: string
@@ -2139,6 +2167,8 @@ export interface Dictionary {
     monthEndBodyDays: (n: number) => string
     savingsNudgeTitle: string
     savingsNudgeBody: string
+    savingsSkippedTitle: string
+    savingsSkippedBody: (amount: string, pocket: string) => string
     recurringDueBody: (name: string, amount: number, currency: string) => string
     recurringTomorrowBody: (name: string, amount: number, currency: string) => string
     recurringConfirmPaid: string
@@ -2402,6 +2432,14 @@ export interface Dictionary {
     currency: string
     setDefaultSub: string
     saveMethod: string
+    linkedAccount: string
+    linkedNone: string
+    relinkTitle: string
+    relinkBody: string
+    unlinkBody: string
+    /** Deleting one card: its history stays; a used card closes instead of disappearing. */
+    deleteCardBody: string
+    relinkConfirm: string
     chooseProvider: string
     searchProviderPlaceholder: string
     allProviders: string
@@ -2656,6 +2694,12 @@ export interface Dictionary {
         monthly: string
         quarterly: string
         alreadySaved: string
+        whereIsMoney: string
+        availableAmount: (amount: string) => string
+        somewhereElse: string
+        somewhereElseSub: string
+        staysTip: (account: string) => string
+        elsewhereTip: string
         optional: string
         summary: (amount: string, quarterly: boolean, date: string) => string
         limit: string
@@ -2768,6 +2812,9 @@ export interface Dictionary {
       addMoneyTitle: (name: string) => string
       addMoneyAmount: string
       addMoneyCta: string
+      addLeft: (amount: string) => string
+      addOver: (amount: string) => string
+      addExact: string
       checkpointsAria: (pct: number, reached: number) => string
       emptyFilter: string
       insightMilestones: (n: number) => string
@@ -3085,10 +3132,6 @@ export interface Dictionary {
     removeFilter: (label: string) => string
     showOnly: (label: string) => string
     /** Chip that reveals own-account moves (ATM, transfers) hidden from the ledger; carries their count. */
-    notCountedChip: (n: number) => string
-    excludesMoves: (n: number) => string
-    showNotCounted: (n: number) => string
-    hideNotCounted: string
     budgetAria: (label: string) => string
     chipBudgetedAria: (label: string, pct: number) => string
     chipUnassignedAria: (label: string, spent: string) => string
@@ -3111,6 +3154,9 @@ export interface Dictionary {
     passThrough: string
     returnedOn: (d: string) => string
     oneTimeCaption: string
+    repaymentCaption: string
+    repaymentReceived: (person: string) => string
+    repaymentNotIncome: string
     askBuddgy: string
   }
 
@@ -3217,6 +3263,7 @@ export interface Dictionary {
       badgeTopup: string
       duplicateTitle: string
       duplicateBody: (detail: string) => string
+      duplicateSamePhoneBody: (detail: string) => string
       duplicateRemove: string
       duplicateKeep: string
       duplicateRemoved: string
@@ -3372,6 +3419,12 @@ export interface Dictionary {
       tipThisMonth: string
       tipOutside: string
       moveFailed: string
+      overAvailable: (amount: string, account: string) => string
+      needsAccount: (account: string) => string
+      noAccountLeg: (currency: string) => string
+      noAccountLegHint: string
+      addAsNewMoney: string
+      setAsideIn: (account: string) => string
       addCta: (amount: string, pocket: string) => string
       choosePocket: string
       searchPockets: string

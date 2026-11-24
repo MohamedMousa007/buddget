@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { CircleSlash } from 'lucide-react'
 import { useSmsArmed } from '@/hooks/useSmsTracking'
 import { FlowSetupState } from '@/components/features/onboarding/FlowSetupState'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -47,7 +46,7 @@ const COLLAPSE_AT = 94
 /**
  * Flow — money in and money out in one ledger (Expenses and Income collapsed into one tab).
  * The band follows the segment (All = budget, In = paydays, Out = spending) and the
- * filters; payday questions only surface on In, and only when they would change a number.
+ * filters; payday questions surface on All and In, and only when they would change a number.
  */
 export default function FlowPage() {
   const shortDate = useShortDate()
@@ -71,8 +70,6 @@ export default function FlowPage() {
       rangePreset: s.range.preset,
       setRangePreset: s.setRangePreset,
       setSegment: s.setSegment,
-      showMoves: s.showMoves,
-      toggleMoves: s.toggleMoves,
       selectCat: s.selectCat,
       toggleCat: s.toggleCat,
       toggleMethod: s.toggleMethod,
@@ -167,7 +164,8 @@ export default function FlowPage() {
 
   // In: the income types present this month, in Paydays order, then one-time.
   const incomeChips = useMemo<FlowChip[]>(() => {
-    const present = new Set(all.filter((i) => i.dir === 'in').map((i) => i.facet))
+    // Repayments of money owed to the user are not an income type: no chip for them.
+    const present = new Set(all.filter((i) => i.dir === 'in' && i.facet !== 'repayment').map((i) => i.facet))
     const order = [...incomeSources]
       .filter((s) => s.isRecurring)
       .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
@@ -183,28 +181,11 @@ export default function FlowPage() {
     }))
   }, [all, incomeSources, filters, t])
 
-  // Own-account moves (ATM, transfers, top-ups, exchanges) are hidden until this chip is on; the count says nothing is lost.
-  const movesCount = useMemo(() => all.filter((i) => i.internal).length, [all])
-  const movesChip = useMemo<FlowChip[]>(
-    () =>
-      movesCount === 0
-        ? []
-        : [{
-            key: 'moves',
-            label: t.flow.notCountedChip(movesCount),
-            icon: <CircleSlash className="size-4" aria-hidden />,
-            selected: filters.showMoves,
-            ariaLabel: filters.showMoves ? t.flow.hideNotCounted : t.flow.showNotCounted(movesCount),
-            onPress: filters.toggleMoves,
-          }],
-    [movesCount, filters.showMoves, filters.toggleMoves, t],
-  )
-
   const chipRowCatOnly = filterCount === 1 && budgetChips.some((c) => c.selected)
   const chips: FlowChip[] =
     segment === 'in'
       ? incomeChips
-      : [...movesChip, ...(filterCount === 0 || chipRowCatOnly
+      : filterCount === 0 || chipRowCatOnly
         ? budgetChips
         : [
             ...filters.cats.map((c) => ({ key: `c-${c}`, label: catLabel(c), icon: <CategoryGlyph category={c} className="size-4" />, selected: true, onPress: () => filters.toggleCat(c) })),
@@ -212,7 +193,7 @@ export default function FlowPage() {
             ...(amountOn
               ? [{ key: 'amt', label: amountLabel, selected: true, onPress: () => { filters.setAmtMin(AMOUNT_MIN); filters.setAmtMax(AMOUNT_MAX) } }]
               : []),
-          ])]
+          ]
 
   const countSum = items.filter((i) => i.counted).reduce((s, i) => s + (i.dir === 'in' ? i.amountBase : -i.amountBase), 0)
   const showCount = filterCount > 0
@@ -248,16 +229,13 @@ export default function FlowPage() {
   return (
     <div>
       <FlowStickyStrip visible={collapsed && dataReady} {...sticky} />
-      {segment === 'in' ? <IncomePrompts /> : null}
+      {segment !== 'out' ? <IncomePrompts /> : null}
       <OwnTransferPrompts />
       <SmsFlagPrompts />
       <MerchantCategoryPrompt />
       <CarryStalePrompt />
 
       <FlowSummaryBand {...band} />
-      {movesCount > 0 && !filters.showMoves ? (
-        <p className="px-4 pt-2 text-xs text-[var(--color-brand-text-muted)] lg:px-6">{t.flow.excludesMoves(movesCount)}</p>
-      ) : null}
 
       <PageGrid
           secondary={<div className="lg:-me-4"><FlowChipRail title={segment === 'in' ? t.flow.railIncomeTypes : t.flow.railCategories} chips={chips} /></div>}

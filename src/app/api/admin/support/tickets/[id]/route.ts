@@ -4,6 +4,12 @@ import { can } from '@/lib/admin/permissions'
 import { readValidated, ticketUpdateBody } from '@/lib/server/admin/bodySchemas'
 import { bad, guardAdmin, json, maskIf } from '@/lib/server/admin/guard'
 import { UUID_RE } from '@/lib/server/admin/targets'
+import { supportRecipient } from '@/lib/server/supportRecipient'
+import { getUserDictionary } from '@/lib/server/userDictionary'
+import { renderServerCopy } from '@/lib/notifications/serverCopy'
+import { signThreadAttachments } from '@/lib/server/supportAttachments'
+import { applyMacroVars, nextReadMark, staffFirstName } from '@/lib/support/conversation'
+import { SUPPORT_REPLY_KIND, supportReplyPush } from '@/lib/support/pushCopy'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -23,10 +29,14 @@ export async function GET(req: Request, { params }: Params) {
 
   const [ticket, messages] = await Promise.all([
     ctx.service.from('support_tickets').select('*').eq('id', id).maybeSingle(),
-    ctx.service.from('support_ticket_messages').select('id, author_type, author_label, body, internal, created_at').eq('ticket_id', id).order('created_at'),
+    ctx.service.from('support_ticket_messages').select('id, author_type, author_label, body, internal, created_at, attachments').eq('ticket_id', id).order('created_at'),
   ])
   if (!ticket.data) return bad('Ticket not found.', 404)
-  return json({ ticket: { ...ticket.data, requester_email: maskIf(ctx, ticket.data.requester_email) }, messages: messages.data ?? [] })
+  const list = messages.data ?? []
+  // A teammate opening the ticket reads it for the desk: the "new reply" dot clears up to the newest message shown.
+  const mark = nextReadMark(list, ticket.data.staff_last_read_at)
+  if (mark) await ctx.service.from('support_tickets').update({ staff_last_read_at: mark }).eq('id', id)
+  return json({ ticket: { ...ticket.data, requester_email: maskIf(ctx, ticket.data.requester_email) }, messages: await signThreadAttachments(ctx.service, list) })
 }
 
 export async function POST(req: Request, { params }: Params) {
@@ -47,21 +57,25 @@ export async function POST(req: Request, { params }: Params) {
     const internal = body.internal === true
     // A reply only reaches the person through an in-app notification: with no app account it would be saved and audited but never sent.
     if (!internal && !ticket.user_id) return bad('This ticket has no app account to notify. Save it as an internal note, or reply by email.', 409)
-    await ctx.service.from('support_ticket_messages').insert({ ticket_id: id, author_type: 'staff', author_staff_id: ctx.staff.id, author_label: ctx.staff.display_name ?? ctx.staff.email, body: text.slice(0, 10000), internal })
+    const recipient = !internal && ticket.user_id ? await supportRecipient(ctx.service, ticket.user_id) : null
+    const finalText = (internal ? text : applyMacroVars(text, { firstName: recipient?.firstName })).slice(0, 10000)
+    await ctx.service.from('support_ticket_messages').insert({ ticket_id: id, author_type: 'staff', author_staff_id: ctx.staff.id, author_label: ctx.staff.display_name ?? ctx.staff.email, body: finalText, internal })
     if (!internal) {
       const update: { first_response_at?: string; status?: Status } = {}
       if (!ticket.first_response_at) update.first_response_at = new Date().toISOString()
       if (ticket.status === 'open') update.status = 'pending'
       if (Object.keys(update).length) await ctx.service.from('support_tickets').update(update).eq('id', id)
       if (ticket.user_id) {
+        const push = supportReplyPush({ locale: recipient?.locale, staffFirstName: staffFirstName(ctx.staff.display_name), number: ticket.number, message: finalText })
         await emitNotification(ctx.service, {
           userId: ticket.user_id,
-          category: 'support_reply',
+          category: SUPPORT_REPLY_KIND,
           severity: 'info',
-          dedupeKey: contentDedupeKey(`ticket:${id}`, ticket.subject, text, Date.now()),
-          title: `Support: ${ticket.subject}`.slice(0, 80),
-          body: text.slice(0, 300),
+          dedupeKey: contentDedupeKey(`ticket:${id}`, ticket.subject, finalText, Date.now()),
+          title: push.title,
+          body: push.body,
           metadata: { ticketNumber: ticket.number },
+          push: { data: push.data, collapseKey: `ticket-${ticket.number}` },
         })
       }
     }
@@ -93,6 +107,18 @@ export async function POST(req: Request, { params }: Params) {
     if (Object.keys(patch).length === 0) return bad('Nothing to update.')
     const { error } = await ctx.service.from('support_tickets').update(patch).eq('id', id)
     if (error) return bad('Update failed.', 500)
+    // Resolving tells the person (and the thread then asks how we did); the dedupe key makes it once per ticket.
+    if (patch.status === 'resolved' && ticket.status !== 'resolved' && ticket.user_id) {
+      await emitNotification(ctx.service, {
+        userId: ticket.user_id,
+        category: 'support_resolved',
+        severity: 'success',
+        dedupeKey: `ticket:${id}:resolved`,
+        ...renderServerCopy(await getUserDictionary(ctx.service, ticket.user_id), { kind: 'support_resolved', subject: ticket.subject, number: ticket.number }),
+        metadata: { ticketNumber: ticket.number },
+        push: { data: { kind: 'support_resolved', ticketNumber: String(ticket.number) } },
+      })
+    }
     await ctx.audit('support.ticket_update', { ...target, summary: `Updated ticket #${ticket.number}`, metadata: patch })
     return json({ ok: true })
   }

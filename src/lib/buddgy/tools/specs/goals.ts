@@ -25,6 +25,7 @@ export const goalsSpecs: ToolSpec[] = [
         date: str('YYYY-MM-DD target date'),
         category: oneOf(SAVING_CATEGORIES, 'default custom'),
         saved: num('already set aside, in the goal currency'),
+        saved_in: str('where the saved money is: an account ref from the choices, or "elsewhere" if it is in no tracked account; ask the user, never guess'),
       },
       ['name', 'target'],
     ),

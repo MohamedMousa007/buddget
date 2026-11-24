@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { AnimatePresence, motion, useMotionValue, useTransform, type PanInfo } from 'framer-motion'
+import { AnimatePresence, animate, motion, useMotionValue, useTransform, type PanInfo } from 'framer-motion'
 import { useShallow } from 'zustand/react/shallow'
 import { PromptBanner } from '@/components/ui/PromptBanner'
 import { PillHint } from '@/components/ui/StatusPill'
@@ -16,6 +16,8 @@ const EASE = [0.2, 0.8, 0.2, 1] as const
 /** Swipe distance or speed that counts as a gesture (px, px/s — 0.5 px/ms). */
 const SWIPE_PX = 40
 const SWIPE_V = 500
+/** Exit offset in px, the same unit as the dragged offset, so the exit continues from where the finger let go. */
+const EXIT_Y = -240
 
 function fmtTime(d: Date): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
@@ -28,8 +30,9 @@ function fmtTime(d: Date): string {
  *
  * It overlays the page instead of pushing it down: only the card takes pointer events,
  * so the page never shifts and stays usable underneath. ✕ and swipe-up both snooze
- * (3 h, waking hours only); swiping sideways cycles cards. A prompt resolves when one of
- * its own buttons is used — the source drops it, and the next card slides in.
+ * (3 h, waking hours only); the card moves only upward, and the pager dots pick a card.
+ * A prompt resolves when one of its own buttons is used — the source drops it, and the
+ * next card slides in.
  */
 export function BannerStack() {
   const t = useT()
@@ -80,7 +83,6 @@ export function BannerStack() {
     setToast(t.prompts.snoozedUntil(fmtTime(until)))
   }
 
-  const cycle = (dir: 1 | -1) => setIndex((i) => (Math.min(i, count - 1) + dir + count) % count)
 
   return (
     <div className="w-full">
@@ -103,9 +105,10 @@ export function BannerStack() {
               index={at}
               count={count}
               onSnooze={() => snooze(front.key)}
-              onCycle={cycle}
+              onSelect={setIndex}
               snoozeLabel={t.prompts.snooze}
               counterLabel={t.prompts.counter(at + 1, count)}
+              dotLabel={(i) => t.prompts.counter(i + 1, count)}
             />
           ) : null}
         </AnimatePresence>
@@ -126,32 +129,31 @@ function SwipeCard({
   index,
   count,
   onSnooze,
-  onCycle,
+  onSelect,
   snoozeLabel,
   counterLabel,
+  dotLabel,
 }: {
   prompt: Prompt
   index: number
   count: number
   onSnooze: () => void
-  onCycle: (dir: 1 | -1) => void
+  onSelect: (i: number) => void
   snoozeLabel: string
   counterLabel: string
+  dotLabel: (i: number) => string
 }) {
   const y = useMotionValue(0)
   // The card follows the finger and fades toward .5 as it rises.
   const opacity = useTransform(y, [-80, 0], [0.5, 1])
   const Icon = prompt.icon
 
+  // Only upward travel, 1:1 with the finger. A swipe that counts leaves from where the finger let go; a short one springs
+  // back here. The old `dragSnapToOrigin` and closed constraints started a spring to 0 on release that the exit then
+  // cut off, and a '%' exit target is a different unit from the dragged px offset; either can read as a jerk.
   const onDragEnd = (_: unknown, info: PanInfo) => {
-    const { offset, velocity } = info
-    if (Math.abs(offset.y) >= Math.abs(offset.x)) {
-      if (-offset.y > SWIPE_PX || -velocity.y > SWIPE_V) onSnooze()
-      return
-    }
-    if (count > 1 && (Math.abs(offset.x) > SWIPE_PX || Math.abs(velocity.x) > SWIPE_V)) {
-      onCycle(offset.x < 0 ? 1 : -1)
-    }
+    if (-info.offset.y > SWIPE_PX || -info.velocity.y > SWIPE_V) onSnooze()
+    else void animate(y, 0, { type: 'spring', stiffness: 500, damping: 40 })
   }
 
   return (
@@ -160,11 +162,11 @@ function SwipeCard({
       style={{ y, opacity }}
       initial={{ y: '-120%' }}
       animate={{ y: 0, transition: { duration: 0.32, ease: EASE } }}
-      exit={{ y: '-120%', opacity: 0, transition: { duration: 0.2, ease: 'easeOut' } }}
-      drag
-      dragConstraints={{ top: 0, bottom: 0, left: 0, right: 0 }}
-      dragElastic={{ top: 1, bottom: 0.1, left: 0.6, right: 0.6 }}
-      dragSnapToOrigin
+      exit={{ y: EXIT_Y, opacity: 0, transition: { duration: 0.2, ease: 'easeOut' } }}
+      drag="y"
+      dragConstraints={{ bottom: 0 }}
+      dragElastic={{ bottom: 0 }}
+      dragMomentum={false}
       onDragEnd={onDragEnd}
     >
       <PromptBanner
@@ -184,6 +186,8 @@ function SwipeCard({
         index={index}
         count={count}
         counterLabel={counterLabel}
+        onSelectIndex={onSelect}
+        dotLabel={dotLabel}
       />
     </motion.div>
   )

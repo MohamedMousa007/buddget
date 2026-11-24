@@ -25,9 +25,39 @@ export interface AccountsModel {
   totalInBase: number
   /** Sum of held-in pockets in base currency. */
   heldInBase: number
+  /** "Available now": the sum of each account's own free money, so it equals the rows under it. */
+  freeInBase: number
   approx: boolean
   /** No tracked Cash yet (every user has an untracked one): the page offers to start tracking cash. */
   needsCash: boolean
+}
+
+/**
+ * The hero's totals over the counted rows (tracked, not excluded). Available is summed per account: an account with
+ * more set aside than it holds contributes zero, it never eats into another account's money.
+ */
+export function accountTotals(
+  accounts: readonly Pick<AccountView, 'method' | 'balance'>[],
+  base: string,
+  convert: (amount: number, from: string, to: string) => number | null,
+): Pick<AccountsModel, 'totalInBase' | 'heldInBase' | 'freeInBase' | 'approx'> {
+  let totalInBase = 0
+  let heldInBase = 0
+  let freeInBase = 0
+  let approx = false
+  for (const a of accounts) {
+    if (!a.balance || a.method.excluded) continue
+    approx ||= a.balance.approx || String(a.method.currency) !== base
+    const total = convert(a.balance.balance, a.balance.currency, base)
+    const held = convert(a.balance.held, a.balance.currency, base)
+    const free = convert(a.balance.free, a.balance.currency, base)
+    // No rate to base: leave the account out (as net worth does) and keep the figure marked approximate.
+    if (total === null || held === null || free === null) { approx = true; continue }
+    totalInBase += total
+    heldInBase += held
+    freeInBase += free
+  }
+  return { totalInBase, heldInBase, freeInBase, approx }
 }
 
 function useLedgerStore() {
@@ -62,25 +92,13 @@ export function useAccounts(): AccountsModel {
       cards: s.paymentMethods.filter((c) => c.parentId === m.id && !c.closedAt),
       balance: balances.get(m.id) ?? null,
     }))
-    let totalInBase = 0
-    let heldInBase = 0
-    let approx = false
-    for (const a of accounts) {
-      if (!a.balance || a.method.excluded) continue
-      approx ||= a.balance.approx || String(a.method.currency) !== String(s.base)
-      const total = tryConvertCurrency(a.balance.balance, a.balance.currency, s.base, rates)
-      const held = tryConvertCurrency(a.balance.held, a.balance.currency, s.base, rates)
-      // No rate to base: leave the account out (as net worth does) and keep the figure marked approximate.
-      if (total === null || held === null) { approx = true; continue }
-      totalInBase += total
-      heldInBase += held
-    }
+    const totals = accountTotals(accounts, String(s.base), (a, from, to) => tryConvertCurrency(a, from, to, rates))
     const accountIds = new Set(accounts.map((a) => a.method.id))
     const standaloneCards = s.paymentMethods.filter(
       (m) => !m.closedAt && m.type !== 'cash' && !accountIds.has(m.id) && !(m.parentId && accountIds.has(m.parentId)),
     )
     const needsCash = !s.paymentMethods.some((m) => m.type === 'cash' && isSetUpAccount(m))
-    return { accounts, standaloneCards, totalInBase, heldInBase, approx, needsCash }
+    return { accounts, standaloneCards, ...totals, needsCash }
   }, [s, rates])
 }
 
