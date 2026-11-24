@@ -22,6 +22,8 @@ export interface TransactionRowProps {
   title: React.ReactNode
   /** Optional badge/icon shown right after the title (shrink-0, not truncated). */
   titleBadge?: React.ReactNode
+  /** On a narrow row the badge wraps under the title instead of truncating it. Default: one line, the title truncates. */
+  badgeWrap?: boolean
   /** Second line under the title (payment method, note, time). */
   subtitle?: React.ReactNode
   /** Signed amount, pre-formatted (e.g. "−1,200" / "+300"). */
@@ -35,7 +37,7 @@ export interface TransactionRowProps {
 }
 
 export function TransactionRow({
-  icon, iconBg, iconFg, caption, captionColor, title, titleBadge, subtitle, amount, amountColor, sub, onClick, dimmed,
+  icon, iconBg, iconFg, caption, captionColor, title, titleBadge, badgeWrap, subtitle, amount, amountColor, sub, onClick, dimmed,
 }: TransactionRowProps) {
   const Tag = onClick ? 'button' : 'div'
   return (
@@ -60,8 +62,8 @@ export function TransactionRow({
 
       {/* B. Middle column */}
       <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-2 overflow-hidden">
-          <span dir="auto" className="truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{title}</span>
+        <span className={badgeWrap ? 'flex flex-wrap items-center gap-x-2 gap-y-1 overflow-hidden' : 'flex items-center gap-2 overflow-hidden'}>
+          <span dir="auto" className={`truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]${badgeWrap ? ' min-w-0 max-w-full' : ''}`}>{title}</span>
           {titleBadge}
         </span>
         {subtitle ? (
