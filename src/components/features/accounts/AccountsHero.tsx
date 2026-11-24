@@ -23,7 +23,7 @@ interface AccountsHeroProps {
 /** The Accounts band: what is free right now, net worth beside it, the split bar and three facts. */
 export function AccountsHero({ model, currency, netWorth, creditOwed, hidden, onToggleHidden }: AccountsHeroProps) {
   const t = useT().accountsPage
-  const free = Math.max(0, model.totalInBase - model.heldInBase)
+  const free = model.freeInBase
   const fmt = (n: number) => (hidden ? MASK : moneyFlex(n, currency))
   const big = splitMoney(free, currency)
   const tracked = model.accounts.filter((a) => a.balance)
