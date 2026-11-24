@@ -2678,6 +2678,12 @@ export interface Dictionary {
         monthly: string
         quarterly: string
         alreadySaved: string
+        whereIsMoney: string
+        availableAmount: (amount: string) => string
+        somewhereElse: string
+        somewhereElseSub: string
+        staysTip: (account: string) => string
+        elsewhereTip: string
         optional: string
         summary: (amount: string, quarterly: boolean, date: string) => string
         limit: string

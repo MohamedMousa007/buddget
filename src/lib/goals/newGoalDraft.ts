@@ -9,6 +9,8 @@ export interface NewGoalDraft {
   targetDate: string
   frequency: GoalFrequency
   alreadySaved: string
+  /** Where the already-saved money is: a tracked account's id or 'elsewhere'. Absent = not answered yet. */
+  savedHome?: string | null
   fundingMode: GoalFundingMode
   /** null = still using the suggested share. */
   sharePct: number | null

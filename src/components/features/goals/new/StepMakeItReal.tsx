@@ -14,6 +14,9 @@ import { Input } from '@/components/ui/input'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SelectField } from '@/components/ui/SelectField'
+import { SelectableCard } from '@/components/ui/SelectableCard'
+import { accountTitle, splitMoney } from '@/components/features/accounts/accountDisplay'
+import { ELSEWHERE } from '@/lib/goals/goalPocket'
 import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
 import { goalVisual } from '@/lib/goals/goalVisual'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
@@ -39,6 +42,10 @@ export function StepMakeItReal({ form }: { form: Form }) {
   const [costOpen, setCostOpen] = useState(false)
   const { icon: Icon, cat } = goalVisual(form.category)
   const categoryLabel = t.goals[goalCategoryLabelKey(form.category)] as string
+  const tMoney = t.wealthSheets.money
+  const available = (n: number) => `${splitMoney(n, form.currency).int} ${form.currency}`
+  const askHome = parseFloat(form.alreadySaved) > 0 && form.homeAccounts.length > 0
+  const homeAccount = form.homeAccounts.find((a) => a.method.id === form.savedHome)
 
   return (
     <>
@@ -138,6 +145,32 @@ export function StepMakeItReal({ form }: { form: Form }) {
             </Label>
             <AmountField value={form.alreadySaved} onChange={form.setAlreadySaved} currency={form.currency} className={FIELD} aria-label={f.alreadySaved} />
           </div>
+          {askHome ? (
+            <div className="flex flex-col gap-1.5">
+              <Label>{f.whereIsMoney}</Label>
+              <div className="flex flex-col gap-2" role="radiogroup" aria-label={f.whereIsMoney}>
+                {form.homeAccounts.map((a) => (
+                  <SelectableCard key={a.method.id} surface="card" selected={form.savedHome === a.method.id} onClick={() => form.setSavedHome(a.method.id)}>
+                    <span className="min-w-0 flex-1 truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{accountTitle(a.method)}</span>
+                    <span dir="auto" className="shrink-0 font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{f.availableAmount(available(a.balance?.free ?? 0))}</span>
+                  </SelectableCard>
+                ))}
+                <SelectableCard surface="card" selected={form.savedHome === ELSEWHERE} onClick={() => form.setSavedHome(ELSEWHERE)}>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{f.somewhereElse}</span>
+                    <span className="block text-[0.8125rem] text-[var(--color-brand-text-muted)]">{f.somewhereElseSub}</span>
+                  </span>
+                </SelectableCard>
+              </div>
+              {form.savedProblem === 'over_available' && homeAccount ? (
+                <p role="alert" className="text-[0.8125rem] text-[var(--color-brand-amber)]">{tMoney.overAvailable(available(homeAccount.balance?.free ?? 0), accountTitle(homeAccount.method))}</p>
+              ) : homeAccount ? (
+                <p className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{f.staysTip(accountTitle(homeAccount.method))}</p>
+              ) : form.savedHome === ELSEWHERE ? (
+                <p className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{f.elsewhereTip}</p>
+              ) : null}
+            </div>
+          ) : null}
           <CostSheet
             open={costOpen}
             name={form.name}
