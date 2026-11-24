@@ -37,6 +37,8 @@ import { netWorthBasisOf } from '@/lib/savings/netWorth'
 import { useNetWorthTrend } from '@/hooks/useNetWorthTrend'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { canDeletePocket } from '@/lib/savings/canDeletePocket'
+import { pocketDeleteEffect } from '@/lib/savings/pocketDeleteEffect'
+import { accountTitle } from '@/components/features/accounts/accountDisplay'
 import { useLocale, useT } from '@/lib/i18n'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { buildGoalProgressContext, computeGoalProgress } from '@/lib/goals/computeGoalProgress'
@@ -243,6 +245,17 @@ export default function WealthPage() {
   const hasZakat = zakatResult.due && zakatResult.nisab > 0
   const rate = plannedSavingsRatePct(stats)
 
+  /** The warning follows what the delete does to net worth, not the kind of pocket. */
+  const deleteBodyFor = (a: SavingsAccount) => {
+    if (!(a.currentBalance > 0)) return t.deleteBody
+    const state = useFinanceStore.getState()
+    const effect = pocketDeleteEffect(state, a.id)
+    if (effect.kind === 'leaves') return t.deleteBodyBalance(`${formatWhole(effect.amount)} ${effect.currency}`)
+    const names = effect.kind === 'stays' ? state.paymentMethods.filter((m) => effect.accountIds.includes(m.id)).map(accountTitle) : []
+    if (names.length === 0) return t.deleteBody
+    return t.deleteBodyStays(`${formatWhole(a.currentBalance)} ${a.currency}`, new Intl.ListFormat(locale, { type: 'conjunction' }).format(names))
+  }
+
   const askDelete = async (r: WealthRowVM) => {
     const a = r.account
     if (a) {
@@ -253,7 +266,7 @@ export default function WealthPage() {
         return
       }
     }
-    const body = a && a.currentBalance > 0 ? t.deleteBodyBalance(`${formatWhole(a.currentBalance)} ${a.currency}`) : t.deleteBody
+    const body = a ? deleteBodyFor(a) : t.deleteBody
     if (!(await confirmDialog({ title: t.deleteTitle(r.title), body, destructive: true }))) return
     const undo = a ? deletePocketWithUndo(a.id) : deleteHoldingWithUndo(r.id)
     showToast(t.deletedToast(r.title), { undo, undoLabel: t.deleteUndo })

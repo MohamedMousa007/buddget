@@ -13,6 +13,7 @@ import { useLegAccount } from '@/components/features/savings-v3/useLegAccount'
 import { useDepositGuard } from '@/components/features/savings-v3/useDepositGuard'
 import type { PocketVM } from '@/components/features/savings-v3/types'
 import { pocketCurrency, selectedPocket } from '@/components/features/savings-v3/selectedPocket'
+import { accountTitle } from '@/components/features/accounts/accountDisplay'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 import { pocketDisplayName } from '@/lib/savings/pocketIdentity'
@@ -51,11 +52,15 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
 
   const amountNum = parseFloat(amount) || 0
   const selected = selectedPocket(pockets, selectedId, defaultAccountId)
-  const leg = useLegAccount(selected?.account, selected?.account.currency ?? currency)
+  const leg = useLegAccount(selected?.account, selected?.account.currency ?? currency, true)
   const guard = useDepositGuard(selected?.account)
   const mode = source === 'budget' ? 'allocate' : 'declare'
   const refusal = guard.refusalFor({ amount: amountNum, currency, mode, fromAccountId: leg.accountId })
   const canSubmit = amountNum > 0 && !!selected && !refusal
+  // Another account funding a pocket held in an account: the money really moves between the two.
+  const transferFrom = source === 'budget' && guard.holder && leg.accountId !== guard.holder.id
+    ? leg.views.find((v) => v.method.id === leg.accountId)?.method
+    : undefined
 
   const submit = () => {
     if (!selected || amountNum <= 0 || refusal) return
@@ -99,10 +104,13 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
           </LabeledBlock>
 
           {source === 'budget' ? <AccountLegRow leg={leg} label={t.fromAccount} /> : null}
+          {transferFrom && guard.holder ? (
+            <p className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{t.transferFromTo(accountTitle(transferFrom), accountTitle(guard.holder))}</p>
+          ) : null}
 
           {refusal ? (
             <p role="alert" className="text-[0.8125rem] text-[var(--color-brand-amber)]">
-              {guard.message(refusal)}{refusal === 'no_account_leg' ? ` ${t.noAccountLegHint}` : ''}
+              {guard.message(refusal, leg.accountId)}{refusal === 'no_account_leg' ? ` ${t.noAccountLegHint}` : ''}
             </p>
           ) : null}
 

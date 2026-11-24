@@ -32,7 +32,7 @@ Screenshots for the owner, in `evidence/`: `w8-add-debt-left-cib-question.png`, 
 
 ### Findings (not fixed: they change money or sync behaviour, owner's call)
 
-**L1-A. Wealth > Add money into a pocket held in an account books a transfer from another account, with no check on that account.** Pinned by L2.
+**L1-A. Wealth > Add money into a pocket held in an account books a transfer from another account, with no check on that account.** Pinned by L2. Fixed 2026-11-25 (council verdict in `docs/plans/QA_NIGHT_PLAN.md`): the holder is the default source and another source is capped at its own free money; L2 is now a normal test.
 - `canCarryLeg` (`src/lib/savings/accountLeg.ts`) never offers the holder itself as "From account", so with a second tracked account the sheet defaults to it. `AddSavingsSheetV3` passes that id as `fromAccountId`, and the balance engine books a transfer into the holder.
 - `depositRefusal` (`src/lib/savings/pocketHome.ts`) checks free money only when the source is the holder. A source that is another account is never checked.
 - Seen: CIB 5,000 with a 500 pocket, QNB 1,000. Add 2,000 to the CIB pocket, nothing else touched: QNB -1,000, CIB 7,000. In L1 the same path took 14,000 out of QNB while QNB held 7,000 for a goal: QNB -1,000, and Available showed 14,000 against 6,000 real.

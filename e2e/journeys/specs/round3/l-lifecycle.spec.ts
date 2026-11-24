@@ -139,9 +139,8 @@ async function withdraw(page: Page, o: { from: string; amount: number; purpose: 
 }
 
 /**
- * Accounts > account > Set aside: puts the account's own free money aside in a pocket. This is the path that sets money
- * aside from the account that holds the pocket: Wealth > Add money never offers the holder itself as "From account"
- * (see L2), so with a second account it would book a transfer from that one instead.
+ * Accounts > account > Set aside: puts the account's own free money aside in a pocket. Wealth > Add money does the same
+ * when its "From account" is the account holding the pocket, which is its default (see L2).
  */
 async function openSetAside(page: Page, account: RegExp, pocket: string, amount: number) {
   await goto(page, '/accounts')
@@ -355,7 +354,7 @@ test('L1 one user, the whole money lifecycle: pockets, goal, reserve cap, lendin
   })
 })
 
-test('L2 Wealth > Add money into a pocket held in CIB books a transfer from the other account, with no check on that account [finding L1-A]', async ({ page, user }) => {
+test('L2 Wealth > Add money into a pocket held in CIB sets aside CIB\'s own money by default, and caps another source at its own free money [finding L1-A, fixed]', async ({ page, user }) => {
   const hour = new Date(Date.now() - 3_600_000).toISOString()
   const [cib] = await seed(page, user.id, 'payment_methods', [bank('CIB', 5000, { opening_at: hour })])
   const [qnb] = await seed(page, user.id, 'payment_methods', [bank('QNB Alahli', 1000, { opening_at: hour })])
@@ -364,22 +363,24 @@ test('L2 Wealth > Add money into a pocket held in CIB books a transfer from the 
   await newPocket(page, { kind: /^CIB/, name: RAINY, amount: 500 })
   await checkScreen(page, { cib: [5000, 500], qnb: [1000, 0], pockets: {}, netWorth: 6000 })
 
+  // Another account as the source is a transfer out of it: 2,000 from QNB's 1,000 is refused, naming QNB.
+  const refused = await openAddMoney(page, RAINY, 2000, 'QNB Alahli')
+  await expect(refused).toContainText('Transfer from QNB Alahli to CIB')
+  await expect(refused.getByRole('alert')).toContainText(/Only 1,000(\.00)? EGP is available in QNB Alahli/)
+  await expect(refused.getByRole('button', { name: new RegExp(`^Add [\\d,]+ to ${RAINY}`) })).toBeDisabled()
+
   // The default path: pocket picked, amount typed, nothing else touched. CIB has 4,500 free, QNB 1,000.
   const d = await openAddMoney(page, RAINY, 2000)
-  const source = ((await d.getByRole('button', { name: /^From account/ }).textContent().catch(() => null)) ?? 'none').replace(/\s+/g, ' ')
-  test.info().annotations.push({ type: 'default-source', description: source })
-  const cta = d.getByRole('button', { name: new RegExp(`^Add [\\d,]+ to ${RAINY}`) })
-  if (await cta.isEnabled()) { await cta.click(); await expect(d).toBeHidden() }
-  await page.waitForTimeout(1500)
+  await expect(d.getByRole('button', { name: /^From account/ })).toContainText('From accountCIB')
+  await expect(d.getByRole('alert')).toHaveCount(0)
+  await d.getByRole('button', { name: new RegExp(`^Add [\\d,]+ to ${RAINY}`) }).click()
+  await expect(d).toBeHidden()
   await goto(page, '/accounts')
   const tx = ((await localState(page)).savingsTransactions as any[]).map((t) => ({ type: t.type, amount: t.amount, pm: t.paymentMethodId === qnb.id ? 'QNB' : t.paymentMethodId === cib.id ? 'CIB' : t.paymentMethodId ?? null, cashFlow: t.isCashFlow, source: t.source }))
   test.info().annotations.push({ type: 'after', description: JSON.stringify({ cib: await row(page, /^CIB/), qnb: await row(page, /^QNB Alahli/), netWorth: await netWorth(page), tx }) })
-  // Either fix creates no money: set aside from CIB's own money (CIB 5,000 with 2,500 set aside, QNB 1,000), or refuse
-  // a 2,000 transfer out of QNB's 1,000. Today the sheet defaults to QNB (the holder is never offered as a source) and
-  // books the deposit with no check on QNB (see the "after" annotation).
-  knownBug('L1-A', 'Wealth Add money into a held pocket defaults its source to another account and never checks that account has the money')
-  await expect.poll(async () => ({ cib: (await row(page, /^CIB/)).balance, qnb: (await row(page, /^QNB Alahli/)).balance, netWorth: await netWorth(page) }))
-    .toEqual({ cib: 5000, qnb: 1000, netWorth: 6000 })
+  // No money is created and none moves: CIB's own money is set aside (5,000 with 2,500 set aside), QNB keeps its 1,000.
+  expect(tx.at(-1)).toMatchObject({ type: 'deposit', amount: 2000, pm: null })
+  await checkScreen(page, { cib: [5000, 2500], qnb: [1000, 0], pockets: {}, netWorth: 6000 })
 })
 
 test('L3 a pocket deleted from Wealth stays deleted [finding L1-B]', async ({ page, user }) => {
