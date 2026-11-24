@@ -18,6 +18,24 @@ describe('Arabic count agreement', () => {
     expect(onboardingCopyAr.flow.daysToPayday(3)).toBe('3 أيام حتى الراتب')
     expect(onboardingCopyAr.flow.daysToPayday(2)).toBe('يومين حتى الراتب')
   })
+  it('Insights: days, months, findings and bills agree with the number', () => {
+    expect(ar.insights.heroBasis(31)).toBe('مبني على 31 يومًا من المصروفات.')
+    expect(ar.insights.heroBasis(3)).toBe('مبني على 3 أيام من المصروفات.')
+    expect(ar.insights.heroBasis(2)).toBe('مبني على يومين من المصروفات.')
+    expect(ar.insights.heroNote(11)).toBe('لمدة 11 يومًا لحد يوم الراتب، من المتبقي.')
+    expect(ar.insights.heroLearning(12)).toBe('هقدر أديك إجابة واضحة بعد 12 يومًا كمان.')
+    expect(ar.insights.moreWaiting(12)).toBe('12 ملاحظة كمان مستنياك')
+    expect(ar.insights.moreWaiting(4)).toBe('4 ملاحظات كمان مستنياك')
+    expect(ar.insights.whatIf.sooner(3)).toBe('أبكر بـ 3 أشهر')
+    expect(ar.insights.whatIf.sooner(11)).toBe('أبكر بـ 11 شهرًا')
+    expect(ar.insights.whatIf.months(2)).toBe('شهرين')
+  })
+  it('Insights: a bill count keeps its figure highlighted', () => {
+    const bills = ar.insights.kinds.billsBeforePayday.headline
+    expect(bills({ count: 3, total: '2,400' })).toBe('*3* فواتير بقيمة *2,400* مستحقة قبل الراتب.')
+    expect(bills({ count: 11, total: '9,000' })).toBe('*11* فاتورة بقيمة *9,000* مستحقة قبل الراتب.')
+    expect(bills({ count: 2, total: '800' })).toBe('فاتورتين بقيمة *800* مستحقة قبل الراتب.')
+  })
   it('months, accounts, cards, messages, transactions', () => {
     expect(ar.goals.achievedView.onTime(11)).toContain('11 شهرًا')
     expect(ar.goals.achievedView.early(3, 11)).toContain('قبل 11 شهرًا')

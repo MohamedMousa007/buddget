@@ -45,6 +45,8 @@ export const AR_UNITS = {
   recording: { one: 'تسجيل', two: 'تسجيلين', few: 'تسجيلات', many: 'تسجيلًا' },
   milestone: { one: 'محطة', two: 'محطتين', few: 'محطات', many: 'محطة', fem: true },
   result: { one: 'نتيجة', two: 'نتيجتين', few: 'نتائج', many: 'نتيجة', fem: true },
+  finding: { one: 'ملاحظة', two: 'ملاحظتين', few: 'ملاحظات', many: 'ملاحظة', fem: true },
+  bill: { one: 'فاتورة', two: 'فاتورتين', few: 'فواتير', many: 'فاتورة', fem: true },
   bankMessage: { one: 'رسالة بنكية', two: 'رسالتين بنكيتين', few: 'رسائل بنكية', many: 'رسالة بنكية', fem: true },
 } as const satisfies Record<string, ArForms>
 
