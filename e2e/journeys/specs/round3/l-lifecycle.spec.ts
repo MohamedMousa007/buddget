@@ -8,7 +8,7 @@
 import type { Browser, Locator, Page } from '@playwright/test'
 import { computeBalances } from '../../../../src/lib/accounts/balance'
 import { forceFlags, installApiShim } from '../../lib/apiShim'
-import { expect, goto, knownBug, localState, localWait, money, signIn, test, tile } from '../../lib/fixtures'
+import { expect, goto, localState, localWait, money, signIn, test, tile } from '../../lib/fixtures'
 import { serverRows } from '../../lib/server'
 import { blur, chooseMethod, dialog, pickPocket } from '../../lib/ui'
 import { bank, localMethod, seed } from './seed'
@@ -333,8 +333,8 @@ test('L1 one user, the whole money lifecycle: pockets, goal, reserve cap, lendin
   })
 
   await test.step('10. delete the Rainy pocket (11,000 set aside in CIB)', async () => {
-    // A deleted pocket can come back a moment later (finding L1-B, pinned by L3). This step is about the money after a
-    // delete, so it deletes again until the pocket stays gone and records how often it came back.
+    // A deleted pocket used to come back a moment later (finding L1-B, fixed, pinned by L3). This step is about the money
+    // after a delete, so it still deletes again until the pocket stays gone and records how often it came back.
     let tries = 0
     for (; tries < 5; tries++) {
       const { stuck, copy } = await deletePocket(page, RAINY, ids.pockets[RAINY])
@@ -375,15 +375,16 @@ test('L2 Wealth > Add money into a pocket held in CIB sets aside CIB\'s own mone
   await expect(d.getByRole('alert')).toHaveCount(0)
   await d.getByRole('button', { name: new RegExp(`^Add [\\d,]+ to ${RAINY}`) }).click()
   await expect(d).toBeHidden()
+  await localWait(page, (s) => s.savingsTransactions.some((t: any) => t.amount === 2000))
   await goto(page, '/accounts')
   const tx = ((await localState(page)).savingsTransactions as any[]).map((t) => ({ type: t.type, amount: t.amount, pm: t.paymentMethodId === qnb.id ? 'QNB' : t.paymentMethodId === cib.id ? 'CIB' : t.paymentMethodId ?? null, cashFlow: t.isCashFlow, source: t.source }))
   test.info().annotations.push({ type: 'after', description: JSON.stringify({ cib: await row(page, /^CIB/), qnb: await row(page, /^QNB Alahli/), netWorth: await netWorth(page), tx }) })
   // No money is created and none moves: CIB's own money is set aside (5,000 with 2,500 set aside), QNB keeps its 1,000.
-  expect(tx.at(-1)).toMatchObject({ type: 'deposit', amount: 2000, pm: null })
   await checkScreen(page, { cib: [5000, 2500], qnb: [1000, 0], pockets: {}, netWorth: 6000 })
+  expect(tx.find((t) => t.amount === 2000)).toMatchObject({ type: 'deposit', pm: null })
 })
 
-test('L3 a pocket deleted from Wealth stays deleted [finding L1-B]', async ({ page, user }) => {
+test('L3 a pocket deleted from Wealth stays deleted [finding L1-B, fixed]', async ({ page, user }) => {
   const [cib] = await seed(page, user.id, 'payment_methods', [bank('CIB', 20000, { opening_at: new Date(Date.now() - 3_600_000).toISOString() })])
   await localMethod(page, cib.id)
   const made = []
@@ -392,9 +393,8 @@ test('L3 a pocket deleted from Wealth stays deleted [finding L1-B]', async ({ pa
   const results: boolean[] = []
   for (const p of made) results.push((await deletePocket(page, p.name, p.id)).stuck)
   test.info().annotations.push({ type: 'stayed-deleted', description: JSON.stringify(results) })
-  // Seen in 5 of 8 runs: the row leaves the store, then comes back within about 200 ms and is never deleted on the
-  // server. Four deletes make the defect show in practically every run.
-  knownBug('L1-B', 'a pocket deleted from Wealth comes back moments later and is never deleted on the server')
+  // Before the fix (5 of 8 runs) the row left the store, came back within about 200 ms from a pull that was in flight,
+  // and was never deleted on the server. Four deletes made the defect show in practically every run.
   expect(results).toEqual([true, true, true, true])
   for (const p of made) await serverRows('savings_accounts', user.id, `id=eq.${p.id}&select=deleted_at`, (r: any[]) => !!r[0]?.deleted_at)
 })

@@ -9,7 +9,7 @@ Same local setup: production build (`next build --webpack`, `NEXT_PUBLIC_DEV_AUT
 | Group | Specs | Result |
 |---|---|---|
 | L1 lifecycle (new) | `round3/l-lifecycle` L1 | passed (all 10 steps, every check on screen, store and server; three fresh sign-ins rebuilt the numbers from server rows) |
-| L2, L3 (new, `test.fail`) | `round3/l-lifecycle` L2, L3 | failed as expected on findings L1-A and L1-B below |
+| L2, L3 (new, `test.fail`) | `round3/l-lifecycle` L2, L3 | failed as expected on findings L1-A and L1-B below (L2 is a normal test since the L1-A fix of 2026-11-25, not yet re-run) |
 | Round 3 journeys | `round3/{w-money (W1-W11), j-accounts-flow, p-planner-conflicts}`, `k-accounts-flow` | 20 of 20 passed |
 | J9 Buddgy (real model) | `round3/y-buddgy-rules`, 3 runs | 3 of 3 passed |
 | Regression | `b-bank-expense`, `c-debt`, `d-pockets`, `f-goal`, `h-cards-link`, `s-system-cash`, `q-quick-add` | 20 of 20 passed |
