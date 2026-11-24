@@ -64,6 +64,7 @@ test('W3 a repayment someone makes you credits the account, Flow marks it Not in
   await localMethod(page, qnb.id)
   await goto(page, '/flow')
   const moneyIn = await tile(page, 'Money in')
+  expect(moneyIn).toBe(0)
 
   await test.step('Log receipt for the QA W3 lend: 200 into QNB', async () => {
     await goto(page, '/debts')

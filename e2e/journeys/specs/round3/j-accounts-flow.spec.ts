@@ -80,10 +80,9 @@ test('J7 an unknown account from SMS: Not mine closes it, Undo reopens it, its n
     expect(methods).toHaveLength(1)
     expect(methods[0]).toMatchObject({ id: pm.id, excluded: true })
     expect(methods[0].closed_at).toBeTruthy()
-    if (second.expenseId) {
-      const [e] = await serverNow('expenses', user.id, `id=eq.${second.expenseId}&select=payment_method_id`)
-      expect(e.payment_method_id).toBe(pm.id)
-    }
+    expect(second.expenseId).toBeTruthy()
+    const [e] = await serverNow('expenses', user.id, `id=eq.${second.expenseId}&select=payment_method_id`)
+    expect(e.payment_method_id).toBe(pm.id)
     await page.reload({ waitUntil: 'domcontentloaded' })
     await goto(page, '/accounts')
     await expect(page.getByRole('button', { name: /account(s)? found/ })).toHaveCount(0)

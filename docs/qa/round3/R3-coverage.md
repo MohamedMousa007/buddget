@@ -6,10 +6,11 @@ Branch `claude/qa-gaps-e2e` (from main 6c42cb52). Run locally on the owner's ins
 
 | Group | Specs | Result |
 |---|---|---|
-| New journeys | `round3/{w-money,j-accounts-flow,p-planner-conflicts,y-buddgy-rules}`, `k-accounts-flow` (K1-K3) | 17 of 17 passed |
+| New journeys | `round3/{w-money,j-accounts-flow,p-planner-conflicts,y-buddgy-rules}`, `k-accounts-flow` (K1-K3) | 17 of 17 passed. A second run on the committed tree passed 16 of 17: J9 failed once on a real Buddgy defect (finding 4). J9 then passed 3 of 3 on repeat |
 | Regression, same areas | `b-bank-expense`, `c-debt`, `d-pockets`, `f-goal`, `h-cards-link`, `s-system-cash` | 14 of 14 passed |
 | API | `api/round3/admin-devices.spec.ts` | 4 of 4 passed |
 | SMS | `sms/multi-split.mjs` (13 checks), `sms/first-sms.mjs` (regression for the route change) | all passed |
+| Unit files the map leans on | `flushedFingerprint`, `owedToYouVoice`, `defaultMethod`, `smsTracker`, `stepUp`, Buddgy `goals` and `savings` tools | 145 of 145 passed |
 
 ## Product fix
 
@@ -18,12 +19,20 @@ Branch `claude/qa-gaps-e2e` (from main 6c42cb52). Run locally on the owner's ins
 - Fix: a message that `looksMultiTransaction` holds as `multi_amount` even when the model refuses it. This is one line before the rejection. Nothing is booked and nothing is learned.
 - Test: written failing first, in `src/app/api/sms/parse/route.capture.test.ts` ("a two-movement message the model refuses to read is still held for the user, not rejected"). `tsc --noEmit` is clean, and the SMS route tests and learnGates pass (77).
 - Live check: `multi-split.mjs` case 3 now passes.
+- Settle path: the held row has no amount, kind or title when the model refused it. That is the same shape as the existing `null_amount` hold. `useSmsConfirmations` reads those columns as nullable, and `/api/sms/dismiss` clears it by log id. The review sheet was not driven with such a row: **Manual verification required**.
+- Trade-off: a text that is not a transaction but prints two priced statements in one wording (for example a two-offer promo) is now held and nudged, where before it was dropped. Shapes already in the negative cache (`isKnownNonTransaction`) are still rejected before the model is asked. The fix stops new ones from reaching that cache.
 
 ## Findings not fixed (need the owner)
 
 1. **"Close account" confirm button reads "Delete".** `AccountDetailSheet.tsx:87` calls `confirm({ destructive: true })` with no confirm label, so the button gets the default "Delete". The body says the account is only closed and history stays. This is a copy change, so it needs a mockup and approval. W1 clicks "Delete" and names this in a comment.
 2. **Creating an "Owed to you" debt takes no money out of any account.** This is a known PR #38 gap and a money-semantics question. W3 checks only the repayment leg, which credits the account.
 3. **A global SMS template was learned from a synthetic probe.** While choosing a multi-amount text, one single-statement probe ("Dear Customer, your NBE card ending … QA SHOP NORTH") was booked through the AI tier. It taught a global `NBE` template (`sms_tracking_templates_ai` id 5cf56432…, 0 matches). That template is now `status='retired'`, the reversible path the app itself uses. The suite no longer sends single-statement AI texts. A suite should never post a non-curated single-statement SMS.
+   - A retired row also blocks re-learning that exact regex (`route.ts:546`). The owner may prefer to delete it; it has 0 matches, so deleting is safe.
+4. **Buddgy can put already-saved money "Somewhere else" when the user named the account (J9; 1 of 6 runs).** The user said: "I already saved 8000 EGP … that money is in my QNB Alahli account" (QNB has 5,000). The model then proposed the goal with "Where it is: Somewhere else (not tracked here)" and "Net worth rises". It did this again for 3,000, which QNB could hold. Approving that card would count money already in QNB as new money, which inflates net worth.
+   - The tool does refuse more than the account holds (`resolveSavedHome` → `over_available`, unit-tested). The model then chose `elsewhere` instead of asking, against the spec's "ask the user, never guess".
+   - This is a prompt or tool-contract decision: for example, refuse `elsewhere` right after an `over_available` refusal in the same turn, or have the card name the account the user gave. It touches net worth, so it was **not changed here**.
+   - The other 5 runs proposed "Set aside in QNB Alahli".
+5. **Synthetic admin audit rows stay.** `admin_audit_log` has an immutable trigger, so the 16 rows written by the `qa-e2e-pr-r3-admin` actor (and 19 from earlier `adm` and `sup` runs today) cannot be deleted by a suite. They hold no personal data.
 
 ## Coverage map
 
@@ -81,7 +90,7 @@ The guide that numbers J1-J6 is not in the repo: searches of `docs/` and the PR 
 | J1-J6 (inferred: card linking, goal already-saved, reserve cap, release, Flow moves, Cash currency with balance) | H1, F2/F3, D5, D6, K1, K2 (PR #40) | pass in the regression group | AV |
 | J7 unknown account "Not mine" | J7 | pass | AV |
 | J8 full Cash currency | K2 + K3 | pass | AV |
-| J9 Buddgy respects pocket/goal rules | `round3/y-buddgy-rules` J9 (real model). Step 1 can only show that no proposal set aside 8,000 in an account with 5,000; step 2 checks the `saved_in` home (pocket held in QNB, 3,000, QNB still 5,000) | pass (2 runs) | AV (the model's wording varies) |
+| J9 Buddgy respects pocket/goal rules | `round3/y-buddgy-rules` J9 (real model). Step 2 checks the `saved_in` home: pocket held in QNB with 3,000, QNB still 5,000. Step 1 only shows that no proposal set aside 8,000 in QNB; the `over_available` refusal itself is unit-level (`goals` tool tests) | 5 of 6 runs pass; 1 fails on finding 4 | AV for `saved_in` (when the model complies); refusal unit-only; **finding 4 open** |
 
 ## Test-only corrections made on the way (none weakened)
 - `multi-split.mjs`: a resend with a **new** capture id is a second purchase by design (QA-31), so "resend" means the same event id.
