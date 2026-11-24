@@ -45,6 +45,7 @@
   .grab { width:38px; height:5px; border-radius:9px; background:var(--border); justify-self:center; }
   .sh { display:flex; justify-content:space-between; align-items:center; } .sh h3 { margin:0; font-size:18px; letter-spacing:-.01em; } .x { width:30px; height:30px; border-radius:50%; background:var(--elev); display:grid; place-items:center; font-size:13px; }
   .card { background:var(--card); border:1px solid var(--border); border-radius:18px; padding:14px; display:grid; gap:10px; } .card .tt { font-size:15px; font-weight:700; line-height:1.3; margin:0; } .card p { margin:0; font-size:13px; color:var(--t2); }
+  .hx { display:flex; gap:8px; } .btn.redtext { background:transparent; color:var(--red); min-height:44px; }
   .step { display:flex; gap:11px; align-items:flex-start; font-size:13.5px; } .step i { font-style:normal; width:26px; height:26px; border-radius:50%; background:var(--soft); color:var(--ink); display:grid; place-items:center; font-weight:700; flex:none; }
   .ok { font-size:12.5px; color:var(--ink); font-weight:600; padding:0 6px; margin:0; }
   .map { margin:28px auto 0; max-width:1000px; background:#fff; border-radius:16px; padding:18px 20px; font-size:13px; color:#33403E; } .map h2 { font-size:15px; margin:0 0 8px; }
@@ -55,7 +56,7 @@
 <body>
 <main>
   <h1>BDG-020 Subscription: every screen, built from existing components</h1>
-  <p class="lead">Phone-sized screens using only parts that exist in the app, with the app's real wording. The one new string is marked <span class="newtag">NEW</span>. No new component is introduced. The Manage bar, Receipts, Billing history, the "How to cancel" row and the standalone Restore are removed from the page; the "Problem with a purchase?" text survives as one small link inside the cancel sheet.</p>
+  <p class="lead">Phone-sized screens using only parts that exist in the app, with the app's real wording. New strings are marked <span class="newtag">NEW</span>. No new component is introduced. The Manage bar, Receipts, Billing history, the "How to cancel" row and the standalone Restore are removed from the page; "Problem with a purchase?" survives only as a "?" icon in the cancel sheet's header.</p>
   <div class="flow">
 
     <figure><figcaption><b>0 · Today, for comparison</b><code>ManageBar</code> with four actions, plus a sheet of rows. This is what goes away.</figcaption>
@@ -74,20 +75,18 @@
           <div class="grp"><div class="r red"><span class="ic">✕</span><span class="t">Cancel subscription <span class="newtag">NEW</span></span><span class="chev">›</span></div></div>
           <p class="fine">Billed by App Store · Renews 17 Nov 2027</p></div></div></figure>
 
-    <figure><figcaption><b>2 · Tap Cancel subscription</b><code>ModalShell</code> + <code>V3SheetHeader</code> + <code>Card</code> + two <code>Button</code>s. This is today's stay-offer card, moved into a sheet, with equal-weight buttons. It shows only on iOS, once, when the server says the member is eligible.</figcaption>
+    <figure><figcaption><b>2 · Tap Cancel subscription</b><code>ModalShell</code> + <code>V3SheetHeader</code> (the "?" goes in its existing <code>Extra</code> slot, as an <code>IconButton</code>, next to the close; it opens the store's "Problem with a purchase?" page) + <code>Card</code>. "Stay with Pro" is the main <code>Button</code> (<code>cta-block</code>); "Cancel anyway" is a <code>ghost</code> <code>Button</code> with the red token as its text colour, the same className pattern the page already uses. Shows only on iOS, once, when the server says the member is eligible.</figcaption>
       <div class="phone light"><div class="status"><span>9:41</span><span>●●● 5G</span></div><div class="nav"><span class="back">‹</span>Plan and billing</div><div class="scrim"></div>
-        <div class="sheet"><div class="grab"></div><div class="sh"><h3>Cancel subscription</h3><span class="x">✕</span></div>
+        <div class="sheet"><div class="grab"></div><div class="sh"><h3>Cancel subscription</h3><span class="hx"><span class="x">?</span><span class="x">✕</span></span></div>
           <div class="card"><p class="tt">Stay with Pro: 30% off your next 2 months</p>
             <p>You keep your 12-week streak, your Gold progress and all your Pro limits.</p>
-            <div class="btns"><div class="btn p">Stay with Pro</div><div class="btn s">Cancel anyway</div></div></div>
-          <div class="link">Problem with a purchase?</div></div></div></figure>
+            <div class="btns"><div class="btn p">Stay with Pro</div><div class="btn redtext">Cancel anyway</div></div></div></div></div></figure>
 
-    <figure><figcaption><b>3 · "Cancel anyway", or not eligible (Android, offer used)</b>The existing steps card (three numbered rows) and the existing "Manage in App Store" action, as a <code>Button</code>. The store does the cancelling.</figcaption>
+    <figure><figcaption><b>3 · "Cancel anyway", or not eligible (Android, offer used)</b>The three steps are gone: one line and one <code>Button</code> that opens the store's subscription page, which already has the cancel button. No Back button, the X closes the sheet.</figcaption>
       <div class="phone light"><div class="status"><span>9:41</span><span>●●● 5G</span></div><div class="nav"><span class="back">‹</span>Plan and billing</div><div class="scrim"></div>
-        <div class="sheet"><div class="grab"></div><div class="sh"><h3>Cancel subscription</h3><span class="x">✕</span></div>
-          <div class="card"><div class="step"><i>1</i><span>Open Settings and tap your name.</span></div><div class="step"><i>2</i><span>Tap Subscriptions, then buddget Pro.</span></div><div class="step"><i>3</i><span>Tap Cancel Subscription.</span></div></div>
-          <div class="btns"><div class="btn p">Manage in App Store</div></div>
-          <div class="link">Problem with a purchase?</div></div></div></figure>
+        <div class="sheet"><div class="grab"></div><div class="sh"><h3>Cancel subscription</h3><span class="hx"><span class="x">?</span><span class="x">✕</span></span></div>
+          <div class="card"><p>You finish cancelling in the App Store. You keep Pro until 17 Nov 2027. <span class="newtag">NEW</span></p>
+            <div class="btns"><div class="btn p">Cancel in store <span class="newtag" style="margin-inline-start:6px">NEW</span></div></div></div></div></div></figure>
 
     <figure><figcaption><b>4 · After "Stay with Pro"</b>The existing confirmation line (<code>stay.done</code>) under the page, sheet closed.</figcaption>
       <div class="phone light"><div class="status"><span>9:41</span><span>●●● 5G</span></div><div class="nav"><span class="back">‹</span>Plan and billing</div>
@@ -137,11 +136,10 @@
 
     <figure><figcaption><b>10 · Retention offer, dark</b></figcaption>
       <div class="phone dark"><div class="status"><span>9:41</span><span>●●● 5G</span></div><div class="nav"><span class="back">‹</span>Plan and billing</div><div class="scrim"></div>
-        <div class="sheet"><div class="grab"></div><div class="sh"><h3>Cancel subscription</h3><span class="x">✕</span></div>
+        <div class="sheet"><div class="grab"></div><div class="sh"><h3>Cancel subscription</h3><span class="hx"><span class="x">?</span><span class="x">✕</span></span></div>
           <div class="card"><p class="tt">Stay with Pro: 30% off your next 2 months</p>
             <p>You keep your 12-week streak, your Gold progress and all your Pro limits.</p>
-            <div class="btns"><div class="btn p">Stay with Pro</div><div class="btn s">Cancel anyway</div></div></div>
-          <div class="link">Problem with a purchase?</div></div></div></figure>
+            <div class="btns"><div class="btn p">Stay with Pro</div><div class="btn redtext">Cancel anyway</div></div></div></div></div></figure>
   </div>
 
   <div class="map">
@@ -150,10 +148,10 @@
       <tr><th>Piece</th><th>Existing part reused</th></tr>
       <tr><td>Change plan row, Cancel row</td><td><code>SettingsSection</code>, <code>SettingsRow</code> (<code>destructive</code> already exists), as the page already uses them</td></tr>
       <tr><td>Cancel sheet</td><td><code>ModalShell</code>, <code>V3SheetHeader</code>, <code>SheetBody</code>, the same ones the Manage sheet uses today</td></tr>
-      <tr><td>Retention offer, steps</td><td>The <code>stay</code> and <code>cancelOpen</code> cards already in <code>ProStateView.tsx</code>, moved; the offer buttons become two <code>Button</code>s of equal weight (<code>cta-block</code> primary and <code>secondary</code>)</td></tr>
+      <tr><td>Retention offer, store hand-off</td><td>The <code>stay</code> card already in <code>ProStateView.tsx</code>, moved into the sheet; "Stay with Pro" is the primary <code>Button</code>, "Cancel anyway" a <code>ghost</code> <code>Button</code> in the red token colour (no new variant). The "?" is an <code>IconButton</code> in <code>V3SheetHeader.Extra</code>, used the same way in the goal and expense sheets. The steps card and its three-step copy are removed.</td></tr>
       <tr><td>Payment issue</td><td><code>PromptBanner</code> and the <code>state.issue</code> copy, unchanged</td></tr>
       <tr><td>Plans, Restore</td><td><code>PlansBlock</code>, <code>BuyLine</code>, <code>StoreLinks</code>, unchanged</td></tr>
-      <tr><td>New text</td><td><span class="newtag">NEW</span> "Cancel subscription" (English and Arabic). Everything else is an existing key, including "Problem with a purchase?" and "Manage in App Store".</td></tr>
+      <tr><td>New text</td><td>Three <span class="newtag">NEW</span> strings, English and Arabic: "Cancel subscription", "Cancel in store", and one line "You finish cancelling in {store}. You keep Pro until {date}." Everything else is an existing key.</td></tr>
       <tr><td>Removed from the page</td><td><code>ManageBar</code> use, the Manage sheet rows, the Receipts sheet, the history list and its "See all". <code>ManageBar</code> itself stays in the membership gallery. <code>BillingHistory</code> is left in place for other pages.</td></tr>
       <tr><td>Not introduced</td><td>No new component, no new variant, no custom colours: the red row uses the existing <code>destructive</code> token.</td></tr>
     </table>
