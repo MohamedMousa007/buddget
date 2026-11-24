@@ -32,6 +32,14 @@ export async function pickMethod(page: Page, name: RegExp) {
   throw new Error(`payment method ${name} not found in carousel`)
 }
 
+/** A sheet's account or method: its chip when the sheet lists chips, else the method field that opens the carousel. */
+export async function chooseMethod(page: Page, sheet: Locator, name: string) {
+  const chip = sheet.getByRole('button', { name, exact: true })
+  if (await chip.count()) return chip.first().click()
+  await sheet.getByRole('button', { name: /EGP$/ }).filter({ hasNotText: 'E£' }).last().click()
+  await pickMethod(page, new RegExp(`^${name}`))
+}
+
 /** Opens the global + and one of its entries. */
 export async function quickAdd(page: Page, entry: RegExp) {
   await page.getByRole('button', { name: 'Quick add' }).click()

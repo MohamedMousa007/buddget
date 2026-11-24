@@ -2,6 +2,59 @@
 
 Branch `claude/qa-gaps-e2e` (from main 6c42cb52). Run locally on the owner's instruction (not the cloud runner): `next build --webpack` with `NEXT_PUBLIC_DEV_AUTH_BYPASS=0`, empty `NEXT_PUBLIC_API_BASE_URL`, `TZ=Africa/Cairo`, then `next start -p 3101`, `QA_BASE=http://localhost:3101`, one worker, no retries, phone project (390 px, touch). Live Frankfurt DB; only synthetic `qa-e2e-*@buddget-qa.test` users, all deleted (0 left at the end).
 
+## Follow-up run on `claude/qa-r3-followups` (2026-11-25)
+
+Same local setup: production build (`next build --webpack`, `NEXT_PUBLIC_DEV_AUTH_BYPASS=0`, empty `NEXT_PUBLIC_API_BASE_URL`, `TZ=Africa/Cairo`), `next start -p 3101`, one worker, no retries, phone project. No `src/` change was made in this run, so every suite ran on one bundle.
+
+| Group | Specs | Result |
+|---|---|---|
+| L1 lifecycle (new) | `round3/l-lifecycle` L1 | passed (all 10 steps, every check on screen, store and server; three fresh sign-ins rebuilt the numbers from server rows) |
+| L2, L3 (new, `test.fail`) | `round3/l-lifecycle` L2, L3 | failed as expected on findings L1-A and L1-B below |
+| Round 3 journeys | `round3/{w-money (W1-W11), j-accounts-flow, p-planner-conflicts}`, `k-accounts-flow` | 20 of 20 passed |
+| J9 Buddgy (real model) | `round3/y-buddgy-rules`, 3 runs | 3 of 3 passed |
+| Regression | `b-bank-expense`, `c-debt`, `d-pockets`, `f-goal`, `h-cards-link`, `s-system-cash`, `q-quick-add` | 20 of 20 passed |
+| Round 2 core | `round2/r1-core` | 19 of 19 passed |
+| API | `api/round3/admin-devices.spec.ts` | 4 of 4 passed |
+| SMS | `sms/multi-split.mjs` | 13 of 13 checks passed, 0 synthetic rows left |
+
+### New rows
+
+| Item | Test(s) | Result | Label |
+|---|---|---|---|
+| L1 whole lifecycle: goal with already saved in QNB, new pocket, add and withdraw, fund the goal from a pocket and from its account, release at 0 free (R8), over-free refused with the amount, lend 5,000 and repayment, achieve, delete a pocket. Net worth moves only on the loan and its repayment | `round3/l-lifecycle` L1 | pass | AV |
+| W8+ lending: the add-debt question "Did this money leave CIB now?" (screenshot) | W8 | pass | AV |
+| Borrowed money is not income: linked to the deposit that brought it, CIB holds it once, Money in 0, Flow "Not income" | W9 | pass | AV |
+| Late bank row after a debt with a leg: "Is this the 5,000 EGP you lent Omar?" on Flow; Yes leaves one debit (CIB 15,000, leg cleared, row linked); No keeps both (10,000) and is not asked again after a reload | W10, W11 | pass | AV |
+| J9 fixed (Buddgy keeps already-saved money in the named account) | `round3/y-buddgy-rules`, 3 runs | 3 of 3 pass | AV (model behaviour: unit tests are the proof) |
+| Close account fixed (button says "Close account", says it can't be reopened, no "Delete") | W1 + screenshot | pass | AV; owner to look at the screenshot |
+
+Screenshots for the owner, in `evidence/`: `w8-add-debt-left-cib-question.png`, `w10-flow-same-money-prompt.png`, `w9-borrowed-not-income-row.png`, `w1-close-account-dialog.png`.
+
+### Findings (not fixed: they change money or sync behaviour, owner's call)
+
+**L1-A. Wealth > Add money into a pocket held in an account books a transfer from another account, with no check on that account.** Pinned by L2.
+- `canCarryLeg` (`src/lib/savings/accountLeg.ts`) never offers the holder itself as "From account", so with a second tracked account the sheet defaults to it. `AddSavingsSheetV3` passes that id as `fromAccountId`, and the balance engine books a transfer into the holder.
+- `depositRefusal` (`src/lib/savings/pocketHome.ts`) checks free money only when the source is the holder. A source that is another account is never checked.
+- Seen: CIB 5,000 with a 500 pocket, QNB 1,000. Add 2,000 to the CIB pocket, nothing else touched: QNB -1,000, CIB 7,000. In L1 the same path took 14,000 out of QNB while QNB held 7,000 for a goal: QNB -1,000, and Available showed 14,000 against 6,000 real.
+- This contradicts `depositLegId`'s own comment ("defaulting to the primary would book a transfer between two accounts that never happened").
+- Fix options: (a) default a held pocket's source to its holder (no leg, a plain set-aside capped at free), or (b) keep the cross-account transfer but refuse more than the source has free. Both are money-semantics choices. L1 sets money aside through Accounts > account > Set aside, which is correct and capped.
+
+**L1-B. A pocket deleted from Wealth can come back moments later and is never deleted on the server.** Pinned by L3.
+- Seen in about 5 of 8 attempts: the confirm resolves and the row leaves the store, then comes back within about 200 ms. The server row keeps `deleted_at` null. It happens with both held and standalone pockets. It is more likely right after a page load, while the first pull is running.
+- Likely cause (not proven): `applyListWith` / `mergeList` (`src/lib/supabase/remote/delta.ts`, `merge.ts`) union a pull's upserts with the local list. A row deleted locally but not yet delivered is re-added from a delta fetched before the delete. After that it equals the delivered copy, so it is never sent as a delete.
+- This is sync conflict policy (local delete against a server copy), a deep-technical change that needs tests first. Not changed here. L1 step 10 deletes again until the pocket stays gone (0 retries on the final run) and records the count.
+
+**L1-C. Delete copy for a pocket held in an account is wrong.** It says "11,000 EGP will leave your net worth". Net worth stayed 30,000, which is correct, because the money stays in CIB. This is a copy change, so it needs a mockup.
+
+**L1-D (cosmetic).** The Flow row title for an SMS credit truncates to "Bank cr…" next to the "Not income" badge at 390 px (`w9-borrowed-not-income-row.png`).
+
+### Cleanup
+- 0 `qa-e2e-*` users left. `sms_tracking_templates_ai`: 70 before and 70 after, 0 rows created during the run (only curated and multi-split texts were posted).
+
+### Test-only corrections
+- W8 (and L1): the debt sheet shows a method field that opens the carousel, not account chips, once there is more than Cash. The shared helper `chooseMethod` (`e2e/journeys/lib/ui.ts`) uses the chip when there is one, else the carousel.
+- The service-role seed for a late Instapay row omits `category_source`. The SMS route writes only `ai_suggested` or null there, and the check constraint refuses `sms`.
+
 ## Final run (after the one product fix, on a rebuilt bundle)
 
 | Group | Specs | Result |
