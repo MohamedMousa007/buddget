@@ -13,7 +13,8 @@ import { averageMonthlySpend, fieldAdvice } from '@/lib/goals/fieldAdvice'
 import { trackedDebtIds } from '@/lib/goals/debtGoal'
 import { clearDraft, loadDraft, saveDraft, type NewGoalDraft } from '@/lib/goals/newGoalDraft'
 import { createGoalPocket, goalHomeAccounts, savedHomeProblem } from '@/lib/goals/goalPocket'
-import { useAccounts, useLedgerInput } from '@/lib/accounts/useAccounts'
+import { useLedgerInput } from '@/lib/accounts/useAccounts'
+import { computeBalances } from '@/lib/accounts/balance'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import {
   calculateDebtRemaining,
@@ -83,11 +84,11 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
 
   // "Where is this money?": the tracked accounts that could already contain the saved amount, in the goal's currency.
   const ledger = useLedgerInput()
-  const { accounts } = useAccounts()
+  // The same list the validation reads, so a required answer always has its question on screen.
   const homeAccounts = useMemo(() => {
-    const ids = new Set(goalHomeAccounts(ledger.paymentMethods, currency).map((m) => m.id))
-    return accounts.filter((a) => ids.has(a.method.id))
-  }, [accounts, ledger.paymentMethods, currency])
+    const balances = computeBalances(ledger)
+    return goalHomeAccounts(ledger.paymentMethods, currency).map((method) => ({ method, free: balances.get(method.id)?.free ?? 0 }))
+  }, [ledger, currency])
   const savedProblem = savedHomeProblem(ledger, currency, num(alreadySaved), savedHome)
 
   const activeDebts = useMemo(() => s.debts.filter((d) => d.status !== 'cleared'), [s.debts])
@@ -227,7 +228,13 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
           monthlyContribution: fundingMode === 'fixed' && num(fixedAmount) > 0 ? num(fixedAmount) : null,
           frequency,
         })
-        createGoalPocket(st, { goalId, pocketName: cat.goalPocketName(goalName), goalName, currency: ccy, saved: num(alreadySaved), home: savedHome })
+        const made = createGoalPocket(st, { goalId, pocketName: cat.goalPocketName(goalName), goalName, currency: ccy, saved: num(alreadySaved), home: savedHome })
+        // The saved amount was refused (the account changed since the step was validated): never keep a goal showing 0.
+        if (!made.savedRecorded) {
+          st.deleteGoal(goalId)
+          st.deleteSavingsAccount(made.pocketId)
+          throw new Error('saved amount not recorded')
+        }
       }
     } catch {
       submitOnce.release()

@@ -152,7 +152,7 @@ export function StepMakeItReal({ form }: { form: Form }) {
                 {form.homeAccounts.map((a) => (
                   <SelectableCard key={a.method.id} surface="card" selected={form.savedHome === a.method.id} onClick={() => form.setSavedHome(a.method.id)}>
                     <span className="min-w-0 flex-1 truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{accountTitle(a.method)}</span>
-                    <span dir="auto" className="shrink-0 font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{f.availableAmount(available(a.balance?.free ?? 0))}</span>
+                    <span dir="auto" className="shrink-0 font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{f.availableAmount(available(a.free))}</span>
                   </SelectableCard>
                 ))}
                 <SelectableCard surface="card" selected={form.savedHome === ELSEWHERE} onClick={() => form.setSavedHome(ELSEWHERE)}>
@@ -163,7 +163,7 @@ export function StepMakeItReal({ form }: { form: Form }) {
                 </SelectableCard>
               </div>
               {form.savedProblem === 'over_available' && homeAccount ? (
-                <p role="alert" className="text-[0.8125rem] text-[var(--color-brand-amber)]">{tMoney.overAvailable(available(homeAccount.balance?.free ?? 0), accountTitle(homeAccount.method))}</p>
+                <p role="alert" className="text-[0.8125rem] text-[var(--color-brand-amber)]">{tMoney.overAvailable(available(homeAccount.free), accountTitle(homeAccount.method))}</p>
               ) : homeAccount ? (
                 <p className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{f.staysTip(accountTitle(homeAccount.method))}</p>
               ) : form.savedHome === ELSEWHERE ? (
