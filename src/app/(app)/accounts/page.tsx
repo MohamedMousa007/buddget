@@ -138,6 +138,13 @@ export default function AccountsPage() {
   const open = sheet && 'id' in sheet ? viewOf(sheet.id) : undefined
   const sheetCard = sheet?.kind === 'cardSheet' ? paymentMethods.find((m) => m.id === sheet.cardId) : undefined
   const overCard = over && 'cardId' in over ? paymentMethods.find((m) => m.id === over.cardId) : undefined
+  // Card sheets stay mounted on their last card after closing, so ModalShell can play its exit animation.
+  const [shownSheetCardId, setShownSheetCardId] = useState<string | null>(null)
+  if (sheetCard && sheetCard.id !== shownSheetCardId) setShownSheetCardId(sheetCard.id)
+  const [shownOverCardId, setShownOverCardId] = useState<string | null>(null)
+  if (overCard && overCard.id !== shownOverCardId) setShownOverCardId(overCard.id)
+  const shownSheetCard = shownSheetCardId ? paymentMethods.find((m) => m.id === shownSheetCardId) : undefined
+  const shownOverCard = shownOverCardId ? paymentMethods.find((m) => m.id === shownOverCardId) : undefined
   const close = () => { setSheet(null); setOver(null); clearAccountPrefill(); setFoundOpen(false) }
   const foundSheetOpen = sheet?.kind === 'found' || foundOpen
   const addOpen = sheet?.kind === 'add' || accountPrefill !== null
@@ -338,19 +345,19 @@ export default function AccountsPage() {
           <PaymentMethodSetupSheet open={sheet?.kind === 'detail' && over?.kind === 'addCard'} editing={null} baseCurrency={settings.baseCurrency} parentAccountId={open.method.id}
             titleOverride={t.addCardTo(accountTitle(open.method))} extraChoices={['virtual']} excludeTypes={['wallet']} nested onClose={() => setOver(null)} />
           <PaymentMethodSetupSheet key={`e-${open.method.id}`} open={sheet?.kind === 'edit'} editing={open.method} baseCurrency={settings.baseCurrency} nested onClose={close} />
-          {sheet?.kind === 'detail' && over?.kind === 'card' && overCard ? (
-            <CardDetailSheet key={`oc-${overCard.id}`} open card={overCard} parent={open.method} masked={listMasked} zIndexClassName="z-[110]"
-              onClose={() => setOver(null)} onLeave={close} onEdit={() => setOver({ kind: 'editCard', cardId: overCard.id })} />
+          {shownOverCard ? (
+            <CardDetailSheet key={`oc-${shownOverCard.id}`} open={sheet?.kind === 'detail' && over?.kind === 'card' && !!overCard} card={shownOverCard} parent={open.method} masked={listMasked} zIndexClassName="z-[110]"
+              onClose={() => setOver(null)} onLeave={close} onEdit={() => setOver({ kind: 'editCard', cardId: shownOverCard.id })} />
           ) : null}
         </>
       ) : null}
-      {sheetCard ? (
-        <CardDetailSheet key={`cs-${sheetCard.id}`} open card={sheetCard} parent={parentOf(sheetCard)} masked={listMasked} behind={over !== null} onClose={close}
-          onEdit={() => setOver({ kind: 'editCard', cardId: sheetCard.id })}
-          onOpenParent={sheetCard.parentId && viewOf(sheetCard.parentId) ? () => { setOver(null); setSheet({ kind: 'detail', id: sheetCard.parentId as string }) } : undefined} />
+      {shownSheetCard ? (
+        <CardDetailSheet key={`cs-${shownSheetCard.id}`} open={!!sheetCard} card={shownSheetCard} parent={parentOf(shownSheetCard)} masked={listMasked} behind={over !== null} onClose={close}
+          onEdit={() => setOver({ kind: 'editCard', cardId: shownSheetCard.id })}
+          onOpenParent={shownSheetCard.parentId && viewOf(shownSheetCard.parentId) ? () => { setOver(null); setSheet({ kind: 'detail', id: shownSheetCard.parentId as string }) } : undefined} />
       ) : null}
-      {over?.kind === 'editCard' && overCard ? (
-        <PaymentMethodSetupSheet key={`ec-${overCard.id}`} open editing={overCard} baseCurrency={settings.baseCurrency} nested onClose={() => setOver(null)} />
+      {shownOverCard ? (
+        <PaymentMethodSetupSheet key={`ec-${shownOverCard.id}`} open={over?.kind === 'editCard' && !!overCard} editing={shownOverCard} baseCurrency={settings.baseCurrency} nested onClose={() => setOver(null)} />
       ) : null}
       <PaymentMethodSetupSheet open={sheet?.kind === 'addCard'} editing={null} baseCurrency={settings.baseCurrency} extraChoices={['store']} excludeTypes={['wallet']} nested onClose={close} />
       <AddAccountSheet key={addKey} open={addOpen} prefill={accountPrefill ?? undefined} onClose={close} pushCardStep onOnlyCard={() => { clearAccountPrefill(); setSheet({ kind: 'addCard' }) }} />
