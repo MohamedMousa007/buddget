@@ -6,7 +6,9 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         // '/$' is an exact-match anchor: the homepage only, not every path under it.
-        allow: ['/$', '/en', '/ar', '/terms', '/privacy', '/legal/terms', '/legal/privacy', '/llms.txt'],
+        // The second line is what those pages load: crawlers need it to render them and to show share images.
+        allow: ['/$', '/en', '/ar', '/terms', '/privacy', '/legal/terms', '/legal/privacy', '/llms.txt',
+          '/_next/', '/site/', '/icons/', '/og-', '/favicon.ico'],
         disallow: '/',
       },
     ],
