@@ -18,6 +18,8 @@ export interface LedgerInput {
   adjustments: readonly AccountAdjustment[]
   /** null = no rate known: the row is counted 1:1 (gold legs are skipped) and the account is flagged approximate. */
   convert: (amount: number, from: string, to: string) => number | null
+  /** Also total the money in and out since this instant (balance corrections excluded): `flowsIn` / `flowsOut`. */
+  flowsFrom?: number
 }
 
 export interface AccountBalance {
@@ -31,6 +33,9 @@ export interface AccountBalance {
   free: number
   /** True when any movement needed a currency conversion with no rate. */
   approx: boolean
+  /** Only with `flowsFrom`: money in and money out since then, both positive, in account currency. */
+  flowsIn?: number
+  flowsOut?: number
 }
 
 const THREE_DECIMALS = new Set(['KWD', 'BHD', 'OMR', 'JOD'])
@@ -51,18 +56,19 @@ export function instantOf(occurredAt: string | undefined, date: string): number 
  */
 export function computeBalances(input: LedgerInput, asOf: number = Date.now()): Map<string, AccountBalance> {
   const { paymentMethods: pms } = input
-  const acc = new Map<string, { minor: number; approx: boolean; from: number; currency: string }>()
+  const acc = new Map<string, { minor: number; approx: boolean; from: number; currency: string; inMinor: number; outMinor: number }>()
   for (const pm of pms) {
     if (isTracked(pm)) {
       const cur = String(pm.currency)
       acc.set(pm.id, {
         minor: Math.round((pm.openingBalance as number) * unit(cur)), approx: false,
-        from: new Date(pm.openingAt as string).getTime(), currency: cur,
+        from: new Date(pm.openingAt as string).getTime(), currency: cur, inMinor: 0, outMinor: 0,
       })
     }
   }
 
-  const apply = (accountId: string | null, amount: number, currency: string, at: number) => {
+  const flowsFrom = input.flowsFrom
+  const apply = (accountId: string | null, amount: number, currency: string, at: number, flow = true) => {
     if (!accountId) return
     const a = acc.get(accountId)
     // Rows at or before the anchor are already inside the opening balance (it was read after them).
@@ -76,7 +82,12 @@ export function computeBalances(input: LedgerInput, asOf: number = Date.now()): 
         if (currency === 'XAU' || a.currency === 'XAU') return
       } else v = c
     }
-    a.minor += Math.round(v * unit(a.currency))
+    const minor = Math.round(v * unit(a.currency))
+    a.minor += minor
+    if (flow && flowsFrom !== undefined && at >= flowsFrom) {
+      if (minor > 0) a.inMinor += minor
+      else a.outMinor -= minor
+    }
   }
 
   const settledByExpense = new Set<string>()
@@ -157,7 +168,7 @@ export function computeBalances(input: LedgerInput, asOf: number = Date.now()): 
 
   for (const j of input.adjustments) {
     const pm = pms.find((m) => m.id === j.paymentMethodId)
-    apply(j.paymentMethodId, j.delta, pm ? String(pm.currency) : '', new Date(j.occurredAt).getTime())
+    apply(j.paymentMethodId, j.delta, pm ? String(pm.currency) : '', new Date(j.occurredAt).getTime(), false)
   }
 
   const out = new Map<string, AccountBalance>()
@@ -175,6 +186,7 @@ export function computeBalances(input: LedgerInput, asOf: number = Date.now()): 
     out.set(id, {
       id, currency: a.currency, approx,
       balance: a.minor / u, held: heldMinor / u, free: Math.max(0, a.minor - heldMinor) / u,
+      ...(flowsFrom !== undefined ? { flowsIn: a.inMinor / u, flowsOut: a.outMinor / u } : {}),
     })
   }
   return out

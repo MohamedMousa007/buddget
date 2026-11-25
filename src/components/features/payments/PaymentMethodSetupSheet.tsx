@@ -1,7 +1,7 @@
 'use client'
 
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowLeft, CreditCard, Lock, Trash2 } from 'lucide-react'
@@ -70,7 +70,20 @@ interface Props {
   /** Edit mode only: shows a destructive footer button; the caller owns confirmation and removal. */
   onDelete?: () => void
   deleteLabel?: string
+  /** Render the form's body inside another sheet (a pushed step), with no ModalShell or floating preview of its own. Save then only calls `onSaved`. */
+  embedded?: boolean
+  /** Shown above the preview (a pushed step's "{account} added" summary). */
+  summary?: ReactNode
+  /** The header's back control; defaults to `onClose`. */
+  onBack?: () => void
+  /** Labelled card kinds offered beside the type chips: Virtual (a debit card labelled Virtual) or Store card (type other). */
+  extraChoices?: CardChoice[]
+  /** Types this entry never offers, in the type chips and the provider list (the card-only form hides wallets). */
+  excludeTypes?: PaymentMethodType[]
 }
+
+export type CardChoice = 'virtual' | 'store'
+const CHOICE_TYPE: Record<CardChoice, PaymentMethodType> = { virtual: 'debit_card', store: 'other' }
 
 /**
  * Add / edit a payment method — floating live card preview (pinned above the
@@ -79,6 +92,7 @@ interface Props {
  */
 export function PaymentMethodSetupSheet({
   open, editing, prefill, baseCurrency, onClose, onSaved, nested = false, lockType, titleOverride, parentAccountId, onDelete, deleteLabel,
+  embedded = false, summary, onBack, extraChoices, excludeTypes,
 }: Props) {
   const t = useT()
   const addPaymentMethod = useFinanceStore((s) => s.addPaymentMethod)
@@ -112,14 +126,15 @@ export function PaymentMethodSetupSheet({
   const [ccLimit, setCcLimit] = useState('')
   const [ccOutstanding, setCcOutstanding] = useState('')
   const [ccStatementDay, setCcStatementDay] = useState('')
+  const [choice, setChoice] = useState<CardChoice | null>(null)
 
   const prevOpen = useRef(false)
-  useEscapeClose(open && !providerSheetOpen, onClose)
+  useEscapeClose(open && !providerSheetOpen && !embedded, onClose)
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- initialise form when the sheet opens */
     if (open && !prevOpen.current) {
-      setProviderSheetOpen(false); setThemePicked(false); setCurTouched(false)
+      setProviderSheetOpen(false); setThemePicked(false); setCurTouched(false); setChoice(null)
       if (editing) {
         const { provider, tag: decTag } = decomposePaymentMethodName(editing.name, editing.last4)
         // A label an older version folded into the name ("CIB · Salary") is shown as the label it always was.
@@ -206,12 +221,19 @@ export function PaymentMethodSetupSheet({
   const offeredTypes = useMemo(() => {
     const brand = brandId && brandId !== '__custom' ? PAYMENT_BRANDS[brandId] : null
     const allowed = typesForBrand(brand)
-    return CARD_SETUP_TYPES.filter((t) => allowed.includes(t) || t === type)
-  }, [brandId, type])
+    return CARD_SETUP_TYPES.filter((t) => (allowed.includes(t) && !excludeTypes?.includes(t)) || t === type)
+  }, [brandId, type, excludeTypes])
 
   const pickType = (v: PaymentMethodType) => {
     setType(v)
+    setChoice(null)
     if (idMode === 'last4' && !allowsLast4(v)) setIdMode('none')
+  }
+  const choiceLabel = (c: CardChoice) => (c === 'virtual' ? t.accountsPage.typeVirtual : t.accountsPage.typeStoreCard)
+  // The kind is stored as the card's label, visible and editable in the identifier field, so nothing hidden rides on it.
+  const pickChoice = (c: CardChoice) => {
+    setType(CHOICE_TYPE[c]); setChoice(c)
+    setIdMode('label'); setLabel((l) => (l.trim() ? l : choiceLabel(c)))
   }
   const setCustomProvider = (term: string) => {
     setBrandId('__custom'); setProviderName(term.trim()); setProviderSheetOpen(false)
@@ -267,7 +289,7 @@ export function PaymentMethodSetupSheet({
     }
     if (use4) void reattribute(pmId, last4)
     onSaved?.(pmId)
-    onClose()
+    if (!embedded) onClose()
   }
 
   const country = countryFromCurrency(baseCurrency)
@@ -295,18 +317,14 @@ export function PaymentMethodSetupSheet({
     currency: curCode,
   }
 
-  return (
-    <>
-      <FloatingCardPreview open={open} z={z.card} {...previewProps} />
-
-      <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={z.shell} panelClassName="h-[64dvh]">
+  const body = (
         <div className="flex min-h-0 flex-1 flex-col outline-none">
           {/* Debt context (lockType) follows the debt-sheet rule: X + swipe only, no Back. */}
           <V3SheetHeader
             onClose={onClose}
             leading={
               !lockType ? (
-                <IconButton aria-label={t.common.back} onClick={onClose} variant="tinted" size="sm" shape="round">
+                <IconButton aria-label={t.common.back} onClick={onBack ?? onClose} variant="tinted" size="sm" shape="round">
                   <ArrowLeft className="rtl:rotate-180" />
                 </IconButton>
               ) : undefined
@@ -317,7 +335,8 @@ export function PaymentMethodSetupSheet({
 
           <div className="native-scroll min-h-0 flex-1 overflow-y-auto px-4 pb-4">
             <div className="flex flex-col gap-[18px]">
-              <FloatingCardPreview open={open} inline {...previewProps} />
+              {summary}
+              <FloatingCardPreview open={open} inline={embedded ? 'always' : true} {...previewProps} />
               {/* Provider */}
               <div>
                 <div className={`mx-0.5 mb-2 ${microClassName}`}>
@@ -365,7 +384,7 @@ export function PaymentMethodSetupSheet({
                   <div className="native-scroll -my-1 flex gap-1.5 overflow-x-auto py-1">
                     {offeredTypes.map((tp) => {
                       const meta = PAYMENT_TYPE_META[tp]
-                      const activeChip = type === tp
+                      const activeChip = type === tp && choice === null
                       return (
                         <OptionChip
                           key={tp} selected={activeChip} onClick={() => pickType(tp)}
@@ -381,6 +400,12 @@ export function PaymentMethodSetupSheet({
                         </OptionChip>
                       )
                     })}
+                    {extraChoices?.map((c) => (
+                      <OptionChip key={c} selected={choice === c} onClick={() => pickChoice(c)} className="h-[38px]">
+                        <TypeGlyph type={CHOICE_TYPE[c]} className="h-[15px] w-[15px]" />
+                        {choiceLabel(c)}
+                      </OptionChip>
+                    ))}
                   </div>
                 )}
               </div>
@@ -483,8 +508,9 @@ export function PaymentMethodSetupSheet({
             </Button>
           </div>
         </div>
-      </ModalShell>
+  )
 
+  const picker = (
       <ProviderPickerSheet
         open={open && providerSheetOpen}
         selectedId={brandId}
@@ -494,8 +520,18 @@ export function PaymentMethodSetupSheet({
         onCustom={setCustomProvider}
         onClose={() => setProviderSheetOpen(false)}
         issuesType={lockType}
+        excludeTypes={excludeTypes}
       />
+  )
 
+  if (embedded) return <>{body}{picker}</>
+  return (
+    <>
+      <FloatingCardPreview open={open} z={z.card} {...previewProps} />
+      <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={z.shell} panelClassName="h-[64dvh]">
+        {body}
+      </ModalShell>
+      {picker}
     </>
   )
 }
@@ -508,8 +544,8 @@ function FloatingCardPreview({
 }: {
   open: boolean
   z?: string
-  /** md+ renders the card in the dialog's flow instead of pinned above it. */
-  inline?: boolean
+  /** md+ renders the card in the dialog's flow instead of pinned above it; 'always' at every width (an embedded form). */
+  inline?: boolean | 'always'
   theme: CardThemeKey
   style: CardStyle
   bank: string
@@ -536,7 +572,7 @@ function FloatingCardPreview({
     </>
   )
 
-  if (inline) return <div className="relative mx-auto my-4 hidden h-[176px] w-[280px] shrink-0 md:block">{preview}</div>
+  if (inline) return <div className={cn('relative mx-auto my-4 h-[176px] w-[280px] shrink-0', inline === 'always' ? 'block' : 'hidden md:block')}>{preview}</div>
 
   return createPortal(
     <AnimatePresence>

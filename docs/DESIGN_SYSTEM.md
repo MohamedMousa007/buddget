@@ -208,7 +208,7 @@ Icons are **Lucide**, outline only, 1.75–2px stroke, never filled.
 - 🚫 **Never a pig.** `PiggyBank` is banned product-wide for savings or any other concept.
   The canonical savings glyph is **`Coins`** — what the bottom nav uses. It is deliberately
   absent from `OTHER_SAVINGS_ICON_KEYS`; a legacy alias in `SavingsAccountIcon` maps any
-  imported `'PiggyBank'` value onto `Coins` so old backups still render.
+  imported `'PiggyBank'` value onto `Vault` (the set-aside glyph) so old backups still render.
 - 🚫 **No notification bell on native.** The mobile header is the Budget button + avatar only (Budget lives there, not in the bottom bar: Flow, Accounts, add, Wealth, Debts). A bell
   belongs only where a web surface genuinely needs it.
 
@@ -404,6 +404,11 @@ New for the Accounts tab; everything else on those screens reuses existing primi
 | `AccountRow` | 72px row: mark, title, subtitle, balance (decimals dimmed), "free" line, strip under it | Only exceptions get colour (amber for a gap); amounts mask via `useMask('lists')` |
 | `AccountPicker` | Collapsing "From" list: one row, tap to unfold the other accounts in place | Not `SelectField` (that does not expand inline) |
 | `GapTimeline` | Dot-and-line history; bank-confirmed points teal, the unexplained stretch dashed amber | Amber, never red: red is destructive only |
+| `InlineBalanceEdit` | Tap the balance figure to type a new one: `NumberPad` under the sheet, live "+1,250 vs buddget", Cancel and a Save that names the result. Controlled draft; the caller decides what Save writes (`updateBalance`, `correctSavingsBalance`) | `allowNegative` (bank accounts only) adds the pad's "± Overdrawn (minus)" key; an overdrawn figure is red (owner decision V3), the one exception to amber-for-negative |
+| `SheetActivity` | The account and card sheets' activity: three skeleton rows until the first pull, `TransactionRow`s, or a compact `EmptyState` with "Add an expense" prefilled with the method | Always rendered so the sheet keeps its shape |
+| `CardDetailSheet` | One card: large `CardFace`, credit 2×2 (Owed, Available, Limit, Due day) with a usage bar, pay-later link to Debts, Set as default, ⋮ Edit / Delete, its spending | Credit owed never appears beside an account total |
+
+Additive props for these screens: `ModalShell.behind` (a sheet stacked over it scales back and dims, inert), `NumberPad.allowNegative`, `ProviderPickerSheet.excludeTypes`, `PaymentMethodSetupSheet` `embedded` / `summary` / `onBack` / `extraChoices` / `excludeTypes`, `AddAccountSheet.pushCardStep` / `onOnlyCard`.
 
 Rounding on hero bands: figures that restate the hero amount on the same band (cells, scale lines, sticky strip) use `formatFlex` / `formatSignedFlex` / `formatSignedAuto` (whole when whole, else two decimals), never `formatWhole`, so 19.99 does not sit beside 20. Bands that can show cents pass `fitCells`.
 

@@ -3,6 +3,7 @@ import type { Currency, FinanceStore, PaymentMethod } from '@/lib/store/types'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import { computeBalances, type LedgerInput } from './balance'
+import { balanceDelta, balanceSave } from './balanceEdit'
 import { DEFAULT_CASH_ID, isTracked } from './kinds'
 import { removePaymentMethod } from './removePaymentMethod'
 import { cashAccountId } from './resolve'
@@ -74,14 +75,14 @@ export function setAside(fromId: string, pocketId: string, amount: number, curre
 /** "What does your bank show now?": records the difference as an explicit adjustment, never as an expense. */
 export function updateBalance(accountId: string, current: number, reported: number, reason: 'manual_update' | 'gap' = 'manual_update'): number {
   const account = store().paymentMethods.find((m) => m.id === accountId)
-  if (accountId === DEFAULT_CASH_ID || (account && !isTracked(account))) {
-    setOpeningBalance(accountId === DEFAULT_CASH_ID ? ensureCashAccount() : accountId, reported)
-    return Math.round((reported - current) * 100) / 100
+  const save = balanceSave(accountId !== DEFAULT_CASH_ID && (!account || isTracked(account)), current, reported, account ? String(account.currency) : '')
+  if (save.kind === 'opening') {
+    setOpeningBalance(accountId === DEFAULT_CASH_ID ? ensureCashAccount() : accountId, save.amount)
+    return balanceDelta(current, reported, account ? String(account.currency) : '')
   }
-  const delta = Math.round((reported - current) * 100) / 100
-  if (delta === 0) return 0
-  store().addAccountAdjustment({ paymentMethodId: accountId, delta, reason, occurredAt: new Date().toISOString() })
-  return delta
+  if (save.kind === 'none') return 0
+  store().addAccountAdjustment({ paymentMethodId: accountId, delta: save.delta, reason, occurredAt: new Date().toISOString() })
+  return save.delta
 }
 
 /** Closed accounts keep their history; their cards become standalone cards. */

@@ -1,5 +1,6 @@
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { tryConvertCurrency } from '@/lib/utils/currency'
+import { ratesNeedFetch } from '@/lib/market/rateFreshness'
 
 export const RATES_TTL_MS = 4 * 60 * 60 * 1000 // 4h
 export const GOLD_TTL_MS = 15 * 60 * 1000 // 15min
@@ -96,10 +97,10 @@ async function requestGoldPrice(): Promise<void> {
  * paint, with no post-load currency/gold flicker.
  */
 export async function ensureMarketDataFresh(): Promise<void> {
-  const { lastRatesFetch, lastGoldFetch } = useFinanceStore.getState()
+  const { lastRatesFetch, lastGoldFetch, rateFetchedAt } = useFinanceStore.getState()
   const now = Date.now()
   const jobs: Promise<void>[] = []
-  if (!lastRatesFetch || now - new Date(lastRatesFetch).getTime() > RATES_TTL_MS) {
+  if (ratesNeedFetch(lastRatesFetch, rateFetchedAt ?? {}, now, RATES_TTL_MS)) {
     jobs.push(fetchExchangeRates())
   }
   if (!lastGoldFetch || now - new Date(lastGoldFetch).getTime() > GOLD_TTL_MS) {

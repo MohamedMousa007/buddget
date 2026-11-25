@@ -5,7 +5,7 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { SavingsProductTypePicker } from '@/components/modals/SavingsProductTypePicker'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
-import { AmountField } from '@/components/ui/AmountField'
+import { InlineBalanceEdit, type BalanceDraft } from '@/components/features/accounts/InlineBalanceEdit'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
@@ -52,7 +52,7 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
   )
   const [name, setName] = useState(account.name)
   const [currency, setCurrency] = useState<Currency>(account.currency)
-  const [balance, setBalance] = useState(String(account.currentBalance))
+  const [draft, setDraft] = useState<BalanceDraft | null>(null)
   const [notes, setNotes] = useState(account.notes ?? '')
 
   const typeList = productCategory === 'savings' ? SAVINGS_PRODUCT_TYPES : INVESTMENT_PRODUCT_TYPES
@@ -75,11 +75,12 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
   }
 
   const guard = useDepositGuard(account)
-  const typedBalance = parseFloat(balance)
-  const refusal = Number.isFinite(typedBalance) ? guard.correctionRefusalFor(typedBalance) : null
+  const typedBalance = draft ? parseFloat(draft.value) : Number.NaN
+  const reported = Number.isFinite(typedBalance) ? typedBalance : null
+  const refusal = reported !== null ? guard.correctionRefusalFor(reported) : null
 
   const submit = () => {
-    if (!name.trim() || refusal) return
+    if (!name.trim()) return
     const resolvedIcon = savingsType === 'other' ? otherIcon : SAVINGS_TYPE_ICONS[savingsType]
     updateSavingsAccount(account.id, {
       name: name.trim(),
@@ -89,8 +90,6 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
       currency: currencyLocked ? account.currency : currency,
       notes: notes.trim() || undefined,
     })
-    const nextBalance = parseFloat(balance)
-    if (Number.isFinite(nextBalance) && nextBalance !== account.currentBalance) correctSavingsBalance(account.id, nextBalance)
     onClose()
   }
 
@@ -162,18 +161,16 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
             />
           </div>
 
-          <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.sheetUpdateTitle}</Label>
-            <AmountField
-              value={balance}
-              onChange={setBalance}
-              currency={currency}
-              label={t.savings.sheetUpdateTitle}
-              aria-label={t.savings.sheetUpdateTitle}
-              className={cn('mt-1 h-12', inputClass)}
-            />
-            {refusal ? <p role="alert" className="mt-1 text-[0.8125rem] text-[var(--color-brand-amber)]">{guard.message(refusal)}</p> : null}
-          </div>
+          <InlineBalanceEdit
+            current={account.currentBalance}
+            currency={account.currency}
+            masked={false}
+            draft={draft}
+            onDraftChange={setDraft}
+            reported={reported}
+            refusal={refusal ? guard.message(refusal) : null}
+            onSave={(next) => { if (next !== account.currentBalance) correctSavingsBalance(account.id, next) }}
+          />
 
           <div>
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelCurrency}</Label>
@@ -201,7 +198,7 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
             />
           </div>
 
-          <Button size="cta-block" onClick={submit} disabled={!!refusal}>
+          <Button size="cta-block" onClick={submit} disabled={draft !== null}>
             {t.common.save}
           </Button>
         </div>

@@ -60,6 +60,13 @@ export function accountTotals(
   return { totalInBase, heldInBase, freeInBase, approx }
 }
 
+/** Cards with no open parent account. A provisional method waits in the detected-accounts sheet, never here. */
+export function standaloneCardsOf(methods: readonly PaymentMethod[], accountIds: ReadonlySet<string>): PaymentMethod[] {
+  return methods.filter(
+    (m) => !m.closedAt && !m.provisional && m.type !== 'cash' && !accountIds.has(m.id) && !(m.parentId && accountIds.has(m.parentId)),
+  )
+}
+
 function useLedgerStore() {
   return useFinanceStore(useShallow((st) => ({
     paymentMethods: st.paymentMethods, expenses: st.expenses, incomeEvents: st.incomeEvents,
@@ -94,9 +101,7 @@ export function useAccounts(): AccountsModel {
     }))
     const totals = accountTotals(accounts, String(s.base), (a, from, to) => tryConvertCurrency(a, from, to, rates))
     const accountIds = new Set(accounts.map((a) => a.method.id))
-    const standaloneCards = s.paymentMethods.filter(
-      (m) => !m.closedAt && m.type !== 'cash' && !accountIds.has(m.id) && !(m.parentId && accountIds.has(m.parentId)),
-    )
+    const standaloneCards = standaloneCardsOf(s.paymentMethods, accountIds)
     const needsCash = !s.paymentMethods.some((m) => m.type === 'cash' && isSetUpAccount(m))
     return { accounts, standaloneCards, ...totals, needsCash }
   }, [s, rates])

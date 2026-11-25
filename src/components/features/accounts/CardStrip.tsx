@@ -9,10 +9,12 @@ interface CardStripProps {
   onAddCard: () => void
   /** The account the cards hang under; its bank names them. */
   parent?: PaymentMethod
+  /** Replaces the "N cards" label (a prepaid account drawn as its own face reads "Prepaid"). */
+  label?: string
 }
 
 /** Up to two 88×56 card faces side by side, "+N" for more, a dashed add slot when there are none. Always LTR. */
-export function CardStrip({ cards, onOpen, onAddCard, parent }: CardStripProps) {
+export function CardStrip({ cards, onOpen, onAddCard, parent, label }: CardStripProps) {
   const t = useT().accountsPage
   if (cards.length === 0) {
     return (
@@ -27,10 +29,10 @@ export function CardStrip({ cards, onOpen, onAddCard, parent }: CardStripProps) 
   const shown = cards.slice(0, 2)
   const more = cards.length - shown.length
   return (
-    <button type="button" onClick={onOpen} dir="ltr" data-raw-button-ok="a whole-strip tap target under the account row" aria-label={t.cardsCount(cards.length)} className="flex min-h-11 w-full items-center gap-2 px-4 pb-3 ps-[76px] text-start">
+    <button type="button" onClick={onOpen} dir="ltr" data-raw-button-ok="a whole-strip tap target under the account row" aria-label={label ?? t.cardsCount(cards.length)} className="flex min-h-11 w-full items-center gap-2 px-4 pb-3 ps-[76px] text-start">
       {shown.map((c) => <CardFaceChip key={c.id} method={c} parent={parent} />)}
       {more > 0 ? <span className="flex h-14 w-11 items-center justify-center rounded-[7px] bg-[var(--color-brand-elevated)] font-mono-numbers text-xs font-bold text-[var(--color-brand-text-secondary)]">+{more}</span> : null}
-      <span className="ms-auto whitespace-nowrap text-xs font-semibold text-[var(--color-brand-text-muted)]">{t.cardsCount(cards.length)}</span>
+      <span className="ms-auto whitespace-nowrap text-xs font-semibold text-[var(--color-brand-text-muted)]">{label ?? t.cardsCount(cards.length)}</span>
     </button>
   )
 }

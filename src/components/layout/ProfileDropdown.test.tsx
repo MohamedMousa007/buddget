@@ -56,7 +56,7 @@ describe('the profile menu', () => {
     expect(out.indexOf('href="/reports"')).toBeLessThan(out.indexOf('bg-[var(--color-cat-3)]'))
   })
 
-  it('a Free member: name, tier chip, a Try free Pro row, the six tools, and nothing else', () => {
+  it('a Free member: name, tier chip, a Try free Pro row, the five tools, and nothing else', () => {
     const out = render()
     expect(out).toContain('Layla Hassan')
     expect(out).toContain('Emerald')
@@ -64,7 +64,7 @@ describe('the profile menu', () => {
     expect(out).toContain('Try free')
     expect(out).toContain('data-pro-mark')
     for (const href of ['/goals', '/paydays', '/subscriptions', '/reports', '/settings"']) expect(out).toContain(`href="${href.replace('"', '')}`)
-    expect(out).toContain('Cards')
+    expect(out).not.toContain('Cards')
     expect(out).not.toContain('buddget staff')
     expect(out).not.toContain('Sign out')
     expect(out).not.toContain('Help')

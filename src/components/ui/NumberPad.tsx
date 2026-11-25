@@ -33,6 +33,10 @@ export interface NumberPadProps {
    *  shows the number (the expense-form case); TRUE for a standalone pad. */
   showDisplay?: boolean
   dir?: 'ltr' | 'rtl'
+  /** Adds a full-width "± Overdrawn (minus)" key under the digits (a bank balance). Off by default. */
+  allowNegative?: boolean
+  negative?: boolean
+  onNegativeChange?: (negative: boolean) => void
 }
 
 /** Pure input reducer — the single source of truth for typing behaviour. */
@@ -76,6 +80,9 @@ export function NumberPad({
   label,
   showDisplay = false,
   dir = 'ltr',
+  allowNegative = false,
+  negative = false,
+  onNegativeChange,
 }: NumberPadProps) {
   const t = useT()
   const isPin = mode === 'pin'
@@ -254,6 +261,17 @@ export function NumberPad({
               </button>
             )
           })}
+          {allowNegative ? (
+            <button
+              type="button"
+              className="np-key np-key-sign"
+              aria-pressed={negative}
+              onPointerDown={(e) => { e.preventDefault(); onNegativeChange?.(!negative) }}
+              onClick={(e) => { if (e.detail === 0) onNegativeChange?.(!negative) }}
+            >
+              {negative ? t.accountsPage.negativeOn : t.accountsPage.negativeKey}
+            </button>
+          ) : null}
         </div>
       </motion.div>
     </div>

@@ -32,11 +32,11 @@ test('N1 navigation: every main tab, header Budget, profile menu pages @desktop'
     await expect(page).toHaveURL(/budget-setup/)
     await healthy(page)
   })
-  await test.step('profile menu > Cards opens the payment methods sheet', async () => {
+  await test.step('profile menu has no Cards item (cards live in Accounts)', async () => {
     await goto(page, '/flow')
     await page.getByRole('button', { name: /^Profile menu/ }).click()
-    await page.getByRole('menuitem', { name: 'Cards', exact: true }).click()
-    await expect(page.getByRole('dialog').or(page.getByRole('heading', { name: /Payment methods/ })).first()).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Goals', exact: true })).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Cards', exact: true })).toHaveCount(0)
     await page.keyboard.press('Escape')
   })
   for (const [item, path] of [

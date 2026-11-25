@@ -36,7 +36,7 @@ const SHEET_IMPORTERS = [
   () => import('./AddDebtSheet'),
   () => import('./AddRecurringDebtPaymentSheet'),
   () => import('./AddCreditCardSheet'),
-  () => import('./PaymentMethodsSheet'),
+  () => import('./AddPaymentMethodSheet'),
   () => import('./LifestyleSheet'),
   () => import('./HouseholdRentSheet'),
   () => import('@/components/features/ai-chat/AIChat'),
@@ -65,7 +65,7 @@ const GlobalAssignIncomeSheet = dynamic(offlineSafe(() => import('./AssignIncome
 const AddDebtSheet = dynamic(offlineSafe(() => import('./AddDebtSheet').then((m) => m.AddDebtSheet)), { ssr: false, loading: SheetFallback })
 const AddRecurringDebtPaymentSheet = dynamic(offlineSafe(() => import('./AddRecurringDebtPaymentSheet').then((m) => m.AddRecurringDebtPaymentSheet)), { ssr: false, loading: SheetFallback })
 const AddCreditCardSheet = dynamic(offlineSafe(() => import('./AddCreditCardSheet').then((m) => m.AddCreditCardSheet)), { ssr: false, loading: SheetFallback })
-const PaymentMethodsSheet = dynamic(offlineSafe(() => import('./PaymentMethodsSheet').then((m) => m.PaymentMethodsSheet)), { ssr: false, loading: SheetFallback })
+const AddPaymentMethodSheet = dynamic(offlineSafe(() => import('./AddPaymentMethodSheet').then((m) => m.AddPaymentMethodSheet)), { ssr: false, loading: SheetFallback })
 const LifestyleSheet = dynamic(offlineSafe(() => import('./LifestyleSheet').then((m) => m.LifestyleSheet)), { ssr: false, loading: SheetFallback })
 const HouseholdRentSheet = dynamic(offlineSafe(() => import('./HouseholdRentSheet').then((m) => m.HouseholdRentSheet)), { ssr: false, loading: SheetFallback })
 const AIChat = dynamic(offlineSafe(() => import('@/components/features/ai-chat/AIChat').then((m) => m.AIChat)), { ssr: false, loading: SheetFallback })
@@ -90,7 +90,7 @@ export function ModalProvider() {
       <AddDebtSheet />
       <AddRecurringDebtPaymentSheet />
       <AddCreditCardSheet />
-      <PaymentMethodsSheet />
+      <AddPaymentMethodSheet />
       <LifestyleSheet />
       <HouseholdRentSheet />
       <EditExpenseSheet />

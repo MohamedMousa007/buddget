@@ -1,6 +1,7 @@
 import type { PaymentMethod } from '@/lib/store/types'
 import type { Dictionary } from '@/lib/i18n/types'
 import { inkFor } from '@/lib/ui/contrast'
+import { accountTitle } from '@/lib/accounts/accountTitle'
 import { PAYMENT_TYPE_META, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 
 /** "CIB" stays "CIB"; "Vodafone Cash" becomes "VC". */
@@ -64,10 +65,7 @@ export function moneyFlex(n: number, currency: string): string {
   return /^\.0+$/.test(dec) ? int : int + dec
 }
 
-/** "CIB ••2016" is stored as one name; the list shows the provider and the digits separately. */
-export function accountTitle(m: PaymentMethod): string {
-  return decomposePaymentMethodName(m.name, m.last4).provider
-}
+export { accountTitle }
 
 /** What identifies the account beside its name: the user's label, else the last four digits, else nothing. */
 export function accountIdentifier(m: Pick<PaymentMethod, 'label' | 'last4'>): string | null {

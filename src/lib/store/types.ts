@@ -1152,6 +1152,8 @@ export interface FinanceStore {
   /** True when the last fetch failed but a prior good price is being shown (delayed). */
   goldPriceStale: boolean
   lastRatesFetch: string | null
+  /** When each FX pair key was last returned by a live fetch (rateFreshness): stale or absent = no live rate. */
+  rateFetchedAt: Record<string, string>
   /**
    * True once the initial server pull (pullAll or pullCore) for the current
    * userId has completed. Resets to false on sign-out and on userId change.

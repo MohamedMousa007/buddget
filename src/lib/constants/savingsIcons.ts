@@ -18,7 +18,8 @@ export const SAVINGS_TYPE_ICONS: Record<SavingsType, string> = {
  *
  * `PiggyBank` is deliberately absent and must never be added: the pig is not an
  * acceptable savings symbol for this product's audience. `Coins` is the canonical
- * savings glyph (it is what the bottom nav uses). See docs/DESIGN_SYSTEM.md.
+ * savings glyph (it is what the bottom nav uses); `Vault` marks money set aside. A legacy stored
+ * `PiggyBank` still resolves (to Vault) in SavingsAccountIcon. See docs/DESIGN_SYSTEM.md.
  */
 export const OTHER_SAVINGS_ICON_KEYS = ['Wallet', 'Coins', 'Vault', 'Star', 'Briefcase'] as const
 

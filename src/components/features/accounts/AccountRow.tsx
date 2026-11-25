@@ -1,6 +1,7 @@
 import type { AccountView } from '@/lib/accounts/useAccounts'
 import { MASK } from '@/lib/privacy/mask'
 import { useT } from '@/lib/i18n'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { BrandMark } from './BrandMark'
 import { bankLogoForName } from '@/lib/payment/bankLogos'
 import { CardStrip } from './CardStrip'
@@ -16,27 +17,33 @@ interface AccountRowProps {
   gap?: number
   /** Another account has the same provider: the currency moves into the subtitle where it can be read. */
   shared?: boolean
+  /** A foreign-currency balance in the base currency ("≈ 4,850 EGP", or "No rate today"), under the amount. */
+  baseEquivalent?: string
   onOpen: () => void
   onFix?: () => void
   onAddCard: () => void
 }
 
 /** One account: mark, name, balance and its cards. Only exceptions get colour. */
-export function AccountRow({ account, masked, gap, shared = false, onOpen, onFix, onAddCard }: AccountRowProps) {
+export function AccountRow({ account, masked, gap, shared = false, baseEquivalent, onOpen, onFix, onAddCard }: AccountRowProps) {
   const dict = useT()
   const t = dict.accountsPage
+  const base = useFinanceStore((s) => String(s.settings.baseCurrency))
   const { method, balance, cards } = account
   const cur = String(method.currency)
   const money = balance ? splitMoney(balance.balance, cur) : null
   const hasGap = gap != null && gap !== 0
+  const isCash = method.type === 'cash'
+  const isPrepaid = method.type === 'prepaid_card'
   const sub = method.excluded
     ? dict.exclusion.reasonMethod
     : hasGap
     ? (gap > 0 ? t.extraFindIt : t.missingFindIt)(splitMoney(Math.abs(gap), cur).int)
     : balance
-      ? accountSubtitle(method, shared) ?? (method.type === 'wallet' ? t.typeWallet : '')
+      ? isCash
+        ? [t.estimateCountedByYou, accountSubtitle(method, shared)].filter(Boolean).join(' · ')
+        : accountSubtitle(method, shared) ?? (method.type === 'wallet' ? t.typeWallet : '')
       : t.addBalanceToInclude
-  const isCash = method.type === 'cash'
   return (
     <div>
       <button type="button" onClick={hasGap && onFix ? onFix : onOpen} data-raw-button-ok="a whole-row tap target, sized by its content"
@@ -46,8 +53,8 @@ export function AccountRow({ account, masked, gap, shared = false, onOpen, onFix
         <span className="min-w-0 flex-1">
           <span className="flex min-w-0 items-center gap-1.5">
             <span className="truncate text-base font-semibold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{accountTitle(method)}</span>
-            {shared ? null : <Badge variant="muted" size="xs" className="font-mono-numbers">{cur}</Badge>}
-            {isCash && balance ? <Badge variant="muted" size="xs">{t.cashEstimate}</Badge> : null}
+            {shared || cur === base ? null : <Badge variant="muted" size="xs" className="font-mono-numbers">{cur}</Badge>}
+            {isPrepaid ? <Badge variant="muted" size="xs">{t.typePrepaid}</Badge> : null}
           </span>
           <span className={`mt-0.5 block truncate text-[0.8125rem] ${hasGap ? 'font-semibold text-[var(--color-brand-amber)]' : 'text-[var(--color-brand-text-muted)]'}`}>{sub}</span>
         </span>
@@ -60,13 +67,17 @@ export function AccountRow({ account, masked, gap, shared = false, onOpen, onFix
               {!masked && balance && balance.held > 0 ? (
                 <span dir="auto" className="mt-0.5 block font-mono-numbers text-[0.71875rem] font-semibold text-[var(--color-brand-primary-ink)]">{t.freeLabel(splitMoney(balance.free, cur).int)}</span>
               ) : null}
+              {!masked && baseEquivalent ? (
+                <span dir="auto" className="mt-0.5 block whitespace-nowrap font-mono-numbers text-[0.71875rem] text-[var(--color-brand-text-muted)]">{baseEquivalent}</span>
+              ) : null}
             </>
           ) : (
             <span className="text-sm font-semibold text-[var(--color-brand-primary-ink)]">{t.setBalance}</span>
           )}
         </span>
       </button>
-      {method.type === 'bank_account' ? <CardStrip cards={cards} onOpen={onOpen} onAddCard={onAddCard} parent={method} /> : null}
+      {method.type === 'bank_account' || method.type === 'wallet' ? <CardStrip cards={cards} onOpen={onOpen} onAddCard={onAddCard} parent={method} /> : null}
+      {isPrepaid ? <CardStrip cards={[method]} onOpen={onOpen} onAddCard={onAddCard} label={t.typePrepaid} /> : null}
     </div>
   )
 }

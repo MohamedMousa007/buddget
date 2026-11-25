@@ -44,6 +44,8 @@ export interface ProviderPickerSheetProps {
   onClose: () => void
   /** Locked context: only show providers that issue this type. */
   issuesType?: PaymentMethodType
+  /** Hide providers whose primary type is one of these (the card-only form hides wallets: their cards live inside the wallet account). */
+  excludeTypes?: PaymentMethodType[]
   zIndexClassName?: string
   /** Options to list instead of the brand catalogue. */
   items?: ProviderPickerItem[]
@@ -61,7 +63,7 @@ export function filterPickerItems(items: readonly ProviderPickerItem[], query: s
 }
 
 export function ProviderPickerSheet({
-  open, selectedId, popularIds = [], onPick, onCustom, onClose, issuesType, zIndexClassName,
+  open, selectedId, popularIds = [], onPick, onCustom, onClose, issuesType, excludeTypes, zIndexClassName,
   items, title, searchPlaceholder, customLabel: customLabelOverride,
 }: ProviderPickerSheetProps) {
   const t = useT()
@@ -71,7 +73,7 @@ export function ProviderPickerSheet({
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase()
     const ids = Object.keys(PAYMENT_BRANDS).filter(
-      (id) => !issuesType || brandIssuesType(PAYMENT_BRANDS[id], issuesType),
+      (id) => (!issuesType || brandIssuesType(PAYMENT_BRANDS[id], issuesType)) && !excludeTypes?.includes(PAYMENT_BRANDS[id].type),
     )
     if (q) {
       const hits = ids.filter((id) => (`${PAYMENT_BRANDS[id].name} ${PAYMENT_BRANDS[id].full ?? ''}`).toLowerCase().includes(q))
@@ -89,7 +91,7 @@ export function ProviderPickerSheet({
       { kind: 'header' as const, label: t.paymentMethods.allProviders },
       ...rest.map((id) => ({ kind: 'item' as const, id })),
     ]
-  }, [query, popularIds, t, issuesType])
+  }, [query, popularIds, t, issuesType, excludeTypes])
 
   const customLabel = customLabelOverride ?? (query.trim()
     ? t.paymentMethods.addCustomNamed.replace('{q}', query.trim())

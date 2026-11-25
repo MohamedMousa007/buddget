@@ -171,6 +171,8 @@
   --shadow-sm: 0 1px 2px rgba(13, 26, 24, .06);
   --shadow-md: 0 1px 2px rgba(13, 26, 24, .05), 0 10px 24px -14px rgba(13, 26, 24, .22);
   --shadow-lg: 0 2px 6px rgba(13, 26, 24, .06), 0 24px 48px -20px rgba(13, 26, 24, .28);
+  /* The edge a tucked card casts on the one behind it (provider card stacks). */
+  --shadow-stack-edge: 4px 0 8px -3px rgba(13, 26, 24, .38);
 
   /* Chart ramp — the kit's 6-colour category ramp. */
   /* Kit values kept wherever they already clear 3:1 as an icon glyph on white.
@@ -198,6 +200,9 @@
   --flow-band-in: color-mix(in oklab, var(--color-brand-green) 35%, white);
   /* Status-chip text on the inverted (fg-filled) chip: tone, dark enough for either theme's fill. */
   --flow-chip-ok: var(--flow-band-b);
+  /* Provider hero (Accounts): the brand colour mixed toward black, so white text clears AA on any brand. */
+  --provider-hero-amt: 62%;
+  --provider-hero-base: black;
   --flow-chip-warn: color-mix(in oklab, var(--color-brand-amber) 72%, black);
   --flow-chip-over: color-mix(in oklab, var(--color-brand-red) 80%, black);
 
@@ -357,6 +362,7 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
   --shadow-md: 0 1px 2px rgba(0, 0, 0, .4), 0 14px 32px -18px rgba(0, 0, 0, .7);
   --shadow-lg: 0 2px 8px rgba(0, 0, 0, .5), 0 28px 56px -22px rgba(0, 0, 0, .8);
+  --shadow-stack-edge: 4px 0 8px -3px rgba(0, 0, 0, .6);
 
   --color-cat-1: #1FC3B2;
   --color-cat-2: #EDC463;
@@ -371,6 +377,8 @@
   --flow-band-fg-2: color-mix(in oklab, var(--flow-band-fg) 72%, var(--flow-band-b));
   --flow-band-deep: color-mix(in oklab, black 22%, transparent);
   --flow-band-in: var(--color-brand-green);
+  --provider-hero-amt: 36%;
+  --provider-hero-base: var(--color-brand-bg);
 
   --cat-rent-fg: #FF6B6B;
   --cat-rent-bg: rgba(255, 107, 107, 0.13);
@@ -730,6 +738,8 @@ html[data-locale='ar'] .prose-rtl {
 .dark .np-key:active { background: var(--color-brand-border-strong); }
 .np-key-action { background: transparent !important; box-shadow: none; color: var(--color-brand-text-secondary); }
 .np-key-action:active { background: var(--color-brand-sunken) !important; }
+.np-key-sign { grid-column: 1 / -1; height: 46px; font-size: 15px; font-weight: 600; color: var(--color-brand-text-secondary); transition-property: background-color, color; transition-duration: 150ms; }
+.np-key-sign[aria-pressed='true'] { background: var(--color-brand-red-soft); color: var(--color-brand-red); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-brand-red) 35%, transparent); }
 @media (prefers-reduced-motion: reduce) { .np-key:active { transform: none; } }
 
 

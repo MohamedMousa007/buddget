@@ -31,8 +31,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Coins,
   Vault,
   // Legacy: rows imported from an old backup may still carry 'PiggyBank'.
-  // The pig is banned as a savings symbol — resolve it to the canonical Coins.
-  PiggyBank: Coins,
+  // The pig is banned as a savings symbol: the stored key resolves to Vault, the set-aside glyph.
+  PiggyBank: Vault,
   Star,
   Briefcase,
 }

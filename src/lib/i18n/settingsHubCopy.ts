@@ -140,7 +140,7 @@ export interface SettingsHubCopy {
   }
   items: Record<SettingId, SettingItemCopy>
   notCounted: { subtitle: string; intro: string; accounts: string; cards: string; follows: (name: string) => string; empty: string; some: (n: number) => string }
-  page: { founderNote: string; betaNote: string; editProfile: string; membership: string; preferences: string; tracking: string; privacy: string; support: string; appearance: string; themeSystem: string; notifications: string; buddgyAi: string; dataBackup: string; dataBackupHint: string; helpFeedback: string; aboutLegal: string; twoFactorOn: string; staff: string; staffRole: string; openPortal: string; cards: string }
+  page: { founderNote: string; betaNote: string; editProfile: string; membership: string; preferences: string; tracking: string; privacy: string; support: string; appearance: string; themeSystem: string; notifications: string; buddgyAi: string; dataBackup: string; dataBackupHint: string; helpFeedback: string; aboutLegal: string; twoFactorOn: string; staff: string; staffRole: string; openPortal: string }
   menu: { helpFeedback: string; openSettings: string; signIn: string; closeMenu: string; adminPortal: string; admin: string }
   currency: {
     pickTitle: string
@@ -363,7 +363,7 @@ const en: SettingsHubCopy = {
     privacy: { label: 'Privacy policy', keywords: 'legal data خصوصية' },
     about: { label: 'About buddget', keywords: 'version story contact social حول الإصدار' },
   },
-  page: { founderNote: 'Only you see this, as a member of the Founders club', betaNote: 'Only you see this, as a beta tester', editProfile: 'Edit profile', membership: 'Membership', preferences: 'Preferences', tracking: 'Tracking & Buddgy', privacy: 'Privacy & data', support: 'Support', appearance: 'Appearance', themeSystem: 'System', notifications: 'Notifications', buddgyAi: 'Buddgy & AI', dataBackup: 'Data & backup', dataBackupHint: 'Export, restore, not counted', helpFeedback: 'Help & feedback', aboutLegal: 'About, privacy, terms', twoFactorOn: '2FA on', staff: 'buddget staff', staffRole: 'Admin', openPortal: 'Open portal', cards: 'Cards' },
+  page: { founderNote: 'Only you see this, as a member of the Founders club', betaNote: 'Only you see this, as a beta tester', editProfile: 'Edit profile', membership: 'Membership', preferences: 'Preferences', tracking: 'Tracking & Buddgy', privacy: 'Privacy & data', support: 'Support', appearance: 'Appearance', themeSystem: 'System', notifications: 'Notifications', buddgyAi: 'Buddgy & AI', dataBackup: 'Data & backup', dataBackupHint: 'Export, restore, not counted', helpFeedback: 'Help & feedback', aboutLegal: 'About, privacy, terms', twoFactorOn: '2FA on', staff: 'buddget staff', staffRole: 'Admin', openPortal: 'Open portal' },
   menu: { helpFeedback: 'Help & feedback', openSettings: 'Settings', signIn: 'Sign in', closeMenu: 'Close menu', adminPortal: 'Admin portal', admin: 'Admin' },
   currency: {
     pickTitle: 'Main currency',
@@ -586,7 +586,7 @@ const ar: SettingsHubCopy = {
     privacy: { label: 'سياسة الخصوصية', keywords: 'legal data privacy خصوصية' },
     about: { label: 'حول بادجت', keywords: 'version story contact social about حول الإصدار' },
   },
-  page: { founderNote: 'يظهر هذا لك وحدك لأنك عضو في نادي المؤسسين', betaNote: 'يظهر هذا لك وحدك لأنك مختبر تجريبي', editProfile: 'تعديل الملف الشخصي', membership: 'العضوية', preferences: 'التفضيلات', tracking: 'التتبع وبادجي', privacy: 'الخصوصية والبيانات', support: 'الدعم', appearance: 'المظهر', themeSystem: 'النظام', notifications: 'الإشعارات', buddgyAi: 'بادجي والذكاء الاصطناعي', dataBackup: 'البيانات والنسخ الاحتياطي', dataBackupHint: 'التصدير والاستعادة وما لا يُحتسب', helpFeedback: 'المساعدة والملاحظات', aboutLegal: 'حول التطبيق والخصوصية والشروط', twoFactorOn: 'مفعّل', staff: 'فريق بادجت', staffRole: 'مسؤول', openPortal: 'فتح اللوحة', cards: 'البطاقات' },
+  page: { founderNote: 'يظهر هذا لك وحدك لأنك عضو في نادي المؤسسين', betaNote: 'يظهر هذا لك وحدك لأنك مختبر تجريبي', editProfile: 'تعديل الملف الشخصي', membership: 'العضوية', preferences: 'التفضيلات', tracking: 'التتبع وبادجي', privacy: 'الخصوصية والبيانات', support: 'الدعم', appearance: 'المظهر', themeSystem: 'النظام', notifications: 'الإشعارات', buddgyAi: 'بادجي والذكاء الاصطناعي', dataBackup: 'البيانات والنسخ الاحتياطي', dataBackupHint: 'التصدير والاستعادة وما لا يُحتسب', helpFeedback: 'المساعدة والملاحظات', aboutLegal: 'حول التطبيق والخصوصية والشروط', twoFactorOn: 'مفعّل', staff: 'فريق بادجت', staffRole: 'مسؤول', openPortal: 'فتح اللوحة' },
   menu: { helpFeedback: 'المساعدة والملاحظات', openSettings: 'الإعدادات', signIn: 'تسجيل الدخول', closeMenu: 'إغلاق القائمة', adminPortal: 'لوحة الإدارة', admin: 'مسؤول' },
   currency: {
     pickTitle: 'العملة الأساسية',

@@ -6,6 +6,9 @@ import { INK_DARK, INK_LIGHT } from '@/lib/ui/contrast'
 export const FACE_W = 340
 export const FACE_H = 214
 
+/** Fractal-noise grain for metal faces: white specks on dark metal, black on light. */
+const METAL_NOISE = (light: boolean) => `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 ${light ? 1 : 0} 0 0 0 0 ${light ? 1 : 0} 0 0 0 0 ${light ? 1 : 0} 0 0 0 ${light ? .14 : .12} 0'/%3E%3C/filter%3E%3Crect width='96' height='96' filter='url(%23n)'/%3E%3C/svg%3E")`
+
 /** Ink, background and print-line colour shared by the large face and the mini card. */
 export function faceLook(themeKey: CardThemeKey, style: CardStyle, brushAlpha: { light: number; dark: number }) {
   const t = CARD_THEMES[themeKey]
@@ -14,11 +17,12 @@ export function faceLook(themeKey: CardThemeKey, style: CardStyle, brushAlpha: {
   const brushed = metal
     ? `repeating-linear-gradient(90deg, rgba(255,255,255,${lightInk ? brushAlpha.light : brushAlpha.dark}) 0 1px, transparent 1px 3px), `
     : ''
+  const grain = metal ? `${METAL_NOISE(lightInk)}, repeating-linear-gradient(90deg, rgba(0,0,0,${lightInk ? .16 : .05}) 0 1px, transparent 1px 5px), ` : ''
   return {
     lightInk,
     metal,
     ink: lightInk ? INK_LIGHT : INK_DARK,
-    background: `${brushed}linear-gradient(135deg, ${t.a} 0%, ${t.b} 100%)`,
+    background: `${grain}${brushed}linear-gradient(135deg, ${t.a} 0%, ${t.b} 100%)`,
   }
 }
 

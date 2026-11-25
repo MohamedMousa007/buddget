@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import {
-  ArrowDownUp, BarChart3, Brain, Compass, CreditCard, Landmark, Layers, Pencil, PieChart, PiggyBank, Receipt, Repeat, Settings, Target, Trash2, User, Wallet,
+  ArrowDownUp, BarChart3, Brain, Compass, CreditCard, Landmark, Layers, Pencil, PieChart, Receipt, Repeat, Settings, Target, Trash2, User, Vault, Wallet,
   type LucideIcon,
 } from 'lucide-react'
 import { AfterState } from '@/components/features/ai-chat/cards/AfterState'
@@ -33,7 +33,7 @@ const DOMAIN_ICON: Record<ToolDomain, LucideIcon> = {
   debts: Landmark,
   subscriptions: Repeat,
   goals: Target,
-  savings: PiggyBank,
+  savings: Vault,
   budget: PieChart,
   payments: CreditCard,
   settings: Settings,

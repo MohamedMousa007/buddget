@@ -4,7 +4,7 @@ import { useInsightsDot } from '@/lib/insights/useInsightsDot'
 import { useEffect, useRef, useCallback, useState, type ComponentType, type RefObject } from 'react'
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useNavPath } from '@/lib/navigation/navStore'
-import { BarChart3, Bell, CalendarClock, CreditCard, LogIn, Settings, ShieldCheck, Target } from 'lucide-react'
+import { BarChart3, Bell, CalendarClock, LogIn, Settings, ShieldCheck, Target } from 'lucide-react'
 import { RotateCwClock } from '@/components/ui/icons/RotateCwClock'
 import { Badge } from '@/components/ui/badge'
 import { SetupChecklistSheet } from '@/components/features/setup/SetupProgressChip'
@@ -17,7 +17,6 @@ import { MemberHead } from '@/components/features/membership/MemberHead'
 import { ProPlanRow } from '@/components/features/membership/ProPlanRow'
 import { Button } from '@/components/ui/button'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import { registerBackGuard } from '@/lib/navigation/backGuard'
 import { navigate } from '@/lib/navigation/navigate'
@@ -49,7 +48,6 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
   const insightsDot = useInsightsDot()
   const { user, openAuthModal } = useAuth()
   const profile = useFinanceStore(useShallow((s) => s.profile))
-  const setActiveModal = useSettingsStore((s) => s.setActiveModal)
   const isStaff = useStaffAccess()
   const prevPathname = useRef(pathname)
   const { pct } = useSetupProgress()
@@ -194,16 +192,6 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
             {link('/goals', Target, t.nav.goals)}
             {link('/paydays', CalendarClock, t.nav.paydays)}
             {link('/subscriptions', RotateCwClock, t.nav.subscriptions)}
-            <button
-              type="button"
-              data-raw-button-ok="menu tile sharing the tile class with the other tools"
-              onClick={() => { setActiveModal('paymentMethods'); onClose() }}
-              className={tile}
-              role="menuitem"
-            >
-              <CreditCard />
-              <span className={localeInlineLabelClass(locale)}>{copy.page.cards}</span>
-            </button>
             {link('/reports', BarChart3, t.nav.reports)}
             {link('/settings', Settings, copy.menu.openSettings)}
           </div>

@@ -80,6 +80,7 @@ import { migrateIdsToUuid } from '@/lib/store/migrations/v17_uuid_remap'
 import { resendCashDebtPayments } from '@/lib/store/migrations/v23_cash_debt_payment_resend'
 import { noteRestored } from '@/lib/store/undoWatch'
 import { dropMistypedFields } from '@/lib/store/persistShape'
+import { stampRateKeys } from '@/lib/market/rateFreshness'
 import { decomposePaymentMethodName, normalizePaymentMethodType } from '@/lib/payment/paymentMethodDefaults'
 const PERSIST_VERSION = 23
 
@@ -278,6 +279,7 @@ export const useFinanceStore = create<FinanceStore>()(
       goldPriceAvailable: false,
       goldPriceStale: false,
       lastRatesFetch: null,
+      rateFetchedAt: {},
       dataReady: false,
       setDataReady: (v) => set({ dataReady: v }),
 
@@ -2071,10 +2073,11 @@ export const useFinanceStore = create<FinanceStore>()(
         })),
 
       updateRates: (rates) =>
-        set((state) => ({
-          exchangeRates: { ...state.exchangeRates, ...withoutGoldRates(rates) },
-          lastRatesFetch: new Date().toISOString(),
-        })),
+        set((state) => {
+          const live = withoutGoldRates(rates)
+          const at = new Date().toISOString()
+          return { exchangeRates: { ...state.exchangeRates, ...live }, lastRatesFetch: at, rateFetchedAt: stampRateKeys(state.rateFetchedAt ?? {}, live, at) }
+        }),
 
       updateGoldPrice: (price) =>
         set({
@@ -2232,6 +2235,7 @@ export const useFinanceStore = create<FinanceStore>()(
           goldPriceAvailable: false,
           goldPriceStale: false,
           lastRatesFetch: null,
+          rateFetchedAt: {},
           dataReady: false,
         }),
 
@@ -2459,6 +2463,7 @@ export const useFinanceStore = create<FinanceStore>()(
           goldPriceAvailable: false,
           goldPriceStale: false,
           lastRatesFetch: null,
+          rateFetchedAt: {},
         } as never
       },
       storage: persistStorage,
