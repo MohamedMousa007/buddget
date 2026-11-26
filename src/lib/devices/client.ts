@@ -56,17 +56,27 @@ const QUEUE_REPORT_EVERY_MS = 10 * 60_000
  * Tells the server how many captured SMS this phone still holds and why the last forward ended, so a backlog that
  * never clears is visible to staff. Sent when the count changes or every 10 minutes while a backlog exists.
  */
-export async function reportSmsQueue(status: { pendingCount?: number; oldestPendingAt?: string; lastResult?: string; evictedCount?: number } | null): Promise<void> {
+/**
+ * The phone's own capture result (the Shortcut / receiver) stays first; a failed replay from the app is added after it,
+ * so a stale-session `http_401` on the replay no longer hides what the Shortcut did. Fits the server's 60-character field.
+ */
+export function smsLastResult(captureResult: string | null | undefined, drainOutcome: string | null | undefined): string | null {
+  const drainFailed = drainOutcome && drainOutcome !== 'delivered' ? `drain:${drainOutcome}`.slice(0, 30) : null
+  const capture = (captureResult || '').slice(0, drainFailed ? 60 - drainFailed.length - 1 : 60)
+  return [capture || null, drainFailed].filter(Boolean).join(' ') || null
+}
+
+export async function reportSmsQueue(status: { pendingCount?: number; oldestPendingAt?: string; lastResult?: string; evictedCount?: number; drainOutcome?: string | null } | null): Promise<void> {
   if (!isNative() || !status) return
   const pending = status.pendingCount ?? 0
   const evicted = status.evictedCount ?? 0
-  const changed = pending !== lastQueueReport.pending || evicted !== lastQueueReport.evicted
+  const changed = pending !== lastQueueReport.pending || evicted !== lastQueueReport.evicted || lastQueueReport.at === 0
   if (!changed && (pending === 0 || Date.now() - lastQueueReport.at < QUEUE_REPORT_EVERY_MS)) return
   try {
     const res = await apiFetchAuth('/api/devices', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...(await selfReport()), smsQueue: { pending, oldestAt: status.oldestPendingAt ?? null, lastResult: status.lastResult ?? null, evicted } }),
+      body: JSON.stringify({ ...(await selfReport()), smsQueue: { pending, oldestAt: status.oldestPendingAt ?? null, lastResult: smsLastResult(status.lastResult, status.drainOutcome), evicted } }),
     })
     if (res.ok) lastQueueReport = { pending, evicted, at: Date.now() }
   } catch {

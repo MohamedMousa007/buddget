@@ -258,7 +258,18 @@ export async function revokeOwnIngestToken(): Promise<void> {
  * failed fetch must leave the previously-stored ingest token untouched: it
  * never expires, so stale-but-valid beats clobbered.
  */
-export async function ensureIngestToken(accessToken: string, userId: string): Promise<boolean> {
+const issuing = new Map<string, Promise<boolean>>()
+
+/** Start-up, sign-in, resume and the settings switch can all ask at once: they share one mint per account (cleared once it settles). */
+export function ensureIngestToken(accessToken: string, userId: string): Promise<boolean> {
+  const inFlight = issuing.get(userId)
+  if (inFlight) return inFlight
+  const run = issueIngestToken(accessToken, userId).finally(() => issuing.delete(userId))
+  issuing.set(userId, run)
+  return run
+}
+
+async function issueIngestToken(accessToken: string, userId: string): Promise<boolean> {
   if (!isNative() || !accessToken || !userId) return false
   const { apiFetchAuth } = await import('@/lib/apiBase')
   for (let attempt = 0; attempt < 3; attempt++) {

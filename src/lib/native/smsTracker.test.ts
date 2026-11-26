@@ -100,6 +100,17 @@ describe('ensureIngestToken', () => {
     expect(mocks.saveToken).not.toHaveBeenCalled()
   })
 
+  it('shares one mint between callers that ask at once, and mints again once it settles', async () => {
+    mocks.fetch.mockImplementation(async () => new Response(JSON.stringify({ token: '11111111-1111-4111-8111-111111111111' }), { status: 200 }))
+    const sms = await freshModule()
+    const results = await Promise.all([sms.ensureIngestToken('jwt', 'user-1'), sms.ensureIngestToken('jwt', 'user-1'), sms.ensureIngestToken('jwt', 'user-1')])
+    expect(results).toEqual([true, true, true])
+    expect(mocks.fetch).toHaveBeenCalledTimes(1)
+    expect(mocks.saveToken).toHaveBeenCalledTimes(1)
+    await sms.ensureIngestToken('jwt', 'user-1')
+    expect(mocks.fetch).toHaveBeenCalledTimes(2)
+  })
+
   it('no-ops without a session token or a user id', async () => {
     const sms = await freshModule()
     expect(await sms.ensureIngestToken('', 'user-1')).toBe(false)
