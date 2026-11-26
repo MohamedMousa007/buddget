@@ -15,7 +15,7 @@ export interface PaceInput {
 
 export interface PaceResult {
   periods: number
-  /** Amount asked per period (month or quarter). */
+  /** Amount asked per period (month, quarter or year). */
   asked: number
   /** asked / usual keep per same period; null when unknown. */
   ratio: number | null
@@ -31,7 +31,9 @@ export interface PaceResult {
 export const USUAL_TICK = 62
 const MAX_ALT_MONTHS = 60
 
-const step = (f: GoalFrequency) => (f === 'quarterly' ? 3 : 1)
+/** Months in one period of a goal's plan: 1, 3 or 12. */
+export const periodMonths = (f: GoalFrequency): 1 | 3 | 12 => (f === 'yearly' ? 12 : f === 'quarterly' ? 3 : 1)
+const step = periodMonths
 
 export function monthsUntil(now: Date, iso: string): number {
   const y = Number(iso.slice(0, 4))

@@ -27,6 +27,21 @@ describe('formatCurrency signs and precision', () => {
   })
 })
 
+describe('formatCurrency smart cents', () => {
+  it('drops .00 when there are no cents and keeps them when there are', () => {
+    expect(formatCurrency(1250, 'USD', 'smart')).toBe('$1,250')
+    expect(formatCurrency(1250.5, 'USD', 'smart')).toBe('$1,250.50')
+    expect(formatCurrency(-19.99, 'AED', 'smart')).toBe('-Dh 19.99')
+    expect(formatCurrency(1250.004, 'USD', 'smart')).toBe('$1,250')
+  })
+  it('follows three-decimal currencies and leaves gold and crypto alone', () => {
+    expect(formatCurrency(5, 'OMR', 'smart')).toBe('RO 5')
+    expect(formatCurrency(5.125, 'OMR', 'smart')).toBe('RO 5.125')
+    expect(formatCurrency(2.5, 'XAU', 'smart')).toBe('2.5g')
+    expect(formatCurrency(0.00012, 'BTC', 'smart')).toBe(formatCurrency(0.00012, 'BTC'))
+  })
+})
+
 describe('formatCurrency negative zero', () => {
   it('a tiny negative that rounds to zero carries no sign', () => {
     expect(formatCurrency(-0.004, 'USD')).not.toContain('-')

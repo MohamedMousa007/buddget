@@ -1,6 +1,6 @@
 import type { Goal, SavingsTransaction } from '@/lib/store/types'
-import { addMonthsIso, replanOptions, type ReplanOptions } from '@/lib/goals/goalPlan'
-import { periodStartMonth, runsSincePlan, type AllocationRun } from '@/lib/goals/goalStatus'
+import { addMonthsIso, periodMonths, replanOptions, type ReplanOptions } from '@/lib/goals/goalPlan'
+import { cycleRuns, periodSpan, periodStartMonth, runsSincePlan, type AllocationRun } from '@/lib/goals/goalStatus'
 
 export const CHECKPOINTS = [25, 50, 75, 100] as const
 
@@ -80,7 +80,8 @@ export function coachView(input: {
 }): CoachView | null {
   const { goal, current, now } = input
   if (goal.fundingMode === 'manual' || !goal.targetDate) return null
-  const runs = [...runsSincePlan(goal, input.runs)].sort((a, b) => a.period.localeCompare(b.period))
+  // A quarterly or yearly goal is judged on its due dates only, so its months are summed into its own periods.
+  const runs = [...cycleRuns(goal.frequency, runsSincePlan(goal, input.runs), now)].sort((a, b) => a.period.localeCompare(b.period))
   const planned = runs.reduce((s, r) => s + r.planned, 0)
   const paid = runs.reduce((s, r) => s + r.amount, 0)
   const shortfall = planned - paid
@@ -93,7 +94,7 @@ export function coachView(input: {
   return {
     behindCount,
     shortfall,
-    since: runs[runs.length - behindCount].period,
+    since: periodStartMonth(runs[runs.length - behindCount].period),
     options: replanOptions({
       remaining: Math.max(0, (goal.targetAmount ?? 0) - current),
       targetDate: goal.targetDate,
@@ -142,7 +143,7 @@ export function normalizeRuns(input: {
   )
   return runs.map((r) => {
     const start = periodStartMonth(r.period)
-    const span = r.period.includes('-Q') ? 3 : 1
+    const span = periodSpan(r.period)
     const inCycle = manual.filter((t) => {
       const m = t.date.slice(0, 7)
       if (m < start) return false
@@ -157,7 +158,7 @@ export function normalizeRuns(input: {
 
 /** What a funded goal's plan puts in per month, in the goal's currency; null for manual goals or unknown savings. */
 export function goalMonthlyRate(goal: Goal, usualKeepInGoalCurrency: number | null): number | null {
-  if (goal.fundingMode === 'fixed' && goal.monthlyContribution) return goal.monthlyContribution / (goal.frequency === 'quarterly' ? 3 : 1)
+  if (goal.fundingMode === 'fixed' && goal.monthlyContribution) return goal.monthlyContribution / periodMonths(goal.frequency)
   if (goal.fundingMode === 'share' && usualKeepInGoalCurrency && goal.sharePct) return (usualKeepInGoalCurrency * goal.sharePct) / 100
   return null
 }

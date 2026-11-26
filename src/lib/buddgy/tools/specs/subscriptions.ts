@@ -10,7 +10,7 @@ export const subscriptionsSpecs: ToolSpec[] = [
     domain: 'subscriptions',
     kind: 'read',
     description: 'Subscriptions with price, cycle, status, next charge date and monthly cost, plus the monthly total.',
-    params: obj({ status: oneOf(['active', 'trial', 'paused', 'cancelled', 'ended', 'all'], 'default: all except ended') }),
+    params: obj({ status: oneOf(['active', 'trial', 'cancelled', 'ended', 'all'], 'default: all except ended') }),
   },
   {
     name: 'add_subscription',
@@ -58,19 +58,11 @@ export const subscriptionsSpecs: ToolSpec[] = [
     ),
   },
   {
-    name: 'pause_subscription',
-    domain: 'subscriptions',
-    kind: 'write',
-    risk: 'approve',
-    description: 'Propose pausing a subscription; no charges are expected while paused.',
-    params: obj({ sub }, ['sub']),
-  },
-  {
     name: 'resume_subscription',
     domain: 'subscriptions',
     kind: 'write',
     risk: 'approve',
-    description: 'Propose resuming a paused subscription, or re-subscribing a cancelled one.',
+    description: 'Propose re-subscribing a cancelled or ended subscription. There is no pause.',
     params: obj({ sub }, ['sub']),
   },
   {

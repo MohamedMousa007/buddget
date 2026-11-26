@@ -1,9 +1,9 @@
 'use client'
 
-import { useRef, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { format } from 'date-fns'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Apple, CalendarClock, Check, CreditCard, DollarSign, LayoutGrid, Smartphone, Wallet, type LucideIcon } from 'lucide-react'
+import { Apple, Calendar, Check, ChevronRight, CreditCard, Smartphone, Wallet, X, type LucideIcon } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useScrollLock } from '@/lib/ui/scrollLock'
 import { CategoryIcon } from '@/components/dashboard/CategoryIcon'
@@ -11,6 +11,13 @@ import { IncomeTypeIcon, incomeTypeColors } from '@/components/features/income/I
 import { AmountField } from '@/components/ui/AmountField'
 import { DatePickerField } from '@/components/ui/DatePickerField'
 import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/IconButton'
+import { OptionSheet } from '@/components/ui/OptionSheet'
+import { cardKindLabel } from '@/components/features/accounts/accountDisplay'
+import { useMonthlyStats } from '@/hooks/useMonthlyStats'
+import { categoryBudget } from '@/lib/flow/categoryBudget'
+import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
+import { cn } from '@/lib/utils'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { SelectableCard } from '@/components/ui/SelectableCard'
 import { useExpenseFilterStore, AMOUNT_MAX, ONE_TIME_INCOME, type FlowSegment } from '@/lib/store/useExpenseFilterStore'
@@ -111,14 +118,11 @@ export function SectionHead({ icon: Icon, label, end }: { icon: LucideIcon; labe
 
 export const Divider = () => <div className="h-px bg-[var(--color-brand-border)]" />
 
-const PRESET_KEYS: Record<RangePreset, 'today' | 'yesterday' | 'week' | 'month' | 'custom'> = {
-  today: 'today', yesterday: 'yesterday', week: 'week', month: 'month', custom: 'custom',
-}
-
 /**
  * Date-range filter shared by every filter sheet: preset chips, and From / To only once
  * Custom is picked (editing either clamps the other so the range is never inverted).
- * `anyLabel` adds a leading "no limit" chip for lists that default to all time.
+ * `anyLabel` adds a leading "no limit" chip for lists that default to all time. `presets` and `labels` swap in
+ * another chip set (Flow's All time and Last month); `customIcon` puts a calendar on Custom. Defaults unchanged.
  */
 export function DateRangeField({
   preset,
@@ -127,6 +131,9 @@ export function DateRangeField({
   onPreset,
   onRange,
   anyLabel,
+  presets = RANGE_PRESETS,
+  labels,
+  customIcon = false,
 }: {
   preset: RangePreset | 'any'
   from: string
@@ -134,18 +141,22 @@ export function DateRangeField({
   onPreset: (p: RangePreset | 'any') => void
   onRange: (from: string, to: string) => void
   anyLabel?: string
+  presets?: readonly RangePreset[]
+  labels?: Partial<Record<RangePreset, string>>
+  customIcon?: boolean
 }) {
   const t = useT()
-  const label: Record<RangePreset, string> = {
+  const base: Partial<Record<RangePreset, string>> = {
     today: t.common.today,
     yesterday: t.common.yesterday,
     week: t.expenses.periodThisWeek,
     month: t.expenses.periodThisMonth,
     custom: t.expenses.periodCustom,
   }
+  const label = { ...base, ...labels }
   const chips: { key: RangePreset | 'any'; text: string }[] = [
     ...(anyLabel ? [{ key: 'any' as const, text: anyLabel }] : []),
-    ...RANGE_PRESETS.map((p) => ({ key: PRESET_KEYS[p], text: label[p] })),
+    ...presets.map((p) => ({ key: p, text: label[p] ?? p })),
   ]
   return (
     <>
@@ -161,6 +172,7 @@ export function DateRangeField({
             selected={preset === c.key}
             onClick={() => onPreset(c.key)}
           >
+            {customIcon && c.key === 'custom' ? <Calendar aria-hidden /> : null}
             {c.text}
           </OptionChip>
         ))}
@@ -182,6 +194,9 @@ export function DateRangeField({
   )
 }
 
+/** Flow's periods: every month by default, then the narrower ones. */
+const FLOW_PRESETS: readonly RangePreset[] = ['all', 'today', 'week', 'month', 'lastMonth', 'custom']
+
 /** Flow's period control: the shared date-range field bound to the expense filter store. */
 function PeriodControl() {
   const monthFilter = useSettingsStore((s) => s.monthFilter)
@@ -189,8 +204,11 @@ function PeriodControl() {
   const { range, setRangePreset, setCustomRange } = useExpenseFilterStore(
     useShallow((s) => ({ range: s.range, setRangePreset: s.setRangePreset, setCustomRange: s.setCustomRange })),
   )
+  const lt = useFlowLtCopy()
   const weekStart = useWeekStart()
-  const resolved = resolveRange(range, monthFilter, monthStartDay, new Date(), weekStart)
+  // All time has no useful bounds to seed Custom with: start it on the current month.
+  const seed = range.preset === 'all' ? { ...range, preset: 'month' as const } : range
+  const resolved = resolveRange(seed, monthFilter, monthStartDay, new Date(), weekStart)
   const from = range.from ?? format(resolved.start, 'yyyy-MM-dd')
   const to = range.to ?? format(resolved.end, 'yyyy-MM-dd')
   return (
@@ -198,6 +216,9 @@ function PeriodControl() {
       preset={range.preset}
       from={from}
       to={to}
+      presets={FLOW_PRESETS}
+      labels={{ all: lt.filters.allTime, lastMonth: lt.filters.lastMonth }}
+      customIcon
       onPreset={(p) => (p === 'custom' ? setCustomRange(from, to) : p === 'any' ? undefined : setRangePreset(p))}
       onRange={setCustomRange}
     />
@@ -209,7 +230,7 @@ function AmountBound({ label, value, onChange, currency }: { label: string; valu
   const [text, setText] = useTypedAmount(value, true)
   return (
     <label className="flex min-w-0 flex-1 flex-col gap-1.5">
-      <span className="text-[0.625rem] font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">{label}</span>
+      <span className="text-xs font-medium text-[var(--color-brand-text-secondary)]">{label}</span>
       <span className="flex h-12 items-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 focus-within:border-[var(--color-brand-focus)] focus-within:ring-2 focus-within:ring-[var(--color-brand-focus)]">
         <AmountField
           bare
@@ -266,35 +287,111 @@ function methodIcon(pm: PaymentMethod): LucideIcon {
   return paymentTypeIcon(pm.type)
 }
 
-/**
- * A 2-up checkbox card: 32px icon chip with a 16px check badge on its top-end corner when
- * selected (the card's own fill + border carry the rest), then the label.
- */
-function CheckCard({ selected, onClick, chip, chipStyle, label }: { selected: boolean; onClick: () => void; chip: ReactNode; chipStyle: React.CSSProperties; label: string }) {
+/** The 22px tick box at the end of a tile. */
+function Tick({ on }: { on: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        'flex size-[22px] shrink-0 items-center justify-center rounded-[7px] border-2',
+        on ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]' : 'border-[var(--color-brand-border-strong)]',
+      )}
+    >
+      {on ? <Check className="size-3.5" strokeWidth={3} /> : null}
+    </span>
+  )
+}
+
+/** A 2-up checkbox tile: the tinted icon chip, the label with an optional line under it, and the tick box. */
+function CheckCard({ selected, onClick, chip, chipStyle, label, sub, subTone }: { selected: boolean; onClick: () => void; chip: ReactNode; chipStyle: React.CSSProperties; label: string; sub?: string; subTone?: string }) {
   return (
     <div className="min-w-0">
-      <SelectableCard as="checkbox" surface="elevated" selected={selected} onClick={onClick} className="w-full min-w-0 gap-2.5">
-        <span className="relative flex size-8 shrink-0 items-center justify-center rounded-[10px]" style={chipStyle}>
+      <SelectableCard as="checkbox" surface="elevated" selected={selected} onClick={onClick} className="min-h-[56px] w-full min-w-0 gap-2.5 p-3">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-[10px]" style={chipStyle}>
           {chip}
-          <span
-            aria-hidden
-            className="absolute -end-[5px] -top-[5px] flex size-4 items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] shadow-[0_0_0_2px_var(--color-brand-elevated)] transition-opacity"
-            style={{ opacity: selected ? 1 : 0 }}
-          >
-            <Check className="size-2.5" strokeWidth={4} />
-          </span>
         </span>
-        <span className="min-w-0 flex-1 truncate text-[0.8125rem] font-semibold text-[var(--color-brand-text-primary)]">{label}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[0.875rem] font-semibold text-[var(--color-brand-text-primary)]">{label}</span>
+          {sub ? (
+            <span dir="auto" className="block font-mono-numbers text-[0.71875rem]" style={{ color: subTone ?? 'var(--color-brand-text-secondary)' }}>
+              {sub}
+            </span>
+          ) : null}
+        </span>
+        <Tick on={selected} />
       </SelectableCard>
     </div>
   )
 }
 
+/** 15/700 section title with an optional note at the end. */
+function Head({ title, end }: { title: string; end?: ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between gap-2 px-1">
+      <h3 className="text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">{title}</h3>
+      {end}
+    </div>
+  )
+}
+
+/** Paid with folds into one row; the full list opens in a multi-select sheet over the filters. */
+function PaidWithField({ methods }: { methods: PaymentMethod[] }) {
+  const t = useT()
+  const lt = useFlowLtCopy()
+  const [open, setOpen] = useState(false)
+  const selected = useExpenseFilterStore((s) => s.methods)
+  const toggleMethod = useExpenseFilterStore((s) => s.toggleMethod)
+  const names = selected.map((id) => methodLabel(methods.find((m) => m.id === id)) ?? id)
+  const apply = (next: string[]) => {
+    for (const id of new Set([...selected, ...next])) if (selected.includes(id) !== next.includes(id)) toggleMethod(id)
+  }
+  return (
+    <>
+      <SelectableCard as="action" surface="card" onClick={() => setOpen(true)} aria-haspopup="dialog" className="min-h-[60px] px-4 py-3">
+        <span aria-hidden className="flex size-7 shrink-0 items-center justify-center rounded-[9px] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]">
+          <Wallet className="size-4" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">
+            {selected.length ? lt.filters.nSelected(selected.length) : lt.filters.allMethods}
+          </span>
+          <span className="block truncate text-xs text-[var(--color-brand-text-secondary)]">
+            {selected.length ? names.join(', ') : lt.filters.allMethodsSub}
+          </span>
+        </span>
+        <ChevronRight className="size-4 shrink-0 text-[var(--color-brand-text-muted)] rtl:rotate-180" aria-hidden />
+      </SelectableCard>
+      <OptionSheet
+        multiple
+        open={open}
+        onClose={() => setOpen(false)}
+        title={lt.filters.paidWith}
+        subtitle={lt.filters.paidPickSub}
+        zIndexClassName="z-[70]"
+        value={selected}
+        onChange={(next) => {
+          apply(next)
+          setOpen(false)
+        }}
+        options={methods.map((pm) => {
+          const Icon = methodIcon(pm)
+          return {
+            value: pm.id,
+            title: methodLabel(pm) ?? pm.name,
+            subtitle: [cardKindLabel(pm.type, t.accountsPage), pm.currency].filter(Boolean).join(' · '),
+            icon: <Icon />,
+            tone: 'var(--color-brand-text-secondary)',
+          }
+        })}
+      />
+    </>
+  )
+}
+
 /**
- * Flow's all-filters sheet. Date range and amount first (the period sheet folded in), then
- * payment methods, then categories — or, on In, income types — last, because that is the
- * long list people scroll for. Direction is not a filter here: it is the page's segment.
- * One store (`useExpenseFilterStore`) backs this sheet, the chip row and the budget chips.
+ * Flow's filters sheet: the date range (all time by default), the amount range, categories as tiles with how much
+ * of their budget is used (or, on In, income types), and Paid with folded into one row until tapped. Direction is
+ * not a filter here: it is the page's segment. One store (`useExpenseFilterStore`) backs this sheet and the page.
  */
 export function ExpenseFilters({
   open,
@@ -314,16 +411,16 @@ export function ExpenseFilters({
   currency: string
 }) {
   const t = useT()
+  const lt = useFlowLtCopy()
+  const stats = useMonthlyStats()
   const paymentMethods = filterablePaymentMethods(useFinanceStore((s) => s.paymentMethods))
-  const { cats, methodsSel, incomeSel, amtMin, amtMax, toggleCat, toggleMethod, toggleIncomeType, reset } = useExpenseFilterStore(
+  const { cats, incomeSel, amtMin, amtMax, toggleCat, toggleIncomeType, reset } = useExpenseFilterStore(
     useShallow((s) => ({
       cats: s.cats,
-      methodsSel: s.methods,
       incomeSel: s.incomeTypes,
       amtMin: s.amtMin,
       amtMax: s.amtMax,
       toggleCat: s.toggleCat,
-      toggleMethod: s.toggleMethod,
       toggleIncomeType: s.toggleIncomeType,
       reset: s.reset,
     })),
@@ -340,81 +437,66 @@ export function ExpenseFilters({
         </Button>
       }
     >
-      <div className="flex flex-col gap-5">
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{t.expenses.filtersTitle}</h3>
-          <Button variant="link" size="touch" onClick={reset}>
-            {t.expenses.resetAll}
-          </Button>
+      <div className="flex flex-col gap-6">
+        <div className="flex items-center justify-between gap-2 px-1">
+          <h2 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{lt.filters.title}</h2>
+          <span className="flex items-center gap-2">
+            <Button variant="link" size="touch" className="px-1 font-semibold" onClick={reset}>
+              {t.expenses.resetAll}
+            </Button>
+            <IconButton variant="sheetAction" aria-label={t.common.close} onClick={onClose}>
+              <X />
+            </IconButton>
+          </span>
         </div>
 
         <div className="flex flex-col gap-2.5">
-          <SectionHead icon={CalendarClock} label={t.filters.dateRange} />
+          <Head title={lt.filters.dateRange} />
           <PeriodControl />
         </div>
-        <Divider />
 
         <div className="flex flex-col gap-2.5">
-          <SectionHead
-            icon={DollarSign}
-            label={t.expenses.amountRange}
+          <Head
+            title={lt.filters.amountRange}
             end={
-              <span className="font-mono-numbers text-[0.8125rem] font-bold text-[var(--color-brand-primary-ink)]">
-                {formatWhole(amtMin)} – {formatWhole(amtMax)} {currency}
+              <span className="font-mono-numbers text-[0.8125rem] font-semibold text-[var(--color-brand-primary-ink)]">
+                {formatWhole(amtMin)} – {formatWhole(amtMax)}{amtMax >= AMOUNT_MAX ? '+' : ''} {currency}
               </span>
             }
           />
-          <p className="-mt-1 text-[0.78125rem] text-[var(--color-brand-text-secondary)]">{t.filters.amountHelp}</p>
           <AmountRangeControl currency={currency} />
         </div>
-        <Divider />
-
-        <div className="flex flex-col gap-2.5">
-          <SectionHead icon={CreditCard} label={t.filters.paymentMethod} end={selectMulti} />
-          <div role="group" aria-label={t.filters.paymentMethod} className="grid grid-cols-2 gap-2">
-            {paymentMethods.map((pm) => {
-              const Icon = methodIcon(pm)
-              return (
-                <CheckCard
-                  key={pm.id}
-                  selected={methodsSel.includes(pm.id)}
-                  onClick={() => toggleMethod(pm.id)}
-                  chip={<Icon className="size-4" strokeWidth={1.75} />}
-                  chipStyle={{ background: 'var(--color-brand-card)', color: 'var(--color-brand-text-secondary)' }}
-                  label={methodLabel(pm) ?? pm.name}
-                />
-              )
-            })}
-          </div>
-        </div>
-        <Divider />
 
         {segment === 'in' ? (
-          <div className="flex flex-col gap-2.5">
-            <SectionHead icon={LayoutGrid} label={t.filters.incomeType} end={selectMulti} />
-            <div role="group" aria-label={t.filters.incomeType} className="grid grid-cols-2 gap-2">
-              {incomeTypes.map((it) => {
-                const type = (it.id === ONE_TIME_INCOME ? 'other' : it.id) as IncomeSourceType
-                const c = incomeTypeColors(type)
-                return (
-                  <CheckCard
-                    key={it.id}
-                    selected={incomeSel.includes(it.id)}
-                    onClick={() => toggleIncomeType(it.id)}
-                    chip={<IncomeTypeIcon type={type} className="size-4" />}
-                    chipStyle={{ background: c.bg, color: c.fg }}
-                    label={it.label}
-                  />
-                )
-              })}
+          incomeTypes.length ? (
+            <div className="flex flex-col gap-2.5">
+              <Head title={t.filters.incomeType} end={selectMulti} />
+              <div role="group" aria-label={t.filters.incomeType} className="grid grid-cols-2 gap-2">
+                {incomeTypes.map((it) => {
+                  const type = (it.id === ONE_TIME_INCOME ? 'other' : it.id) as IncomeSourceType
+                  const c = incomeTypeColors(type)
+                  return (
+                    <CheckCard
+                      key={it.id}
+                      selected={incomeSel.includes(it.id)}
+                      onClick={() => toggleIncomeType(it.id)}
+                      chip={<IncomeTypeIcon type={type} className="size-4" />}
+                      chipStyle={{ background: c.bg, color: c.fg }}
+                      label={it.label}
+                    />
+                  )
+                })}
+              </div>
             </div>
-          </div>
+          ) : null
         ) : (
           <div className="flex flex-col gap-2.5">
-            <SectionHead icon={LayoutGrid} label={t.filters.category} end={selectMulti} />
+            <Head title={lt.filters.category} end={selectMulti} />
             <div role="group" aria-label={t.filters.category} className="grid grid-cols-2 gap-2">
               {categories.map((c) => {
                 const colors = categoryChipColors(c.id)
+                const b = categoryBudget(c.id, stats.categoryBudgetCaps, stats.categorySpending)
+                const tone = !b ? undefined : b.pct > 1 ? 'var(--color-brand-red)' : b.pct >= 0.8 ? 'var(--color-brand-amber)' : undefined
                 return (
                   <CheckCard
                     key={c.id}
@@ -423,12 +505,19 @@ export function ExpenseFilters({
                     chip={<CategoryIcon category={c.id} className="size-4" />}
                     chipStyle={{ background: colors.bg, color: colors.fg }}
                     label={c.label}
+                    sub={b ? lt.filters.pctOfBudget(Math.round(b.pct * 100)) : lt.filters.noBudget}
+                    subTone={tone}
                   />
                 )
               })}
             </div>
           </div>
         )}
+
+        <div className="flex flex-col gap-2.5">
+          <Head title={lt.filters.paidWith} />
+          <PaidWithField methods={paymentMethods} />
+        </div>
       </div>
     </FilterSheet>
   )

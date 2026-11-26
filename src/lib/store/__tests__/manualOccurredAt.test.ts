@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { computeBalances } from '@/lib/accounts/balance'
 import { localTodayISO } from '@/lib/utils/localDate'
+import { noTimeAt } from '@/lib/time/occurredAt'
 import type { Debt, PaymentMethod } from '@/lib/store/types'
 
 const S = () => useFinanceStore.getState()
@@ -47,14 +48,14 @@ describe('QA-11 / QA-118: money logged by hand today reaches the balance at once
     expect(bal()).toBe(1100)
   })
 
-  it('stamps the payment and its expense with one time, and leaves back-dated rows day-level', () => {
+  it('stamps the payment and its expense with one time, and gives back-dated rows the no-time stand-in', () => {
     at('2026-11-01T08:00:00', '2026-11-19T09:00:00')
     payDebt()
     expect(S().debtPayments[0].occurredAt).toBe(S().expenses[0].occurredAt)
     expect(S().debtPayments[0].occurredAt).toBeTruthy()
     S().addDebtPayment({ debtId: 'd1', date: '2026-11-10', amountPaid: 10 })
     S().addIncomeEvent({ name: 'Old', amount: 1, currency: 'EGP', sourceType: 'other', receivedDate: '2026-11-10', status: 'confirmed' } as never)
-    expect(S().debtPayments[1].occurredAt).toBeUndefined()
-    expect(S().incomeEvents[0].occurredAt).toBeUndefined()
+    expect(S().debtPayments[1].occurredAt).toBe(noTimeAt('2026-11-10'))
+    expect(S().incomeEvents[0].occurredAt).toBe(noTimeAt('2026-11-10'))
   })
 })

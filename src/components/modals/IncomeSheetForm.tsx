@@ -25,14 +25,15 @@ import { UnifiedDatePicker, formatDatePillLabel } from '@/components/ui/UnifiedD
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
 import { AssignIncomeSheet } from '@/components/modals/AssignIncomeSheet'
 import { IncomeTypeChipSlider } from '@/components/features/income/IncomeTypeChipSlider'
-import { IncomePaydayGrid } from '@/components/features/income/IncomePaydayGrid'
-import { deriveDefaultPaydays, paydaysPerMonth } from '@/lib/utils/paydaySchedule'
+import { deriveDefaultPaydays } from '@/lib/utils/paydaySchedule'
 import { MODAL_BODY_SCROLL_CLASS, MODAL_CONTROL_CLASS, MODAL_LABEL_CLASS } from '@/lib/modals/modalFormClasses'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { defaultMethodId } from '@/lib/accounts/resolve'
-import { SegmentedControl } from '@/components/ui/SegmentedControl'
-
-const FREQS: IncomeRecurringFrequency[] = ['monthly', 'biweekly', 'weekly']
+import { PaydayFormBody } from '@/components/features/income/PaydayFormBody'
+import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
+import { manualOccurredAt, mergeDayTime, nowClock } from '@/lib/time/occurredAt'
+import { formatClock } from '@/lib/i18n/dateFormat'
+import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 
 /**
  * The payday drift a new payday is written with (days a paycheck may land from its payday
@@ -73,7 +74,7 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
   const isRecurring = mode === 'payday'
   const showToast = useActionToast()
   const confirm = useConfirm()
-  const { addIncomeSource, updateIncomeSource, deleteIncomeSource, addIncomeEvent, settings, paymentMethods, incomeSources } = useFinanceStore(
+  const { addIncomeSource, updateIncomeSource, deleteIncomeSource, addIncomeEvent, settings, paymentMethods, incomeSources, exchangeRates } = useFinanceStore(
     useShallow((s) => ({
       addIncomeSource: s.addIncomeSource,
       updateIncomeSource: s.updateIncomeSource,
@@ -82,9 +83,11 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
       settings: s.settings,
       paymentMethods: s.paymentMethods,
       incomeSources: s.incomeSources,
+      exchangeRates: s.exchangeRates,
     })),
   )
   const t = useT()
+  const lt = useDebtsSubsLtCopy().payday
   const [assignOpen, setAssignOpen] = useState(false)
   const defaultPmId = defaultMethodId(paymentMethods)
   const seedPaydays = () =>
@@ -102,6 +105,8 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
   const [paydays, setPaydays] = useState<number[]>(seedPaydays)
   const driftDays = source?.paydayDriftDays ?? null
   const [receivedDate, setReceivedDate] = useState(() => localTodayISO())
+  /** A time picked in the date card (`HH:mm`); '' = the current time, as the pill shows. */
+  const [clock, setClock] = useState('')
   const [calOpen, setCalOpen] = useState(false)
   const { locale } = useLocale()
   const [assigned, setAssigned] = useState<{ templateId: string; date: string } | null>(null)
@@ -121,6 +126,7 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
       setCurrency((prefill?.currency as Currency | undefined) ?? settings.baseCurrency)
       setPaymentMethodId(prefill?.paymentMethodId ?? defaultPmId)
       setReceivedDate(localTodayISO())
+      setClock('')
       setPaydays([prefill?.dayOfMonth ?? new Date().getDate()])
       setAssigned(null)
       if (prefill?.name) setName(prefill.name)
@@ -139,12 +145,17 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
     setFrequency('monthly')
     setPaydays([new Date().getDate()])
     setReceivedDate(localTodayISO())
+    setClock('')
     setAssigned(null)
     setPaymentMethodId(defaultPmId)
     setNotes('')
     setNotesOpen(false)
   }, [settings.baseCurrency, defaultPmId])
 
+  const flowLt = useFlowLtCopy()
+  // A new entry shows the current time until one is picked.
+  const shownClock = clock || (edit ? '' : nowClock())
+  const clockAt = mergeDayTime(receivedDate, shownClock)
   const amt = parseFloat(amount)
   const amtValid = !Number.isNaN(amt) && amt > 0
   const assignedSource = assigned ? incomeSources.find((s) => s.id === assigned.templateId) : undefined
@@ -191,6 +202,7 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
         sourceType,
         // §8.0: linking picks the payday (occurrenceDate); receivedDate stays the real day.
         receivedDate,
+        occurredAt: manualOccurredAt(receivedDate, clock),
         ...(assigned ? { occurrenceDate: assigned.date } : {}),
         status: 'confirmed',
         notes: notes.trim() || undefined,
@@ -219,20 +231,51 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
     <ModalShell open={open} onBackdropClick={handleClose} scrollChild>
       <div className="flex min-h-0 flex-1 flex-col outline-none">
         {/* Header: title + subtitle, one-time date pill (add only), close */}
-        <V3SheetHeader onClose={handleClose}>
-          <V3SheetHeader.Title>{edit ? t.editIncome.title : isRecurring ? t.paydays.newTitle : t.addIncome.sheetTitle}</V3SheetHeader.Title>
+        <V3SheetHeader
+          onClose={handleClose}
+          actions={isRecurring && edit && source && !source.sharedPlanId ? (
+            <V3SheetHeader.Action tone="danger" icon={<Trash2 />} label={t.common.delete} onClick={() => void handleDelete()} />
+          ) : undefined}
+        >
+          <V3SheetHeader.Title size={isRecurring ? 'compact' : undefined}>{isRecurring ? (edit ? lt.editTitle : lt.newTitle) : edit ? t.editIncome.title : t.addIncome.sheetTitle}</V3SheetHeader.Title>
           {!isRecurring ? <V3SheetHeader.Subtitle>{t.addIncome.addSubtitleOneTime}</V3SheetHeader.Subtitle> : null}
           {!isRecurring ? (
             <V3SheetHeader.Extra>
               <OptionChip as="trigger" size="sm" onClick={() => setCalOpen(true)} aria-haspopup="dialog" aria-expanded={calOpen}>
                 <Calendar className="size-3.5 text-[var(--color-brand-text-muted)]" />
                 {formatDatePillLabel(receivedDate, locale, t.expenseForm.today)}
+                {clockAt ? <span className="font-mono-numbers text-[var(--color-brand-text-muted)]">· {formatClock(new Date(clockAt), locale)}</span> : null}
               </OptionChip>
             </V3SheetHeader.Extra>
           ) : null}
         </V3SheetHeader>
 
         <div className={`${MODAL_BODY_SCROLL_CLASS.replace('gap-5', 'gap-4')} px-5 pb-6`}>
+          {isRecurring ? (
+            <PaydayFormBody
+              amount={amount}
+              onAmount={setAmount}
+              currency={currency}
+              onCurrency={setCurrency}
+              base={settings.baseCurrency}
+              rates={exchangeRates}
+              frequency={frequency}
+              onFrequency={(f) => {
+                setFrequency(f)
+                setPaydays(deriveDefaultPaydays(paydays[0] ?? new Date().getDate(), f))
+              }}
+              paydays={paydays}
+              onPaydays={setPaydays}
+              name={name}
+              onName={setName}
+              sourceType={sourceType}
+              onSourceType={setSourceType}
+              typeLocked={typeLocked}
+              paymentMethodId={paymentMethodId}
+              onPaymentMethod={setPaymentMethodId}
+              paymentMethods={paymentMethods}
+            />
+          ) : (<>
           {/* Amount + currency */}
           <div className="grid grid-cols-[1fr_auto] items-end gap-3">
             <div className="min-w-0">
@@ -258,11 +301,6 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
               />
             </div>
           </div>
-          {isRecurring && frequency !== 'monthly' && amtValid ? (
-            <p className="-mt-2 font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">
-              {t.addIncome.perMonthEquiv(`${Math.round(amt * paydaysPerMonth(frequency)).toLocaleString('en-US')} ${currency}`, paydaysPerMonth(frequency))}
-            </p>
-          ) : null}
 
           {/* Name */}
           <div>
@@ -284,45 +322,7 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
             </div>
           </div>
 
-          {isRecurring ? (
-            <>
-              {/* How often */}
-              <div>
-                <span className={MODAL_LABEL_CLASS}>{t.addIncome.howOftenLabel}</span>
-                <div className="mt-1.5">
-                  <SegmentedControl
-                    ariaLabel={t.addIncome.howOftenLabel}
-                    value={frequency}
-                    onChange={(f) => {
-                      setFrequency(f)
-                      setPaydays(deriveDefaultPaydays(paydays[0] ?? new Date().getDate(), f))
-                    }}
-                    options={FREQS.map((f) => ({
-                      value: f,
-                      label:
-                        f === 'monthly'
-                          ? t.addIncome.freqMonthly
-                          : f === 'biweekly'
-                            ? t.addIncome.freqBiweekly
-                            : t.addIncome.freqWeekly,
-                    }))}
-                  />
-                </div>
-              </div>
-              {/* Payday grid */}
-              <div>
-                <div className="flex items-baseline gap-2">
-                  <span className={MODAL_LABEL_CLASS}>{t.addIncome.paydayLabel}</span>
-                  {frequency !== 'monthly' ? (
-                    <span className="text-[0.625rem] text-[var(--color-brand-text-muted)]">{t.addIncome.paydayHelper(frequency === 'biweekly' ? 2 : 4)}</span>
-                  ) : null}
-                </div>
-                <div className="mt-1.5">
-                  <IncomePaydayGrid frequency={frequency} days={paydays} onChange={setPaydays} />
-                </div>
-              </div>
-            </>
-          ) : (
+          {
             /* "Is this one of your paydays?" — link the one-off to a payday instead of counting it twice. */
             <Card variant="elevated" padding="none" className="rounded-2xl border border-[var(--color-brand-border)] p-3.5">
               {assignedSource ? (
@@ -349,10 +349,11 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
                 </div>
               )}
             </Card>
-          )}
+          }
 
           {/* Received into (reused payment carousel) */}
           <PaymentMethodPicker value={paymentMethodId} onChange={setPaymentMethodId} paymentMethods={paymentMethods} label={t.addIncome.labelPaymentMethod} />
+          </>)}
 
           {/* Notes */}
           {notesOpen ? (
@@ -389,9 +390,9 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
             size="cta-block"
             className="text-sm font-semibold"
           >
-            {edit ? t.editIncome.buttonSave : isRecurring ? t.addIncome.buttonSubmit : t.common.save}
+            {isRecurring ? (edit ? lt.save : lt.add) : edit ? t.editIncome.buttonSave : t.common.save}
           </Button>
-          {edit && source && !source.sharedPlanId ? (
+          {!isRecurring && edit && source && !source.sharedPlanId ? (
             <Button
               type="button"
               onClick={() => void handleDelete()}
@@ -418,7 +419,19 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
         />
       ) : null}
 
-      {calOpen ? <UnifiedDatePicker open value={receivedDate} onConfirm={setReceivedDate} onClose={() => setCalOpen(false)} /> : null}
+      {calOpen ? (
+        <UnifiedDatePicker
+          open
+          value={receivedDate}
+          onConfirm={setReceivedDate}
+          time={{ value: shownClock, label: flowLt.expense.time }}
+          onConfirmDateTime={(iso, hm) => {
+            setReceivedDate(iso)
+            setClock(hm)
+          }}
+          onClose={() => setCalOpen(false)}
+        />
+      ) : null}
     </ModalShell>
   )
 }

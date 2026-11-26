@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { FinanceStore } from '@/lib/store/types'
 import { tryConvertCurrency } from '@/lib/utils/currency'
-import { changeCashCurrency, setOpeningBalance } from '../actions'
+import { changeAccountCurrency, changeCashCurrency, setOpeningBalance } from '../actions'
 import { computeBalances } from '../balance'
 import { cashCurrency, cashThatFollowsBase } from '../resolve'
 
@@ -62,5 +62,39 @@ describe('Cash currency (QA bug 15)', () => {
   it('(c) a Cash with a transaction keeps its currency', () => {
     s().addExpense({ description: 'Tea', category: 'Food & Dining', amount: 10, currency: 'AED', date: '2026-11-20', paymentMethodId: id, isRecurring: false } as never)
     expect(cashThatFollowsBase(s())).toBeNull()
+  })
+})
+
+describe('Account currency from the account sheet (Light touch A2)', () => {
+  let bank: string
+  let cashId: string
+  beforeEach(() => {
+    s().reset()
+    s().updateSettings({ baseCurrency: 'EGP' })
+    bank = s().addPaymentMethod({ name: 'CIB', type: 'bank_account', currency: 'EGP', isDefault: false })
+    cashId = s().addPaymentMethod({ name: 'Cash', type: 'cash', currency: 'AED', isDefault: false })
+  })
+
+  it('a tracked bank account ends at the typed amount in its new currency, through one adjustment', () => {
+    setOpeningBalance(bank, 1000, new Date('2026-11-01T00:00:00Z'))
+    changeAccountCurrency(bank, 'USD', 20)
+    expect(cash(bank).currency).toBe('USD')
+    expect(balanceOf(s(), bank)).toBe(20)
+    expect(s().accountAdjustments).toHaveLength(1)
+    expect(s().accountAdjustments[0]).toMatchObject({ paymentMethodId: bank, delta: -980, reason: 'manual_update' })
+  })
+
+  it('an untracked account is only relabelled', () => {
+    changeAccountCurrency(bank, 'USD', 0)
+    expect(cash(bank).currency).toBe('USD')
+    expect(s().accountAdjustments).toHaveLength(0)
+  })
+
+  it('changeCashCurrency still refuses a non-cash account and still moves Cash', () => {
+    setOpeningBalance(bank, 1000)
+    changeCashCurrency(bank, 'USD', 20)
+    expect(cash(bank).currency).toBe('EGP')
+    changeCashCurrency(cashId, 'EGP', 0)
+    expect(cash(cashId).currency).toBe('EGP')
   })
 })

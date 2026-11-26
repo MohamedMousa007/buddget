@@ -1,8 +1,9 @@
 import {
-  BookOpen, Briefcase, Car, Coins, Gift, GraduationCap, Heart, Home, LineChart, Plane,
-  Shield, Smartphone, Sparkles, Store, TrendingDown, Unlock, Users, type LucideIcon,
+  Award, Bell, BookOpen, Briefcase, Car, Coins, Gem, Gift, GraduationCap, Heart, HeartPulse, Home, Image, Landmark,
+  LineChart, MoonStar, Plane, Scale, Shield, ShieldCheck, ShoppingBag, Smartphone, Sparkles, Store, Target, TrendingDown,
+  TrendingUp, Trophy, Unlock, User, Users, UtensilsCrossed, Wallet, Zap, type LucideIcon,
 } from 'lucide-react'
-import type { GoalCategory } from '@/lib/store/types'
+import type { Goal, GoalCategory } from '@/lib/store/types'
 
 interface GoalVisual {
   icon: LucideIcon
@@ -31,3 +32,22 @@ const VISUAL: Record<GoalCategory, GoalVisual> = {
 }
 
 export const goalVisual = (c: GoalCategory): GoalVisual => VISUAL[c] ?? { icon: BookOpen, cat: 1 }
+
+/** The icons a goal of your own (Other) can wear: the app's own lucide set, so it looks at home everywhere. */
+export const GOAL_ICON_SET = {
+  target: Target, plane: Plane, house: Home, car: Car, 'graduation-cap': GraduationCap, 'heart-pulse': HeartPulse,
+  smartphone: Smartphone, 'moon-star': MoonStar, 'shield-check': ShieldCheck, user: User, 'trending-up': TrendingUp,
+  briefcase: Briefcase, gem: Gem, trophy: Trophy, award: Award, coins: Coins, wallet: Wallet, landmark: Landmark,
+  'shopping-bag': ShoppingBag, 'utensils-crossed': UtensilsCrossed, sparkles: Sparkles, zap: Zap, scale: Scale, bell: Bell,
+  image: Image,
+} as const satisfies Record<string, LucideIcon>
+
+export type GoalIconKey = keyof typeof GOAL_ICON_SET
+
+export const isGoalIconKey = (v: string | null | undefined): v is GoalIconKey => !!v && Object.prototype.hasOwnProperty.call(GOAL_ICON_SET, v)
+
+/** A goal's look: its category's, except a goal of your own (Other) whose `emoji` holds an icon key picked for it. */
+export function goalVisualFor(goal: Pick<Goal, 'category' | 'emoji'>): GoalVisual {
+  const v = goalVisual(goal.category)
+  return goal.category === 'custom' && isGoalIconKey(goal.emoji) ? { ...v, icon: GOAL_ICON_SET[goal.emoji] } : v
+}

@@ -183,8 +183,7 @@ test('W7 default payment method: Cash until one is chosen, then the chosen accou
 
   await test.step('QNB set as default from its account menu: the next expense uses it', async () => {
     const d = await openAccount(page, /QNB Alahli/)
-    await d.getByRole('button', { name: 'More actions' }).first().click()
-    await page.getByRole('menuitem', { name: 'Set as default' }).click()
+    await d.getByRole('switch', { name: 'Default for new expenses' }).click()
     await localWait(page, (s) => s.paymentMethods.find((m: any) => m.id === qnb.id && m.isDefault))
     await serverRows('payment_methods', user.id, `id=eq.${qnb.id}`, (r: any[]) => r[0]?.is_default === true)
     await goto(page, '/flow')
@@ -194,8 +193,9 @@ test('W7 default payment method: Cash until one is chosen, then the chosen accou
 
   await test.step('the Cash row menu sets Cash as default again', async () => {
     await goto(page, '/accounts')
-    const row = page.getByRole('button', { name: /^Cash/ }).first()
-    await row.locator('xpath=..').getByRole('button', { name: 'More actions' }).click()
+    // Untracked Cash is the dimmed "Cash on hand · Not tracked" row: Start tracking, and its menu beside it.
+    const row = page.locator('div', { has: page.getByRole('button', { name: 'Start tracking' }) }).last()
+    await row.getByRole('button', { name: 'More actions' }).click()
     await page.getByRole('menuitem', { name: 'Set as default' }).click()
     const cash = await localWait(page, (s) => s.paymentMethods.find((m: any) => m.type === 'cash' && m.isDefault && m.id !== 'pm_default_cash'))
     await localWait(page, (s) => s.paymentMethods.find((m: any) => m.id === qnb.id && !m.isDefault))

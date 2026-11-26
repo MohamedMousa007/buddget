@@ -6,23 +6,28 @@ import { useShallow } from 'zustand/react/shallow'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT, useLocale } from '@/lib/i18n'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { buildOccurrences, expectedPerPayday } from '@/lib/utils/incomeOccurrences'
-import { UnifiedDatePicker, formatDatePillLabel } from '@/components/ui/UnifiedDatePicker'
-import { Calendar } from 'lucide-react'
+import { DatePickerField } from '@/components/ui/DatePickerField'
+import { AmountHero } from '@/components/ui/AmountHero'
+import { PickerRow } from '@/components/ui/PickerRow'
+import { Briefcase } from 'lucide-react'
+import { parseISO } from 'date-fns'
+import { MethodPickerRow } from '@/components/features/debts/lt/MethodPickerRow'
+import { SheetGroup, TxTile } from '@/components/features/debts/lt/SheetParts'
+import { formatLocalized } from '@/lib/i18n/dateFormat'
+import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
+import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
+import { clockOf, editedOccurredAt, manualOccurredAt } from '@/lib/time/occurredAt'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { OptionChip } from '@/components/ui/OptionChip'
-import { sanitizeAmount } from '@/lib/ui/amountSanitize'
 import { parseLocalizedAmount } from '@/lib/ui/amountParse'
 import { useWeekendFirstDay } from '@/hooks/useWeekStart'
 
-const MON_TITLE = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-const fmtDay = (iso: string) => `${MON_TITLE[Number(iso.slice(5, 7)) - 1]} ${Number(iso.slice(8, 10))}`
 const todayISO = () => localTodayISO()
 
 /**
@@ -35,12 +40,13 @@ const todayISO = () => localTodayISO()
  */
 export function AmountReceivedSheet() {
   const showToast = useActionToast()
-  const { incomeSources, incomeEvents, addIncomeEvent, updateIncomeEvent } = useFinanceStore(
+  const { incomeSources, incomeEvents, addIncomeEvent, updateIncomeEvent, paymentMethods } = useFinanceStore(
     useShallow((s) => ({
       incomeSources: s.incomeSources,
       incomeEvents: s.incomeEvents,
       addIncomeEvent: s.addIncomeEvent,
       updateIncomeEvent: s.updateIncomeEvent,
+      paymentMethods: s.paymentMethods,
     })),
   )
   const { activeModal, setActiveModal, markingIncome, monthFilter } = useSettingsStore(
@@ -53,6 +59,7 @@ export function AmountReceivedSheet() {
   )
   const monthStartDay = useFinanceStore((s) => s.settings.monthStartDay)
   const t = useT()
+  const lt = useDebtsSubsLtCopy().received
   const { locale } = useLocale()
   const isOpen = activeModal === 'amountReceived' && !!markingIncome
 
@@ -78,10 +85,15 @@ export function AmountReceivedSheet() {
   const currentReceivedDate = targetEventId
     ? incomeEvents.find((e) => e.id === targetEventId)?.receivedDate ?? null
     : null
+  const saved = targetEventId ? incomeEvents.find((e) => e.id === targetEventId) : undefined
+  /** The stored time of the row being updated ('' for none, or the "no time" stand-in). */
+  const savedClock = saved ? clockOf(saved.occurredAt, saved.receivedDate) : ''
 
   const [amount, setAmount] = useState('')
   const [receivedDate, setReceivedDate] = useState(todayISO)
-  const [calOpen, setCalOpen] = useState(false)
+  const [clock, setClock] = useState('')
+  const timeLabel = useFlowLtCopy().expense.time
+  const [methodId, setMethodId] = useState('')
   const prevOpen = useRef(false)
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- prefill when the sheet opens */
@@ -90,10 +102,12 @@ export function AmountReceivedSheet() {
       // A payday still in the future can only have been received early or today; anything
       // already logged keeps the date it was logged with.
       setReceivedDate(currentReceivedDate ?? todayISO())
+      setClock(savedClock)
+      setMethodId(source?.paymentMethodId ?? '')
     }
     prevOpen.current = isOpen
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [isOpen, current, currentReceivedDate])
+  }, [isOpen, current, currentReceivedDate, savedClock, source?.paymentMethodId])
 
   const close = () => setActiveModal(null)
   useEscapeClose(isOpen, close)
@@ -102,13 +116,6 @@ export function AmountReceivedSheet() {
   const valid = !Number.isNaN(amt) && amt > 0
   const meetsExpected = valid && amt >= expected
   const short = Math.max(0, Math.round(expected - (valid ? amt : 0)))
-  // Input colour is meaningful: white while typing → green when it meets/exceeds
-  // expected → blue (partial) when it is less (handoff §4).
-  const inputColorDisplay = !valid
-    ? 'var(--color-brand-text-primary)'
-    : meetsExpected
-      ? 'var(--color-status-ok-fg)'
-      : 'var(--cat-transport-fg)'
 
   // Re-marking a settled payday with the same amount is a no-op — keep the CTA dimmed.
   // But a MISSED payday is not settled: receiving it flips status missed → confirmed even
@@ -121,17 +128,25 @@ export function AmountReceivedSheet() {
     !!current &&
     amt === current.amount &&
     receivedDate === currentReceivedDate &&
+    clock === savedClock &&
     current.status !== 'missed'
   const blocked = !!current && !current.actionable && !isEdit
   const savingRef = useRef(false)
+
+  // A changed or cleared time is sent as picked; a row with no time yet, received today, carries the moment it is logged.
+  const updatedOccurredAt = (): { occurredAt?: string } => {
+    const edited = saved ? editedOccurredAt(receivedDate, clock, { day: saved.receivedDate, clock: savedClock }) : undefined
+    if (edited) return { occurredAt: edited }
+    return !savedClock && !clock && receivedDate === localTodayISO() ? { occurredAt: new Date().toISOString() } : {}
+  }
 
   const save = () => {
     if (!valid || !source || !current || blocked || savingRef.current) return
     savingRef.current = true
     const status = meetsExpected ? 'confirmed' : 'partial'
     if (targetEventId) {
-      // Marked received today: carry the exact time, as a new entry does, so the balance counts it at once.
-      updateIncomeEvent(targetEventId, { amount: amt, status, receivedDate, occurrenceDate: current.dueDate, ...(receivedDate === localTodayISO() ? { occurredAt: new Date().toISOString() } : {}) })
+      // A picked time, or marked received today: carry the exact time, as a new entry does, so the balance counts it at once.
+      updateIncomeEvent(targetEventId, { amount: amt, status, receivedDate, occurrenceDate: current.dueDate, ...(methodId ? { paymentMethodId: methodId } : {}), ...updatedOccurredAt() })
     } else {
       addIncomeEvent({
         templateId: source.id,
@@ -140,9 +155,10 @@ export function AmountReceivedSheet() {
         currency,
         sourceType: source.sourceType,
         receivedDate,
+        occurredAt: manualOccurredAt(receivedDate, clock),
         occurrenceDate: current.dueDate,
         status,
-        ...(source.paymentMethodId ? { paymentMethodId: source.paymentMethodId } : {}),
+        ...(methodId ? { paymentMethodId: methodId } : {}),
       })
     }
     showToast(t.common.toastIncomeAdded)
@@ -156,85 +172,53 @@ export function AmountReceivedSheet() {
 
   if (!isOpen || !source || !current) return null
 
+  const half = Math.round((expected / 2) * 100) / 100
+  const freq = source.recurringFrequency === 'weekly' ? t.addIncome.freqWeekly : source.recurringFrequency === 'biweekly' ? t.addIncome.freqBiweekly : t.addIncome.freqMonthly
+
   return (
-    <ModalShell open={isOpen} onBackdropClick={close} padContent>
-      <div className="pt-1">
-        <V3SheetHeader
-          title={t.income.amountReceivedTitle}
-          subtitle={<span dir="auto" className="font-mono-numbers">{t.income.amountSheetSubtitle(fmtDay(current.date), source.name, `${fmtNum(expected)} ${currency}`)}</span>}
-          onClose={close}
-        />
-
-        <label className="mt-4 block text-[0.625rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
-          {t.income.receivedOnLabel}
-        </label>
-        <OptionChip
-          as="trigger"
-          onClick={() => setCalOpen(true)}
-          aria-haspopup="dialog"
-          aria-expanded={calOpen}
-          className="mt-1.5"
-        >
-          <Calendar className="h-4 w-4 text-[var(--color-brand-text-muted)]" />
-          {formatDatePillLabel(receivedDate, locale, t.common.today)}
-        </OptionChip>
-
-        <label className="mt-4 block text-[0.625rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
-          {t.income.amountReceivedLabel}
-        </label>
-        <Card
-          variant="elevated"
-          padding="none"
-          className="mt-1.5 flex items-center gap-2 px-4 focus-within:ring-2 focus-within:ring-[var(--color-brand-focus)]"
-          style={{ boxShadow: `inset 0 0 0 1px ${valid ? `color-mix(in srgb, ${inputColorDisplay} 33%, transparent)` : 'transparent'}` }}
-        >
-          <span className="font-mono-numbers text-sm text-[var(--color-brand-text-muted)]">{currency}</span>
-          <input
-            autoFocus
-            aria-label={t.income.amountReceivedLabel}
-            inputMode="decimal"
+    <ModalShell open={isOpen} onBackdropClick={close} scrollChild>
+      <div className="flex min-h-0 flex-1 flex-col">
+        <V3SheetHeader onClose={close} leading={<DatePickerField look="pill" value={receivedDate} onChange={setReceivedDate} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: !isEdit }} />}>
+          <span className="sr-only"><V3SheetHeader.Title>{t.income.amountReceivedTitle}</V3SheetHeader.Title></span>
+        </V3SheetHeader>
+        <div className="native-scroll flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-4">
+          <AmountHero
             value={amount}
-            onChange={(e) => setAmount(sanitizeAmount(e.target.value, 'decimal', currency))}
-            placeholder="0"
-            className="w-full bg-transparent py-3.5 font-mono-numbers text-2xl font-bold outline-none"
-            style={{ color: inputColorDisplay }}
+            onChange={setAmount}
+            currency={currency}
+            sign="+"
+            aria-label={t.income.amountReceivedLabel}
+            top={<TxTile tone="var(--color-brand-green)"><Briefcase /></TxTile>}
+            className="px-0 pb-0"
           />
-          {!meetsExpected && expected > 0 ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setAmount(String(expected))}
-              className="shrink-0 bg-[var(--color-brand-green)]/15 text-xs font-bold text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/25"
-            >
-              {t.income.fullBtn}
-            </Button>
-          ) : null}
-        </Card>
-        <p className="mt-2 font-mono-numbers text-xs" style={{ color: meetsExpected ? 'var(--color-brand-text-muted)' : 'var(--color-status-warn-fg)' }}>
-          {!valid || meetsExpected ? t.income.matchesExpected : t.income.shortOfExpected(`${fmtNum(short)} ${currency}`, `${fmtNum(expected)} ${currency}`)}
-        </p>
-
-        <Button
-          type="button"
-          onClick={save}
-          disabled={!valid || unchanged || blocked}
-          size="cta-block"
-          className="mt-4 rounded-[14px] bg-[var(--color-brand-green)] text-sm font-bold text-[var(--color-brand-on-green)] hover:bg-[var(--color-brand-green-hover)]"
-        >
-          {isEdit ? t.income.saveChangesBtn : meetsExpected ? t.income.markReceivedBtn : t.income.saveAsPartialBtn}
-        </Button>
-        {blocked ? (
-          <p className="mt-2 text-center text-xs text-[var(--color-brand-text-muted)]">{t.income.earlierPaydayFirst}</p>
-        ) : null}
+          <div className="-mt-2 flex flex-col items-center gap-3 text-center">
+            <div>
+              <p dir="auto" className="text-[1.0625rem] font-semibold text-[var(--color-brand-text-primary)]">{lt.title(source.name, formatLocalized(parseISO(current.dueDate), 'MMMM', locale))}</p>
+              <p dir="auto" className="mt-0.5 text-[0.8125rem]" style={{ color: !valid || meetsExpected ? 'var(--color-brand-text-secondary)' : 'var(--color-status-warn-fg)' }}>
+                {!valid || meetsExpected ? lt.expected(fmtNum(expected)) : lt.short(`${fmtNum(short)} ${currency}`)}
+              </p>
+            </div>
+            {expected > 0 ? (
+              <div className="flex gap-2">
+                <OptionChip selected={valid && amt === expected} onClick={() => setAmount(String(expected))}>{lt.full(fmtNum(expected))}</OptionChip>
+                <OptionChip selected={valid && amt === half} onClick={() => setAmount(String(half))}>{lt.half(fmtNum(half))}</OptionChip>
+              </div>
+            ) : null}
+          </div>
+          <SheetGroup>
+            {paymentMethods.length > 0 ? (
+              <MethodPickerRow label={lt.receivedIn} value={methodId} onChange={setMethodId} paymentMethods={paymentMethods} />
+            ) : null}
+            <PickerRow label={lt.payday} value={<span dir="auto" className="truncate">{`${source.name} · ${freq.toLowerCase()}`}</span>} />
+          </SheetGroup>
+          {blocked ? <p className="text-center text-xs text-[var(--color-brand-text-muted)]">{t.income.earlierPaydayFirst}</p> : null}
+        </div>
+        <div className="sheet-cta shrink-0 border-t border-[var(--color-brand-border)] px-5 pb-6 pt-3">
+          <Button type="button" onClick={save} disabled={!valid || unchanged || blocked} size="cta-block">
+            {isEdit ? t.income.saveChangesBtn : meetsExpected ? t.income.markReceivedBtn : t.income.saveAsPartialBtn}
+          </Button>
+        </div>
       </div>
-
-      {/* UnifiedDatePicker portals itself above the sheet — no wrapper needed. */}
-      <UnifiedDatePicker
-        open={calOpen}
-        value={receivedDate}
-        onConfirm={setReceivedDate}
-        onClose={() => setCalOpen(false)}
-      />
     </ModalShell>
   )
 }

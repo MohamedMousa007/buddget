@@ -11,6 +11,10 @@ export interface NewGoalDraft {
   alreadySaved: string
   /** Where the already-saved money is: a tracked account's id or 'elsewhere'. Absent = not answered yet. */
   savedHome?: string | null
+  /** The saved money sits in this pocket instead (Add goal version C). */
+  savedPocketId?: string | null
+  /** A goal of your own: the icon key picked for it. */
+  icon?: string | null
   fundingMode: GoalFundingMode
   /** null = still using the suggested share. */
   sharePct: number | null

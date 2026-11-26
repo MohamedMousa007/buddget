@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { cookies, headers } from 'next/headers'
 import { LOCALE_COOKIE, parseLocaleCookie } from '@/lib/i18n/localeCookie'
-import { DM_Sans, JetBrains_Mono, IBM_Plex_Sans_Arabic } from 'next/font/google'
+import { Geist, JetBrains_Mono, IBM_Plex_Sans_Arabic } from 'next/font/google'
 import '../globals.css'
 import { AppShell } from '@/components/layout/AppShell'
 import { AuthProvider } from '@/components/auth/AuthProvider'
@@ -17,8 +17,8 @@ import { PlatformBodyClass } from '@/lib/native/PlatformBodyClass'
 import { NativeInviteLinks } from '@/lib/native/inviteLinks'
 import { CrashReporter } from '@/lib/crash/CrashReporter'
 
-// One variable-weight file serves body and headings (was 8 static weight files).
-const dmSans = DM_Sans({
+// One variable-weight file serves body and headings.
+const geist = Geist({
   subsets: ['latin'],
   variable: '--font-sans',
 })
@@ -148,7 +148,7 @@ export default async function RootLayout({
       </head>
       <body
         style={{ '--font-heading': 'var(--font-sans)' } as React.CSSProperties}
-        className={`${dmSans.variable} ${jetbrainsMono.variable} ${ibmPlexArabic.variable} font-sans antialiased`}
+        className={`${geist.variable} ${jetbrainsMono.variable} ${ibmPlexArabic.variable} font-sans antialiased`}
       >
         <PlatformBodyClass />
         <NativeInviteLinks />

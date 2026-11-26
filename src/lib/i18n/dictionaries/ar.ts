@@ -1281,10 +1281,6 @@ export const ar: Dictionary = {
     step2: 'الخطوة 2 من الإضافة إلى الثروة.',
     propertyNote: 'لا يوجد سعر مباشر: القيمة من تقديرك.',
     propertyWorth: 'قيمته',
-    boughtThisMonth: 'اشتريته هذا الشهر',
-    boughtThisMonthSub: 'من ميزانية هذا الشهر. يُحتسب ادخاراً هذا الشهر.',
-    alreadyHad: 'كان لديّ بالفعل',
-    alreadyHadSub: 'يُضاف إلى ما تملكه. الميزانية لا تتغير.',
     whenBought: 'تاريخ الشراء',
     whatYouPaid: 'ما دفعته',
     optional: 'اختياري',
@@ -2737,7 +2733,7 @@ export const ar: Dictionary = {
     selectHint: 'اسحب بطاقاتك · اضغط للاختيار',
     addNewMethod: 'إضافة طريقة جديدة',
     provider: 'المزوّد',
-    providerPlaceholder: 'اختر المزوّد — مثال: CIB، InstaPay',
+    providerPlaceholder: 'اختر المزوّد — مثال: CIB، فودافون كاش',
   },
 
   goldPurity: {

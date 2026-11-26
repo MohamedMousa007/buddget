@@ -18,7 +18,6 @@ const EXEMPT: Record<string, { category: Category; reason: string }> = {
   'src/components/modals/QuickAddFAB.tsx': { category: 'popover-menu', reason: 'content-height menu anchored to the add button; no close, tap-outside dismisses' },
   'src/components/modals/AddExpenseSheet.tsx': { category: 'wrapper', reason: 'thin shell around ExpenseSheetForm, whose header is the standard one' },
   'src/components/modals/EditExpenseSheet.tsx': { category: 'wrapper', reason: 'thin shell around ExpenseSheetForm, whose header is the standard one' },
-  'src/components/features/goals/new/NewGoalFlow.tsx': { category: 'flow-chrome', reason: 'a multi-step wizard with its own back, step dots and close' },
   'src/components/receipt/ReceiptScanSheet.tsx': { category: 'flow-chrome', reason: 'a capture and review flow with its own camera and step chrome' },
   'src/components/voice/VoiceRecordSheet.tsx': { category: 'flow-chrome', reason: 'a recording flow with its own record and cancel controls' },
   'src/components/modals/ModalTitle.tsx': { category: 'primitive', reason: 'defines the dialog-name hook the standard header uses' },

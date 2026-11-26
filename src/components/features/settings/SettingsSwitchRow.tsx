@@ -11,6 +11,8 @@ interface SettingsSwitchRowProps {
   /** A registered setting: gives the row its icon chip and search anchor. Omit for a plain switch row in a sheet or form. */
   id?: SettingId
   label: string
+  /** The switch's accessible name when several rows share one label; defaults to label. */
+  ariaLabel?: string
   tone?: RowTone
   /** A vivid chip, as on SettingsRow. */
   solid?: boolean
@@ -25,7 +27,7 @@ interface SettingsSwitchRowProps {
 }
 
 /** A whole-row switch for settings whose state does not live in a plain store field (SMS, notifications, 2-step). */
-export function SettingsSwitchRow({ id, label, tone = 'neutral', solid = false, hint, tag, checked, onChange, disabled, accessory }: SettingsSwitchRowProps) {
+export function SettingsSwitchRow({ id, label, ariaLabel, tone = 'neutral', solid = false, hint, tag, checked, onChange, disabled, accessory }: SettingsSwitchRowProps) {
   const Icon = id ? SETTING_ICONS[SETTING_BY_ID[id].icon] : null
   return (
     <label
@@ -42,7 +44,7 @@ export function SettingsSwitchRow({ id, label, tone = 'neutral', solid = false, 
         {tag ? <span className="mt-0.5 block text-[0.625rem] font-medium uppercase tracking-wider text-[var(--color-brand-text-muted)]">{tag}</span> : null}
       </span>
       {accessory}
-      <Switch size="touch" aria-label={label} checked={checked} onCheckedChange={onChange} disabled={disabled} />
+      <Switch size="touch" aria-label={ariaLabel ?? label} checked={checked} onCheckedChange={onChange} disabled={disabled} />
     </label>
   )
 }

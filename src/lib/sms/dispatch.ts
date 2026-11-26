@@ -32,6 +32,7 @@ import {
   providerOf,
   bankKeyOf,
   completeFxEvent,
+  smsOccurredAt,
   type SmsRowData,
   type SmsExpenseKind,
 } from './createSmsExpense'
@@ -145,6 +146,7 @@ async function postTransferFee(
     // Validated upstream by resolveCurrency; the column is an enum.
     currency: row.currency as Database['public']['Enums']['currency_code'],
     payment_method_id: await resolveExactPaymentMethod(service, row.userId, pair.fundingLast4),
+    occurred_at: smsOccurredAt(row),
     sms_log_id: row.logId ?? null,
   })
 }

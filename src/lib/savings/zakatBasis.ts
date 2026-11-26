@@ -23,3 +23,8 @@ export function withNisabBasis(cfg: ZakatConfig | null | undefined, nisabBasis: 
 export function zakatBasisQuestionNeeded(context: 'none' | 'silverOnly' | 'both', cfg: ZakatConfig | null | undefined): boolean {
   return context === 'silverOnly' && !zakatBasisChosen(cfg)
 }
+
+/** `cfg` with `patch` applied; a first save records no basis choice, so the basis prompt still asks. */
+export function patchZakatConfig(cfg: ZakatConfig | null | undefined, patch: Partial<ZakatConfig>): ZakatConfig {
+  return cfg ? { ...cfg, ...patch } : { holdsForTrading: false, nisabBasis: 'gold', nisabBasisChosen: false, ...patch }
+}

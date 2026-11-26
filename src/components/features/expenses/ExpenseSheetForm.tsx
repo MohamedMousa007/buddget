@@ -1,40 +1,62 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Calendar, X, Plus, Info, ArrowLeftRight } from 'lucide-react'
+import { Calendar, ChevronRight, Image as ImageIcon, Info, MessageSquare, Receipt, StickyNote, Trash2 } from 'lucide-react'
+import { useShallow } from 'zustand/react/shallow'
 import type { Currency, PaymentMethod, SpendExclusion } from '@/lib/store/types'
 import { isMethodExcluded } from '@/lib/spending/exclusion'
 import { SettingsSwitchRow } from '@/components/features/settings/SettingsSwitchRow'
-import { EXPENSE_CATEGORY_GRID } from '@/lib/constants/categoryGrid'
 import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
 import { useT, useLocale } from '@/lib/i18n'
+import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
+import { useLightTouchCopy } from '@/lib/i18n/lightTouchCopy'
 import { UnifiedDatePicker, formatDatePillLabel } from '@/components/ui/UnifiedDatePicker'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { AmountHero } from '@/components/ui/AmountHero'
+import { PickerRow } from '@/components/ui/PickerRow'
+import { PillButton } from '@/components/ui/PillButton'
 import { DatePickerField } from '@/components/ui/DatePickerField'
-import { CurrencyField } from '@/components/ui/CurrencyField'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
-import { rgba } from '@/lib/utils/color'
-import { useIsNativeClient } from '@/lib/native/useIsNativeClient'
-import { AmountTextInput } from '@/components/ui/AmountTextInput'
-import { useNumberPad } from '@/components/ui/useNumberPad'
-import { Scrim } from '@/components/ui/Scrim'
+import { SelectPaymentMethodSheet } from '@/components/features/payments/SelectPaymentMethodSheet'
+import { MethodValue } from '@/components/features/expenses/MethodValue'
+import { UnsavedChangesDialog } from '@/components/features/expenses/UnsavedChangesDialog'
+import { CategoryIcon } from '@/components/dashboard/CategoryIcon'
+import { CategoryPickerSheet } from '@/components/features/expenses/CategoryPickerSheet'
+import { ReceiptDetailSheet } from '@/components/receipt/ReceiptDetailSheet'
+import { ReceiptImageViewer, ReceiptItemRow, receiptMoney, useReceiptImage } from '@/components/receipt/ReceiptParts'
 import { useDismissGuard } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
-import { IconButton } from '@/components/ui/IconButton'
 import { OptionChip } from '@/components/ui/OptionChip'
-import { FieldButton } from '@/components/ui/FieldButton'
 import { Switch } from '@/components/ui/switch'
-import { AccentTile, accentTileGridClass, accentTileGridStyle } from '@/components/ui/AccentTile'
+import { categoryChipColors } from '@/lib/expenses/categoryChip'
+import { categoryBudget } from '@/lib/flow/categoryBudget'
+import { useMonthlyStats } from '@/hooks/useMonthlyStats'
+import { useShortDate } from '@/hooks/useShortDate'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { getMonthRange } from '@/lib/utils/calculations'
+import { mergeDayTime, nowClock } from '@/lib/time/occurredAt'
+import { formatClock } from '@/lib/i18n/dateFormat'
+import { format } from 'date-fns'
+import { tryConvertCurrency } from '@/lib/utils/currency'
+import { formatWhole } from '@/lib/utils/formatters'
 
 const HIDE_SCROLL = '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
-
+const BOX = 'rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]'
 
 function Portal({ children }: { children: React.ReactNode }) {
   if (typeof document === 'undefined') return null
   return createPortal(children, document.body)
+}
+
+/** Where an expense came from, for the "Recorded from" row. */
+export interface ExpenseOrigin {
+  kind: 'sms' | 'receipt' | 'manual'
+  /** The bank that sent the message. */
+  bank?: string
 }
 
 export interface ExpenseSheetFormProps {
@@ -64,18 +86,23 @@ export interface ExpenseSheetFormProps {
   isDirty?: boolean
   /** Edit-only: revert every field to the loaded snapshot. */
   onDiscard?: () => void
-  /** Edit-only: the recorded time of day, shown after the date in the date pill (`transactionTime`). */
-  time?: string | null
+  /** The time of day (`HH:mm`, '' for none), shown after the date in the pill and edited in the date card. */
+  clock: string
+  setClock: (v: string) => void
   /** Edit-only: set when this expense was reversed — shows a charged/refunded line. */
   refundedAt?: string
   refundKind?: 'refunded' | 'declined'
   /** Edit-only: someone repaid what was paid for them. */
   onMarkRepaid?: () => void
   owedSettled?: boolean
-  /** Edit-only: set when the expense came from a scanned receipt — opens its breakdown and photo. */
-  onViewReceipt?: () => void
-  /** Edit-only: a visible Delete button (the swipe on the row is not reachable by keyboard or screen reader). */
+  /** Edit-only: the scanned receipt behind this expense; its own section shows only when it exists. */
+  receiptId?: string
+  /** Edit-only: the bin in the header (the swipe on the row is not reachable by keyboard or screen reader). */
   onDelete?: () => void | Promise<boolean>
+  /** Edit-only: the "Recorded from" row. */
+  origin?: ExpenseOrigin
+  /** Edit-only: the saved category and amount in base currency, already inside this month's budget totals. */
+  saved?: { category: string; amountBase: number }
   /** Add-only: BNPL "split into installments" controls (shown when the PM is `bnpl`). */
   installment?: {
     isBnplPurchase: boolean
@@ -92,6 +119,71 @@ export interface ExpenseSheetFormProps {
   }
 }
 
+/** The receipt as its own section: the first lines, what is left, the total, and the photo and full list one tap away. */
+function ReceiptSection({ receiptId, onOpen }: { receiptId: string; onOpen: () => void }) {
+  const lt = useFlowLtCopy()
+  const shortDate = useShortDate()
+  const receipt = useFinanceStore((s) => s.receipts.find((r) => r.id === receiptId) ?? null)
+  const imgSrc = useReceiptImage(receiptId)
+  const [viewing, setViewing] = useState(false)
+  if (!receipt) return null
+  const more = receipt.items.length - 3
+  const discount = receipt.charges.filter((c) => c.type === 'discount' || c.amount < 0).reduce((s, c) => s + Math.abs(c.amount), 0)
+  const merchant = receipt.merchant
+  return (
+    <section className={`mx-4 mt-3 overflow-hidden ${BOX}`}>
+      <button type="button" onClick={onOpen} className="flex w-full items-center gap-3 px-4 pb-1.5 pt-3.5 text-start">
+        <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-[11px] bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]">
+          <Receipt className="size-[18px]" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{lt.expense.receiptItems(receipt.items.length)}</span>
+          {merchant ? <span dir="auto" className="block truncate text-xs text-[var(--color-brand-text-secondary)]">{merchant}</span> : null}
+        </span>
+        <ChevronRight className="size-4 shrink-0 text-[var(--color-brand-text-muted)] rtl:rotate-180" aria-hidden />
+      </button>
+      <div className="px-4 pb-1">
+        {receipt.items.slice(0, 3).map((it, i) => (
+          <ReceiptItemRow key={i} item={it} />
+        ))}
+      </div>
+      <div className="mx-4 flex items-center justify-between border-t border-dashed border-[var(--color-brand-border-strong)] py-2.5 text-[0.8125rem]">
+        <span className="text-[var(--color-brand-text-muted)]">
+          {[more > 0 ? lt.expense.more(more) : null, discount > 0 ? `−${receiptMoney(discount)}` : null].filter(Boolean).join(' · ')}
+        </span>
+        <b dir="ltr" className="font-mono-numbers font-semibold text-[var(--color-brand-text-primary)]">{receiptMoney(receipt.amount)} {receipt.currency}</b>
+      </div>
+      <div className={`grid border-t border-[var(--color-brand-border)] ${imgSrc ? 'grid-cols-2' : 'grid-cols-1'}`}>
+        {imgSrc ? (
+          <Button variant="ghost" className="h-11 rounded-none font-semibold text-[var(--color-brand-primary-ink)]" onClick={() => setViewing(true)}>
+            <ImageIcon className="size-4" aria-hidden />
+            {lt.expense.viewImage}
+          </Button>
+        ) : null}
+        <Button variant="ghost" className={`h-11 rounded-none font-semibold text-[var(--color-brand-primary-ink)] ${imgSrc ? 'border-s border-[var(--color-brand-border)]' : ''}`} onClick={onOpen}>
+          <Receipt className="size-4" aria-hidden />
+          {lt.expense.allItems(receipt.items.length)}
+        </Button>
+      </div>
+      {imgSrc ? (
+        <ReceiptImageViewer
+          open={viewing}
+          src={imgSrc}
+          title={lt.receipt.imageTitle(merchant || lt.receipt.title)}
+          sub={lt.receipt.imageSub(shortDate(receipt.receiptDate))}
+          onClose={() => setViewing(false)}
+        />
+      ) : null}
+    </section>
+  )
+}
+
+/**
+ * The expense sheet (add and edit), Light touch: the date pill top-left with the bin and close beside it, the amount
+ * with its currency inline and the title under it, then one grouped list (Category with budget left, Paid with, where
+ * it was recorded from), the receipt when there is one, a slim note, and whether it counts. Leaving with unsaved edits
+ * asks to save or discard.
+ */
 export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
   const {
     mode,
@@ -117,40 +209,43 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
     onClose,
     isDirty,
     onDiscard,
-    time,
+    clock,
+    setClock,
     refundedAt,
     refundKind,
     installment,
     onMarkRepaid,
     owedSettled,
-    onViewReceipt,
+    receiptId,
     onDelete,
+    origin,
+    saved,
   } = props
   const t = useT()
+  const lt = useFlowLtCopy()
+  const choose = useLightTouchCopy().moneySource.choose
   const { locale } = useLocale()
-  const ar = locale === 'ar'
+  const stats = useMonthlyStats()
+  const { base, rates, monthStartDay } = useFinanceStore(
+    useShallow((s) => ({ base: s.settings.baseCurrency, rates: s.exchangeRates, monthStartDay: s.settings.monthStartDay })),
+  )
+  const monthFilter = useSettingsStore((s) => s.monthFilter)
 
   const [calOpen, setCalOpen] = useState(false)
+  const [catOpen, setCatOpen] = useState(false)
+  const [methodOpen, setMethodOpen] = useState(false)
+  const [receiptOpen, setReceiptOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [noteOpen, setNoteOpen] = useState(mode === 'edit' && Boolean(notes.trim()))
+  const noteRef = useRef<HTMLTextAreaElement>(null)
 
-  // subtle scroll-position indicator for the category grid
-  const catRef = useRef<HTMLDivElement>(null)
-  const [scroll, setScroll] = useState({ frac: 0, thumb: 40 })
-  const onCatScroll = () => {
-    const el = catRef.current
-    if (!el) return
-    const max = el.scrollWidth - el.clientWidth
-    const frac = max > 0 ? Math.abs(el.scrollLeft) / max : 0
-    const thumb = el.scrollWidth > 0 ? Math.max(22, Math.min(100, (el.clientWidth / el.scrollWidth) * 100)) : 40
-    setScroll({ frac, thumb })
-  }
-  useEffect(() => {
-    // measure the initial thumb width once the grid has mounted
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot measurement of the scroll indicator
-    onCatScroll()
-  }, [])
+  // The note grows with what is typed, from one line.
+  useLayoutEffect(() => {
+    const n = noteRef.current
+    if (!n) return
+    n.style.height = 'auto'
+    n.style.height = `${n.scrollHeight}px`
+  }, [notes])
 
   const nonSpendSelected = isNonSpendCategory(category)
   // A new expense on a not-counted account starts out left out; it can be changed after it is saved.
@@ -163,11 +258,10 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
     if (/^[0-9]*\.?[0-9]*$/.test(v)) setAmount(v)
   }
 
-  const native = useIsNativeClient()
-  const amountPad = useNumberPad({ value: amount, onChange: setAmt, currency })
-
+  // A new expense counts as started once anything is typed into it.
+  const unsaved = mode === 'edit' ? Boolean(isDirty) : Boolean(amount.trim() || description.trim() || notes.trim())
   const handleX = () => {
-    if (mode === 'edit' && isDirty) setConfirmOpen(true)
+    if (unsaved) setConfirmOpen(true)
     else onClose()
   }
 
@@ -177,209 +271,173 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
       setConfirmOpen(false)
       return true
     }
-    if (mode === 'edit' && isDirty) {
+    if (unsaved) {
       setConfirmOpen(true)
       return true
     }
     return false
   })
 
-  const IcClose = <X className="w-full h-full" strokeWidth={2} />
-  const microLabel = 'font-semibold text-[0.625rem] tracking-[.08em] uppercase text-[var(--color-brand-text-muted)]'
+  const handleDelete = async () => {
+    if (!onDelete || deleting) return
+    setDeleting(true)
+    const done = await Promise.resolve(onDelete())
+    if (done === false) setDeleting(false)
+  }
+
+  // "Counted in your Food budget · 590 left": this month's budget for the category, after this expense. An edit gives
+  // its saved amount back first, since the month's totals already hold it.
+  const method = paymentMethods.find((m) => m.id === paymentMethodId)
+  const excluded = exclusion.value !== undefined || addOnExcludedMethod || Boolean(refundKind)
+  // Only an expense dated in the current cycle changes what is left this month.
+  const cycle = getMonthRange(monthFilter, monthStartDay)
+  const inCycle = date >= format(cycle.start, 'yyyy-MM-dd') && date <= format(cycle.end, 'yyyy-MM-dd')
+  const amountBase = Number.isFinite(amountNum) && amountNum > 0 ? tryConvertCurrency(amountNum, currency, base, rates) ?? 0 : 0
+  const budget = category && !nonSpendSelected ? categoryBudget(category, stats.categoryBudgetCaps, stats.categorySpending) : null
+  const giveBack = budget && saved && categoryBudget(saved.category, stats.categoryBudgetCaps, {})?.row === budget.row ? saved.amountBase : 0
+  const leftAfter = budget ? budget.left + giveBack - (inCycle ? amountBase : 0) : 0
+  const catName = (c: string) => t.expenseForm.categoryLabels[c] ?? c
+  const budgetLine = !category
+    ? ''
+    : nonSpendSelected
+      ? lt.expense.moneyMove
+      : excluded
+        ? lt.expense.notCounted
+        : !budget
+          ? lt.expense.noBudget(catName(category))
+          : !inCycle
+            ? lt.expense.counted(catName(budget.row))
+            : leftAfter >= 0
+            ? lt.expense.budgetLeft(catName(budget.row), formatWhole(leftAfter))
+            : lt.expense.budgetOver(catName(budget.row), formatWhole(-leftAfter))
+  const conversion = currency !== base && amountBase > 0 ? `≈ ${formatWhole(amountBase)} ${base}` : undefined
+  const colors = category ? categoryChipColors(category) : null
+  // A new expense shows the current time until one is picked; an edit shows its stored time (none for a row with none).
+  const shownClock = clock || (mode === 'add' ? nowClock() : '')
+  const clockAt = mergeDayTime(date, shownClock)
+  const datePill = `${formatDatePillLabel(date, locale, t.expenseForm.today)}${clockAt ? ` · ${formatClock(new Date(clockAt), locale)}` : ''}`
+  const originValue = origin
+    ? origin.kind === 'receipt'
+      ? <><Receipt className="size-4 shrink-0 text-[var(--color-brand-text-muted)]" aria-hidden />{lt.expense.fromReceipt}</>
+      : origin.kind === 'sms'
+        ? <><MessageSquare className="size-4 shrink-0 text-[var(--color-brand-text-muted)]" aria-hidden /><span className="truncate">{origin.bank ? lt.expense.fromSms(origin.bank) : lt.expense.fromSmsPlain}</span></>
+        : lt.expense.fromYou
+    : null
 
   return (
     <>
       <div className="flex min-h-0 flex-1 flex-col outline-none">
-        {/* header — ModalShell renders the drag handle above this. */}
-        <V3SheetHeader onClose={handleX}>
-          <V3SheetHeader.Title>{mode === 'edit' ? t.expenseForm.titleEdit : t.expenseForm.titleAdd}</V3SheetHeader.Title>
-          <V3SheetHeader.Extra>
-            <OptionChip
-              as="trigger"
-              size="sm"
-              onClick={() => setCalOpen(true)}
-              aria-haspopup="dialog"
-              aria-expanded={calOpen}
-            >
-              <Calendar className="size-3.5 text-[var(--color-brand-text-muted)]" />
-              {formatDatePillLabel(date, locale, t.expenseForm.today)}
-              {time ? <span className="font-mono-numbers text-[var(--color-brand-text-muted)]">· {time}</span> : null}
-            </OptionChip>
-          </V3SheetHeader.Extra>
+        {/* header — ModalShell renders the drag handle above this. The sheet's name stays for screen readers. */}
+        <V3SheetHeader
+          onClose={handleX}
+          leading={
+            <PillButton icon={<Calendar />} onClick={() => setCalOpen(true)} aria-haspopup="dialog" aria-expanded={calOpen} className="h-9 border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] font-semibold">
+              <span dir="auto">{datePill}</span>
+            </PillButton>
+          }
+          actions={onDelete ? <V3SheetHeader.Action icon={<Trash2 size={16} />} label={lt.expense.deleteAria} tone="danger" onClick={() => void handleDelete()} /> : undefined}
+        >
+          <span className="sr-only">
+            <V3SheetHeader.Title>{mode === 'edit' ? t.expenseForm.titleEdit : t.expenseForm.titleAdd}</V3SheetHeader.Title>
+          </span>
         </V3SheetHeader>
 
         {/* body */}
-        <div className={`min-h-0 flex-1 overflow-y-auto px-5 pt-3.5 pb-1.5 flex flex-col gap-3.5 ${HIDE_SCROLL}`}>
-          {/* amount + currency */}
-          <div className="grid grid-cols-[1fr_108px] gap-3 items-end">
-            <div>
-              <label htmlFor="ef-amount" className={`block ${microLabel} mb-2`}>{t.expenseForm.amount}</label>
-              {native ? (
-                <FieldButton
-                  id="ef-amount"
-                  onClick={amountPad.openPad}
-                  dir="ltr"
-                  value={amount || undefined}
-                  placeholder="0.00"
-                  affordance={null}
-                  valueClassName="font-mono-numbers text-2xl font-bold tracking-[-0.02em]"
-                  className={`bg-[var(--color-brand-elevated)] ${amountPad.isOpen ? 'border-[var(--color-brand-primary)]' : ''}`}
-                />
-              ) : (
-                <AmountTextInput
-                  id="ef-amount"
-                  value={amount}
-                  onChange={setAmount}
-                  currency={currency}
-                  placeholder="0.00"
-                  dir="ltr"
-                  className="h-12 w-full min-w-0 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-start font-mono-numbers text-2xl font-bold tracking-[-0.02em] text-[var(--color-brand-text-primary)] outline-none placeholder:text-[var(--color-brand-text-muted)] focus-visible:border-[var(--color-brand-focus)] focus-visible:ring-3 focus-visible:ring-[var(--color-brand-focus)]"
-                />
-              )}
-              {amountPad.pad}
-            </div>
-            <div>
-              <div className={`${microLabel} mb-2`}>{t.expenseForm.currency}</div>
-              <CurrencyField
-                value={currency}
-                onChange={setCurrency}
-                compact
-                className="h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-base font-semibold"
-              />
-            </div>
-          </div>
-
-          {/* description */}
-          <div>
-            <label htmlFor="ef-description" className={`block ${microLabel} mb-2`}>{t.expenseForm.description}</label>
-            <Input
+        <div className={`min-h-0 flex-1 overflow-y-auto pb-4 ${HIDE_SCROLL}`}>
+          <AmountHero
+            id="ef-amount"
+            value={amount}
+            onChange={setAmt}
+            currency={currency}
+            onCurrencyChange={(c) => setCurrency(c as Currency)}
+            base={base}
+            sign="−"
+            top={
+              colors ? (
+                <span aria-hidden className="flex size-[52px] items-center justify-center rounded-[16px]" style={{ background: colors.bg, color: colors.fg }}>
+                  <CategoryIcon category={category} className="size-6" />
+                </span>
+              ) : undefined
+            }
+            line={conversion ?? ''}
+            className="pb-0"
+          />
+          <div className="flex flex-col items-center px-5 pb-5 text-center">
+            <input
               id="ef-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              // Some Android IMEs (e.g. Gboard Arabic) only fire `input`/onChange when the
-              // composition commits; sync mid-composition so the submit gate reflects the
-              // typed word live. Setting the identical value is a no-op DOM-write, so it
-              // doesn't disrupt the composing region.
+              // Some Android IMEs (e.g. Gboard Arabic) only fire `input`/onChange when the composition commits; sync
+              // mid-composition so the submit gate reflects the typed word live.
               onCompositionUpdate={(e) => setDescription(e.currentTarget.value)}
               onCompositionEnd={(e) => setDescription(e.currentTarget.value)}
+              aria-label={t.expenseForm.description}
               placeholder={t.expenseForm.descriptionPlaceholder}
               enterKeyHint="next"
-              size="brand"
               maxLength={120}
+              dir="auto"
+              className="w-full bg-transparent text-center text-[1.0625rem] font-semibold text-[var(--color-brand-text-primary)] outline-none placeholder:text-[var(--color-brand-text-muted)]"
             />
-          </div>
-
-          {submitError ? <p role="alert" className="text-xs text-[var(--color-brand-red)]">{submitError}</p> : null}
-
-          {/* category grid */}
-          <div>
-            <div className={`${microLabel} mb-2.5`}>{t.expenseForm.category}</div>
-            <div className="-mx-5 px-5">
-              <div ref={catRef} onScroll={onCatScroll} className={`overflow-x-auto pb-0.5 ${HIDE_SCROLL}`}>
-                <div
-                  role="radiogroup"
-                  aria-label={t.expenseForm.category}
-                  className={accentTileGridClass}
-                  style={accentTileGridStyle}
-                >
-                  {EXPENSE_CATEGORY_GRID.map((c) => {
-                    const Icon = c.icon
-                    return (
-                      <AccentTile
-                        key={c.id}
-                        accent={c.accent}
-                        selected={c.id === category}
-                        dashed={c.nonspend}
-                        onClick={() => setCategory(c.id)}
-                        icon={<Icon />}
-                        label={t.expenseForm.categoryLabels[c.id] ?? c.id}
-                        badge={c.nonspend ? (
-                          <span className="absolute end-1.5 top-1.5 inline-flex h-3.5 w-3.5 text-[var(--color-brand-text-muted)]">
-                            <ArrowLeftRight className="h-full w-full" strokeWidth={2.4} />
-                          </span>
-                        ) : null}
-                      />
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-            {/* scroll indicator */}
-            <div className="mt-2.5 flex justify-center">
-              <div className="relative h-1 w-16 overflow-hidden rounded-full bg-[var(--color-brand-border)]">
-                <div
-                  className="absolute top-0 bottom-0 rounded-full bg-[var(--color-brand-text-secondary)]"
-                  style={{
-                    width: `${scroll.thumb}%`,
-                    [ar ? 'right' : 'left']: `${(100 - scroll.thumb) * scroll.frac}%`,
-                    transition: `${ar ? 'right' : 'left'} .08s linear`,
-                  }}
-                />
-              </div>
-            </div>
-            {nonSpendSelected ? (
-              <Card
-                variant="elevated"
-                radius="sm"
-                padding="none"
-                className="mt-3 flex items-start gap-2.5 px-3 py-2.5"
-              >
-                <Info className="mt-px w-4 h-4 shrink-0 text-[var(--color-brand-text-muted)]" />
-                <span className="text-start text-xs font-medium leading-[1.4] text-[var(--color-brand-text-secondary)]">
-                  {t.expenseForm.nonSpendHint}
-                </span>
-              </Card>
+            {budgetLine ? (
+              <p className={`mt-1 text-[0.8125rem] ${budget && inCycle && leftAfter < 0 && !excluded ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-text-secondary)]'}`} role="status">
+                {budgetLine}
+              </p>
             ) : null}
           </div>
 
-          {/* payment method */}
-          <PaymentMethodPicker
-            value={paymentMethodId}
-            onChange={setPaymentMethodId}
-            paymentMethods={paymentMethods}
-            label={t.expenseForm.paymentMethod}
-            variant="card"
-          />
+          {submitError ? <p role="alert" className="mx-5 mb-2 text-xs text-[var(--color-brand-red)]">{submitError}</p> : null}
+
+          <Card padding="none" divide className="mx-4 overflow-hidden rounded-2xl">
+            <PickerRow
+              label={t.expenseForm.category}
+              onClick={() => setCatOpen(true)}
+              value={
+                category && colors ? (
+                  <>
+                    <span aria-hidden className="flex size-6 items-center justify-center rounded-[7px]" style={{ background: colors.bg, color: colors.fg }}>
+                      <CategoryIcon category={category} className="size-3.5" />
+                    </span>
+                    <span className="truncate">{catName(category)}</span>
+                  </>
+                ) : (
+                  <span className="text-[var(--color-brand-text-muted)]">{choose}</span>
+                )
+              }
+            />
+            <PickerRow
+              label={lt.filters.paidWith}
+              onClick={() => setMethodOpen(true)}
+              value={method ? <MethodValue method={method} /> : <span className="text-[var(--color-brand-text-muted)]">{choose}</span>}
+            />
+            {originValue ? <PickerRow label={lt.expense.recordedFrom} value={<span className="inline-flex min-w-0 items-center gap-1.5">{originValue}</span>} /> : null}
+          </Card>
+
+          {nonSpendSelected ? (
+            <div className={`mx-4 mt-3 flex items-start gap-2.5 px-3 py-2.5 ${BOX}`}>
+              <Info className="mt-px size-4 shrink-0 text-[var(--color-brand-text-muted)]" aria-hidden />
+              <span className="text-start text-xs font-medium leading-[1.4] text-[var(--color-brand-text-secondary)]">{t.expenseForm.nonSpendHint}</span>
+            </div>
+          ) : null}
 
           {creditCardOutstandingHint ? (
-            <p className="text-xs leading-snug text-[var(--color-brand-text-muted)]" role="status">
+            <p className="mx-5 mt-2 text-xs leading-snug text-[var(--color-brand-text-muted)]" role="status">
               ⓘ{' '}
-              {t.addExpense.creditCardOutstandingHint(
-                creditCardOutstandingHint.cardName,
-                creditCardOutstandingHint.amountLabel,
-              )}
+              {t.addExpense.creditCardOutstandingHint(creditCardOutstandingHint.cardName, creditCardOutstandingHint.amountLabel)}
             </p>
           ) : null}
 
           {/* BNPL: split this purchase into an installment plan */}
           {mode === 'add' && installment?.isBnplPurchase ? (
-            <Card
-              variant="elevated"
-              radius="sm"
-              padding="sm"
-              className="bg-[var(--color-brand-elevated)]/40"
-            >
+            <div className={`mx-4 mt-3 p-4 ${BOX}`}>
               <div className="flex w-full items-center justify-between">
-                <span className="text-sm font-medium text-[var(--color-brand-text-primary)]">
-                  {t.expenseForm.splitInstallments}
-                </span>
-                <Switch
-                  size="touch"
-                  aria-label={t.expenseForm.splitInstallments}
-                  checked={installment.enabled}
-                  onCheckedChange={installment.setEnabled}
-                />
+                <span className="text-sm font-medium text-[var(--color-brand-text-primary)]">{t.expenseForm.splitInstallments}</span>
+                <Switch size="touch" aria-label={t.expenseForm.splitInstallments} checked={installment.enabled} onCheckedChange={installment.setEnabled} />
               </div>
               {installment.enabled ? (
                 <div className="mt-3 space-y-3">
                   <div className="flex gap-2">
                     {[3, 4, 6, 12].map((n) => (
-                      <OptionChip
-                        key={n}
-                        size="segment"
-                        selected={installment.count === n}
-                        onClick={() => installment.setCount(n)}
-                      >
+                      <OptionChip key={n} size="segment" selected={installment.count === n} onClick={() => installment.setCount(n)}>
                         {n}
                       </OptionChip>
                     ))}
@@ -388,9 +446,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                     {installment.count} × {((parseFloat(amount) || 0) / installment.count).toFixed(2)} {currency} {t.expenseForm.installmentEach}
                   </p>
                   <label className="block">
-                    <span className="mb-1 block text-xs font-medium text-[var(--color-brand-text-muted)]">
-                      {t.expenseForm.installmentFirstDue}
-                    </span>
+                    <span className="mb-1 block text-xs font-medium text-[var(--color-brand-text-muted)]">{t.expenseForm.installmentFirstDue}</span>
                     <DatePickerField value={installment.firstDue} onChange={installment.setFirstDue} />
                   </label>
                   <PaymentMethodPicker
@@ -402,12 +458,12 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                   {installment.error ? <p role="alert" className="text-xs text-[var(--color-brand-red)]">{installment.error}</p> : null}
                 </div>
               ) : null}
-            </Card>
+            </div>
           ) : null}
 
           {/* reversal audit line — charged vs refunded/declined date */}
           {refundKind ? (
-            <div className="flex items-center gap-1.5 text-xs text-[var(--color-brand-text-muted)]">
+            <div className="mx-5 mt-3 flex items-center gap-1.5 text-xs text-[var(--color-brand-text-muted)]">
               <Info className="h-3.5 w-3.5 shrink-0" />
               <span>
                 {t.expenseForm.charged} {formatDatePillLabel(date, locale, t.expenseForm.today)}
@@ -422,61 +478,26 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
             </div>
           ) : null}
 
-          {onViewReceipt ? (
-            <Button variant="outline" size="touch" onClick={onViewReceipt}>{t.receiptDetail.viewReceipt}</Button>
-          ) : null}
+          {receiptId ? <ReceiptSection receiptId={receiptId} onOpen={() => setReceiptOpen(true)} /> : null}
 
-          {onDelete ? (
-            <Button
-              variant="destructive"
-              size="touch"
-              disabled={deleting}
-              onClick={() => {
-                setDeleting(true)
-                void Promise.resolve(onDelete()).then((done) => { if (done === false) setDeleting(false) })
-              }}
-            >{t.common.delete}</Button>
-          ) : null}
+          {/* note: one slim line that grows */}
+          <label className={`mx-4 mt-3 flex min-h-12 items-start gap-3 px-4 py-3 ${BOX}`}>
+            <StickyNote className="mt-[3px] size-[18px] shrink-0 text-[var(--color-brand-text-muted)]" aria-hidden />
+            <textarea
+              ref={noteRef}
+              rows={1}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              aria-label={t.expenseForm.addNote}
+              placeholder={t.expenseForm.notePlaceholder}
+              dir="auto"
+              className="block min-h-6 w-full resize-none overflow-hidden bg-transparent text-[0.9375rem] leading-6 text-[var(--color-brand-text-primary)] outline-none placeholder:text-[var(--color-brand-text-muted)]"
+            />
+          </label>
 
-          {/* note */}
-          <div>
-            {noteOpen ? (
-              <div className="relative">
-                <Input
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder={t.expenseForm.notePlaceholder}
-                  aria-label={t.expenseForm.addNote}
-                  size="brand"
-                  style={{ paddingBlock: 0, paddingInline: '14px 46px' }}
-                />
-                <IconButton
-                  onClick={() => {
-                    setNoteOpen(false)
-                    setNotes('')
-                  }}
-                  aria-label={t.common.close}
-                  size="sm"
-                  className="absolute end-2 top-1/2 -translate-y-1/2"
-                >
-                  {IcClose}
-                </IconButton>
-              </div>
-            ) : (
-              <Button
-                variant="link"
-                size="touch"
-                onClick={() => setNoteOpen(true)}
-                className="self-start font-semibold text-[var(--color-brand-text-secondary)] no-underline hover:text-[var(--color-brand-text-primary)] hover:underline"
-              >
-                <Plus className="size-3.5" />
-                {t.expenseForm.addNote}
-              </Button>
-            )}
-          </div>
           {!nonSpendSelected ? (
-            <div className="space-y-2">
-              <div className="divide-y divide-[var(--color-brand-border)] overflow-hidden rounded-2xl border border-[var(--color-brand-border)]">
+            <div className="mx-4 mt-3 space-y-2">
+              <div className={`divide-y divide-[var(--color-brand-border)] overflow-hidden ${BOX}`}>
                 {addOnExcludedMethod ? (
                   <SettingsSwitchRow label={t.exclusion.expenseTitle} hint={t.exclusion.reasonMethod} checked disabled onChange={() => {}} />
                 ) : (
@@ -500,7 +521,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                 owedSettled ? (
                   <p className="text-xs font-medium text-[var(--color-brand-green)]">{t.exclusion.badgeRepaid}</p>
                 ) : (
-                  <Button variant="outline" size="touch" onClick={onMarkRepaid}>{t.exclusion.markRepaid}</Button>
+                  <Button variant="outline" size="touch" className="w-full" onClick={onMarkRepaid}>{t.exclusion.markRepaid}</Button>
                 )
               ) : null}
               {exclusion.value === 'for_someone' ? (
@@ -515,11 +536,10 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
               ) : null}
             </div>
           ) : null}
-          <div className="h-0.5" />
         </div>
 
         {/* footer */}
-        <div className="sheet-cta shrink-0 border-t border-[var(--color-brand-border)] px-5 pt-3 pb-6">
+        <div className="sheet-cta shrink-0 border-t border-[var(--color-brand-border)] px-4 pb-6 pt-3">
           {submitDisabled ? (
             <p className="mb-2 text-center text-xs font-medium text-[var(--color-brand-text-muted)]" role="status">
               {!amount.trim() || Number.isNaN(amountNum) || amountNum <= 0
@@ -529,89 +549,57 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                   : t.expenseForm.cueCategory}
             </p>
           ) : null}
-          <Button
-            type="button"
-            onClick={onSubmit}
-            disabled={submitDisabled}
-            size="cta-block"
-            className={`h-14 rounded-2xl text-base font-semibold ${
-              submitDisabled
-                ? 'cursor-not-allowed bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)] disabled:opacity-100'
-                : ''
-            }`}
-          >
+          <Button type="button" onClick={onSubmit} disabled={submitDisabled} size="cta-block" className="font-semibold">
             {mode === 'edit' ? t.expenseForm.saveChanges : t.expenseForm.saveExpense}
           </Button>
         </div>
       </div>
 
       {/* ===== overlays (portalled above the sheet) ===== */}
+      <CategoryPickerSheet open={catOpen} value={category} onChange={setCategory} onClose={() => setCatOpen(false)} own={saved} />
+      <SelectPaymentMethodSheet
+        open={methodOpen}
+        value={paymentMethodId}
+        paymentMethods={paymentMethods}
+        onSelect={setPaymentMethodId}
+        onClose={() => setMethodOpen(false)}
+      />
+      {receiptId ? <ReceiptDetailSheet receiptId={receiptId} open={receiptOpen} onClose={() => setReceiptOpen(false)} zIndexClassName="z-[120]" /> : null}
 
-
-      {/* calendar */}
       {calOpen ? (
         <Portal>
           <UnifiedDatePicker
             open
             value={date}
             onConfirm={(iso) => setDate(iso)}
+            time={{ value: shownClock, label: lt.expense.time }}
+            onConfirmDateTime={(iso, hm) => {
+              setDate(iso)
+              setClock(hm)
+            }}
             onClose={() => setCalOpen(false)}
           />
         </Portal>
       ) : null}
 
-      {/* discard / save confirm (edit) */}
-      {confirmOpen ? (
-        <Portal>
-          <div
-            dir={ar ? 'rtl' : 'ltr'}
-            className="fixed inset-0 z-[125] flex items-center justify-center p-7"
-            style={{ animation: 'efFade .16s ease' }}
-          >
-            <Scrim label={t.common.close} onClick={() => setConfirmOpen(false)} tone="heavy" blur={false} />
-            <Card
-              padding="none"
-              className="relative w-full max-w-72 px-5 pt-6 pb-5 text-start"
-              style={{
-                boxShadow: '0 24px 60px -12px rgba(0,0,0,.4)',
-                animation: 'efPop .22s cubic-bezier(.22,1,.36,1)',
-                fontFamily: ar ? 'var(--font-sans-ar)' : 'var(--font-sans)',
-              }}
-            >
-              <div className="text-lg font-semibold text-[var(--color-brand-text-primary)]">{t.expenseForm.confirmTitle}</div>
-              <div className="mt-2 text-sm font-normal leading-[1.45] text-[var(--color-brand-text-muted)]">
-                {t.expenseForm.confirmBody}
-              </div>
-              <div className="mt-5 flex flex-col gap-2.5">
-                <Button
-                  type="button"
-                  onClick={() => {
-                    setConfirmOpen(false)
-                    onSubmit()
-                  }}
-                  size="cta"
-                  className="text-base font-semibold"
-                >
-                  {t.expenseForm.saveChanges}
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    onDiscard?.()
-                    setConfirmOpen(false)
-                    onClose()
-                  }}
-                  variant="outline"
-                  size="cta"
-                  className="bg-transparent text-base font-semibold text-[var(--color-brand-red)] hover:bg-[var(--color-brand-elevated)]"
-                >
-                  {t.expenseForm.discardChanges}
-                </Button>
-              </div>
-            </Card>
-          </div>
-        </Portal>
-      ) : null}
+      {/* save / discard: an edit, or a new expense with something typed in. Save on a new one that is not complete
+          yet keeps the sheet open on the cue line. */}
+      <UnsavedChangesDialog
+        open={confirmOpen}
+        body={mode === 'edit' ? t.expenseForm.confirmBody : lt.expense.unsavedAddBody}
+        saveLabel={mode === 'edit' ? t.expenseForm.saveChanges : t.expenseForm.saveExpense}
+        onSave={() => {
+          setConfirmOpen(false)
+          onSubmit()
+        }}
+        onDiscard={() => {
+          onDiscard?.()
+          setConfirmOpen(false)
+          onClose()
+        }}
+        onKeep={() => setConfirmOpen(false)}
+      />
     </>
   )
 }
+

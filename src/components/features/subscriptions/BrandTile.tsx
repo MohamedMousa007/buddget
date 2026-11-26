@@ -10,6 +10,8 @@ const SIZES = {
   44: { box: 'size-11 rounded-xl', pad: 'p-1.5', text: 'text-sm' },
   48: { box: 'size-12 rounded-[14px]', pad: 'p-1.5', text: 'text-[0.9375rem]' },
   56: { box: 'size-14 rounded-2xl', pad: 'p-[7px]', text: 'text-base' },
+  52: { box: 'size-[52px] rounded-2xl', pad: 'p-[7px]', text: 'text-base' },
+  72: { box: 'size-[72px] rounded-[20px]', pad: 'p-2.5', text: 'text-xl' },
 } as const
 
 export type BrandTileSize = keyof typeof SIZES

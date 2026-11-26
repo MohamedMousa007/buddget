@@ -14,6 +14,7 @@ import { registerBackGuard } from '@/lib/navigation/backGuard'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { Scrim } from '@/components/ui/Scrim'
 import { IconButton } from '@/components/ui/IconButton'
+import { Button } from '@/components/ui/button'
 
 interface YMD {
   y: number
@@ -61,19 +62,38 @@ export interface UnifiedDatePickerProps {
   /** Earliest / latest selectable day (ISO). Default: the year list's span, 1970 to 50 years ahead. */
   min?: string
   max?: string
+  /**
+   * Adds a time of day under the grid (`HH:mm`, '' for none) with Cancel and Done: tapping a day then only picks it,
+   * and Done returns both through `onConfirmDateTime`. Absent (default): day only, a tap confirms and closes.
+   */
+  time?: { value: string; label: string }
+  onConfirmDateTime?: (iso: string, time: string) => void
 }
 
 /**
  * App-wide date picker: a centered popup with a teal header, a constant-size
  * 6-row day grid (adjacent-month days for a fixed frame), a month grid, and a
- * searchable year dropdown. Day-only — timestamps are set server-side. Tapping a
- * day confirms and closes instantly.
+ * searchable year dropdown. Day-only by default: tapping a day confirms and closes
+ * instantly. With `time`, it also edits the time of day and confirms on Done.
  */
-export function UnifiedDatePicker({ open, value, onConfirm, onClose, min, max }: UnifiedDatePickerProps) {
+export function UnifiedDatePicker({ open, value, onConfirm, onClose, min, max, time, onConfirmDateTime }: UnifiedDatePickerProps) {
   const { locale } = useLocale()
   const t = useT()
   const ar = locale === 'ar'
-  const sel = useMemo(() => parseSeed(value), [value])
+  const withTime = Boolean(time && onConfirmDateTime)
+  const seed = useMemo(() => parseSeed(value), [value])
+  // With a time, a tapped day is staged until Done; reset to the field's values each time the picker opens.
+  const [staged, setStaged] = useState<YMD>(seed)
+  const [clock, setClock] = useState(time?.value ?? '')
+  const [wasOpen, setWasOpen] = useState(false)
+  if (open !== wasOpen) {
+    setWasOpen(open)
+    if (open) {
+      setStaged(seed)
+      setClock(time?.value ?? '')
+    }
+  }
+  const sel = withTime ? staged : seed
   const today = useMemo(() => todayYMD(), [])
   const weekStart = useWeekStart()
   const years = useMemo(() => pickerYears(), [])
@@ -135,7 +155,15 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose, min, max }:
   const shiftYear = (delta: number) => setView({ y: y + delta, m })
 
   const pick = (c: YMD) => {
+    if (withTime) {
+      setStaged(c)
+      return
+    }
     onConfirm(toISO(c))
+    onClose()
+  }
+  const done = () => {
+    onConfirmDateTime?.(toISO(staged), clock)
     onClose()
   }
 
@@ -358,6 +386,26 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose, min, max }:
             </div>
           ) : null}
         </div>
+
+        {withTime && time ? (
+          <>
+            <div className="mx-3.5 flex items-center justify-between border-t border-[var(--color-brand-border)] py-3">
+              <label htmlFor="udp-time" className="text-sm font-medium text-[var(--color-brand-text-primary)]">{time.label}</label>
+              <input
+                id="udp-time"
+                type="time"
+                dir="ltr"
+                value={clock}
+                onChange={(e) => setClock(e.target.value)}
+                className="h-11 rounded-lg bg-[var(--color-brand-elevated)] px-2.5 font-mono-numbers text-sm text-[var(--color-brand-text-primary)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]"
+              />
+            </div>
+            <div className="flex justify-end gap-2 px-3.5 pb-3.5">
+              <Button variant="ghost" size="touch" onClick={onClose}>{t.common.cancel}</Button>
+              <Button size="touch" onClick={done}>{t.common.done}</Button>
+            </div>
+          </>
+        ) : null}
       </div>
     </div>,
     document.body,

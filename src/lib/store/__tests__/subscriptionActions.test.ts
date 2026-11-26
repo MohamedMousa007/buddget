@@ -131,11 +131,9 @@ describe('lifecycle actions', () => {
     expect(sub(id)).toMatchObject({ status: 'active', endsOn: null })
   })
 
-  it('pause stops the recurring mirror and resume restarts it', () => {
+  it('resume brings a legacy paused row back and restarts its recurring mirror', () => {
     const id = st().addSubscription(input())
-    st().pauseSubscription(id)
-    expect(sub(id)).toMatchObject({ status: 'paused' })
-    expect(sub(id).pausedAt).toBeTruthy()
+    st().updateSubscription(id, { status: 'paused', pausedAt: '2026-08-01T00:00:00.000Z' })
     expect(re(id).isActive).toBe(false)
     st().resumeSubscription(id)
     expect(sub(id)).toMatchObject({ status: 'active', pausedAt: null })

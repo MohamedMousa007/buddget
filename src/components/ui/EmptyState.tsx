@@ -4,12 +4,12 @@ import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 type EmptyStateVariant = 'default' | 'hero' | 'card'
-type EmptyStateTone = 'brand' | 'positive'
+type EmptyStateTone = 'brand' | 'positive' | 'neutral'
 
 interface EmptyStateProps {
   /** Glyph drawn inside the unified 56px tile. */
   icon?: ReactNode
-  /** Tile colour behind `icon`: brand for a first step, positive for "all clear". */
+  /** Tile colour behind `icon`: brand for a first step, positive for "all clear", neutral for no results. */
   iconTone?: EmptyStateTone
   /** Replaces `icon` with a ready-made visual (mascot) rendered as given, above the title. */
   illustration?: ReactNode
@@ -30,6 +30,8 @@ interface EmptyStateProps {
 const TILE: Record<EmptyStateTone, string> = {
   brand: 'bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]',
   positive: 'bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]',
+  /** A quiet grey tile: nothing to fix, nothing to celebrate (no matching results). */
+  neutral: 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]',
 }
 
 export function emptyStateClasses(variant: EmptyStateVariant) {

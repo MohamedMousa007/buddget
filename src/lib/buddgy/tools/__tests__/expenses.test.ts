@@ -3,8 +3,9 @@ import { TOOLS } from '@/lib/buddgy/tools/exec'
 import { refOf } from '@/lib/buddgy/tools/refs'
 import type { ToolContext } from '@/lib/buddgy/tools/types'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { assetFundingId } from '@/lib/savings/assetPurchase'
 import { sansStamp } from './sansStamp'
-import type { Expense, PaymentMethod } from '@/lib/store/types'
+import type { Expense, InvestmentHolding, PaymentMethod } from '@/lib/store/types'
 
 const SALARY = { id: 'i1', name: 'Salary', amount: 100000, currency: 'EGP', isRecurring: true, recurringFrequency: 'monthly', dayOfMonth: 1, paydayDays: [1], sourceType: 'salary', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' } as never
 
@@ -47,6 +48,7 @@ beforeEach(() => {
     paymentMethods: [pm('aaaaaaaa-0000-0000-0000-000000000001', 'Cash', true), pm('d4d4d4d4-0000-0000-0000-000000000002', 'CIB Card', false)],
     expenses: [expense(E1), expense(E2, { description: 'Taxi', category: 'Transport', amount: 60, amountInBaseCurrency: 60, date: '2026-10-12' })],
     incomeSources: [],
+    investmentHoldings: [],
     incomeEvents: [],
     debts: [],
     debtPayments: [],
@@ -190,6 +192,26 @@ describe('delete_expense', () => {
     const after = useFinanceStore.getState().expenses
     expect(sansStamp(after.find((e) => e.id === E2))).toEqual(sansStamp(before.find((e) => e.id === E2)))
     expect(after.find((e) => e.id === E1)?.description).toBe('Edited later')
+  })
+})
+
+describe('delete_expense on an asset purchase', () => {
+  const H = 'e5e5e5e5-0000-0000-0000-000000000005'
+  const holding = { id: H, assetType: 'gold', name: '21k ring', quantity: 5, currency: 'EGP', karat: 21, createdAt: '2026-10-10T10:00:00.000Z', updatedAt: '2026-10-10T10:00:00.000Z' } as InvestmentHolding
+
+  it('deletes the holding with its money row, and undo brings both back', () => {
+    const funding = assetFundingId(H)
+    useFinanceStore.setState({ investmentHoldings: [holding], expenses: [expense(E1), expense(funding, { description: 'Gold buy', amount: 20000, amountInBaseCurrency: 20000 })] })
+    const del = write('delete_expense')
+    const p = del.propose({ ref: refOf(funding) }, ctx)
+    if (!p.ok) throw new Error('propose failed')
+    const applied = del.apply(p.proposal, ctx)
+    if (!applied.ok) throw new Error('apply failed')
+    expect(useFinanceStore.getState().expenses.map((e) => e.id)).toEqual([E1])
+    expect(useFinanceStore.getState().investmentHoldings).toHaveLength(0)
+    applied.undo?.()
+    expect(useFinanceStore.getState().expenses.map((e) => e.id).sort()).toEqual([E1, funding].sort())
+    expect(useFinanceStore.getState().investmentHoldings.map((h) => h.id)).toEqual([H])
   })
 })
 

@@ -14,6 +14,11 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { MASK } from '@/lib/privacy/mask'
 import { useMask } from '@/lib/privacy/useMask'
 import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
+import { GoalGlyph } from '@/components/features/goals/GoalGlyph'
+import { useFundSummary } from '@/components/features/goals/FundItSheet'
+import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
+import { formatWhole } from '@/lib/utils/formatters'
 
 export type GoalCardAction = GoalStatusView['button']['action']
 
@@ -24,8 +29,85 @@ const PERCENT_COLOR: Record<string, string> = {
   paused: 'var(--color-brand-text-secondary)',
 }
 
-/** Fixed 192px goal card: identity, amount, checkpoint bar, then exactly one status line and one button. */
+/**
+ * Fixed 192px goal card: identity, amount, checkpoint bar, then exactly one status line and one button.
+ * `look="light"` is the Light touch card: the whole card opens the goal; a status badge, the plan, the bar with its
+ * milestone marks, then saved and to go.
+ */
 export function GoalCard({
+  row,
+  onOpen,
+  onAction,
+  look = 'card',
+}: {
+  row: GoalRow
+  onOpen: (g: Goal) => void
+  onAction: (g: Goal, a: GoalCardAction) => void
+  look?: 'card' | 'light'
+}) {
+  if (look === 'light') return <LightGoalCard row={row} onOpen={onOpen} />
+  return <ClassicGoalCard row={row} onOpen={onOpen} onAction={onAction} />
+}
+
+type LightState = 'onTrack' | 'behind' | 'over' | 'noPlan' | 'paused'
+const BADGE: Record<LightState, 'positive' | 'warn' | 'negative' | 'neutral'> = {
+  onTrack: 'positive', behind: 'warn', over: 'negative', noPlan: 'neutral', paused: 'neutral',
+}
+
+function LightGoalCard({ row, onOpen }: { row: GoalRow; onOpen: (g: Goal) => void }) {
+  const { goal, current, percent, status } = row
+  const c = useGoalsLtCopy().goals
+  const fundSummary = useFundSummary()
+  const hidden = useMask('lists')
+  const { locale } = useLocale()
+  const isLimit = goal.category === 'spending_control'
+  const basis = (isLimit ? goal.monthlySpendingLimit : goal.targetAmount) ?? 0
+  const money = (n: number) => (hidden ? MASK : formatWhole(n))
+  const state: LightState =
+    status.kind === 'paused' ? 'paused'
+    : status.kind === 'over' ? 'over'
+    : status.kind === 'behind' ? 'behind'
+    : goal.fundingMode === 'manual' && !isLimit && goal.category !== 'debt_freedom' ? 'noPlan'
+    : 'onTrack'
+  const label = { onTrack: c.statusOnTrack, behind: c.statusBehind, over: c.statusOver, noPlan: c.statusNoPlan, paused: c.statusPaused }[state]
+  const date = goal.targetDate
+    ? new Date(`${goal.targetDate.slice(0, 7)}-01T00:00:00`).toLocaleDateString(intlTag(locale), { month: 'short', year: 'numeric' })
+    : ''
+  const plan = isLimit || goal.category === 'debt_freedom' ? '' : fundSummary(
+    { mode: goal.fundingMode, sharePct: goal.sharePct ?? 0, fixed: String(goal.monthlyContribution ?? ''), frequency: goal.frequency },
+    money,
+  )
+  const sub = plan && date ? c.byDate(plan, date) : plan || date
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(goal)}
+      data-raw-button-ok="a whole goal card that opens the goal sheet"
+      className="block w-full rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4 text-start shadow-sm transition-transform duration-100 active:scale-[0.98]"
+    >
+      <span className="flex items-center gap-3">
+        <GoalGlyph goal={goal} size={40} />
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2">
+            <span dir="auto" className="truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{goal.name}</span>
+            <Badge tone={BADGE[state]} size="sm" bordered={false} className="font-bold uppercase tracking-[0.04em]">{label}</Badge>
+          </span>
+          {sub ? <span className="mt-0.5 block truncate text-xs text-[var(--color-brand-text-muted)]">{sub}</span> : null}
+        </span>
+        <b className="font-mono-numbers text-sm text-[var(--color-brand-text-primary)]">{percent}%</b>
+      </span>
+      <CheckpointBar percent={percent} tone={TONE[status.kind] ?? 'default'} nodes={!isLimit} look="marks" className="mt-3" />
+      <span className="mt-2 flex justify-between gap-3 font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">
+        <span>
+          <b className="font-semibold text-[var(--color-brand-text-primary)]">{money(current)}</b> {c.savedWord}
+        </span>
+        {basis > 0 ? <span>{c.toGo(money(Math.max(0, basis - current)))}</span> : null}
+      </span>
+    </button>
+  )
+}
+
+function ClassicGoalCard({
   row,
   onOpen,
   onAction,

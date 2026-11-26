@@ -19,6 +19,7 @@ import {
 import { selectedPayableDebtId } from '@/lib/debt/selectedPayableDebtId'
 import type { Currency, DebtRecurringFrequency } from '@/lib/store/types'
 import { defaultMethodId } from '@/lib/accounts/resolve'
+import { debtPayMethodId } from '@/lib/debts/debtPayMethod'
 import { recurringDueDayFor } from '@/lib/utils/recurringDebtPayments'
 
 export function useRecurringDebtPaymentSheet() {
@@ -110,6 +111,15 @@ export function useRecurringDebtPaymentSheet() {
     )
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [isOpen, payableDebts, debts, debtPayments, debtBalanceCtx, selectedDebtId, paymentMethods])
+
+  // A schedule starts on the plan's default card (installments); once per debt per opening, so a manual pick sticks.
+  const methodPresetFor = useRef(new Set<string>())
+  useEffect(() => {
+    if (!isOpen) { methodPresetFor.current.clear(); return }
+    if (!selectedDebt || methodPresetFor.current.has(selectedDebt.id)) return
+    methodPresetFor.current.add(selectedDebt.id)
+    setPaymentMethodId(debtPayMethodId(selectedDebt, paymentMethods))
+  }, [isOpen, selectedDebt, paymentMethods])
 
   const handleSubmit = useCallback(() => {
     if (!selectedDebtId || !selectedDebt || !amount) return

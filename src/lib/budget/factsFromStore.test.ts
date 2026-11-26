@@ -47,13 +47,13 @@ describe('profile facts', () => {
       monthlyRent: 6000, rentIncludesUtilities: true,
       financialProfile: { dependents: 2, supportsOthers: true, housing: 'rent', priorities: ['safety', 'bogus', 'debt'], securityLean: 20, investInterest: true, incomeStability: 'mixed' },
       emergencyFundConfig: { targetMonths: 6, monthlyEssentials: 9000 },
-      zakatConfig: { nisabBasis: 'gold', holdsForTrading: false, manualAmount: 1200 },
+      zakatConfig: { nisabBasis: 'gold', holdsForTrading: false },
     }), NOW)
     expect(f).toMatchObject({
       country: 'AE', household: 'family', lifestyle: 'comfortable', foodFrequency: 'mostdays', transportMode: 'car', hasCar: true,
       rent: 6000, rentIncludesUtilities: true, dependents: 2, supportsOthers: true, housing: 'rent', priorities: ['safety', 'debt'],
       securityLean: 20, investInterest: true, incomeStability: 'mixed',
-      essentialsMonthly: 9000, emergencyTargetMonths: 6, zakatMonthly: 100,
+      essentialsMonthly: 9000, emergencyTargetMonths: 6, zakatMonthly: 0,
     })
     expect([...f.known!].sort()).toEqual(['household', 'incomeStability', 'lifestyle', 'rentIncludesUtilities', 'supportsOthers'])
   })

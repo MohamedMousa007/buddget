@@ -15,7 +15,7 @@ export function FlowPendingRow() {
   if (copy.mode === 'single') {
     const { kind } = copy.entry
     return (
-      <div className="mx-4 mt-3">
+      <div className="mx-4 mt-4">
         <PendingRow
           tone={PENDING_TONE[kind]}
           icon={PENDING_ICON[kind]}
@@ -27,7 +27,7 @@ export function FlowPendingRow() {
     )
   }
   return (
-    <div className="mx-4 mt-3">
+    <div className="mx-4 mt-4">
       <PendingRow tone="amber" icon={Inbox} title={copy.title} subtitle={copy.subtitle} label={copy.spoken} onPress={openNeedsYou} />
     </div>
   )

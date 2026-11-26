@@ -1,7 +1,8 @@
 'use client'
 
 import { fitBigNumber } from '@/components/features/hero/fitText'
-import { BAND_FG2, BAND_MIX, BandScale, HeroBand, type HeroBandCell } from '@/components/features/hero/HeroBand'
+import { BAND_FG2, BAND_MIX, BandScale, HeroBand } from '@/components/features/hero/HeroBand'
+import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 import { monthProgress } from '@/lib/debts/heroStats'
 import { useLocale, useT } from '@/lib/i18n'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
@@ -50,6 +51,7 @@ export function DebtPortfolioHero({
   clearedCount,
 }: DebtPortfolioHeroProps) {
   const t = useT().debts
+  const lt = useDebtsSubsLtCopy().debts.hero
   const { locale } = useLocale()
   const hidden = useMask('hero')
   const fmtWhole = (n: number) => (hidden ? MASK : whole(n))
@@ -58,23 +60,18 @@ export function DebtPortfolioHero({
 
   const compact = (n: number) => (hidden ? MASK : formatCompact(n, locale))
   const month = monthProgress(paidThisMonth, dueThisMonth)
-  const monthCell: HeroBandCell =
-    dueThisMonth > 0
-      ? { label: t.heroMonth, value: `${compact(month.paid)}/${compact(month.total)}` }
-      : { label: t.heroMonth, value: paidThisMonth > 0 ? money(paidThisMonth) : dash }
 
-  const cells: [HeroBandCell, HeroBandCell, HeroBandCell] =
+  // Light touch: the three cells collapse into one line under the bar.
+  const parts: React.ReactNode[] =
     activeCount === 0
-      ? [
-          { label: t.statDebtsCleared, value: clearedCount > 0 ? String(clearedCount) : dash },
-          { label: t.statTotalPaidOff, value: paidOff > 0 ? money(paidOff) : dash },
-          { label: t.heroDebtFreeSince, value: lastClearedAt ? formatLocalized(lastClearedAt, 'MMM yyyy', locale) : dash },
-        ]
+      ? [clearedCount > 0 ? lt.cleared(clearedCount, money(paidOff)) : '', lastClearedAt ? `${t.heroDebtFreeSince} ${formatLocalized(lastClearedAt, 'MMM yyyy', locale)}` : '']
       : [
-          { label: t.heroNext, value: nextPayment ? money(nextPayment.amount) : dash },
-          monthCell,
-          { label: t.heroDebtFreeBy, value: debtFreeDate ? formatLocalized(debtFreeDate, 'MMM yyyy', locale) : dash },
+          nextPayment ? lt.next(fmtWhole(nextPayment.amount), formatLocalized(nextPayment.date, 'MMM d', locale)) : '',
+          dueThisMonth > 0 ? lt.month(compact(month.paid), compact(month.total)) : paidThisMonth > 0 ? `${t.heroMonth} ${money(paidThisMonth)}` : '',
+          debtFreeDate ? lt.freeBy(formatLocalized(debtFreeDate, 'MMM yyyy', locale)) : '',
         ]
+  const shown = parts.filter(Boolean)
+  const note = shown.length ? <span dir="auto"><b className="font-semibold text-[var(--flow-band-fg)]">{shown[0]}</b>{shown.slice(1).map((p, i) => <span key={i}> · {p}</span>)}</span> : dash
 
   const progressing = borrowedTotal > 0 && activeCount > 0
   return (
@@ -107,8 +104,8 @@ export function DebtPortfolioHero({
           </BandScale>
         </>
       }
-      cells={cells}
-      fitCells
+      note={note}
+      contained
     />
   )
 }

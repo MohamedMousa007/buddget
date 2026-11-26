@@ -65,6 +65,12 @@ export function moneyFlex(n: number, currency: string): string {
   return /^\.0+$/.test(dec) ? int : int + dec
 }
 
+/** {@link splitMoney} with smart decimals: no `.00` when there are no cents (Accounts' figures, Light touch). */
+export function smartSplit(n: number, currency: string): { int: string; dec: string } {
+  const s = splitMoney(n, currency)
+  return /^\.0+$/.test(s.dec) ? { int: s.int, dec: '' } : s
+}
+
 export { accountTitle }
 
 /** What identifies the account beside its name: the user's label, else the last four digits, else nothing. */

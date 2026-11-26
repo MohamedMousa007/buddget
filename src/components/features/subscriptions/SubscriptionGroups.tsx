@@ -12,7 +12,7 @@ import { formatFixed2 } from '@/lib/utils/formatters'
 
 function RowCard({ rows, onOpen }: { rows: RowModel[]; onOpen: (id: string) => void }) {
   return (
-    <Card padding="none" radius="sm" className="divide-y divide-[var(--color-brand-border)] overflow-hidden">
+    <Card padding="none" className="divide-y divide-[var(--color-brand-border)] overflow-hidden">
       {rows.map((r) => (
         <SubscriptionRow key={r.sub.id} row={r} onOpen={() => onOpen(r.sub.id)} />
       ))}
@@ -20,23 +20,20 @@ function RowCard({ rows, onOpen }: { rows: RowModel[]; onOpen: (id: string) => v
   )
 }
 
-/** Timeline groups, then Paused and Cancelled collapsed into one card that expands in place. */
+/** Timeline groups, then Cancelled collapsed into one card that expands in place. There is no pause. */
 export function SubscriptionGroups({
   groups,
-  paused,
   cancelled,
   onOpen,
 }: {
   groups: RowGroup[]
-  paused: RowModel[]
   cancelled: RowModel[]
   onOpen: (id: string) => void
 }) {
   const t = useT()
   const ui = t.subscriptions.ui
-  const [open, setOpen] = useState<'paused' | 'cancelled' | null>(null)
+  const [open, setOpen] = useState<'cancelled' | null>(null)
   const collapsed = [
-    { key: 'paused' as const, label: t.subscriptions.paused, rows: paused },
     { key: 'cancelled' as const, label: t.subscriptions.cancelled, rows: cancelled },
   ].filter((c) => c.rows.length > 0)
 
@@ -54,7 +51,7 @@ export function SubscriptionGroups({
         </section>
       ))}
       {collapsed.length > 0 ? (
-        <Card padding="none" radius="sm" className="divide-y divide-[var(--color-brand-border)] overflow-hidden">
+        <Card padding="none" className="divide-y divide-[var(--color-brand-border)] overflow-hidden">
           {collapsed.map((c) => (
             <div key={c.key}>
               <button

@@ -18,9 +18,10 @@ describe('Arabic number and unit ordering (QA-27)', () => {
     expect(debts).toMatch(/<span dir="auto"[^>]*>\{progressing \? t\.heroBorrowedTotal/)
     expect(read('components/features/savings-v3/SavingsHero.tsx')).toMatch(/<span dir="auto"[^>]*>\{t\.savesPct/)
   })
-  it('the Debts band shrinks long cells instead of truncating them, and its month cell has no spaces around the slash', () => {
+  it('the Debts band (Light touch) is a rounded card whose facts ride one auto-direction line under the bar', () => {
     const debts = read('components/features/debts/redesign/DebtPortfolioHero.tsx')
-    expect(debts).toMatch(/cells=\{cells\}\s+fitCells/)
-    expect(debts).toContain('${compact(month.paid)}/${compact(month.total)}')
+    expect(debts).toMatch(/note=\{note\}\s+contained/)
+    expect(debts).toContain('lt.month(compact(month.paid), compact(month.total))')
+    expect(debts).toMatch(/const note = [^\n]*<span dir="auto">/)
   })
 })

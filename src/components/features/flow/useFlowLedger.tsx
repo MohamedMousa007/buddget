@@ -31,6 +31,8 @@ import { catalogCategory, merchantCategoryKey } from '@/lib/sms/merchantCategory
 import { useIncomeResolution } from '@/components/features/flow/IncomePrompts'
 import { compareFlowItems, instantOf } from '@/components/features/flow/flowOrder'
 import { useLocale, useT } from '@/lib/i18n'
+import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
+import { monthHeads } from '@/lib/flow/ledgerMonths'
 import { useWeekStart } from '@/hooks/useWeekStart'
 import { smsAccountLabelKind } from '@/lib/accounts/unplacedSms'
 import { storedMethodId } from '@/lib/accounts/resolve'
@@ -82,6 +84,7 @@ function inRange(iso: string, { start, end }: ResolvedRange): boolean {
 export function useFlowLedger() {
   const shortDate = useShortDate()
   const t = useT()
+  const lt = useFlowLtCopy()
   const { locale } = useLocale()
   const toast = useActionToast()
   const { removeExpense } = useLinkedDelete()
@@ -540,17 +543,22 @@ export function useFlowLedger() {
       if (list) list.push(i)
       else byDay.set(i.date, [i])
     }
-    return [...byDay.entries()].map(([day, list]) => {
+    const days = [...byDay.entries()]
+    const heads = monthHeads(days.map(([day, list]) => ({ day, rows: list.length })))
+    const monthLabel = new Intl.DateTimeFormat(intlTag(locale), { month: 'long', year: 'numeric' })
+    return days.map(([day, list], i) => {
       const net = list.filter((i) => i.counted).reduce((s, i) => s + (i.dir === 'in' ? i.amountBase : -i.amountBase), 0)
+      const head = heads[i]
       return {
         key: day,
         label: day === today ? t.common.today : day === yesterday ? t.common.yesterday : weekday.format(parseISO(day)),
         date: shortDate(day),
         net: formatSigned(net, 2),
+        monthHead: head ? { label: monthLabel.format(parseISO(`${head.month}-01`)), count: lt.page.monthCount(head.count) } : undefined,
         rows: list.map((i) => i.row),
       }
     })
-  }, [items, locale, t, shortDate])
+  }, [items, locale, t, lt, shortDate])
 
   return { all, items, groups, resolved }
 }

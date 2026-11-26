@@ -28,7 +28,7 @@ export function pickerKeys(preview: PreviewModel): Key[] {
  * Paid with, Category and Date as lines that open their picker in place. A missing method starts open,
  * so the question is asked inside the card instead of guessed silently.
  */
-export function RecordPickers({ preview, onRevise, payLabel }: { preview: PreviewModel; onRevise: (patch: Record<string, string>) => void; payLabel?: string }) {
+export function RecordPickers({ preview, onRevise, payLabel, boxed = false }: { preview: PreviewModel; onRevise: (patch: Record<string, string>) => void; payLabel?: string; boxed?: boolean }) {
   const copy = useBuddgyCardCopy()
   const missingMethod = preview.missing?.includes('method') ?? false
   const [open, setOpen] = useState<Key | null>(missingMethod ? 'method' : null)
@@ -42,7 +42,7 @@ export function RecordPickers({ preview, onRevise, payLabel }: { preview: Previe
   }
 
   return (
-    <div className="flex flex-col">
+    <div className={boxed ? 'flex flex-col overflow-hidden rounded-xl border border-[var(--color-brand-border)] [&>*:first-child]:border-t-0' : 'flex flex-col'}>
       {keys.map((k) => {
         const f = field(k)
         const shown = row(k)?.value ?? f.options?.find((o) => o.value === f.value)?.label ?? f.value
@@ -61,6 +61,7 @@ export function RecordPickers({ preview, onRevise, payLabel }: { preview: Previe
             open={open === k}
             guessed={guessed}
             onToggle={() => toggle(k)}
+            inset={boxed}
           >
             {k === 'method' ? <PayWith value={preview.methodRef ?? f.value} onPick={pick(k)} missing={missingMethod} label={payLabel} /> : null}
             {k === 'category' ? <CategoryPick value={f.value} options={f.options ?? []} onPick={pick(k)} guessed={Boolean(guessed)} /> : null}

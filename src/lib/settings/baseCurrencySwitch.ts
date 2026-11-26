@@ -1,6 +1,7 @@
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import type { AppSettings, BudgetPlan, Currency, UserProfile } from '@/lib/store/types'
+import type { StoredZakatConfig } from '@/lib/savings/zakatLegacy'
 
 export interface BaseCurrencySlice {
   settings: AppSettings
@@ -42,14 +43,17 @@ export function planBaseCurrencySwitch(slice: BaseCurrencySlice, next: Currency)
     }
   }
   if (profile.zakatConfig) {
-    const z = profile.zakatConfig
-    nextProfile.zakatConfig = {
+    // Old hand-typed figures stay convertible until the one-time note clears them.
+    const z = profile.zakatConfig as StoredZakatConfig
+    const next: StoredZakatConfig = {
       ...z,
+      tradeGoodsValue: typeof z.tradeGoodsValue === 'number' ? conv(z.tradeGoodsValue) : z.tradeGoodsValue,
       manualAmount: typeof z.manualAmount === 'number' ? conv(z.manualAmount) : z.manualAmount,
       lineOverrides: z.lineOverrides
         ? Object.fromEntries(Object.entries(z.lineOverrides).map(([k, v]) => [k, conv(v)]))
         : z.lineOverrides,
     }
+    nextProfile.zakatConfig = next
   }
 
   const nextPlans = budgetPlans.map((plan) => ({

@@ -32,7 +32,7 @@ const round2 = (n: number) => Math.round(n * 100) / 100
  * currency: a USD plan is $20 with an ≈ EGP estimate, never silently converted.
  */
 export function useAddSubscriptionForm(editing: Subscription | null, onClose: () => void, seedBrandKey: string | null) {
-  const { profile, settings, exchangeRates, paymentMethods, subscriptions, addSubscription, updateSubscription } =
+  const { profile, settings, exchangeRates, paymentMethods, subscriptions, addSubscription, updateSubscription, adoptSubscriptionPrice } =
     useFinanceStore(
       useShallow((s) => ({
         profile: s.profile,
@@ -41,6 +41,7 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
         paymentMethods: s.paymentMethods,
         subscriptions: s.subscriptions,
         addSubscription: s.addSubscription,
+        adoptSubscriptionPrice: s.adoptSubscriptionPrice,
         updateSubscription: s.updateSubscription,
       })),
     )
@@ -202,13 +203,25 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
     draft.amount > 0 &&
     (draft.sharedWith.length === 0 || (draft.myShare != null && draft.myShare > 0 && draft.myShare <= draft.amount))
 
+  /** The catalog price of the picked plan in the draft's unit; null for a custom service or another unit. */
+  const planPrice = useMemo(() => {
+    const plan = plans.find((p) => p.id === draft.planId)
+    if (!plan) return null
+    return clampFiatToAllowed(settings, (plan.currency ?? regionCurrency) as Currency) === draft.currency ? plan.amount : null
+  }, [plans, draft.planId, draft.currency, settings, regionCurrency])
+  const priceDiffers = planPrice != null && Math.abs(planPrice - draft.amount) > 0.004
+
   const submit = useCallback(() => {
     if (!canSubmit || !submitOnce.claim()) return
     const payload = draftToSubscription({ ...draft, currency: editing && draft.currency === editing.currency ? draft.currency : clampFiatToAllowed(settings, draft.currency) }, editing, today)
     if (editing) updateSubscription(editing.id, payload)
-    else addSubscription(payload)
+    else if (priceDiffers && planPrice != null) {
+      // A price the user typed over the catalog's is adopted on top of it, so the history keeps the usual price it differs from.
+      const id = addSubscription({ ...payload, amount: planPrice })
+      adoptSubscriptionPrice(id, draft.amount)
+    } else addSubscription(payload)
     onClose()
-  }, [addSubscription, canSubmit, draft, editing, onClose, settings, submitOnce, today, updateSubscription])
+  }, [addSubscription, adoptSubscriptionPrice, canSubmit, draft, editing, onClose, planPrice, priceDiffers, settings, submitOnce, today, updateSubscription])
 
   return {
     base,
@@ -232,6 +245,8 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
     currencyChoices,
     fx,
     impact,
+    planPrice,
+    priceDiffers,
     paymentMethods,
     canSubmit,
     submit,

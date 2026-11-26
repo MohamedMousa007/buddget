@@ -10,6 +10,8 @@ import type { EditableField, Proposal, ProposeResult } from '@/lib/buddgy/tools/
 import { refOf, resolveByRefOrName, resolveRef } from '@/lib/buddgy/tools/refs'
 import { expensesSpecs } from '@/lib/buddgy/tools/specs/expenses'
 import { fin, ui } from '@/lib/buddgy/tools/stores'
+import { holdingFundedBy } from '@/lib/savings/assetPurchase'
+import { deleteHoldingWithUndo } from '@/lib/savings/pocketUndo'
 import type { ToolContext, WriteImpl } from '@/lib/buddgy/tools/types'
 import { fail, makeProposal, money, num, ok, parseIsoDate, text } from '@/lib/buddgy/tools/writeKit'
 import type { Currency, Expense, ExpenseCategory, FinanceStore } from '@/lib/store/types'
@@ -363,6 +365,9 @@ const delete_expense: WriteImpl = {
     const hit = resolveRef(fin().expenses, again.proposal.args.ref)
     if (hit.kind !== 'one') return { ok: false, error: 'That expense no longer exists.' }
     const removed = hit.item
+    // An asset purchase's money row goes with the asset, and Undo brings both back.
+    const bought = holdingFundedBy(fin().investmentHoldings, removed.id)
+    if (bought) return { ok: true, message: removed.description, undo: deleteHoldingWithUndo(bought.id) }
     fin().deleteExpense(removed.id)
     return { ok: true, message: removed.description, undo: () => fin().restoreExpense(removed) }
   },

@@ -5,7 +5,7 @@ import { computeBalances } from '@/lib/accounts/balance'
 import { computeNetWorth } from '@/lib/savings/netWorth'
 import { ledgerOf } from '@/lib/savings/pocketHome'
 import { computeGoalProgress, buildGoalProgressContext } from '@/lib/goals/computeGoalProgress'
-import { createGoalPocket, ELSEWHERE, goalHomeAccounts, savedHomeProblem } from './goalPocket'
+import { createGoalPocket, depositIntoGoal, ELSEWHERE, goalHomeAccounts, savedHomeProblem } from './goalPocket'
 import type { PaymentMethod } from '@/lib/store/types'
 import { TOOLS } from '@/lib/buddgy/tools/exec'
 import { refOf } from '@/lib/buddgy/tools/refs'
@@ -309,5 +309,56 @@ describe('the whole chat counts when the model sends "elsewhere"', () => {
     const texts = ['ok', 'yes', 'the car one', 'sure', 'go on', 'my savings for it are in QNB Alahli']
     const p = TOOLS.get('add_goal')!.write!.propose({ name: 'Car', target: 9000, saved: 1000, saved_in: 'elsewhere' }, { now: new Date('2026-10-19T12:00:00'), locale: 'en', userTexts: texts })
     expect(p.ok && p.proposal.preview.rows.find((r) => r.label === 'Where it is')?.value).toBe('Set aside in QNB Alahli')
+  })
+})
+
+describe('a new goal’s saved money can come from another pocket', () => {
+  const seedPocket = (over: Partial<import('@/lib/store/types').SavingsAccount> = {}) =>
+    useFinanceStore.setState({
+      goals: [],
+      savingsTransactions: [],
+      savingsAccounts: [{ id: 'trip', name: 'Trip', category: 'savings', type: 'vault', currency: 'EGP', currentBalance: 5000, createdAt: '2026-01-01', ...over }],
+    })
+  const fromPocket = (saved: number) => createGoalPocket(S(), { goalId: newGoal(), pocketName: 'Car pocket', goalName: 'Car', currency: 'EGP', saved, fromPocketId: 'trip' })
+
+  it('moves the money (two non-cash-flow legs) and leaves net worth where it was', () => {
+    seedPocket()
+    const before = netWorth()
+    const made = fromPocket(2000)
+    expect(made.savedRecorded).toBe(true)
+    expect(S().savingsAccounts.find((a) => a.id === 'trip')!.currentBalance).toBe(3000)
+    expect(S().savingsAccounts.find((a) => a.id === made.pocketId)!.currentBalance).toBe(2000)
+    expect(S().savingsTransactions.every((t) => t.isCashFlow === false)).toBe(true)
+    expect(netWorth()).toBe(before)
+  })
+
+  it('the new pocket is kept where the source pocket is (set aside in the same account)', () => {
+    seedPocket({ heldInPaymentMethodId: 'CIB' })
+    const made = fromPocket(1000)
+    expect(S().savingsAccounts.find((a) => a.id === made.pocketId)!.heldInPaymentMethodId).toBe('CIB')
+  })
+
+  it('more than the source holds is not recorded, so the form can undo the goal', () => {
+    seedPocket()
+    expect(fromPocket(9000).savedRecorded).toBe(false)
+    expect(S().savingsAccounts.find((a) => a.id === 'trip')!.currentBalance).toBe(5000)
+  })
+})
+
+describe('depositIntoGoal', () => {
+  const goalOf = (id: string) => S().goals.find((g) => g.id === id)!
+  it('a refused deposit removes the pocket it made and leaves the goal unlinked', () => {
+    const id = newGoal()
+    const before = S().savingsAccounts.length
+    expect(depositIntoGoal(S(), goalOf(id), undefined, 'Car pocket', () => false)).toBe(false)
+    expect(S().savingsAccounts).toHaveLength(before)
+    expect(goalOf(id).linkedSavingsAccountIds).toEqual([])
+  })
+  it('an accepted deposit keeps the new pocket linked', () => {
+    const id = newGoal()
+    let into = ''
+    expect(depositIntoGoal(S(), goalOf(id), undefined, 'Car pocket', (p) => ((into = p), true))).toBe(true)
+    expect(goalOf(id).linkedSavingsAccountIds).toEqual([into])
+    expect(S().savingsAccounts.some((a) => a.id === into)).toBe(true)
   })
 })

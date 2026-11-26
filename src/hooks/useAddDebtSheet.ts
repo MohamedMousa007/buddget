@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { localTodayISO } from '@/lib/utils/localDate'
+import { clockOf, editedDayFollowingAt, manualOccurredAt } from '@/lib/time/occurredAt'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -40,6 +41,7 @@ import { defaultMethodId, storedMethodId } from '@/lib/accounts/resolve'
 import { recurringDueDayFor } from '@/lib/utils/recurringDebtPayments'
 import { settlePrompt } from '@/lib/prompts/settle'
 import { principalDuplicateKey } from '@/lib/debts/principalDuplicate'
+import { debtPayMethodId } from '@/lib/debts/debtPayMethod'
 import { findPrincipalMatch, linkedExpensePatch, linkedIncomePatch, principalAccount, principalLegFields, principalMovesByDefault } from '@/lib/debts/principalLeg'
 
 type NewDebtPayload = Omit<Debt, 'id' | 'createdAt'>
@@ -146,6 +148,8 @@ export function useAddDebtSheet() {
   const [installmentProviderName, setInstallmentProviderName] = useState('')
   const [installmentProviderSlug, setInstallmentProviderSlug] = useState<string | undefined>(undefined)
   const [linkedCreditCardDebtId, setLinkedCreditCardDebtId] = useState('')
+  /** Installment "Paid with": the plan's default card, preselected when a payment is recorded. */
+  const [installmentPaidWith, setInstallmentPaidWith] = useState('')
   // Payoff goal (borrow only) — set inline in the add-borrow sheet (§4).
   const [goalEnabled, setGoalEnabled] = useState(false)
   const [goalDuration, setGoalDuration] = useState('12')
@@ -156,6 +160,10 @@ export function useAddDebtSheet() {
   const [paymentAmount, setPaymentAmount] = useState('')
   const [paymentCurrency, setPaymentCurrency] = useState<string>(settings.baseCurrency)
   const [paymentDate, setPaymentDate] = useState(localTodayISO())
+  /** A time picked in the date card (`HH:mm`); '' = the current time, as the pill shows. */
+  const [paymentTime, setPaymentTime] = useState('')
+  /** The borrow or lend time picked with its date (`HH:mm`); '' = the current time, as the pill shows. */
+  const [borrowTime, setBorrowTime] = useState('')
   const [paymentNotes, setPaymentNotes] = useState('')
   const [paymentMethodId, setPaymentMethodId] = useState(
     () => defaultMethodId(paymentMethods)
@@ -187,15 +195,17 @@ export function useAddDebtSheet() {
     if (dd.goldKarat) setGoldKarat(dd.goldKarat)
     setStartingBalance(String(dd.startingBalance ?? ''))
     setCreditor(dd.creditor ?? '')
+    setInstallmentStartDate(dd.startDate ?? dd.createdAt.slice(0, 10))
+    setBorrowTime(clockOf(dd.principalAt, dd.startDate ?? dd.createdAt.slice(0, 10)))
     if (dd.debtType === 'installment') {
       setInstallmentItemName(dd.name ?? '')
       setInstallmentCount(String(dd.installmentCount ?? 12))
       if (dd.installmentFrequency) setInstallmentFrequency(dd.installmentFrequency)
-      setInstallmentStartDate(dd.startDate ?? localTodayISO())
       setInstallmentProvider(dd.installmentProvider ?? 'other')
       setInstallmentProviderName(dd.installmentProviderName ?? '')
       setInstallmentProviderSlug(findProviderBrand((dd.installmentProviderName ?? '').toLowerCase().replace(/\s+/g, ''))?.slug)
       setLinkedCreditCardDebtId(dd.linkedCreditCardDebtId ?? '')
+      setInstallmentPaidWith(dd.defaultPaymentMethodId ?? '')
     }
     if (dd.goal) {
       const { duration, unit } = goalDurationFromTarget(dd.goal.targetDate)
@@ -370,6 +380,20 @@ export function useAddDebtSheet() {
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [isOpen, isPayDebtFlow, payDebtStep, debtSheetPaymentOnly, selectedDebt, selectedRemaining, debtPayments])
 
+  // A payment starts on the plan's default card (installments); once per debt per opening, so a manual pick sticks.
+  const methodPresetFor = useRef(new Set<string>())
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- preselect the debt's default card in the pay flow */
+    if (!isOpen) { methodPresetFor.current.clear(); return }
+    const inPayFlow = mode === 'payment' || debtSheetPaymentOnly || (isPayDebtFlow && payDebtStep === 'form')
+    if (!inPayFlow || !selectedDebtId || methodPresetFor.current.has(selectedDebtId)) return
+    const d = debts.find((x) => x.id === selectedDebtId)
+    if (!d) return
+    methodPresetFor.current.add(selectedDebtId)
+    setPaymentMethodId(debtPayMethodId(d, paymentMethods))
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [isOpen, mode, debtSheetPaymentOnly, isPayDebtFlow, payDebtStep, selectedDebtId, debts, paymentMethods])
+
   // Every pay flow starts in the debt's own unit (grams for gold); a manual pick sticks for that debt.
   const currencyDefaultedFor = useRef(new Set<string>())
   useEffect(() => {
@@ -401,6 +425,8 @@ export function useAddDebtSheet() {
     setPaymentAmount('')
     setPaymentCurrency(settings.baseCurrency)
     setPaymentDate(localTodayISO())
+    setPaymentTime('')
+    setBorrowTime('')
     setPaymentNotes('')
     setPaymentRateError('')
     setPaymentScheduleMode('one_time')
@@ -414,6 +440,7 @@ export function useAddDebtSheet() {
     setInstallmentProviderName('')
     setInstallmentProviderSlug(undefined)
     setLinkedCreditCardDebtId('')
+    setInstallmentPaidWith('')
     setGoalEnabled(false)
     setGoalDuration('12')
     setGoalUnit('months')
@@ -523,6 +550,7 @@ export function useAddDebtSheet() {
       payload.relationship = relationship.trim() || undefined
       payload.direction = direction
       payload.personName = person.trim()
+      payload.startDate = installmentStartDate
       // Inline payoff goal (borrow only): fixed per-payment amount from the chosen
       // duration + frequency — never a rate.
       const goalSpan = parseFloat(goalDuration)
@@ -548,6 +576,10 @@ export function useAddDebtSheet() {
       if (installmentProvider === 'credit_card' && linkedCreditCardDebtId) {
         payload.linkedCreditCardDebtId = linkedCreditCardDebtId
       }
+      // A new plan's "Paid with" shows the app default until the user picks one, so what was shown is what is saved.
+      // Editing writes only what was stored or picked, never stamping the app default onto an older plan.
+      const paidWith = installmentPaidWith || (isEditFlow ? '' : paymentMethodId)
+      payload.defaultPaymentMethodId = paidWith ? storedMethodId(paidWith, paymentMethods) : undefined
     }
     if (debtType === 'general') {
       payload.creditor = creditor.trim() || undefined
@@ -559,9 +591,16 @@ export function useAddDebtSheet() {
       // Payments are stored in the debt's unit: its currency, gold flag, karat and kind never change under them.
       const { currency: _cur, isGold: _gold, goldKarat: _karat, receivedVia: _via, ...unlocked } = rest
       void _cur; void _gold; void _karat; void _via
-      updateDebt(editingDebt.id, currencyLocked ? unlocked : rest)
+      // A borrow or lend whose money moved keeps the picked day and time on that move.
+      const savedDay = editingDebt.startDate ?? editingDebt.createdAt.slice(0, 10)
+      const principalAt = debtType === 'personal' && editingDebt.principalPaymentMethodId
+        ? editedDayFollowingAt(installmentStartDate, borrowTime, { day: savedDay, clock: clockOf(editingDebt.principalAt, savedDay), at: editingDebt.principalAt })
+        : undefined
+      updateDebt(editingDebt.id, { ...(currencyLocked ? unlocked : rest), ...(principalAt ? { principalAt } : {}) })
     } else {
-      const leg = principalAcct && principalMoved ? principalLegFields(principalAcct, total, payload.currency, new Date().toISOString()) : {}
+      // A borrow or lend moved the money on its picked day and time; other debts book it now.
+      const movedAt = debtType === 'personal' ? manualOccurredAt(installmentStartDate, borrowTime) : new Date().toISOString()
+      const leg = principalAcct && principalMoved ? principalLegFields(principalAcct, total, payload.currency, movedAt) : {}
       const debtId = addDebt({ ...payload, ...leg })
       if (principalLinked && principalMatch) {
         if (principalMatch.kind === 'expense') updateExpense(principalMatch.id, linkedExpensePatch(debtId))
@@ -603,6 +642,10 @@ export function useAddDebtSheet() {
     installmentProvider,
     installmentProviderName,
     installmentStartDate,
+    borrowTime,
+    installmentPaidWith,
+    paymentMethodId,
+    paymentMethods,
     isGold,
     linkedCreditCardDebtId,
     receivedVia,
@@ -677,6 +720,7 @@ export function useAddDebtSheet() {
       addDebtPayment({
         debtId: selectedDebtId,
         date: paymentDate,
+        occurredAt: manualOccurredAt(paymentDate, paymentTime),
         amountPaid: amountInDebtUnit,
         paymentMethodId: pmId,
         paymentCurrency: payCur,
@@ -699,6 +743,7 @@ export function useAddDebtSheet() {
       {
         debtId: selectedDebtId,
         date: paymentDate,
+        occurredAt: manualOccurredAt(paymentDate, paymentTime),
         amountPaid: amountInDebtUnit,
         paymentMethodId: pmId,
         paymentCurrency: payCur,
@@ -735,6 +780,7 @@ export function useAddDebtSheet() {
     paymentAmount,
     paymentCurrency,
     paymentDate,
+    paymentTime,
     paymentMethodId,
     paymentMethods,
     paymentNotes,
@@ -885,6 +931,8 @@ export function useAddDebtSheet() {
     setGoalCadence,
     linkedCreditCardDebtId,
     setLinkedCreditCardDebtId,
+    installmentPaidWith,
+    setInstallmentPaidWith,
     installmentItemName,
     setInstallmentItemName,
     installmentCount,
@@ -903,6 +951,10 @@ export function useAddDebtSheet() {
     setPaymentCurrency,
     paymentDate,
     setPaymentDate,
+    paymentTime,
+    setPaymentTime,
+    borrowTime,
+    setBorrowTime,
     paymentNotes,
     setPaymentNotes,
     paymentMethodId,

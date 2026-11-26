@@ -87,6 +87,11 @@ export function isIncomeKind(kind: SmsExpenseKind): boolean {
   return ['income', 'refund', 'instant_transfer_in'].includes(kind ?? '')
 }
 
+/** The instant an SMS row is stored with: the believable capture time, else the SMS received time, else now (the row's creation). */
+export function smsOccurredAt(row: Pick<SmsRowData, 'occurredAtIso' | 'receivedAtIso'>, now: Date = new Date()): string {
+  return row.occurredAtIso ?? row.receivedAtIso ?? now.toISOString()
+}
+
 export interface SmsRowData {
   userId: string
   amount: number
@@ -267,7 +272,7 @@ async function postSmsDebtPayment(
     amount: row.amount,
     currency: debtCurrency,
     payment_date: row.day,
-    occurred_at: row.occurredAtIso ?? row.receivedAtIso ?? null,
+    occurred_at: smsOccurredAt(row),
     amount_in_debt_unit: units.amountInDebtUnit,
     original_amount: units.originalAmount,
     original_currency: units.originalCurrency,
@@ -284,7 +289,7 @@ async function postSmsDebtPayment(
         amount: row.amount,
         currency: dbCurrency(row.currency),
         expense_date: row.day,
-        occurred_at: row.occurredAtIso ?? row.receivedAtIso ?? null,
+        occurred_at: smsOccurredAt(row),
         payment_method_id: a.fundingPaymentMethodId,
       },
     })
@@ -561,7 +566,7 @@ export async function createSmsExpense(
         .update({
           amount: row.amount,
           sms_log_id: row.logId ?? null,
-          occurred_at: row.occurredAtIso ?? row.receivedAtIso ?? null,
+          occurred_at: smsOccurredAt(row),
           ...(accountId ? { payment_method_id: accountId } : {}),
         })
         .eq('id', row.adoptEventId)
@@ -594,7 +599,7 @@ export async function createSmsExpense(
         status: 'confirmed',
         sms_log_id: row.logId ?? null,
         payment_method_id: await resolveCreditAccount(service, row),
-        occurred_at: row.occurredAtIso ?? row.receivedAtIso ?? null,
+        occurred_at: smsOccurredAt(row),
         notes: null,
         sms_flags: smsFlags,
       })
@@ -667,7 +672,7 @@ export async function createSmsExpense(
     .insert({
       user_id: row.userId,
       expense_date: row.day,
-      occurred_at: row.occurredAtIso ?? row.receivedAtIso ?? null,
+      occurred_at: smsOccurredAt(row),
       to_payment_method_id: toPaymentMethodId,
       description: title ?? 'Bank transaction',
       category: mappedCategory,

@@ -59,3 +59,23 @@ export function deriveSimpleMonth(params: {
   }
   return { rent, food, transport, bills, debtMinimums, total: derivedTotal }
 }
+
+/** A line of the simple month the user can count or leave out. */
+export type SimpleMonthLine = Exclude<keyof SimpleMonth, 'total'>
+export const SIMPLE_MONTH_LINES: readonly SimpleMonthLine[] = ['rent', 'food', 'transport', 'bills', 'debtMinimums']
+
+/** The simple month with the lines in `off` left out. */
+export function simpleMonthSum(month: SimpleMonth, off: ReadonlySet<SimpleMonthLine>): number {
+  return SIMPLE_MONTH_LINES.reduce((sum, k) => (off.has(k) ? sum : sum + month[k]), 0)
+}
+
+/** The debts behind "Debt minimums", each with its monthly instalment in base currency, largest first. */
+export function simpleMonthDebts(debts: Debt[], baseCurrency: Currency, exchangeRates: Record<string, number>): Array<{ name: string; amount: number }> {
+  return debts
+    .map((d) => {
+      const min = Number(d.installmentAmount ?? 0) || 0
+      return { name: d.name, amount: min > 0 ? convertCurrency(min, (d.currency as Currency) ?? baseCurrency, baseCurrency, exchangeRates) : 0 }
+    })
+    .filter((x) => x.amount > 0)
+    .sort((a, b) => b.amount - a.amount)
+}

@@ -4,8 +4,9 @@ import type { ReactNode } from 'react'
 import { Check, Info, TriangleAlert } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
+import { BAND_FG2, BAND_MIX, HeroBand } from '@/components/features/hero/HeroBand'
 import { useCategoryLabel } from '@/hooks/useCategoryLabel'
-import { everydayPace, overBudgetLines, stillToPay, topCategory, type PaceState } from '@/lib/budget/monthSummary'
+import { everydayPace, overBudgetLines, stillToPay, topCategory } from '@/lib/budget/monthSummary'
 import { planSplit } from '@/lib/budget/ledger'
 import type { PlanView } from '@/lib/budget/planView.types'
 import { useLocale } from '@/lib/i18n'
@@ -14,11 +15,6 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { monthKeyLabel, percentText } from './chromeFormat'
 import { useOverviewCopy } from './useOverviewCopy'
 
-const PACE_FILL: Record<PaceState, string> = {
-  ok: 'var(--color-brand-primary-bright)',
-  ahead: 'var(--color-brand-amber)',
-  over: 'var(--color-brand-red)',
-}
 function Stat({ label, children, color }: { label: string; children: ReactNode; color?: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
@@ -30,16 +26,6 @@ function Stat({ label, children, color }: { label: string; children: ReactNode; 
   )
 }
 
-function PaceBar({ fill, tick, color, label }: { fill: number; tick: number | null; color: string; label: string }) {
-  return (
-    <div role="img" aria-label={label} className="relative h-2.5 rounded-full bg-[var(--color-brand-elevated)]">
-      <div className="absolute inset-y-0 start-0 rounded-full" style={{ width: `${Math.min(100, Math.max(0, fill))}%`, background: color }} />
-      {tick != null ? (
-        <span className="absolute -bottom-1 -top-1 w-0.5 rounded-sm bg-[var(--color-brand-text-primary)] opacity-70" style={{ insetInlineStart: `${tick}%` }} aria-hidden />
-      ) : null}
-    </div>
-  )
-}
 
 /** The month hero: everyday money left, the pace against an even line, and three facts. */
 export function MonthHero({ view }: { view: PlanView }) {
@@ -76,35 +62,43 @@ export function MonthHero({ view }: { view: PlanView }) {
   const over = overBudgetLines(view).length
   const owed = stillToPay(view)
   const Icon = pace.state === 'ok' ? Check : TriangleAlert
+  const fill = Math.max(0, Math.min(100, (pace.spent / pace.planned) * 100))
+  // Light touch `page-budget`: the rounded teal band; the three facts collapse into one line under the bar.
   return (
-    <Card padding="md" className="flex flex-col gap-2.5">
-      <div className="flex items-end justify-between gap-3">
-        <div className="flex min-w-0 flex-col gap-1">
-          <span className="text-xs text-[var(--color-brand-text-secondary)]">{c.leftLabel}</span>
-          <span className="font-mono-numbers whitespace-nowrap text-[30px] font-semibold leading-none tracking-[-0.02em] text-[var(--color-brand-text-primary)]">
-            {money(pace.left)}
-          </span>
+    <HeroBand
+      label={c.leftLabel}
+      contained
+      aside={
+        <Badge tone={pace.state === 'ok' ? 'positive' : pace.state === 'ahead' ? 'warn' : 'negative'} size="md">
+          <Icon aria-hidden />
+          {c.pace[pace.state]}
+        </Badge>
+      }
+      numbers={
+        <>
+          <p className="flex min-w-0 items-baseline gap-1.5">
+            <span className="font-mono-numbers whitespace-nowrap text-[32px] font-semibold leading-none tracking-[-0.03em]">{money(pace.left)}</span>
+          </p>
+          <p className={`shrink-0 text-end text-[0.71875rem] leading-[1.3] ${BAND_FG2}`}>
+            <b dir="auto" className="block font-mono-numbers text-[0.9375rem] text-[var(--flow-band-fg)]">{c.perDay(money(pace.perDay))}</b>
+            <span dir="auto">{c.daysLeft(pace.daysLeft)}</span>
+          </p>
+        </>
+      }
+      bar={
+        <div role="img" aria-label={c.paceLabel} className="relative h-1.5 rounded-full" style={{ background: BAND_MIX }}>
+          <div className="h-full rounded-full bg-[var(--flow-band-fg)]" style={{ width: `${fill}%` }} />
+          {tick !== null ? <span aria-hidden className="absolute -top-1 h-3.5 w-0.5 rounded bg-[var(--flow-band-fg)]" style={{ insetInlineStart: `${tick}%` }} /> : null}
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-0.5 text-end">
-          <span dir="auto" className="font-mono-numbers text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{c.perDay(money(pace.perDay))}</span>
-          <span dir="auto" className="text-xs text-[var(--color-brand-text-secondary)]">{c.daysLeft(pace.daysLeft)}</span>
-          <Badge tone={pace.state === 'ok' ? 'positive' : pace.state === 'ahead' ? 'warn' : 'negative'} size="md" className="mt-1">
-        <Icon aria-hidden />
-        {c.pace[pace.state]}
-      </Badge>
-        </div>
-      </div>
-      <PaceBar fill={(pace.spent / pace.planned) * 100} tick={tick} color={PACE_FILL[pace.state]} label={c.paceLabel} />
-      <div className="grid grid-cols-3 gap-3">
-        <Stat label={c.topCategory}>{top ? catLabel(top.name) : c.nothing}</Stat>
-        <Stat label={c.overBudget} color={over > 0 ? 'var(--color-brand-amber)' : undefined}>
-          {over > 0 ? c.overCount(over) : c.nothing}
-        </Stat>
-        <Stat label={c.stillToPay} color={owed.amount <= 0 ? 'var(--color-brand-green)' : undefined}>
-          {owed.amount > 0 ? money(owed.amount) : c.allPaid}
-        </Stat>
-      </div>
-    </Card>
+      }
+      note={
+        <span dir="auto">
+          {top ? <>{c.topCategory} <b className="font-semibold text-[var(--flow-band-fg)]">{catLabel(top.name)}</b></> : null}
+          {over > 0 ? <> · {c.overBudget} <b className="font-semibold text-[var(--flow-band-fg)]">{c.overCount(over)}</b></> : null}
+          {' · '}{c.stillToPay} <b className="font-mono-numbers font-semibold text-[var(--flow-band-fg)]">{owed.amount > 0 ? money(owed.amount) : c.allPaid}</b>
+        </span>
+      }
+    />
   )
 }
 

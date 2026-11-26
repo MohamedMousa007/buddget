@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
-import { Plus, X } from 'lucide-react'
+import { Plus, StickyNote, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
 import { Input } from '@/components/ui/input'
@@ -18,55 +18,141 @@ import { micro } from '@/lib/ui/microLabelStyle'
 import type { PocketVM } from '@/components/features/savings-v3/types'
 import type { Currency, SavingsAccount } from '@/lib/store/types'
 import { useLocale, useT } from '@/lib/i18n'
+import { useLightTouchCopy } from '@/lib/i18n/lightTouchCopy'
+import { PickerRow } from '@/components/ui/PickerRow'
 
 /** A translucent wash of a (CSS-variable or hex) colour. */
 export const tint = (color: string, pct: number) => `color-mix(in oklab, ${color} ${pct}%, transparent)`
 
-function PocketTile({ account, className }: { account: SavingsAccount; className: string }) {
+/** A pocket's own icon on its own tint. */
+export function PocketTile({ account, className, iconClassName = 'size-5' }: { account: SavingsAccount; className: string; iconClassName?: string }) {
   const color = pocketColor(account)
   return (
     <span className={`flex shrink-0 items-center justify-center ${className}`} style={{ background: tint(color, 14), color }}>
-      <SavingsAccountIcon account={account} className="size-5" />
+      <SavingsAccountIcon account={account} className={iconClassName} />
     </span>
   )
 }
 
 const balanceClass = 'shrink-0 font-mono-numbers text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]'
 
+/** A goal listed in the pocket picker's Goals section. */
+export interface PocketPickerGoal {
+  id: string
+  name: string
+  /** The goal's own icon tile, sized by the picker. */
+  glyph: ReactNode
+  saved: number
+  target: number | null
+}
+
+const isSafetyNet = (p: PocketVM) => p.coverAmount > 0 || !!p.account.isEmergencyCover
+
 /**
- * The pocket choice of Add money (Into) and Withdraw (From): one field row showing the chosen
- * pocket, opening the provider picker over the pockets (search, balances). `onAdd` adds the
- * picker's "Add pocket" action; the caller opens the create flow above its own sheet.
+ * The pocket choice of Add money (Into), Withdraw (From) and a goal's money: the chosen pocket or goal, opening a
+ * searchable sheet grouped into Goals, Savings and Safety net, with balances and each goal's progress. `onAdd` adds
+ * the sheet's "New pocket" ("New goal" with `only="goals"`) action; the caller opens the create flow above its own sheet.
+ * `look="row"` renders it as a `PickerRow` inside a grouped list.
  */
-export function PocketPickerField({ pockets, value, onChange, label, onAdd }: {
+export function PocketPickerField({ pockets, value, onChange, onGoalChange, label, onAdd, goals = [], only, look = 'field' }: {
   pockets: PocketVM[]
+  /** The picked pocket's id, or a picked goal's when `onGoalChange` is not given. */
   value: string | null
   onChange: (id: string) => void
+  /** A picked goal (one of `goals`). */
+  onGoalChange?: (goalId: string) => void
   label: string
   onAdd?: () => void
+  /** Listed first, under Goals. */
+  goals?: PocketPickerGoal[]
+  /** Lists the goals only (Which goal?). */
+  only?: 'goals'
+  look?: 'field' | 'row'
 }) {
   const t = useT()
   const sf = t.savingsForms
   const m = t.wealthSheets.money
+  const c = useLightTouchCopy().pocketPicker
   const { locale } = useLocale()
   const [open, setOpen] = useState(false)
 
-  const items: ProviderPickerItem[] = pockets.map(({ account }) => ({
-    id: account.id,
-    name: pocketDisplayName(account, sf.systemNames),
-    subtitle: pocketIdentity(account, sf.identity, locale),
-    glyph: <PocketTile account={account} className="size-full rounded-[11px]" />,
-    trailing: <span className={balanceClass}>{fmtNum(account.currentBalance)}</span>,
+  const goalItems: ProviderPickerItem[] = goals.map((g) => ({
+    id: g.id,
+    name: g.name,
+    group: c.sections.goals,
+    subtitle: g.target ? `${fmtNum(g.saved)} ${c.ofTarget(fmtNum(g.target))}` : fmtNum(g.saved),
+    progress: g.target ? g.saved / g.target : undefined,
+    glyph: <span className="flex size-full items-center justify-center overflow-hidden rounded-[11px]">{g.glyph}</span>,
   }))
-  const sel = pockets.find((p) => p.account.id === value)?.account
-  const selName = sel ? pocketDisplayName(sel, sf.systemNames) : ''
+  const pocketItems: ProviderPickerItem[] = only === 'goals' ? [] : [...pockets]
+    .sort((a, b) => Number(isSafetyNet(a)) - Number(isSafetyNet(b)))
+    .map((p) => ({
+      id: p.account.id,
+      name: pocketDisplayName(p.account, sf.systemNames),
+      group: isSafetyNet(p) ? c.sections.safetyNet : c.sections.savings,
+      subtitle: pocketIdentity(p.account, sf.identity, locale),
+      glyph: <PocketTile account={p.account} className="size-full rounded-[11px]" />,
+      trailing: <span className={balanceClass}>{fmtNum(p.account.currentBalance)}</span>,
+    }))
+  const items = [...goalItems, ...pocketItems]
+  const goalIds = new Set(goals.map((g) => g.id))
+  const selGoal = goals.find((g) => g.id === value)
+  const sel = selGoal ? undefined : pockets.find((p) => p.account.id === value)?.account
+  const selName = selGoal ? selGoal.name : sel ? pocketDisplayName(sel, sf.systemNames) : ''
+  const pick = (id: string) => {
+    setOpen(false)
+    if (goalIds.has(id) && onGoalChange) onGoalChange(id)
+    else onChange(id)
+  }
+
+  const sheet = (
+    <ProviderPickerSheet
+      open={open}
+      selectedId={value}
+      items={items}
+      title={only === 'goals' ? c.goalTitle : c.pocketTitle}
+      subtitle={only === 'goals' ? c.goalSub : c.pocketSub(items.length)}
+      searchPlaceholder={m.searchPockets}
+      emptyLabel={c.noMatch}
+      customLabel={only === 'goals' ? c.newGoal : c.newPocket}
+      onPick={pick}
+      onCustom={onAdd ? () => { setOpen(false); onAdd() } : undefined}
+      onClose={() => setOpen(false)}
+    />
+  )
+
+  if (look === 'row') {
+    return (
+      <>
+        <PickerRow
+          label={label}
+          onClick={() => setOpen(true)}
+          aria-label={selName ? `${label}: ${selName}` : label}
+          value={selGoal ? (
+            <>
+              <span className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-[7px] [&_svg]:size-3.5">{selGoal.glyph}</span>
+              <span dir="auto" className="truncate">{selName}</span>
+            </>
+          ) : sel ? (
+            <>
+              <PocketTile account={sel} className="size-6 rounded-[7px]" iconClassName="size-3.5" />
+              <span dir="auto" className="truncate">{selName}</span>
+            </>
+          ) : (
+            <span className="text-[var(--color-brand-text-muted)]">{m.choosePocket}</span>
+          )}
+        />
+        {sheet}
+      </>
+    )
+  }
 
   return (
     <>
       <FieldButton
         size="lg"
         onClick={() => setOpen(true)}
-        aria-label={sel ? `${label}: ${selName}` : label}
+        aria-label={selName ? `${label}: ${selName}` : label}
         placeholder={m.choosePocket}
         className="h-auto min-h-[64px] rounded-[14px] bg-[var(--color-brand-elevated)] py-2 ps-2 pe-3"
         value={sel ? (
@@ -78,19 +164,15 @@ export function PocketPickerField({ pockets, value, onChange, label, onAdd }: {
             </span>
             <span className={balanceClass}>{fmtNum(sel.currentBalance)}</span>
           </span>
+        ) : selGoal ? (
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl">{selGoal.glyph}</span>
+            <span dir="auto" className="min-w-0 flex-1 truncate text-[0.9375rem] font-semibold">{selName}</span>
+            <span className={balanceClass}>{fmtNum(selGoal.saved)}</span>
+          </span>
         ) : undefined}
       />
-      <ProviderPickerSheet
-        open={open}
-        selectedId={value}
-        items={items}
-        title={m.choosePocket}
-        searchPlaceholder={m.searchPockets}
-        customLabel={m.addPocket}
-        onPick={(id) => { setOpen(false); onChange(id) }}
-        onCustom={onAdd ? () => { setOpen(false); onAdd() } : undefined}
-        onClose={() => setOpen(false)}
-      />
+      {sheet}
     </>
   )
 }
@@ -176,5 +258,23 @@ export function NoteField({ open, onOpen, onClose, value, onChange, labels }: {
     <Button variant="link" size="sm" onClick={onOpen} className="font-semibold no-underline hover:underline">
       <Plus size={14} /> {labels.add}
     </Button>
+  )
+}
+
+/** The slim note of a Light touch money sheet: one card-row with a note icon and a growing text line. */
+export function NoteRow({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
+  return (
+    <label className="flex min-h-12 items-start gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-3">
+      <StickyNote className="mt-[3px] size-[18px] shrink-0 text-[var(--color-brand-text-muted)]" aria-hidden />
+      <textarea
+        rows={1}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        aria-label={placeholder}
+        dir="auto"
+        className="block min-h-6 w-full resize-none bg-transparent text-[0.9375rem] leading-6 text-[var(--color-brand-text-primary)] outline-none [field-sizing:content] placeholder:text-[var(--color-brand-text-muted)]"
+      />
+    </label>
   )
 }

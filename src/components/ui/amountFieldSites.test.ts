@@ -38,7 +38,8 @@ const mode = (tag: string) => /mode=\{?['"](\w+)/.exec(tag)?.[1] ?? 'decimal'
 describe('AmountField call sites (FRM-6)', () => {
   const tags = amountFieldTags()
   it('finds the app\'s amount boxes', () => {
-    expect(tags.length).toBeGreaterThan(30)
+    // Light touch moved the money sheets' big amounts onto AmountHero, so fewer boxes remain.
+    expect(tags.length).toBeGreaterThan(20)
   })
   it('every money box is told its currency, so KWD / BHD / OMR / JOD / TND accept the third decimal', () => {
     // A plan length in months is a decimal-mode number but not money.

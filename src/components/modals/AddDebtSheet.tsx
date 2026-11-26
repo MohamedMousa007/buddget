@@ -11,6 +11,10 @@ import { AddBorrowForm } from '@/components/features/debts/redesign/AddBorrowFor
 import { AddInstallmentForm } from '@/components/features/debts/redesign/AddInstallmentForm'
 import { PayDebtForm } from '@/components/features/debts/redesign/PayDebtForm'
 import { useT } from '@/lib/i18n'
+import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
+import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
+import { DatePickerField } from '@/components/ui/DatePickerField'
 import { isOwedToUser } from '@/lib/debts/debtDirection'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Button } from '@/components/ui/button'
@@ -35,7 +39,10 @@ function HydrateDebtsWhileOpen() {
 export function AddDebtSheet() {
   const shortDate = useShortDate()
   const d = useAddDebtSheet()
+  const timeLabel = useFlowLtCopy().expense.time
   const t = useT()
+  const lt = useDebtsSubsLtCopy()
+  const confirm = useConfirm()
   // Credit-card add & edit are handled by the payment-method sheet, not here.
   const isCardEdit = d.isEditFlow && d.editingDebt?.debtType === 'credit_card'
   const open = d.isOpen && !isCardEdit
@@ -67,10 +74,10 @@ export function AddDebtSheet() {
   const title = isPayUI
     ? payShowsForm ? (receiving ? t.debts.fReceiveTitle : t.debts.fPayTitle) : tp.title
     : d.isEditFlow
-      ? d.debtType === 'installment' ? 'Edit installment' : 'Edit borrow'
+      ? d.debtType === 'installment' ? lt.install.editTitle : lt.borrow.editTitle
       : familyStep === 'pick'
-        ? 'Add debt'
-        : d.debtType === 'installment' ? 'New installment' : 'New borrow'
+        ? lt.debts.addTitle
+        : d.debtType === 'installment' ? lt.install.newTitle : lt.borrow.newTitle
 
   const payAmt = parseFloat(d.paymentAmount)
   const canSubmit = isPayUI
@@ -81,7 +88,7 @@ export function AddDebtSheet() {
     ? d.paymentScheduleMode === 'recurring'
       ? receiving ? t.debts.fScheduleReceive : t.debts.fSchedulePay
       : (receiving ? t.debts.fReceiveCta : t.debts.fPayCta)(payAmtLabel, d.paymentCurrency).replace(/\s+/g, ' ').trim()
-    : d.isEditFlow ? 'Save changes' : d.debtType === 'installment' ? 'Add plan' : 'Add borrow'
+    : d.isEditFlow ? lt.borrow.save : d.debtType === 'installment' ? lt.install.cta : lt.borrow.cta
 
   const onSubmit = isPayUI ? d.handleAddPayment : d.handleAddDebt
 
@@ -98,8 +105,26 @@ export function AddDebtSheet() {
       {open ? <HydrateDebtsWhileOpen /> : null}
       <div className="flex min-h-0 flex-1 flex-col">
         {/* Header */}
-        <V3SheetHeader onClose={d.closeSheet}>
-          <V3SheetHeader.Title>{title}</V3SheetHeader.Title>
+        <V3SheetHeader
+          onClose={d.closeSheet}
+          leading={payShowsForm ? <DatePickerField look="pill" value={d.paymentDate} onChange={d.setPaymentDate} time={{ value: d.paymentTime, onChange: d.setPaymentTime, label: timeLabel, defaultNow: true }} /> : undefined}
+          actions={d.isEditFlow ? (
+            <V3SheetHeader.Action
+              tone="danger"
+              icon={<Trash2 />}
+              label={t.common.delete}
+              onClick={() => {
+                const name = d.editingDebt?.name || d.editingDebt?.person || ''
+                void confirm({ title: lt.debts.deleteTitle(name), body: lt.debts.deleteBody, confirmLabel: t.common.delete, destructive: true }).then((ok) => { if (ok) d.handleDeleteDebt() })
+              }}
+            />
+          ) : undefined}
+        >
+          {payShowsForm ? (
+            <span className="sr-only"><V3SheetHeader.Title>{title}</V3SheetHeader.Title></span>
+          ) : (
+            <V3SheetHeader.Title size="compact">{title}</V3SheetHeader.Title>
+          )}
         </V3SheetHeader>
 
         {/* Body */}
@@ -174,12 +199,6 @@ export function AddDebtSheet() {
         {/* Footer */}
         {showFooter ? (
           <div className="sheet-cta flex shrink-0 items-center gap-3 border-t border-[var(--color-brand-border)] px-5 pb-[calc(16px+env(safe-area-inset-bottom))] pt-3">
-            {d.isEditFlow ? (
-              <Button variant="destructive" size="touch" onClick={d.handleDeleteDebt}>
-                <Trash2 className="h-4 w-4" />
-                {t.common.delete}
-              </Button>
-            ) : null}
             <Button size="cta" onClick={onSubmit} disabled={!canSubmit} className="flex-1 text-base font-bold">
               {cta}
             </Button>

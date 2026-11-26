@@ -1,13 +1,12 @@
 'use client'
 
 import { ModalShell } from '@/components/modals/ModalShell'
-import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useAddExpenseSheet } from '@/hooks/useAddExpenseSheet'
 import { ExpenseSheetForm } from '@/components/features/expenses/ExpenseSheetForm'
 
+/** Escape goes through ModalShell's guarded dismiss, so a started expense asks to save or discard first. */
 export function AddExpenseSheet() {
   const sheet = useAddExpenseSheet()
-  useEscapeClose(sheet.isOpen, sheet.handleClose)
 
   return (
     <ModalShell
@@ -20,6 +19,8 @@ export function AddExpenseSheet() {
         mode="add"
         date={sheet.date}
         setDate={sheet.setDate}
+        clock={sheet.clock}
+        setClock={sheet.setClock}
         description={sheet.description}
         setDescription={sheet.setDescription}
         amount={sheet.amount}

@@ -1160,10 +1160,6 @@ export interface Dictionary {
     step2: string
     propertyNote: string
     propertyWorth: string
-    boughtThisMonth: string
-    boughtThisMonthSub: string
-    alreadyHad: string
-    alreadyHadSub: string
     whenBought: string
     whatYouPaid: string
     optional: string

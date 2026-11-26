@@ -117,12 +117,12 @@ look** — cards are solid surfaces with `--shadow-sm`. Reach for glass delibera
 
 ## Typography
 
-Fonts are loaded via `next/font/google` in `src/app/layout.tsx`.
+Fonts are loaded via `next/font/google` in `src/app/(app)/layout.tsx`.
 
 | Role | Font | Weights | CSS Variable | Tailwind class |
 |---|---|---|---|---|
-| Body / UI | DM Sans | 300, 400, 500, 600, 700 | `--font-sans` | `font-sans` (default on `<body>`) |
-| Headings | DM Sans | 600, 700, 800 | `--font-heading` | `font-heading` |
+| Body / UI | Geist | variable | `--font-sans` | `font-sans` (default on `<body>`) |
+| Headings | Geist | variable | `--font-heading` | `font-heading` |
 | Monospace / Numbers | JetBrains Mono | 400, 500, 600 | `--font-mono` | `font-mono-numbers` |
 | Arabic body | IBM Plex Sans Arabic | 300, 400, 500, 600, 700 | `--font-sans-ar` | applied via `html[data-locale='ar']` |
 

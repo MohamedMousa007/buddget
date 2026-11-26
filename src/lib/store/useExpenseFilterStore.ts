@@ -4,7 +4,8 @@ import type { ExpenseRange, RangePreset } from '@/lib/expenses/dateRange'
 export const AMOUNT_MIN = 0
 export const AMOUNT_MAX = 10000
 
-const DEFAULT_RANGE: ExpenseRange = { preset: 'month', from: null, to: null }
+/** Flow lists every month in one list by default; the budget hero stays on the current month. */
+const DEFAULT_RANGE: ExpenseRange = { preset: 'all', from: null, to: null }
 
 /** Flow's All / In / Out segment. Not a filter: Reset all leaves it alone. */
 export type FlowSegment = 'all' | 'in' | 'out'

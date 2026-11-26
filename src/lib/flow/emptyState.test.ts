@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { selectFlowEmptyState, type FlowEmptyInput } from '@/lib/flow/emptyState'
 import type { FlowSegment } from '@/lib/store/useExpenseFilterStore'
 
-const base: FlowEmptyInput = { allCount: 0, itemsCount: 0, filterCount: 0, rangePreset: 'month', segment: 'all', hasHistory: true }
+const base: FlowEmptyInput = { allCount: 0, itemsCount: 0, filterCount: 0, rangePreset: 'all', segment: 'all', hasHistory: true }
 const segments: FlowSegment[] = ['all', 'in', 'out']
 
 describe('selectFlowEmptyState', () => {
@@ -27,7 +27,8 @@ describe('selectFlowEmptyState', () => {
     expect(selectFlowEmptyState({ ...base, segment, filterCount: 1 })).toBe('noMatch')
   })
 
-  it.each(segments)('%s: a non-month range with no rows is noMatch', (segment) => {
+  it.each(segments)('%s: a period narrower than all time with no rows is noMatch', (segment) => {
     expect(selectFlowEmptyState({ ...base, segment, rangePreset: 'week', allCount: 2 })).toBe('noMatch')
+    expect(selectFlowEmptyState({ ...base, segment, rangePreset: 'month', allCount: 2 })).toBe('noMatch')
   })
 })
