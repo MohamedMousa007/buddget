@@ -21,6 +21,8 @@ export interface PaydaysLtCopy {
   sources: string
   addPayday: string
   payCycle: string
+  /** The quiet row at the end of the page that opens other paydays, add, pay cycle and reorder. */
+  more: string
   monthCircle: (month: string, state: string) => string
   states: { received: string; late: string; partial: string; missed: string }
 }
@@ -45,6 +47,7 @@ export const PAYDAYS_LT_COPY: Record<Locale, PaydaysLtCopy> = {
     sources: 'Your paydays',
     addPayday: 'Add a payday',
     payCycle: 'Pay cycle',
+    more: 'Paydays and pay cycle',
     monthCircle: (m, s) => `${m}: ${s}`,
     states: { received: 'on time', late: 'late', partial: 'partly paid', missed: 'missed' },
   },
@@ -67,6 +70,7 @@ export const PAYDAYS_LT_COPY: Record<Locale, PaydaysLtCopy> = {
     sources: 'أيام القبض',
     addPayday: 'أضف يوم قبض',
     payCycle: 'دورة الراتب',
+    more: 'أيام القبض ودورة الراتب',
     monthCircle: (m, s) => `${m}: ${s}`,
     states: { received: 'في موعده', late: 'متأخر', partial: 'مدفوع جزئيًا', missed: 'لم يصل' },
   },

@@ -316,7 +316,7 @@ test('L1 one user, the whole money lifecycle: pockets, goal, reserve cap, lendin
     await r.getByRole('textbox', { name: 'Amount' }).fill('5000')
     await chooseMethod(page, r, 'CIB')
     await blur(page)
-    await r.getByRole('button', { name: /^Receive 5,000 EGP$/ }).click()
+    await r.getByRole('button', { name: /^(Mark repaid|Receive [\d,]+ EGP)$/ }).click()
     await expect(r).toBeHidden()
     await serverRows('debt_payments', user.id, `debt_id=eq.${debt.id}`, (rows: any[]) => rows.length === 1 && Number(rows[0].amount) === 5000)
     // Back: CIB 12,000 + 5,000 = 17,000 (free 6,000); net worth 30,000. No expense row anywhere.

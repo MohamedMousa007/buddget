@@ -74,7 +74,7 @@ export function AddConfigureStep({ form }: { form: AddSubscriptionFormReturn }) 
       {plans.length > 1 ? (
         <div role="radiogroup" aria-label={t.subscriptions.selectPlan} className="flex flex-wrap justify-center gap-2">
           {plans.map((p, i) => (
-            <OptionChip key={p.id} role="radio" aria-checked={i === planIndex} selected={i === planIndex} onClick={() => form.pickPlan(p)}>
+            <OptionChip key={p.id} surface="card" role="radio" aria-checked={i === planIndex} selected={i === planIndex} onClick={() => form.pickPlan(p)}>
               {p.name}
             </OptionChip>
           ))}

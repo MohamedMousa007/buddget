@@ -116,7 +116,7 @@ test('Q4 Pay debt: empty state leads to adding one; with a debt it pays', async 
     const pay = dialog(page, 'Make a payment')
     await pay.getByRole('textbox', { name: 'Amount' }).fill('200')
     await blur(page)
-    await pay.getByRole('button', { name: /^Pay [\d,]+ EGP$/ }).click()
+    await pay.getByRole('button', { name: /^(Record payment|Pay [\d,]+ EGP)$/ }).click()
     await expect(pay).toBeHidden()
     await localWait(page, (s) => s.debtPayments.find((p: any) => p.amountPaid === 200))
   })

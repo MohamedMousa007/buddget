@@ -152,7 +152,9 @@ test('R05 Reports: Biggest purchase skips debt payments; money in shows expected
 test('R06 paydays: add salary on the 25th, listed, server row has the day and amount', async ({ page, user }) => {
   await withQnb(page, 100)
   await goto(page, '/paydays')
-  await page.getByRole('button', { name: 'Add a payday' }).click()
+  // With a payday already set, Add sits behind the quiet "Paydays and pay cycle" row (light touch).
+  if (!(await page.getByRole('button', { name: 'Add a payday' }).isVisible())) await page.getByRole('button', { name: 'Paydays and pay cycle' }).click()
+  await page.getByRole('button', { name: /^Add a payday/ }).first().click()
   const d = page.getByRole('dialog', { name: 'New payday' })
   await d.getByRole('textbox', { name: 'Amount' }).fill('7000')
   await d.getByRole('textbox', { name: 'Name' }).fill('QA R06 Payroll')

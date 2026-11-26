@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { format, isWithinInterval, parseISO } from 'date-fns'
-import { ArrowLeftRight, CalendarClock, CreditCard, Landmark, Plus, Smartphone, Trash2 } from 'lucide-react'
+import { ArrowLeftRight, CalendarClock, CreditCard, Landmark, Plus, SlidersHorizontal, Smartphone, Trash2 } from 'lucide-react'
 import { SwipeToDelete, type SwipeSide } from '@/components/expenses/SwipeToDelete'
 import { DateRangeField, Divider, FilterSheet, SectionHead } from '@/components/expenses/ExpenseFilters'
 import { FlowChipRow, type FlowChip } from '@/components/features/flow/FlowChipRow'
@@ -132,15 +132,18 @@ export function DebtPaymentsFeed({ payments, family }: { payments: PaymentVM[]; 
         <h2 className={microClassName}>{c.payments}</h2>
         <span className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{c.swipeHint}</span>
       </div>
-      <div className="-mx-4 lg:mx-0">
-        <FlowChipRow filterCount={narrowed} onOpenFilters={() => setSheetOpen(true)} chips={chips} />
-      </div>
+      {/* The mockup has no chip row here: the applied filters show only once something narrows the list. */}
+      {narrowed > 0 ? (
+        <div className="-mx-4 mb-2 lg:mx-0">
+          <FlowChipRow filterCount={narrowed} onOpenFilters={() => setSheetOpen(true)} chips={chips} />
+        </div>
+      ) : null}
       {shown.length === 0 ? (
         <p className="py-8 text-center text-sm text-[var(--color-brand-text-secondary)]">
           {filters.kind === 'paid' && narrowed === 0 ? c.noPayments : tm.noMatch}
         </p>
       ) : (
-        <Card padding="none" divide className="mt-2 overflow-hidden">
+        <Card padding="none" divide className="overflow-hidden">
           {shown.map((m) => {
             const { Icon, tone } = FAMILY[m.family]
             const row = (
@@ -187,6 +190,13 @@ export function DebtPaymentsFeed({ payments, family }: { payments: PaymentVM[]; 
           })}
         </Card>
       )}
+      {/* Filters (paid or added, family, one debt, dates) stay reachable from a quiet link under the list. */}
+      {narrowed === 0 ? (
+        <Button variant="ghost" size="touch" onClick={() => setSheetOpen(true)} aria-haspopup="dialog" className="mt-1 px-1 text-[0.8125rem] font-semibold text-[var(--color-brand-text-secondary)]">
+          <SlidersHorizontal aria-hidden />
+          {c.filterPayments}
+        </Button>
+      ) : null}
 
       <FilterSheet
         open={sheetOpen}

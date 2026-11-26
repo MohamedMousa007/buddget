@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { OptionChip } from '@/components/ui/OptionChip'
+import { OptionSheet } from '@/components/ui/OptionSheet'
 import { SelectableCard } from '@/components/ui/SelectableCard'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { HeroBand } from '@/components/features/hero/HeroBand'
@@ -93,6 +93,7 @@ export function PaydaysPage() {
     useSettingsStore.getState().setPaydayFocusId(null)
   }, [])
   const [cycleOpen, setCycleOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   // Reorder (the order Flow's In chips and the add-income picker follow): null = not reordering.
   const [order, setOrder] = useState<readonly string[] | null>(null)
@@ -186,6 +187,8 @@ export function PaydaysPage() {
   const freqLabel = freq === 'monthly' ? t.addIncome.freqMonthly : freq === 'weekly' ? t.addIncome.freqWeekly : t.addIncome.freqBiweekly
   const typeLabel = incomeSourceTypeLabel(t.income, source.sourceType)
   const account = paydayMethodLabel(source, paymentMethods)
+  // The band names the account alone, as the mockup does ("Salary · Monthly → CIB Payroll"); the digits are in Edit.
+  const landsIn = paymentMethods.find((m) => m.id === paydayMethodId(source, paymentMethods))
   const toLog = run.find((o) => o.actionable && !isRealizedOccurrence(o))
   const selected = run.find((o) => o.key === selectedKey)
   const editPayday = () => {
@@ -316,27 +319,17 @@ export function PaydaysPage() {
     <div className={column}>
       <PayCycleSheet open={cycleOpen} onClose={() => setCycleOpen(false)} />
 
-      {streams.length > 1 ? (
-        <div role="group" aria-label={c.sources} className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-0.5 lg:mx-0 lg:px-0">
-          {streams.map((s) => (
-            <OptionChip key={s.id} size="sm" surface="card" selected={s.id === source.id} onClick={() => { setPickedId(s.id); setSelectedKey(null) }}>
-              {s.name}
-            </OptionChip>
-          ))}
-        </div>
-      ) : null}
-
       <HeroBand
         contained
-        label={`${typeLabel} · ${freqLabel}${account ? ` → ${account}` : ''}`}
+        label={`${typeLabel} · ${freqLabel}${landsIn ? ` → ${accountTitle(landsIn)}` : ''}`}
         numbers={
           <p className="flex min-w-0 items-baseline gap-1.5">
-            <span className="font-mono-numbers text-[34px] font-semibold leading-none tracking-[-0.03em]">{formatFlex(source.amount)}</span>
+            <span className="font-mono-numbers text-[32px] font-semibold leading-none tracking-[-0.03em]">{formatFlex(source.amount)}</span>
             <span className="truncate text-[0.8125rem] text-[var(--flow-band-fg-2)]">{freq === 'monthly' ? c.eachMonth(source.currency) : c.eachPayday(source.currency)}</span>
           </p>
         }
         note={
-          <span className="flex flex-wrap gap-x-4 gap-y-0.5 text-[0.8125rem]">
+          <span className="flex flex-wrap gap-x-3 gap-y-1">
             {facts.next ? (
               <span>{c.nextPayday} <b className="font-mono-numbers font-semibold text-[var(--flow-band-fg)]">{shortDate(facts.next.dueDate)}</b></span>
             ) : null}
@@ -355,7 +348,7 @@ export function PaydaysPage() {
         </Button>
       )}
 
-      <div className="mt-3 grid grid-cols-2 gap-2.5">
+      <div className="mt-4 grid grid-cols-2 gap-2.5">
         <Button size="touch" disabled={!toLog} onClick={() => toLog && openAmountReceived(source.id, toLog.key, toLog.dueDate.slice(0, 7))} className="rounded-2xl">
           <Plus aria-hidden />
           {lt.logPayday}
@@ -370,40 +363,42 @@ export function PaydaysPage() {
 
       {rows.length ? (
         <>
-          <p className="mx-0.5 mb-1.5 mt-[18px] text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{c.history}</p>
-          <div className="lg:-mx-4">
+          <p className="mx-1 mb-2 mt-6 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{c.history}</p>
+          <div className="-mx-4">
             <FlowLedger look="card" groups={[{ key: 'history', rows }]} />
           </div>
         </>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap items-center gap-x-1">
-        <Button variant="ghost" size="touch" onClick={() => add()} className="px-2 text-[var(--color-brand-primary-ink)]">
-          <Plus aria-hidden />
-          {c.addPayday}
-        </Button>
-        <Button variant="ghost" size="touch" onClick={() => setCycleOpen(true)} className="px-2 text-[var(--color-brand-text-secondary)]">
-          <CalendarCog aria-hidden />
-          {c.payCycle}
-        </Button>
-        {streams.length > 1 ? (
-          <Button variant="ghost" size="touch" onClick={() => setOrder(streams.map((s) => s.id))} className="px-2 text-[var(--color-brand-text-secondary)]">
-            <ArrowUpDown aria-hidden />
-            {t.paydays.reorderAria}
-          </Button>
-        ) : null}
-      </div>
-      {progress.expected > 0 ? (
-        <p className="mx-0.5 mt-1 text-[0.78125rem] text-[var(--color-brand-text-secondary)]">
-          {fillSlots(t.paydays.receivedLine, {
-            month: monthName,
-            received: <b className="font-mono-numbers text-[var(--color-brand-text-primary)]">{formatWhole(progress.received)}</b>,
-            expected: <span className="font-mono-numbers">{formatWhole(progress.expected)}</span>,
-            currency: base,
-          })}
-        </p>
-      ) : null}
-      <p className="mx-0.5 mt-1 text-[0.78125rem] leading-[1.45] text-[var(--color-brand-text-muted)]">{t.paydays.oneTimeNote}</p>
+      {/* The mockup page ends at the history: other paydays, add, pay cycle and reorder sit behind one quiet row. */}
+      <Button variant="ghost" size="touch" onClick={() => setMoreOpen(true)} aria-haspopup="dialog" className="mt-3 px-1 text-[0.8125rem] font-semibold text-[var(--color-brand-text-secondary)]">
+        <CalendarCog aria-hidden />
+        {c.more}
+        <ChevronRight aria-hidden className="rtl:rotate-180" />
+      </Button>
+      <OptionSheet<string>
+        open={moreOpen}
+        onClose={() => setMoreOpen(false)}
+        title={c.sources}
+        subtitle={progress.expected > 0
+          ? fillSlots(t.paydays.receivedLine, { month: monthName, received: formatWhole(progress.received), expected: formatWhole(progress.expected), currency: base })
+          : undefined}
+        value={streams.length > 1 ? `src:${source.id}` : null}
+        onChange={(v) => {
+          if (v.startsWith('src:')) { setPickedId(v.slice(4)); setSelectedKey(null) }
+          else if (v === 'add') add()
+          else if (v === 'cycle') setCycleOpen(true)
+          else if (v === 'reorder') setOrder(streams.map((s) => s.id))
+        }}
+        options={[
+          ...(streams.length > 1
+            ? streams.map((s) => ({ value: `src:${s.id}`, title: s.name, subtitle: `${formatFlex(s.amount)} ${s.currency}`, icon: <IncomeTypeIcon type={s.sourceType} />, tone: 'var(--color-brand-green)' }))
+            : []),
+          { value: 'add', title: c.addPayday, subtitle: t.paydays.oneTimeNote, icon: <Plus /> },
+          { value: 'cycle', title: c.payCycle, icon: <CalendarCog /> },
+          ...(streams.length > 1 ? [{ value: 'reorder', title: t.paydays.reorderAria, icon: <ArrowUpDown /> }] : []),
+        ]}
+      />
     </div>
   )
 }
@@ -438,16 +433,16 @@ function MonthCircles({ occ, today, locale, selectedKey, onSelect }: {
               aria-label={c.monthCircle(label, state)}
               aria-pressed={selectedKey === o.key}
               onClick={() => onSelect(o.key)}
-              className="flex min-h-11 min-w-11 flex-col items-center gap-1 rounded-xl"
+              className="flex min-h-11 min-w-11 flex-col items-center justify-center gap-1 rounded-xl"
             >
               <span
                 aria-hidden
-                className={cn('flex size-8 items-center justify-center rounded-full border-2 border-[var(--flow-band-fg)] [&_svg]:size-4', selectedKey === o.key && 'ring-2 ring-[var(--flow-band-fg)] ring-offset-2 ring-offset-[var(--flow-band-a)]')}
+                className={cn('flex size-6 items-center justify-center rounded-full border-2 border-[var(--flow-band-fg)] [&_svg]:size-3.5', selectedKey === o.key && 'ring-2 ring-[var(--flow-band-fg)] ring-offset-2 ring-offset-[var(--flow-band-a)]')}
                 style={got ? { background: 'var(--flow-band-fg)', color: 'var(--flow-band-a)' } : { color: 'var(--flow-band-fg)' }}
               >
                 <Icon strokeWidth={2.75} />
               </span>
-              <span aria-hidden className="text-[0.6875rem] font-semibold">{label}</span>
+              <span aria-hidden className="text-[0.65625rem] font-semibold text-[var(--flow-band-fg-2)]">{label}</span>
             </button>
           </li>
         )

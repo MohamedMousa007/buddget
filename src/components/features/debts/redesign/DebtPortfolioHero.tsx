@@ -1,7 +1,8 @@
 'use client'
 
 import { fitBigNumber } from '@/components/features/hero/fitText'
-import { BAND_FG2, BAND_MIX, BandScale, HeroBand } from '@/components/features/hero/HeroBand'
+import { BAND_FG2, BAND_MIX, HeroBand } from '@/components/features/hero/HeroBand'
+import { BandNoteLine, boldIn } from '@/components/features/hero/BandNoteLine'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 import { monthProgress } from '@/lib/debts/heroStats'
 import { useLocale, useT } from '@/lib/i18n'
@@ -65,18 +66,22 @@ export function DebtPortfolioHero({
   const compact = (n: number) => (hidden ? MASK : formatCompact(n, locale))
   const month = monthProgress(paidThisMonth, dueThisMonth)
 
-  // Light touch: the three cells collapse into one line under the bar.
+  // Light touch (mockup `page-debts`): the three cells collapse into one note line with two facts: the next payment
+  // (or what is overdue, which matters more) and how many of this month's payments are done. Only the figures are bold.
   const parts: React.ReactNode[] =
     activeCount === 0
       ? [clearedCount > 0 ? lt.cleared(clearedCount, money(paidOff)) : '', lastClearedAt ? `${t.heroDebtFreeSince} ${formatLocalized(lastClearedAt, 'MMM yyyy', locale)}` : '']
       : [
-          overdue ? lt.overdue(fmtWhole(overdue.amount), formatLocalized(overdue.since, 'MMM d', locale)) : '',
-          nextPayment ? lt.next(fmtWhole(nextPayment.amount), formatLocalized(nextPayment.date, 'MMM d', locale)) : '',
-          dueThisMonth > 0 ? lt.month(compact(month.paid), compact(month.total)) : paidThisMonth > 0 ? `${t.heroMonth} ${money(paidThisMonth)}` : '',
-          debtFreeDate ? lt.freeBy(formatLocalized(debtFreeDate, 'MMM yyyy', locale)) : '',
+          overdue
+            ? boldIn(lt.overdue(fmtWhole(overdue.amount), formatLocalized(overdue.since, 'MMM d', locale)), fmtWhole(overdue.amount))
+            : nextPayment
+              ? boldIn(lt.next(fmtWhole(nextPayment.amount), formatLocalized(nextPayment.date, 'MMM d', locale)), fmtWhole(nextPayment.amount))
+              : debtFreeDate ? lt.freeBy(formatLocalized(debtFreeDate, 'MMM yyyy', locale)) : '',
+          dueThisMonth > 0
+            ? boldIn(lt.month(compact(month.paid), compact(month.total)), `${compact(month.paid)} `, ` ${compact(month.total)}`)
+            : paidThisMonth > 0 ? boldIn(`${t.heroMonth} ${money(paidThisMonth)}`, fmtWhole(paidThisMonth)) : '',
         ]
-  const shown = parts.filter(Boolean)
-  const note = shown.length ? <span dir="auto"><b className="font-semibold text-[var(--flow-band-fg)]">{shown[0]}</b>{shown.slice(1).map((p, i) => <span key={i}> · {p}</span>)}</span> : dash
+  const note = parts.some(Boolean) ? <BandNoteLine parts={parts} /> : dash
 
   const progressing = borrowedTotal > 0 && activeCount > 0
   return (
@@ -86,7 +91,8 @@ export function DebtPortfolioHero({
         <>
           <p className="flex min-w-0 items-baseline gap-1.5">
             <span className={`shrink-0 font-mono-numbers font-semibold leading-none tracking-[-0.03em] ${fitBigNumber(fmtWhole(owed))}`}>{fmtWhole(owed)}</span>
-            <span className={`min-w-0 truncate whitespace-nowrap text-[0.8125rem] ${BAND_FG2}`}>{base}</span>
+            {/* The second currency sits next to the unit (mockup: no scale row under the bar). */}
+            <span dir="auto" className={`min-w-0 truncate whitespace-nowrap text-[0.8125rem] ${BAND_FG2}`}>{base}{secondaryText ? ` · ≈ ${hidden ? MASK : secondaryText}` : ''}</span>
           </p>
           {progressing ? (
             <p className={`shrink-0 text-end text-[0.71875rem] leading-[1.3] ${BAND_FG2}`}>
@@ -97,19 +103,14 @@ export function DebtPortfolioHero({
         </>
       }
       bar={
-        <>
-          <div className="h-1.5 rounded-full" style={{ background: BAND_MIX }}>
-            {progressing ? (
-              <div className="h-full rounded-full bg-[var(--flow-band-fg)]" style={{ width: `${Math.max(0, Math.min(100, clearedPct))}%` }} />
-            ) : null}
-          </div>
-          <BandScale>
-            <span dir="auto" className="min-w-0 truncate whitespace-nowrap">{progressing ? t.heroBorrowedTotal(money(borrowedTotal)) : t.heroDebtFree}</span>
-            {secondaryText ? <span dir="auto" className="min-w-0 shrink-0 truncate whitespace-nowrap">≈ {hidden ? MASK : secondaryText}</span> : null}
-          </BandScale>
-        </>
+        <div className="h-1.5 rounded-full" style={{ background: BAND_MIX }}>
+          {progressing ? (
+            <div className="h-full rounded-full bg-[var(--flow-band-fg)]" style={{ width: `${Math.max(0, Math.min(100, clearedPct))}%` }} />
+          ) : null}
+        </div>
       }
       note={note}
+      bareBar
       contained
     />
   )

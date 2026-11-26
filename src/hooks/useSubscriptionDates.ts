@@ -9,7 +9,7 @@ import { useLocale } from '@/lib/i18n'
 import { toLatinDigits } from '@/lib/utils/formatters'
 
 /**
- * Dates the way the Subscriptions design writes them: "19 Oct" in English, "19 أكتوبر" in
+ * Dates the way the Subscriptions design writes them: "Oct 19" in English (Light touch `page-subs`), "19 أكتوبر" in
  * Arabic (the full month, not the clipped abbreviation), digits always Latin.
  */
 export function useSubscriptionDates() {
@@ -19,8 +19,8 @@ export function useSubscriptionDates() {
     const ar = locale === 'ar'
     const loc = ar ? arEG : enUS
     return {
-      /** `yyyy-MM-dd` → "19 Oct" */
-      shortDate: (iso: string) => formatDayMonth(iso.slice(0, 10)),
+      /** `yyyy-MM-dd` → "Oct 19" */
+      shortDate: (iso: string) => (ar ? formatDayMonth(iso.slice(0, 10)) : format(parseISO(iso.slice(0, 10)), 'MMM d', { locale: loc })),
       /** `yyyy-MM-dd` → "Mar 2026" */
       monthYear: (iso: string) => toLatinDigits(format(parseISO(iso.slice(0, 10)), ar ? 'MMMM yyyy' : 'MMM yyyy', { locale: loc })),
       /** `yyyy-MM` → "October 2026" */

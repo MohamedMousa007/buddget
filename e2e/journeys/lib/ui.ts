@@ -131,7 +131,7 @@ export async function payDebt(page: Page, o: { debt: string; amount: number; met
   const d = dialog(page, 'Make a payment')
   await d.getByRole('textbox', { name: 'Amount' }).fill(String(o.amount))
   await d.getByRole('button', { name: o.method, exact: true }).nth(o.nth ?? 0).click()
-  await d.getByRole('button', { name: /^Pay [\d,]+ EGP$/ }).click()
+  await d.getByRole('button', { name: /^(Record payment|Pay [\d,]+ EGP)$/ }).click()
   await expect(d).toBeHidden()
 }
 

@@ -31,6 +31,7 @@ export interface DebtsSubsLtCopy {
     payments: string
     noPayments: string
     swipeHint: string
+    filterPayments: string
     paymentTitle: (name: string, month: string) => string
     cleared: (count: number, total: string) => string
     emptyTitle: string
@@ -107,7 +108,18 @@ export interface DebtsSubsLtCopy {
     cta: string
     providerKind: Record<ProviderCategory, string>
   }
-  pay: { debt: string; paidFrom: string; into: string; left: (left: string, after: string) => string; note: string; repeat: string; repeatHint: (day: string) => string }
+  pay: {
+    debt: string; paidFrom: string; into: string; left: (left: string, after: string) => string; note: string; repeat: string; repeatHint: (day: string) => string
+    /** CTAs (mockup `debtpay` / `repaid`). */
+    record: string
+    markRepaid: string
+    /** Money back from someone (mockup `repaid`): the title and the line under it. */
+    paidBack: (person: string) => string
+    forOn: (what: string, date: string) => string
+    ofTotal: (amount: string, total: string) => string
+    /** The quiet disclosure for Repeat and Note on the repaid sheet. */
+    more: string
+  }
   vault: {
     title: string
     paidOff: string
@@ -174,6 +186,10 @@ export interface DebtsSubsLtCopy {
     over: (over: string, of: string) => string
     planned: (pct: number) => string
     openBlock: (name: string) => string
+    /** The one list head on the Budget page (mockup `page-budget`). */
+    categories: string
+    /** The quiet row under the list that opens a group's page (bills, subscriptions, debts, everyday). */
+    groups: string
   }
   payday: {
     newTitle: string
@@ -235,6 +251,7 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
       payments: 'Payments',
       noPayments: 'No payments yet. Debts you add are under Added.',
       swipeHint: 'Swipe left to delete',
+      filterPayments: 'Filter payments',
       paymentTitle: (n, m) => `${n} · ${m}`,
       cleared: (c, t) => `${c === 1 ? '1 cleared debt' : `${c} cleared debts`} · ${t} paid off`,
       emptyTitle: 'No debts to track',
@@ -310,7 +327,7 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
       cta: 'Add plan',
       providerKind: { bnpl_short: 'Pay in a few months', installment_long: 'Long installment plans', bank_epp: 'Bank installments', other: 'Other plans' },
     },
-    pay: { debt: 'Debt', paidFrom: 'Paid from', into: 'Into', left: (l, a) => `${l} left · ${a} after this`, note: 'Add a note', repeat: 'Repeat monthly', repeatHint: (d) => `Logs it on the ${d}` },
+    pay: { debt: 'Debt', paidFrom: 'Paid from', into: 'Into', left: (l, a) => `${l} left · ${a} after this`, note: 'Add a note', repeat: 'Repeat monthly', repeatHint: (d) => `Logs it on the ${d}`, record: 'Record payment', markRepaid: 'Mark repaid', paidBack: (p) => `${p} paid you back`, forOn: (w, d) => `For ${w} on ${d}`, ofTotal: (a, t) => `${a} of ${t}`, more: 'More options' },
     vault: {
       title: 'Cleared debts',
       paidOff: 'Paid off so far',
@@ -383,6 +400,8 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
       over: (x, o) => `${x} over ${o}`,
       planned: (p) => `${p}% of your income`,
       openBlock: (n) => `Open ${n}`,
+      categories: 'Categories',
+      groups: 'Budget groups',
     },
     payday: {
       newTitle: 'New payday',
@@ -454,6 +473,7 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
       payments: 'الدفعات',
       noPayments: 'لا مدفوعات بعد. الديون التي تضيفها تحت «مضاف».',
       swipeHint: 'اسحب لليسار للحذف',
+      filterPayments: 'فلترة الدفعات',
       paymentTitle: (n, m) => `${n} · ${m}`,
       cleared: (c, t) => `${arPlural(c, AR_DEBT)} مسدد · ${t} اتسدد`,
       emptyTitle: 'لا ديون لمتابعتها',
@@ -529,7 +549,7 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
       cta: 'إضافة الخطة',
       providerKind: { bnpl_short: 'ادفع على أشهر قليلة', installment_long: 'تقسيط طويل', bank_epp: 'تقسيط البنك', other: 'خطط أخرى' },
     },
-    pay: { debt: 'الدين', paidFrom: 'دفعته من', into: 'إلى', left: (l, a) => `باقي ${l} · ${a} بعد هذه`, note: 'أضف ملاحظة', repeat: 'كرّرها كل شهر', repeatHint: (d) => `تُسجَّل في ${d}` },
+    pay: { debt: 'الدين', paidFrom: 'دفعته من', into: 'إلى', left: (l, a) => `باقي ${l} · ${a} بعد هذه`, note: 'أضف ملاحظة', repeat: 'كرّرها كل شهر', repeatHint: (d) => `تُسجَّل في ${d}`, record: 'سجّل الدفعة', markRepaid: 'تم السداد', paidBack: (p) => `${p} رجّع لك فلوسك`, forOn: (w, d) => `عن ${w} في ${d}`, ofTotal: (a, t) => `${a} من ${t}`, more: 'خيارات أكثر' },
     vault: {
       title: 'ديون مسددة',
       paidOff: 'اتسدد حتى الآن',
@@ -602,6 +622,8 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
       over: (x, o) => `تجاوز ${x} فوق ${o}`,
       planned: (p) => `${p}% من دخلك`,
       openBlock: (n) => `فتح ${n}`,
+      categories: 'الفئات',
+      groups: 'مجموعات الميزانية',
     },
     payday: {
       newTitle: 'يوم قبض جديد',

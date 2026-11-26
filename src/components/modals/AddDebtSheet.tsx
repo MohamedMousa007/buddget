@@ -94,11 +94,10 @@ export function AddDebtSheet() {
   const canSubmit = isPayUI
     ? !!(d.selectedDebtId && d.paymentAmount && payAmt > 0)
     : d.canSubmitNewDebt
-  const payAmtLabel = !Number.isNaN(payAmt) && payAmt > 0 ? formatWhole(payAmt) : ''
   const cta = isPayUI
     ? d.paymentScheduleMode === 'recurring'
       ? receiving ? t.debts.fScheduleReceive : t.debts.fSchedulePay
-      : (receiving ? t.debts.fReceiveCta : t.debts.fPayCta)(payAmtLabel, d.paymentCurrency).replace(/\s+/g, ' ').trim()
+      : receiving ? lt.pay.markRepaid : lt.pay.record
     : d.isEditFlow ? lt.borrow.save : d.debtType === 'installment' ? lt.install.cta : lt.borrow.cta
 
   const onSubmit = isPayUI ? d.handleAddPayment : d.handleAddDebt

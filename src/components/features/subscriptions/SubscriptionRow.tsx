@@ -50,7 +50,8 @@ export function SubscriptionRow({ row, onOpen, paid = false }: { row: RowModel; 
         <>
           <span className="shrink-0">{date ? shortDate(date) : '—'}</span>
           {method ? (
-            <span dir="auto" className="min-w-0 truncate">{` · ${accountTitle(method)}${method.last4 ? ` ••${method.last4}` : ''}`}</span>
+            // A leading plain space collapses at the start of a flex item ("2 Dec· CIB"): the separator keeps no-break spaces.
+            <span dir="auto" className="min-w-0 truncate">{`\u00a0·\u00a0${accountTitle(method)}${method.last4 ? ` ••${method.last4}` : ''}`}</span>
           ) : null}
           {row.status !== 'active' ? (
             <SubscriptionStatusBadge status={row.status} className="ms-1.5" />

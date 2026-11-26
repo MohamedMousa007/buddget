@@ -85,7 +85,7 @@ test('W3 a repayment someone makes you credits the account, Flow marks it Not in
     await d.getByRole('textbox', { name: 'Amount' }).fill('200')
     await d.getByRole('button', { name: 'QNB Alahli', exact: true }).first().click()
     await blur(page)
-    await d.getByRole('button', { name: /^Receive 200 EGP$/ }).click()
+    await d.getByRole('button', { name: /^(Mark repaid|Receive [\d,]+ EGP)$/ }).click()
     await expect(d).toBeHidden()
   })
 
@@ -253,7 +253,7 @@ test('W8 lending from a tracked account takes the money out of it; the repayment
     await d.getByRole('textbox', { name: 'Amount' }).fill('5000')
     await chooseMethod(page, d, 'CIB')
     await blur(page)
-    await d.getByRole('button', { name: /^Receive 5,000 EGP$/ }).click()
+    await d.getByRole('button', { name: /^(Mark repaid|Receive [\d,]+ EGP)$/ }).click()
     await expect(d).toBeHidden()
     await goto(page, '/accounts')
     await expect(page.getByRole('button', { name: /^CIB/ }).first()).toContainText('20,000.00')

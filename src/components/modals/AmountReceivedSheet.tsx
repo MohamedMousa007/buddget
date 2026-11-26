@@ -196,7 +196,7 @@ export function AmountReceivedSheet() {
             top={<TxTile tone="var(--color-brand-green)"><IncomeTypeIcon type={source.sourceType} /></TxTile>}
             className="px-0 pb-0"
           />
-          <div className="-mt-2 flex flex-col items-center gap-3 text-center">
+          <div className="mt-2 flex flex-col items-center gap-3 text-center">
             <div>
               <p dir="auto" className="text-[1.0625rem] font-semibold text-[var(--color-brand-text-primary)]">{lt.title(source.name, formatLocalized(parseISO(current.dueDate), 'MMMM', locale))}</p>
               <p dir="auto" className="mt-0.5 text-[0.8125rem]" style={{ color: !valid || meetsExpected ? 'var(--color-brand-text-secondary)' : 'var(--color-status-warn-fg)' }}>
@@ -205,8 +205,8 @@ export function AmountReceivedSheet() {
             </div>
             {expected > 0 ? (
               <div className="flex gap-2">
-                <OptionChip selected={valid && amt === expected} onClick={() => setAmount(String(expected))}>{lt.full(fmtNum(expected))}</OptionChip>
-                <OptionChip selected={valid && amt === half} onClick={() => setAmount(String(half))}>{lt.half(fmtNum(half))}</OptionChip>
+                <OptionChip size="sm" selected={valid && amt === expected} onClick={() => setAmount(String(expected))}>{lt.full(fmtNum(expected))}</OptionChip>
+                <OptionChip size="sm" selected={valid && amt === half} onClick={() => setAmount(String(half))}>{lt.half(fmtNum(half))}</OptionChip>
               </div>
             ) : null}
           </div>

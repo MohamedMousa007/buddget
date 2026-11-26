@@ -1,8 +1,11 @@
 'use client'
 
-import { ChevronRight } from 'lucide-react'
+import { useState } from 'react'
+import { ChevronRight, LayoutGrid } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { OptionSheet } from '@/components/ui/OptionSheet'
+import { cn } from '@/lib/utils'
 import { useCategoryLabel } from '@/hooks/useCategoryLabel'
 import { BUDGET_BLOCKS } from '@/lib/budget/blocks'
 import type { LineView, PlanView } from '@/lib/budget/planView.types'
@@ -29,11 +32,11 @@ function LineRow({ lv, month, base, onOpen }: { lv: LineView; month: boolean; ba
   const sub = !month ? c.planned(Math.round(lv.percent)) : over ? c.over(formatWhole(-left), formatWhole(lv.amount)) : c.leftOf(formatWhole(left), formatWhole(lv.amount))
   const fill = Math.min(100, Math.max(0, lv.usedPercent))
   return (
-    <button type="button" onClick={onOpen} className="flex w-full items-center gap-3 px-4 py-3 text-start transition-colors hover:bg-[var(--color-brand-elevated)]">
-      <LineTile line={lv.line} block={lv.block} />
+    <button type="button" onClick={onOpen} className="flex min-h-[60px] w-full items-center gap-3 px-4 py-2.5 text-start transition-colors hover:bg-[var(--color-brand-elevated)]">
+      <LineTile line={lv.line} block={lv.block} className="size-10 rounded-[11px] [&_svg]:size-5" />
       <span className="min-w-0 flex-1">
         <span dir="auto" className="block truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{catLabel(lv.line.name)}</span>
-        <span dir="auto" className="mt-0.5 block truncate text-xs" style={{ color: over ? 'var(--color-brand-red-text)' : 'var(--color-brand-text-secondary)' }}>{sub}</span>
+        <span dir="auto" className="mt-1 block truncate text-xs font-medium" style={{ color: over ? 'var(--color-brand-red-text)' : 'var(--color-brand-text-muted)' }}>{sub}</span>
         {month ? (
           <span aria-hidden className="mt-2 block h-1 overflow-hidden rounded-full bg-[var(--color-brand-elevated)]">
             <span className="block h-full rounded-full" style={{ width: `${fill}%`, background: barColor(lv.usedPercent) }} />
@@ -48,43 +51,48 @@ function LineRow({ lv, month, base, onOpen }: { lv: LineView; month: boolean; ba
 }
 
 /**
- * The Budget page's list below the hero: each segment is a section head (tap it for the segment page) over its lines as
- * rows. The lines are the plan's own; nothing new is stored.
+ * The Budget page's list below the hero (Light touch `page-budget`): one "Categories" card with every line as a row, in
+ * the plan's group order. Each group's own page (its lines and adding one) opens from a quiet row under the list, so
+ * empty groups never show on the page itself. The lines are the plan's own; nothing new is stored.
  */
 export function BudgetLinesList({ view, onOpenBlock, onOpenLine }: { view: PlanView; onOpenBlock: (block: BudgetBlock) => void; onOpenLine: (lineId: string) => void }) {
   const blocks = useBudgetBlocksCopy()
   const c = useDebtsSubsLtCopy().line
+  const [groupsOpen, setGroupsOpen] = useState(false)
   const month = view.mode === 'month'
+  const present = BUDGET_BLOCKS.filter((b) => view.blocks[b])
+  const lines = present.flatMap((b) => view.blocks[b].lines)
   return (
-    <div className="flex flex-col gap-4">
-      {BUDGET_BLOCKS.map((block) => {
-        const bv = view.blocks[block]
-        const name = blocks.blockName[block]
-        return (
-          <section key={block}>
-            <Button
-              variant="ghost"
-              size="touch"
-              onClick={() => onOpenBlock(block)}
-              aria-label={c.openBlock(name)}
-              className="mb-1 h-auto w-full justify-between px-1 py-1"
-            >
-              <span className={microClassName}>{name}</span>
-              <span className="flex items-center gap-1 font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">
-                {formatWhole(bv.total)}
-                <ChevronRight aria-hidden className="size-4 rtl:rotate-180" />
-              </span>
-            </Button>
-            {bv.lines.length > 0 ? (
-              <Card padding="none" divide className="overflow-hidden">
-                {bv.lines.map((lv) => (
-                  <LineRow key={lv.line.id} lv={lv} month={month} base={view.base} onOpen={() => onOpenLine(lv.line.id)} />
-                ))}
-              </Card>
-            ) : null}
-          </section>
-        )
-      })}
+    <div className="flex flex-col">
+      {lines.length > 0 ? (
+        <section>
+          <h2 className={cn(microClassName, 'mx-1 mb-2 mt-3')}>{c.categories}</h2>
+          <Card padding="none" divide className="overflow-hidden">
+            {lines.map((lv) => (
+              <LineRow key={lv.line.id} lv={lv} month={month} base={view.base} onOpen={() => onOpenLine(lv.line.id)} />
+            ))}
+          </Card>
+        </section>
+      ) : null}
+      <Button
+        variant="ghost"
+        size="touch"
+        onClick={() => setGroupsOpen(true)}
+        aria-haspopup="dialog"
+        className="mt-2 self-start px-1 text-[0.8125rem] font-semibold text-[var(--color-brand-text-secondary)]"
+      >
+        <LayoutGrid aria-hidden />
+        {c.groups}
+        <ChevronRight aria-hidden className="rtl:rotate-180" />
+      </Button>
+      <OptionSheet<BudgetBlock>
+        open={groupsOpen}
+        onClose={() => setGroupsOpen(false)}
+        title={c.groups}
+        value={null}
+        onChange={onOpenBlock}
+        options={present.map((b) => ({ value: b, title: blocks.blockName[b], subtitle: `${formatWhole(view.blocks[b].total)} ${view.base}` }))}
+      />
     </div>
   )
 }

@@ -127,9 +127,6 @@ export default function DebtsPage() {
           stack
           primary={
             <div className="px-4 pt-4 lg:px-0 lg:pt-0">
-                <DebtGoalPrompt />
-                <GoalLensList categories={['debt_freedom']} />
-
                 {empty ? (
                   <EmptyState
                     variant="card"
@@ -181,6 +178,11 @@ export default function DebtsPage() {
                   <ChevronRight aria-hidden className="rtl:rotate-180" />
                 </Button>
               ) : null}
+              {/* Not in the mockup page: the debt-as-goal offer and debt goals sit after everything it shows. */}
+              <div className="mb-6 empty:hidden">
+                <DebtGoalPrompt />
+                <GoalLensList categories={['debt_freedom']} />
+              </div>
             </div>
           }
         />

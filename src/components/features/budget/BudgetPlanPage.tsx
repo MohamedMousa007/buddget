@@ -20,7 +20,7 @@ import { navigate } from '@/lib/navigation/navigate'
 import { findLineView } from '@/lib/budget/planView'
 import type { LineView, PlanMode } from '@/lib/budget/planView.types'
 import type { BudgetBlock } from '@/lib/store/types'
-import { PlanBar } from './PlanBar'
+import { PlanBar, PlanPickerRow } from './PlanBar'
 import { BudgetLinesList } from './BudgetLinesList'
 import { SegmentPage } from './SegmentPage'
 import { useBudgetTakeover } from './useBudgetTakeover'
@@ -207,7 +207,9 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   const heroHasClose = mode === 'month' && applied && !view.learning && everydayPace(view) != null
   const hero = (
     <>
+      {/* Mockup `page-budget`: Month | Plan first; the plan picker becomes a quiet row at the end of the page. */}
       <PlanBar
+        picker={false}
         planName={view.plan.name}
         state={applied ? 'active' : view.plan.status === 'draft' ? 'draft' : 'ready'}
         mode={mode}
@@ -229,6 +231,16 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         <UpgradeBanner lineCount={view.plan.categories.length} onReview={act.groupLegacyLines} onLater={() => setUpgradeLater(true)} />
       ) : null}
       <BudgetLinesList view={view} onOpenBlock={setSegment} onOpenLine={setLineId} />
+      <PlanPickerRow
+        className="-mt-2"
+        planName={view.plan.name}
+        state={applied ? 'active' : view.plan.status === 'draft' ? 'draft' : 'ready'}
+        expanded={switcherOpen}
+        onOpenPlans={() => {
+          setSelectedPlanId(view.plan.id)
+          setSwitcherOpen(true)
+        }}
+      />
     </>
   )
   return (

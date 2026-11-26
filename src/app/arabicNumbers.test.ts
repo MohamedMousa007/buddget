@@ -15,13 +15,15 @@ describe('Arabic number and unit ordering (QA-27)', () => {
     expect(read('components/features/flow/FlowSummaryBand.tsx').match(/<span dir="auto" className="[^"]*">\{scale\[/g)).toHaveLength(3)
     const debts = read('components/features/debts/redesign/DebtPortfolioHero.tsx')
     expect(debts).toMatch(/<b dir="auto" className="block font-mono-numbers/)
-    expect(debts).toMatch(/<span dir="auto"[^>]*>\{progressing \? t\.heroBorrowedTotal/)
+    // Light touch: no scale row under the bar; the second currency rides the unit, isolated with dir="auto".
+    expect(debts).toMatch(/<span dir="auto"[^>]*>\{base\}\{secondaryText/)
     expect(read('components/features/savings-v3/SavingsHero.tsx')).toMatch(/<span key=\{s\.key\} dir="auto">\{s\.label\}/)
   })
   it('the Debts band (Light touch) is a rounded card whose facts ride one auto-direction line under the bar', () => {
     const debts = read('components/features/debts/redesign/DebtPortfolioHero.tsx')
-    expect(debts).toMatch(/note=\{note\}\s+contained/)
+    expect(debts).toMatch(/note=\{note\}\s+bareBar\s+contained/)
     expect(debts).toContain('lt.month(compact(month.paid), compact(month.total))')
-    expect(debts).toMatch(/const note = [^\n]*<span dir="auto">/)
+    expect(debts).toMatch(/const note = [^\n]*<BandNoteLine parts=\{parts\} \/>/)
+    expect(read('components/features/hero/BandNoteLine.tsx')).toMatch(/<span dir="auto" className="flex flex-wrap gap-x-3 gap-y-1">/)
   })
 })

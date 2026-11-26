@@ -23,7 +23,8 @@ export const BUDGET_PATHS: ReadonlySet<string> = new Set(['/budget-setup', '/bud
 
 /** Routes that light each tab: the tab's own page plus its aliases and the pages it owns. */
 export const BOTTOM_NAV_TAB_PATHS: Record<string, ReadonlySet<string>> = {
-  '/flow': new Set(['/', '/flow', '/expenses', '/income', '/paydays']),
+  // Paydays is its own top-level page (mockup page-paydays): no tab lights on it.
+  '/flow': new Set(['/', '/flow', '/expenses', '/income']),
   '/budget-setup': BUDGET_PATHS,
   '/wealth': new Set(['/wealth', '/savings', '/investment']),
 }
@@ -43,7 +44,8 @@ export function sectionTitleNavKey(pathname: string | null): keyof Dictionary['n
   if (pathname.startsWith('/savings')) return 'wealth'
   if (pathname.startsWith('/investment')) return 'wealth'
   if (pathname.startsWith('/subscriptions')) return 'subscriptions'
-  if (pathname.startsWith('/budget-setup') || pathname.startsWith('/budget-history')) return 'budgetSetup'
+  // `/budget` is the typed address of /budget-setup and renders it in place: it gets the same title.
+  if (pathname === '/budget' || pathname.startsWith('/budget-setup') || pathname.startsWith('/budget-history')) return 'budgetSetup'
   if (pathname.startsWith('/settings')) return 'settings'
   if (pathname.startsWith('/reports')) return 'reports'
   if (pathname.startsWith('/goals')) return 'goals'

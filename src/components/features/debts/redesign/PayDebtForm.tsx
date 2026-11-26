@@ -1,6 +1,9 @@
 'use client'
 
-import { Landmark, Undo2 } from 'lucide-react'
+import { useState } from 'react'
+import { parseISO } from 'date-fns'
+import { ChevronDown, Landmark, Undo2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import type { AddDebtHook } from '@/hooks/useAddDebtSheet'
 import { AmountHero } from '@/components/ui/AmountHero'
 import { PickerRow } from '@/components/ui/PickerRow'
@@ -10,11 +13,16 @@ import { MethodPickerRow } from '@/components/features/debts/lt/MethodPickerRow'
 import { SheetGroup } from '@/components/features/debts/lt/SheetParts'
 import { isOwedToUser } from '@/lib/debts/debtDirection'
 import { formatFlex } from '@/lib/utils/formatters'
-import { useT } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
+import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 import { useLightTouchCopy } from '@/lib/i18n/lightTouchCopy'
 
-/** Record a payment (Light touch `debtpay`): icon tile, the signed amount, what is left after it, then Debt · Paid from · Repeat. */
+/**
+ * Record a payment (Light touch `debtpay`): icon tile, the signed amount, what is left after it, then Debt · Paid from ·
+ * Repeat. Money back from someone (`repaid`) reads "Ahmed paid you back", "For Zooba on Oct 27 · 400 of 400", keeps the
+ * currency fixed and shows only Into; Repeat and the note sit behind a quiet "More options".
+ */
 export function PayDebtForm({ d }: { d: AddDebtHook }) {
   const dict = useT()
   const t = dict.debts
@@ -28,6 +36,12 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
   const sameUnit = debt ? d.paymentCurrency === (debt.isGold ? 'XAU' : debt.currency) : false
   const after = Math.max(0, d.selectedRemaining - (sameUnit && paid > 0 ? paid : 0))
   const unit = debt?.isGold ? ' g' : ''
+  const { locale } = useLocale()
+  const [more, setMore] = useState(false)
+  const showExtras = !receiving || more || d.paymentScheduleMode === 'recurring' || d.paymentNotes !== ''
+  const what = debt?.description?.trim()
+  const since = debt?.startDate ? formatLocalized(parseISO(debt.startDate.slice(0, 10)), 'MMM d', locale) : ''
+  const thisOf = c.ofTotal(`${formatFlex(sameUnit && paid > 0 ? paid : 0)}${unit}`, `${formatFlex(d.selectedRemaining)}${unit}`)
 
   return (
     <div className="flex flex-col gap-4 pt-1">
@@ -35,7 +49,7 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
         value={d.paymentAmount}
         onChange={(v) => { d.setPaymentAmount(v); d.setPaymentRateError('') }}
         currency={d.paymentCurrency}
-        onCurrencyChange={(code) => { d.setPaymentCurrency(code); d.setPaymentRateError('') }}
+        onCurrencyChange={receiving ? undefined : (code) => { d.setPaymentCurrency(code); d.setPaymentRateError('') }}
         includeGold={debt?.isGold}
         base={d.settings.baseCurrency}
         sign={receiving ? '+' : '−'}
@@ -50,30 +64,43 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
       />
       {debt ? (
         <div className="-mt-1 text-center">
-          <p dir="auto" className="text-[1.0625rem] font-semibold text-[var(--color-brand-text-primary)]">{debt.name || debt.person}</p>
+          <p dir="auto" className="text-[1.0625rem] font-semibold text-[var(--color-brand-text-primary)]">{receiving ? c.paidBack(debt.person || debt.name) : debt.name || debt.person}</p>
           <p dir="auto" className="mt-0.5 font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
-            {c.left(`${formatFlex(d.selectedRemaining)}${unit}`, `${formatFlex(after)}${unit}`)}
+            {receiving
+              ? [what && since ? c.forOn(what, since) : '', thisOf].filter(Boolean).join(' · ')
+              : c.left(`${formatFlex(d.selectedRemaining)}${unit}`, `${formatFlex(after)}${unit}`)}
           </p>
         </div>
       ) : null}
       {d.paymentRateError ? <p role="alert" className="text-center text-xs text-[var(--color-brand-red)]">{d.paymentRateError}</p> : null}
 
       <SheetGroup>
-        <PickerRow
-          label={c.debt}
-          onClick={d.isPayDebtFlow ? d.backToPayDebtList : undefined}
-          value={<span dir="auto" className="truncate">{debt?.name || debt?.person}</span>}
-        />
+        {receiving && !d.isPayDebtFlow ? null : (
+          <PickerRow
+            label={c.debt}
+            onClick={d.isPayDebtFlow ? d.backToPayDebtList : undefined}
+            value={<span dir="auto" className="truncate">{debt?.name || debt?.person}</span>}
+          />
+        )}
         <MethodPickerRow label={receiving ? c.into : c.paidFrom} value={d.paymentMethodId} onChange={d.setPaymentMethodId} paymentMethods={d.paymentMethods} accountsOnly={receiving} />
-        <SettingsSwitchRow
-          label={c.repeat}
-          hint={c.repeatHint(ordinal(Number(d.paymentDate.slice(8, 10))))}
-          checked={d.paymentScheduleMode === 'recurring'}
-          onChange={(on) => d.setPaymentScheduleMode(on ? 'recurring' : 'one_time')}
-        />
+        {showExtras ? (
+          <SettingsSwitchRow
+            label={c.repeat}
+            hint={c.repeatHint(ordinal(Number(d.paymentDate.slice(8, 10))))}
+            checked={d.paymentScheduleMode === 'recurring'}
+            onChange={(on) => d.setPaymentScheduleMode(on ? 'recurring' : 'one_time')}
+          />
+        ) : null}
       </SheetGroup>
 
-      <NoteRow value={d.paymentNotes} onChange={d.setPaymentNotes} placeholder={c.note} />
+      {showExtras ? (
+        <NoteRow value={d.paymentNotes} onChange={d.setPaymentNotes} placeholder={c.note} />
+      ) : (
+        <Button variant="ghost" size="touch" onClick={() => setMore(true)} aria-expanded={false} className="-mt-2 self-center text-[0.8125rem] font-semibold text-[var(--color-brand-text-secondary)]">
+          {c.more}
+          <ChevronDown aria-hidden />
+        </Button>
+      )}
     </div>
   )
 }

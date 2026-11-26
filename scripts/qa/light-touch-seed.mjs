@@ -69,6 +69,8 @@ export function seedInPage() {
 
   // Income: salary for the last two paydays
   const salary = st().incomeSources.find((s) => s.sourceType === 'salary')
+  // Paydays hero names the account the salary lands in (mockup "Salary · Monthly → CIB Payroll").
+  if (salary) st().updateIncomeSource(salary.id, { paymentMethodId: payroll })
   for (const m of [-1, 0]) {
     const date = monthDay(m, 5)
     st().addIncomeEvent({ templateId: salary?.id ?? null, name: 'Salary · Nexta', amount: 42000, currency: 'EGP', sourceType: 'salary', receivedDate: date, occurrenceDate: date, status: 'confirmed', paymentMethodId: payroll })
@@ -108,8 +110,13 @@ export function seedInPage() {
   const sub = (name, brandKey, amount, currency, billingDay, pm, expenseCategory = 'Subscription') =>
     st().addSubscription({ name, brandKey, planName: null, planId: null, catalogRegion: null, pendingPlanId: null, pendingAmount: null, amount, currency, billingCycle: 'monthly', billingDay, startDate: monthDay(-6, billingDay), nextBillingDate: null, paymentMethodId: pm, expenseCategory, status: 'active', notes: null, tracking: 'sms', reminder: true })
   sub('Netflix', 'netflix', 9.99, 'USD', 2, cibCredit)
-  sub('Spotify', 'spotify', 99, 'EGP', 4, cibDebit)
-  sub('iCloud+', 'icloud', 49, 'EGP', 9, cibDebit)
+  const spotify = sub('Spotify', 'spotify', 99, 'EGP', 4, cibDebit)
+  const icloud = sub('iCloud+', 'icloud', 49, 'EGP', 9, cibDebit)
+  // This month's charges for two of them, so Subscriptions shows "Paid this month" and the hero bar (mockup page-subs).
+  for (const [subId, description, amount, dom] of [[spotify, 'Spotify', 99, 4], [icloud, 'iCloud+', 49, 9]]) {
+    const date = monthDay(0, dom)
+    st().addExpense({ description, category: 'Subscription', amount, currency: 'EGP', paymentMethodId: cibDebit, isRecurring: false, date, occurredAt: `${date}T08:00:00`, linkedSubscriptionId: subId })
+  }
   sub('Shahid VIP', 'shahid', 120, 'EGP', 14, cibDebit)
 
   return { accounts: st().paymentMethods.length, expenses: st().expenses.length, goals: st().goals.length, debts: st().debts.length, subs: st().subscriptions.length, pockets: st().savingsAccounts.length, cert, ef }

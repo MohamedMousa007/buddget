@@ -8,6 +8,7 @@ import type { Subscription } from '@/lib/store/types'
 import { AddCatalogStep } from './AddCatalogStep'
 import { AddConfigureStep } from './AddConfigureStep'
 import { SheetFrame } from './SheetFrame'
+import { addCategoryOf } from '@/lib/subscriptions/catalogDisplay'
 
 function Inner({
   editing,
@@ -44,6 +45,7 @@ function Inner({
       open
       onClose={onClose}
       title={title}
+      subtitle={!form.isEdit && form.step === 2 && form.brand ? ui.add.categories[addCategoryOf(form.brand)] : undefined}
       onBack={!form.isEdit && form.step === 2 ? () => form.setStep(1) : undefined}
       footer={footer}
     >

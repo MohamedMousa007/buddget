@@ -178,7 +178,9 @@ test('A4 account > income > create/apply budget > expense > Flow and budget cons
 
   await test.step('salary payday 5,000 on the 25th into QNB (the budget templates are sized on it)', async () => {
     await goto(page, '/paydays')
-    await page.getByRole('button', { name: 'Add a payday' }).click()
+    // With a payday already set, Add sits behind the quiet "Paydays and pay cycle" row (light touch).
+    if (!(await page.getByRole('button', { name: 'Add a payday' }).isVisible())) await page.getByRole('button', { name: 'Paydays and pay cycle' }).click()
+    await page.getByRole('button', { name: /^Add a payday/ }).first().click()
     const d = page.getByRole('dialog', { name: 'New payday' })
     await d.getByRole('textbox', { name: 'Amount' }).fill('5000')
     await d.getByRole('textbox', { name: 'Name' }).fill('QA Payroll')

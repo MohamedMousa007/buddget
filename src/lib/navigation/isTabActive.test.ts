@@ -6,7 +6,10 @@ const HREFS = ['/flow', '/budget-setup', '/wealth', '/debts', '/reports', '/payd
 
 describe('isTabActive', () => {
   it('lights Flow for root and its aliases', () => {
-    for (const p of ['/', '/flow', '/expenses', '/income', '/paydays']) expect(isTabActive(p, '/flow')).toBe(true)
+    for (const p of ['/', '/flow', '/expenses', '/income']) expect(isTabActive(p, '/flow')).toBe(true)
+  })
+  it('lights no bottom tab on Paydays (a top-level page)', () => {
+    for (const item of BOTTOM_NAV_ITEMS) if (item.kind === 'link') expect(isTabActive('/paydays', item.href)).toBe(false)
   })
   it('lights Wealth for savings/investment and sub-routes', () => {
     expect(isTabActive('/savings', '/wealth')).toBe(true)

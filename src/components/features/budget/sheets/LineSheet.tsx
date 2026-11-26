@@ -142,7 +142,8 @@ function LineForm({
             value={amount}
             onChange={setAmount}
             currency={view.base}
-            unit={`${view.base} ${lt.perMonth}`}
+            // Mockup `s_line`: "EGP a month" is a small 15px caption beside the digits, not the big currency code.
+            unit={<span className="font-sans text-[0.9375rem] tracking-normal">{`${view.base} ${lt.perMonth}`}</span>}
             line={lt.ofIncome(pct)}
             aria-label={c.line.amountLabel}
             className="px-0 pb-0"
