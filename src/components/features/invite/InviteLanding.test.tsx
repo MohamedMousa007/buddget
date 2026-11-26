@@ -40,6 +40,16 @@ describe('the /i/<code> landing page (BDG-005)', () => {
     for (const c of [rewardsCopy.en.landing, rewardsCopy.ar.landing]) expect(JSON.stringify(c)).not.toMatch(NO_EXPIRY)
   })
 
+  it('both ways in are real links to the sign-up target, so a tap before hydration still leaves /i/<code> (QA R11)', () => {
+    const out = renderToStaticMarkup(createElement(InviteLanding, { code: 'MOHAME-7K2' }))
+    const links = out.match(/<a [^>]*>[^<]*<\/a>/g) ?? []
+    const create = links.find((a) => a.includes('Create your account'))
+    const signIn = links.find((a) => a.includes('I already have buddget'))
+    expect(create).toContain('href="/flow?next=%2Fflow"')
+    expect(signIn).toContain('href="/flow?next=%2Fflow"')
+    expect(out).not.toMatch(/<button[^>]*>Create your account<\/button>/)
+  })
+
   it('the pass is unsigned until the inviter name arrives (never a guessed name)', () => {
     const out = renderToStaticMarkup(createElement(InviteLanding, { code: 'MOHAME-7K2' }))
     expect(out).not.toContain('data-side')

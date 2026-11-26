@@ -251,6 +251,23 @@ test('R11 invite link /i/<code> shows the guest pass, saves the code in the 30-d
   expect((await page.context().cookies()).some((c) => c.name === 'buddget_invite')).toBe(false)
 })
 
+test('R11b invite link: "Create your account" tapped before the page hydrates still goes on to sign-up, and the code is kept', async ({ page, context }) => {
+  // Hold the app's script back, as a slow phone or a cold server does, so the tap lands on the server-rendered page.
+  let hold = true
+  await context.route(/\/_next\/static\/chunks\/.*\.js/, async (r) => {
+    while (hold) await new Promise((x) => setTimeout(x, 100))
+    await r.continue()
+  })
+  await page.goto('/i/layla-7k2', { waitUntil: 'domcontentloaded' })
+  const cookie = (await context.cookies()).find((c) => c.name === 'buddget_invite')
+  expect(cookie?.value, 'the proxy keeps the code before any script runs').toBe('LAYLA-7K2')
+  expect((cookie?.expires ?? 0) * 1000 - Date.now()).toBeGreaterThan(29 * 86_400_000)
+  await page.getByRole('button', { name: 'Create your account' }).click()
+  hold = false
+  await expect(page).toHaveURL(/\/flow/)
+  await context.unroute(/\/_next\/static\/chunks\/.*\.js/)
+})
+
 test('R12 Quick add lists its entries; scan receipt and voice entry reachable on web (recorded)', async ({ page, user }) => {
   void user
   await goto(page, '/flow')

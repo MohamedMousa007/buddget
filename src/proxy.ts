@@ -8,6 +8,7 @@ import {
   requireSupabaseUrl,
 } from '@/lib/supabase/env'
 import { buildCsp } from '@/lib/security/csp'
+import { inviteCookieFor } from '@/components/features/invite/inviteCookie'
 import { apiSecondFactorRefusal } from '@/lib/server/apiSecondFactor'
 import { publicApiRateLimitOk } from '@/lib/server/publicApiRateLimit'
 import { nativeApiPreflightResponse, withNativeApiCors } from '@/lib/server/nativeApiCors'
@@ -147,6 +148,11 @@ export async function proxy(request: NextRequest) {
   }
 
   supabaseResponse.headers.set('Content-Security-Policy', csp)
+
+  // An invite link keeps its code for sign-up from the server, so it holds even when "Create your account" is
+  // tapped before the page has hydrated (the page's own client write never ran then).
+  const invite = inviteCookieFor(pathname, request.nextUrl.protocol === 'https:')
+  if (invite) supabaseResponse.cookies.set(invite.name, invite.value, invite.options)
 
   if (
     pathname.startsWith('/_next') ||

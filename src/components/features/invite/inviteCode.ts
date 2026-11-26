@@ -4,18 +4,12 @@ import type { BillingMe } from '@/lib/billing/billingStore'
 import type { RewardsCopy } from '@/lib/i18n/rewardsCopy'
 import type { RedeemStatus, ReferralFriend, ReferralSummary } from '@/lib/referrals/referralsApi'
 import { INVITER_PRO_DAYS } from '@/lib/referrals/rules'
+import { INVITE_COOKIE, INVITE_COOKIE_MAX_AGE, normalizeInviteCode } from './inviteCookie'
+
+export { INVITE_COOKIE, normalizeInviteCode }
 
 /** Where a code from an invite link or the sign-up field waits until the account exists. */
 export const INVITE_STORAGE_KEY = 'buddget:invite-code'
-/** Set by the `/i/<code>` page, read once by the app and copied into storage. */
-export const INVITE_COOKIE = 'buddget_invite'
-const INVITE_COOKIE_MAX_AGE = 60 * 60 * 24 * 30
-
-/** A code as the server stores it ("LAYLA-7K2", "AB-7K2"): upper case, letters and digits around one hyphen. Null when it cannot be one. */
-export function normalizeInviteCode(raw: string | null | undefined): string | null {
-  const code = (raw ?? '').trim().toUpperCase()
-  return /^[A-Z0-9]{1,12}-[A-Z0-9]{2,8}$/.test(code) ? code : null
-}
 
 function readCookie(): string | null {
   if (typeof document === 'undefined') return null
