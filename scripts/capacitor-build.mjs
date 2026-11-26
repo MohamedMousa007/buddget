@@ -54,6 +54,7 @@ const STASH_TARGETS = [
   { from: 'src/app/(site-en)', to: '.cap-stash/site-en' },
   { from: 'src/app/(site-ar)', to: '.cap-stash/site-ar' },
   { from: 'src/app/robots.ts', to: '.cap-stash/robots.ts' },
+  { from: 'src/app/robots.test.ts', to: '.cap-stash/robots.test.ts' },
   // `force-dynamic` layouts that need SSR — the static export can't keep them.
   { from: 'src/app/(app)/onboarding/layout.tsx', to: '.cap-stash/onboarding-layout.tsx' },
   { from: 'src/app/(app)/install/layout.tsx', to: '.cap-stash/install-layout.tsx' },
