@@ -28,7 +28,7 @@ describe('planPocketDeposit', () => {
     expect(planPocketDeposit({ kind: 'account' }, 'p1')).toEqual({ action: 'deposit', opts: { mode: 'allocate', fromAccountId: null } })
   })
   it('outside → declare', () => {
-    expect(planPocketDeposit({ kind: 'outside' }, 'p1')).toEqual({ action: 'deposit', opts: { mode: 'declare' } })
+    expect(planPocketDeposit({ kind: 'outside' }, 'p1')).toEqual({ action: 'deposit', opts: { mode: 'declare', source: 'outside' } })
   })
   it('pocket → transfer from that pocket', () => {
     expect(planPocketDeposit({ kind: 'pocket', id: 'p2' }, 'p1')).toEqual({ action: 'transfer', fromPocketId: 'p2' })
@@ -47,6 +47,8 @@ describe('applyPocketDeposit', () => {
     const tx = S().savingsTransactions.at(-1)!
     expect(tx.type).toBe('deposit')
     expect(tx.isCashFlow).toBe(false)
+    // Marked as money from outside, so Recent moves shows it (an opening balance or a correction carries no mark).
+    expect(tx.source).toBe('outside')
     expect(S().savingsAccounts.find((a) => a.id === 'p1')!.currentBalance).toBe(200)
   })
 

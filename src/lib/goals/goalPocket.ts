@@ -2,7 +2,7 @@ import type { LedgerInput } from '@/lib/accounts/balance'
 import { DEFAULT_CASH_ID, isTracked } from '@/lib/accounts/kinds'
 import { balanceEpsilon } from '@/lib/savings/balanceMath'
 import { availableIn } from '@/lib/savings/pocketHome'
-import type { Currency, FinanceStore, Goal, PaymentMethod } from '@/lib/store/types'
+import type { Currency, FinanceStore, Goal, PaymentMethod, SavingsAccount } from '@/lib/store/types'
 
 /** "Somewhere else (not tracked here)": the saved money is outside every tracked account. */
 export const ELSEWHERE = 'elsewhere'
@@ -94,4 +94,18 @@ export function depositIntoGoal(
   if (write(created)) return true
   s.deleteSavingsAccount(created)
   return false
+}
+
+/**
+ * The goal's pockets after the user picks `pocketId` on its detail sheet. No money moves ("keeps every amount where it
+ * is"), so a pocket that still holds money for the goal stays linked and counted; the picked pocket comes first, as the
+ * one new money goes to. An empty old pocket is let go.
+ */
+export function relinkGoalPocket(
+  linked: readonly string[],
+  pockets: readonly Pick<SavingsAccount, 'id' | 'currentBalance'>[],
+  pocketId: string,
+): string[] {
+  const holding = linked.filter((id) => id !== pocketId && (pockets.find((p) => p.id === id)?.currentBalance ?? 0) > 0)
+  return [pocketId, ...holding]
 }

@@ -5,7 +5,7 @@ import { computeBalances } from '@/lib/accounts/balance'
 import { computeNetWorth } from '@/lib/savings/netWorth'
 import { ledgerOf } from '@/lib/savings/pocketHome'
 import { computeGoalProgress, buildGoalProgressContext } from '@/lib/goals/computeGoalProgress'
-import { createGoalPocket, depositIntoGoal, ELSEWHERE, goalHomeAccounts, savedHomeProblem, savedPocketProblem } from './goalPocket'
+import { createGoalPocket, depositIntoGoal, ELSEWHERE, goalHomeAccounts, savedHomeProblem, savedPocketProblem, relinkGoalPocket } from './goalPocket'
 import type { PaymentMethod } from '@/lib/store/types'
 import { TOOLS } from '@/lib/buddgy/tools/exec'
 import { refOf } from '@/lib/buddgy/tools/refs'
@@ -385,5 +385,18 @@ describe('savedPocketProblem (QA W3 P1: Pocket tab with no pocket picked fell ba
     expect(savedPocketProblem('pocket', null, 0)).toBeNull()
     expect(savedPocketProblem('account', null, 1500)).toBeNull()
     expect(savedPocketProblem('outside', null, 1500)).toBeNull()
+  })
+})
+
+describe('relinkGoalPocket (QA W3 P2: changing the pocket dropped the saved amount, 500 → 350)', () => {
+  const pockets = [{ id: 'old', currentBalance: 500 }, { id: 'new', currentBalance: 350 }, { id: 'empty', currentBalance: 0 }]
+  it('the money already in the old pocket stays counted: the goal now shows both, the picked pocket first', () => {
+    const linked = relinkGoalPocket(['old'], pockets, 'new')
+    expect(linked).toEqual(['new', 'old'])
+    expect(linked.reduce((sum, id) => sum + pockets.find((p) => p.id === id)!.currentBalance, 0)).toBe(850)
+  })
+  it('an empty old pocket is let go, and picking the same pocket changes nothing', () => {
+    expect(relinkGoalPocket(['empty'], pockets, 'new')).toEqual(['new'])
+    expect(relinkGoalPocket(['old'], pockets, 'old')).toEqual(['old'])
   })
 })

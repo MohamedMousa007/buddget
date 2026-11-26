@@ -83,8 +83,8 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
   const acc = (id: string) => accounts.find((a) => a.id === id)
 
   const rows = useMemo(() => {
-    // Pocket-to-pocket moves and a goal's opening money are not cash flow, but they are moves; corrections and openings stay out.
-    let list = [...transactions].filter((t) => t.isCashFlow !== false || t.source === 'carry' || !!t.transferGroupId || t.source === 'goal_opening')
+    // Pocket-to-pocket moves, money from outside and a goal's opening money are not cash flow, but they are moves; corrections and openings stay out.
+    let list = [...transactions].filter((t) => t.isCashFlow !== false || t.source === 'carry' || !!t.transferGroupId || t.source === 'goal_opening' || t.source === 'outside')
     if (filter) list = list.filter((t) => { const a = accounts.find((x) => x.id === t.accountId); return a ? catForAccount(a) === filter : false })
     list.sort((a, b) => instantOf(b.occurredAt, b.date) - instantOf(a.occurredAt, a.date) || b.date.localeCompare(a.date) || (b.type === 'deposit' ? 1 : 0) - (a.type === 'deposit' ? 1 : 0))
     return limit ? list.slice(0, limit) : list
