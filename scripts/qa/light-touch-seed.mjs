@@ -69,13 +69,17 @@ export function seedInPage() {
     st().addExpense({ description, category, amount: Math.round(amount * 1.1), currency: 'EGP', paymentMethodId: pm, isRecurring: false, date, occurredAt: `${date}T12:30:00` })
   })
 
-  // Income: salary for the last two paydays
+  // The demo salary is replaced by one that has counted since six months ago and lands in CIB Payroll (mockup hero
+  // "Salary · Monthly → CIB Payroll", "On time 6 of 6"). Changing an existing source's start would save a new version of
+  // it and leave these paydays on the old one.
+  // The demo's Upwork is re-added after it, so the salary stays the first (hero) source.
+  for (const demo of [...st().incomeSources]) st().deleteIncomeSource(demo.id)
+  st().addIncomeSource({ name: 'Salary · Nexta', amount: 42000, currency: 'EGP', isRecurring: true, recurringFrequency: 'monthly', dayOfMonth: 5, sourceType: 'salary', paymentMethodId: payroll, effectiveStart: monthDay(-5, 1) })
+  st().addIncomeSource({ name: 'Upwork', amount: 6000, currency: 'EGP', isRecurring: true, recurringFrequency: 'biweekly', dayOfMonth: 3, sourceType: 'side_hustle' })
   const salary = st().incomeSources.find((s) => s.sourceType === 'salary')
-  // Paydays hero names the account the salary lands in (mockup "Salary · Monthly → CIB Payroll").
-  // Six months of history (mockup "On time 6 of 6", May..Oct check row); the source has been counting since then.
-  if (salary) st().updateIncomeSource(salary.id, { paymentMethodId: payroll, effectiveStart: monthDay(-6, 1) })
+  const payDay = 5
   for (const m of [-5, -4, -3, -2, -1, 0]) {
-    const date = monthDay(m, 5)
+    const date = monthDay(m, payDay)
     st().addIncomeEvent({ templateId: salary?.id ?? null, name: 'Salary · Nexta', amount: 42000, currency: 'EGP', sourceType: 'salary', receivedDate: date, occurrenceDate: date, status: 'confirmed', paymentMethodId: payroll })
   }
 

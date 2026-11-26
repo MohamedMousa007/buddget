@@ -26,7 +26,6 @@
         "sheetOpen": false
       },
       "pageErrors": [
-        "Invalid or unexpected token",
         "Missing NEXT_PUBLIC_SUPABASE_URL"
       ]
     },
@@ -37,10 +36,41 @@
       "offline": true,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false
+      },
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
+    },
+    "page-provider": {
+      "captured": true,
+      "route": "/accounts",
+      "steps": [
+        "CIB, 2 accounts · 3 cards"
+      ],
+      "offline": true,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.overflow-hidden.rounded-3xl.px-[18px].pb-4",
           "borderRadius": "24px",
           "marginLeft": "0px",
           "marginRight": "0px",
@@ -68,7 +98,17 @@
       "checks": {
         "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
-        "hero": null,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
@@ -191,7 +231,6 @@
         "sheetOpen": false
       },
       "pageErrors": [
-        "Loading chunk app/(app)/layout failed.\n(error: http://localhost:3001/_next/static/chunks/app/(app)/layout.js)",
         "Missing NEXT_PUBLIC_SUPABASE_URL"
       ]
     },
@@ -346,7 +385,7 @@
       "captured": true,
       "route": "/accounts",
       "steps": [
-        "CIB, 2 accounts · 2 cards",
+        "CIB, 2 accounts · 3 cards",
         "CIB Current"
       ],
       "offline": true,
@@ -378,7 +417,7 @@
       "captured": true,
       "route": "/accounts",
       "steps": [
-        "CIB, 2 accounts · 2 cards",
+        "CIB, 2 accounts · 3 cards",
         "CIB Credit"
       ],
       "offline": true,
@@ -441,7 +480,7 @@
       "captured": true,
       "route": "/accounts",
       "steps": [
-        "CIB, 2 accounts · 2 cards",
+        "CIB, 2 accounts · 3 cards",
         "CIB Current",
         "Add card"
       ],
@@ -474,9 +513,10 @@
       "captured": true,
       "route": "/accounts",
       "steps": [
-        "CIB, 2 accounts · 2 cards",
+        "CIB, 2 accounts · 3 cards",
         "CIB Current",
-        "Cash out"
+        "Cash out",
+        "async (page) => {\n  const input = page.locator('[role=dialog"
       ],
       "offline": true,
       "state": "full",
@@ -507,9 +547,10 @@
       "captured": true,
       "route": "/accounts",
       "steps": [
-        "CIB, 2 accounts · 2 cards",
+        "CIB, 2 accounts · 3 cards",
         "CIB Current",
-        "Set aside"
+        "Set aside",
+        "async (page) => {\n  const input = page.locator('[role=dialog"
       ],
       "offline": true,
       "state": "full",
@@ -580,7 +621,8 @@
       "captured": true,
       "route": "/wealth",
       "steps": [
-        "Add money"
+        "Add money",
+        "async (page) => {\n  const input = page.locator('[role=dialog"
       ],
       "offline": false,
       "state": "full",
@@ -611,7 +653,14 @@
       "captured": true,
       "route": "/wealth",
       "steps": [
-        "Withdraw"
+        "Withdraw",
+        "css=[role=dialog] button[aria-label^=\"From:\"]",
+        "async (page) => {\n  // The picker row's or option's own labe",
+        "async (page) => {\n  // The picker row's or option's own labe",
+        "async (page) => {\n  // The picker row's or option's own labe",
+        "async (page) => {\n  // The picker row's or option's own labe",
+        "async (page) => {\n  // The picker row's or option's own labe",
+        "async (page) => {\n  const input = page.locator('[role=dialog"
       ],
       "offline": false,
       "state": "full",
@@ -642,24 +691,14 @@
       "captured": true,
       "route": "/wealth",
       "steps": [
-        "Emergency fund"
+        "async (page) => {\n  const row = page.locator('button', { has"
       ],
       "offline": false,
       "state": "full",
       "checks": {
         "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
-        "hero": {
-          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
-          "borderRadius": "24px",
-          "marginLeft": "0px",
-          "marginRight": "0px",
-          "left": 16,
-          "right": 16,
-          "width": 358,
-          "viewportWidth": 390,
-          "shape": "rounded card"
-        },
+        "hero": null,
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
@@ -698,7 +737,9 @@
         "async (page) => {\n  await page.evaluate(() => {\n    const no",
         "Add pocket or asset",
         "Investment",
-        "css=[role=dialog] button:has-text(\"Bars, coins\")"
+        "css=[role=dialog] button:has-text(\"Bars, coins\")",
+        "async (page) => {\n  const input = page.locator('[role=dialog",
+        "async (page) => {\n  const input = page.locator('[role=dialog"
       ],
       "offline": false,
       "state": "full",
@@ -783,7 +824,8 @@
       "route": "/goals",
       "steps": [
         "Trip to Dahab",
-        "Add money"
+        "Add money",
+        "async (page) => {\n  const input = page.locator('[role=dialog"
       ],
       "offline": false,
       "state": "full",
@@ -947,7 +989,17 @@
       "checks": {
         "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
-        "hero": null,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
@@ -1019,7 +1071,6 @@
         "sheetOpen": true
       },
       "pageErrors": [
-        "Loading chunk app/(app)/layout failed.\n(error: http://localhost:3001/_next/static/chunks/app/(app)/layout.js)",
         "Missing NEXT_PUBLIC_SUPABASE_URL"
       ]
     },
@@ -1027,8 +1078,6 @@
       "captured": true,
       "route": "/paydays",
       "steps": [
-        "Paydays and pay cycle",
-        "Upwork",
         "Log a payday"
       ],
       "offline": false,
@@ -1053,8 +1102,6 @@
         "sheetOpen": true
       },
       "pageErrors": [
-        "Invalid or unexpected token",
-        "Loading chunk app/(app)/layout failed.\n(missing: http://localhost:3001/_next/static/chunks/app/(app)/layout.js)",
         "Missing NEXT_PUBLIC_SUPABASE_URL"
       ]
     },
@@ -1070,17 +1117,7 @@
       "checks": {
         "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
-        "hero": {
-          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
-          "borderRadius": "24px",
-          "marginLeft": "0px",
-          "marginRight": "0px",
-          "left": 16,
-          "right": 16,
-          "width": 358,
-          "viewportWidth": 390,
-          "shape": "rounded card"
-        },
+        "hero": null,
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
@@ -1126,7 +1163,8 @@
       "route": "/subscriptions",
       "steps": [
         "Add subscription",
-        "Netflix EGP"
+        "Netflix EGP",
+        "css=[role=dialog] button:text-is(\"Premium\")"
       ],
       "offline": false,
       "state": "full",
@@ -1244,7 +1282,7 @@
       "route": "/flow",
       "steps": [],
       "offline": false,
-      "state": "empty",
+      "state": "emptyMonth",
       "checks": {
         "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
@@ -1432,38 +1470,7 @@
     "state-buddgy": {
       "captured": false,
       "reason": "Buddgy quick-add card comes from an AI reply; the AI route needs a signed-in Supabase session and a model key."
-    },
-    "page-provider": {
-      "captured": true,
-      "route": "/accounts",
-      "steps": [
-        "CIB, 2 accounts · 2 cards"
-      ],
-      "offline": true,
-      "state": "full",
-      "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
-        "geist": true,
-        "hero": {
-          "selector": "section.overflow-hidden.rounded-3xl.px-[18px].pb-4",
-          "borderRadius": "24px",
-          "marginLeft": "0px",
-          "marginRight": "0px",
-          "left": 16,
-          "right": 16,
-          "width": 358,
-          "viewportWidth": 390,
-          "shape": "rounded card"
-        },
-        "horizontalOverflow": false,
-        "scrollWidth": 390,
-        "viewportWidth": 390,
-        "sheetOpen": false
-      },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
     }
   },
-  "generatedAt": "2026-11-26T14:46:37.968Z"
+  "generatedAt": "2026-11-26T19:33:19.830Z"
 }

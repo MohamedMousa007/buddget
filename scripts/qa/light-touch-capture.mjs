@@ -56,21 +56,23 @@ const STATES = {
     const s = window.__finance.getState()
     for (const e of [...s.incomeEvents]) s.deleteIncomeEvent(e.id)
   } },
-  // A member past setup with nothing this month yet (mockup state-emptyflow "Nothing in November yet"): one expense last
-  // month is the history that turns the setup card into the empty-month state. Idempotent, so it can run on every load.
+  // A member past setup with nothing in the month yet (mockup state-emptyflow "Nothing in November yet"): onboarding done
+  // and a payday that is still projected, which is history but not a Flow row (Flow lists every month in one list, so
+  // an older expense would show instead). Idempotent, so it can run on every load.
   emptyMonth: { seed: false, plan: 'active', everyLoad: true, mutate: () => {
     const s = window.__finance.getState()
-    for (const e of [...s.incomeEvents]) s.deleteIncomeEvent(e.id)
+    for (const e of [...s.incomeEvents]) if (e.status !== 'projected') s.deleteIncomeEvent(e.id)
     const fp = s.profile.financialProfile ?? {}
     if (!fp.onboarding?.doneAt) {
       const now = new Date().toISOString()
       s.updateProfile({ financialProfile: { ...fp, onboarding: { v: 1, step: 99, startedAt: now, doneAt: now } } })
     }
-    if (s.expenses.length) return
-    const d = new Date()
-    d.setDate(0)
-    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-    s.addExpense({ description: 'Talabat', category: 'Food', amount: 245, currency: 'EGP', paymentMethodId: s.paymentMethods[0]?.id ?? 'pm_default_cash', isRecurring: false, date: iso })
+    if (!s.incomeEvents.some((e) => e.status === 'projected')) {
+      const d = new Date()
+      d.setDate(28)
+      const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-28`
+      s.addIncomeEvent({ templateId: s.incomeSources[0]?.id ?? null, name: 'Salary', amount: 31500, currency: 'EGP', sourceType: 'salary', receivedDate: iso, occurrenceDate: iso, status: 'projected' })
+    }
   } },
   learning: { seed: false, plan: 'active', mutate: () => {
     const s = window.__finance.getState()
@@ -108,6 +110,15 @@ const amount = (value, nth = 0) => async (page) => {
   await input.click()
   await input.fill(value)
   await settle(page, 500)
+}
+/** Taps a button in the topmost sheet (a picker over its sheet), whose label repeats underneath. */
+const lastDialog = (text) => async (page) => {
+  // The picker row's or option's own label (the row's box can sit under the sheet's sticky search); the last visible
+  // match is the one in the sheet on top.
+  const sheets = page.locator('[role=dialog]')
+  const label = typeof text === 'string' ? sheets.getByText(text, { exact: true }) : sheets.getByRole('button', { name: text }).or(sheets.getByRole('radio', { name: text })).or(sheets.getByRole('option', { name: text }))
+  await label.locator('visible=true').last().click()
+  await settle(page, 900)
 }
 /** Taps a Wealth plan row (emergency fund, zakat) at the end of the page. */
 const planRow = (text) => async (page) => {
@@ -150,7 +161,7 @@ const SCREENS = [
 
   { name: 'sheet-deposit', route: '/wealth', steps: ['Add money', amount('5000')] },
   // The mockup's state: from the Trip pocket, paying a debt (the app opens on Spending; both are one tap).
-  { name: 'sheet-s_withdraw', route: '/wealth', steps: ['Withdraw', 'css=[role=dialog] button[aria-label^="From:"]', 'Trip to Dahab', 'css=[role=dialog] button:has-text("For")', 'Pay a debt', amount('2000')] },
+  { name: 'sheet-s_withdraw', route: '/wealth', steps: ['Withdraw', 'css=[role=dialog] button[aria-label^="From:"]', lastDialog('Trip to Dahab'), lastDialog(/^For\b/), lastDialog('Pay a debt'), lastDialog(/^Debt\b/), lastDialog(/^Car loan/), amount('2000')] },
   { name: 'sheet-s_ef', route: '/wealth', steps: [planRow(/months covered|Not set up yet/)] },
   { name: 'sheet-efmonth', route: '/wealth', steps: [planRow(/months covered|Not set up yet/), 'A simple month'] },
   { name: 'sheet-s_gold', route: '/wealth', steps: [livePrices(), 'Add pocket or asset', 'Investment', 'css=[role=dialog] button:has-text("Bars, coins")', amount('8'), amount('32200', 1)] },
@@ -175,7 +186,7 @@ const SCREENS = [
   { name: 'sheet-s_payday', route: '/paydays', steps: ['Paydays and pay cycle', 'Add a payday'] },
 
   { name: 'sheet-sub', route: '/subscriptions', steps: ['Netflix'] },
-  { name: 'sheet-s_subadd', route: '/subscriptions', steps: ['Add subscription', 'Netflix EGP', 'Premium'] },
+  { name: 'sheet-s_subadd', route: '/subscriptions', steps: ['Add subscription', 'Netflix EGP', 'css=[role=dialog] button:text-is("Premium")'] },
   { name: 'sheet-s_subcancel', route: '/subscriptions', steps: ['Netflix', 'Cancel subscription'] },
   { name: 'sheet-s_line', route: '/budget', steps: ['Utilities'] },
   { name: 'sheet-s_fixgap', blocked: 'Needs an SMS balance report: useAccountGaps reads latest_balance_reports from Supabase, which this server has no URL for.' },
@@ -296,9 +307,14 @@ async function main() {
           await page.getByRole('button', { name: s.scroll }).first().evaluate((el) => el.scrollIntoView({ block: 'center' }))
           await page.waitForTimeout(500)
         }
-        for (const step of s.steps ?? []) {
-          if (typeof step === 'function') await step(page)
-          else await tap(page, step)
+        for (const [i, step] of (s.steps ?? []).entries()) {
+          try {
+            if (typeof step === 'function') await step(page)
+            else await tap(page, step)
+          } catch (e) {
+            e.message = `step ${i + 1}: ${e.message}`
+            throw e
+          }
         }
         await settle(page, 1000)
         await page.screenshot({ path: path.join(APP, `${s.name}.png`) })
