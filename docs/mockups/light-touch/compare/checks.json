@@ -7,7 +7,7 @@
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
@@ -25,7 +25,10 @@
         "viewportWidth": 390,
         "sheetOpen": false
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Invalid or unexpected token",
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "page-accounts": {
       "captured": true,
@@ -37,22 +40,24 @@
         "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
-          "selector": "section.text-[var(--flow-band-fg)].border-b.border-[var(--flow-band-line)]",
-          "borderRadius": "0px",
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
           "marginLeft": "0px",
           "marginRight": "0px",
-          "left": 0,
-          "right": 0,
-          "width": 390,
+          "left": 16,
+          "right": 16,
+          "width": 358,
           "viewportWidth": 390,
-          "shape": "full bleed"
+          "shape": "rounded card"
         },
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
         "sheetOpen": false
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "page-budget": {
       "captured": true,
@@ -61,25 +66,17 @@
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
-        "hero": {
-          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
-          "borderRadius": "24px",
-          "marginLeft": "0px",
-          "marginRight": "0px",
-          "left": 16,
-          "right": 16,
-          "width": 358,
-          "viewportWidth": 390,
-          "shape": "rounded card"
-        },
+        "hero": null,
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
         "sheetOpen": false
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "page-debts": {
       "captured": true,
@@ -88,7 +85,7 @@
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
@@ -106,7 +103,9 @@
         "viewportWidth": 390,
         "sheetOpen": false
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "page-goals": {
       "captured": true,
@@ -115,7 +114,7 @@
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
@@ -133,7 +132,9 @@
         "viewportWidth": 390,
         "sheetOpen": false
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "page-insights": {
       "captured": true,
@@ -142,7 +143,7 @@
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.overflow-hidden.rounded-3xl.text-[var(--flow-band-fg)]",
@@ -160,24 +161,54 @@
         "viewportWidth": 390,
         "sheetOpen": false
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "page-paydays": {
       "captured": true,
       "route": "/paydays",
-      "steps": [
-        "Salary · Nexta"
-      ],
+      "steps": [],
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
-          "selector": "section.mx-4.mt-1.5.overflow-hidden.rounded-3xl",
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
           "borderRadius": "24px",
-          "marginLeft": "16px",
-          "marginRight": "16px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false
+      },
+      "pageErrors": [
+        "Loading chunk app/(app)/layout failed.\n(error: http://localhost:3001/_next/static/chunks/app/(app)/layout.js)",
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
+    },
+    "page-subs": {
+      "captured": true,
+      "route": "/subscriptions",
+      "steps": [],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
           "left": 16,
           "right": 16,
           "width": 358,
@@ -193,14 +224,16 @@
         "Missing NEXT_PUBLIC_SUPABASE_URL"
       ]
     },
-    "page-subs": {
+    "page-wealth": {
       "captured": true,
-      "route": "/subscriptions",
-      "steps": [],
+      "route": "/wealth",
+      "steps": [
+        "async (page) => {\n  await page.evaluate(() => {\n    const no"
+      ],
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
@@ -218,34 +251,9 @@
         "viewportWidth": 390,
         "sheetOpen": false
       },
-      "pageErrors": []
-    },
-    "page-wealth": {
-      "captured": true,
-      "route": "/wealth",
-      "steps": [],
-      "offline": false,
-      "state": "full",
-      "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
-        "geist": true,
-        "hero": {
-          "selector": "section.text-[var(--flow-band-fg)].border-b.border-[var(--flow-band-line)]",
-          "borderRadius": "0px",
-          "marginLeft": "0px",
-          "marginRight": "0px",
-          "left": 0,
-          "right": 0,
-          "width": 390,
-          "viewportWidth": 390,
-          "shape": "full bleed"
-        },
-        "horizontalOverflow": false,
-        "scrollWidth": 390,
-        "viewportWidth": 390,
-        "sheetOpen": false
-      },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "sheet-expense": {
       "captured": true,
@@ -256,7 +264,7 @@
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
@@ -274,7 +282,9 @@
         "viewportWidth": 390,
         "sheetOpen": true
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "sheet-income": {
       "captured": true,
@@ -285,7 +295,7 @@
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": null,
         "horizontalOverflow": false,
@@ -293,7 +303,9 @@
         "viewportWidth": 390,
         "sheetOpen": true
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "sheet-scan": {
       "captured": true,
@@ -304,7 +316,7 @@
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
@@ -322,7 +334,9 @@
         "viewportWidth": 390,
         "sheetOpen": true
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "sheet-s_held": {
       "captured": false,
@@ -338,25 +352,27 @@
       "offline": true,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
-          "selector": "section.text-[var(--flow-band-fg)]",
-          "borderRadius": "0px",
+          "selector": "section.overflow-hidden.rounded-3xl.px-[18px].pb-4",
+          "borderRadius": "24px",
           "marginLeft": "0px",
           "marginRight": "0px",
-          "left": 0,
-          "right": 0,
-          "width": 390,
+          "left": 16,
+          "right": 16,
+          "width": 358,
           "viewportWidth": 390,
-          "shape": "full bleed"
+          "shape": "rounded card"
         },
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
         "sheetOpen": true
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "sheet-card": {
       "captured": true,
@@ -368,25 +384,27 @@
       "offline": true,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
-          "selector": "section.text-[var(--flow-band-fg)]",
-          "borderRadius": "0px",
+          "selector": "section.overflow-hidden.rounded-3xl.px-[18px].pb-4",
+          "borderRadius": "24px",
           "marginLeft": "0px",
           "marginRight": "0px",
-          "left": 0,
-          "right": 0,
-          "width": 390,
+          "left": 16,
+          "right": 16,
+          "width": 358,
           "viewportWidth": 390,
-          "shape": "full bleed"
+          "shape": "rounded card"
         },
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
         "sheetOpen": true
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "sheet-addaccount": {
       "captured": true,
@@ -397,25 +415,27 @@
       "offline": true,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
-          "selector": "section.text-[var(--flow-band-fg)].border-b.border-[var(--flow-band-line)]",
-          "borderRadius": "0px",
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
           "marginLeft": "0px",
           "marginRight": "0px",
-          "left": 0,
-          "right": 0,
-          "width": 390,
+          "left": 16,
+          "right": 16,
+          "width": 358,
           "viewportWidth": 390,
-          "shape": "full bleed"
+          "shape": "rounded card"
         },
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
         "sheetOpen": true
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "sheet-addcard": {
       "captured": true,
@@ -428,25 +448,27 @@
       "offline": true,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
-          "selector": "section.text-[var(--flow-band-fg)]",
-          "borderRadius": "0px",
+          "selector": "section.overflow-hidden.rounded-3xl.px-[18px].pb-4",
+          "borderRadius": "24px",
           "marginLeft": "0px",
           "marginRight": "0px",
-          "left": 0,
-          "right": 0,
-          "width": 390,
+          "left": 16,
+          "right": 16,
+          "width": 358,
           "viewportWidth": 390,
-          "shape": "full bleed"
+          "shape": "rounded card"
         },
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
         "sheetOpen": true
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "sheet-cashout": {
       "captured": true,
@@ -459,25 +481,27 @@
       "offline": true,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
-          "selector": "section.text-[var(--flow-band-fg)]",
-          "borderRadius": "0px",
+          "selector": "section.overflow-hidden.rounded-3xl.px-[18px].pb-4",
+          "borderRadius": "24px",
           "marginLeft": "0px",
           "marginRight": "0px",
-          "left": 0,
-          "right": 0,
-          "width": 390,
+          "left": 16,
+          "right": 16,
+          "width": 358,
           "viewportWidth": 390,
-          "shape": "full bleed"
+          "shape": "rounded card"
         },
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
         "sheetOpen": true
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "sheet-setaside": {
       "captured": true,
@@ -490,25 +514,27 @@
       "offline": true,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
-          "selector": "section.text-[var(--flow-band-fg)]",
-          "borderRadius": "0px",
+          "selector": "section.overflow-hidden.rounded-3xl.px-[18px].pb-4",
+          "borderRadius": "24px",
           "marginLeft": "0px",
           "marginRight": "0px",
-          "left": 0,
-          "right": 0,
-          "width": 390,
+          "left": 16,
+          "right": 16,
+          "width": 358,
           "viewportWidth": 390,
-          "shape": "full bleed"
+          "shape": "rounded card"
         },
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
         "sheetOpen": true
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "sheet-cashhand": {
       "captured": true,
@@ -519,7 +545,7 @@
       "offline": true,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": null,
         "horizontalOverflow": false,
@@ -527,7 +553,9 @@
         "viewportWidth": 390,
         "sheetOpen": true
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "state-cashoff": {
       "captured": true,
@@ -536,7 +564,7 @@
       "offline": true,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": null,
         "horizontalOverflow": false,
@@ -557,138 +585,7 @@
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
-        "geist": true,
-        "hero": {
-          "selector": "section.text-[var(--flow-band-fg)].border-b.border-[var(--flow-band-line)]",
-          "borderRadius": "0px",
-          "marginLeft": "0px",
-          "marginRight": "0px",
-          "left": 0,
-          "right": 0,
-          "width": 390,
-          "viewportWidth": 390,
-          "shape": "full bleed"
-        },
-        "horizontalOverflow": false,
-        "scrollWidth": 390,
-        "viewportWidth": 390,
-        "sheetOpen": true
-      },
-      "pageErrors": []
-    },
-    "sheet-s_withdraw": {
-      "captured": true,
-      "route": "/wealth",
-      "steps": [
-        "Withdraw"
-      ],
-      "offline": false,
-      "state": "full",
-      "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
-        "geist": true,
-        "hero": {
-          "selector": "section.text-[var(--flow-band-fg)].border-b.border-[var(--flow-band-line)]",
-          "borderRadius": "0px",
-          "marginLeft": "0px",
-          "marginRight": "0px",
-          "left": 0,
-          "right": 0,
-          "width": 390,
-          "viewportWidth": 390,
-          "shape": "full bleed"
-        },
-        "horizontalOverflow": false,
-        "scrollWidth": 390,
-        "viewportWidth": 390,
-        "sheetOpen": true
-      },
-      "pageErrors": []
-    },
-    "sheet-s_ef": {
-      "captured": true,
-      "route": "/wealth",
-      "steps": [
-        "Emergency fund"
-      ],
-      "offline": false,
-      "state": "full",
-      "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
-        "geist": true,
-        "hero": {
-          "selector": "section.text-[var(--flow-band-fg)].border-b.border-[var(--flow-band-line)]",
-          "borderRadius": "0px",
-          "marginLeft": "0px",
-          "marginRight": "0px",
-          "left": 0,
-          "right": 0,
-          "width": 390,
-          "viewportWidth": 390,
-          "shape": "full bleed"
-        },
-        "horizontalOverflow": false,
-        "scrollWidth": 390,
-        "viewportWidth": 390,
-        "sheetOpen": true
-      },
-      "pageErrors": []
-    },
-    "sheet-efmonth": {
-      "captured": true,
-      "route": "/wealth",
-      "steps": [
-        "Emergency fund",
-        "A simple month"
-      ],
-      "offline": false,
-      "state": "full",
-      "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
-        "geist": true,
-        "hero": {
-          "selector": "section.text-[var(--flow-band-fg)].border-b.border-[var(--flow-band-line)]",
-          "borderRadius": "0px",
-          "marginLeft": "0px",
-          "marginRight": "0px",
-          "left": 0,
-          "right": 0,
-          "width": 390,
-          "viewportWidth": 390,
-          "shape": "full bleed"
-        },
-        "horizontalOverflow": false,
-        "scrollWidth": 390,
-        "viewportWidth": 390,
-        "sheetOpen": true
-      },
-      "pageErrors": []
-    },
-    "sheet-s_gold": {
-      "captured": false,
-      "route": "/wealth",
-      "reason": "locator.click: Timeout 30000ms exceeded.",
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
-    },
-    "sheet-s_zakat": {
-      "captured": false,
-      "route": "/wealth",
-      "reason": "nothing to tap: Zakat",
-      "pageErrors": []
-    },
-    "sheet-s_goal": {
-      "captured": true,
-      "route": "/goals",
-      "steps": [
-        "Trip to Dahab"
-      ],
-      "offline": false,
-      "state": "full",
-      "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
@@ -706,7 +603,180 @@
         "viewportWidth": 390,
         "sheetOpen": true
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
+    },
+    "sheet-s_withdraw": {
+      "captured": true,
+      "route": "/wealth",
+      "steps": [
+        "Withdraw"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true
+      },
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
+    },
+    "sheet-s_ef": {
+      "captured": true,
+      "route": "/wealth",
+      "steps": [
+        "Emergency fund"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true
+      },
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
+    },
+    "sheet-efmonth": {
+      "captured": true,
+      "route": "/wealth",
+      "steps": [
+        "async (page) => {\n  const row = page.locator('button', { has",
+        "A simple month"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": null,
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true
+      },
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
+    },
+    "sheet-s_gold": {
+      "captured": true,
+      "route": "/wealth",
+      "steps": [
+        "async (page) => {\n  await page.evaluate(() => {\n    const no",
+        "Add pocket or asset",
+        "Investment",
+        "css=[role=dialog] button:has-text(\"Bars, coins\")"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true
+      },
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
+    },
+    "sheet-s_zakat": {
+      "captured": true,
+      "route": "/wealth",
+      "steps": [
+        "async (page) => {\n  await page.evaluate(() => {\n    const no",
+        "async (page) => {\n  const row = page.locator('button', { has"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": null,
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true
+      },
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
+    },
+    "sheet-s_goal": {
+      "captured": true,
+      "route": "/goals",
+      "steps": [
+        "Trip to Dahab"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true
+      },
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "sheet-goal": {
       "captured": true,
@@ -718,7 +788,7 @@
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
@@ -736,7 +806,9 @@
         "viewportWidth": 390,
         "sheetOpen": true
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "sheet-addgoalC": {
       "captured": true,
@@ -747,7 +819,7 @@
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
@@ -765,19 +837,20 @@
         "viewportWidth": 390,
         "sheetOpen": true
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "sheet-celebrate": {
       "captured": true,
       "route": "/goals",
       "steps": [
-        "Achieved goals, 1",
-        "Wedding gift"
+        "async (page) => {\n    // \"You did it\" shows when a goal cros"
       ],
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
@@ -793,9 +866,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": true
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "sheet-s_borrow": {
       "captured": true,
@@ -807,7 +882,7 @@
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
@@ -825,7 +900,9 @@
         "viewportWidth": 390,
         "sheetOpen": true
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "sheet-s_install": {
       "captured": true,
@@ -837,7 +914,7 @@
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
@@ -855,7 +932,9 @@
         "viewportWidth": 390,
         "sheetOpen": true
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "sheet-s_vault": {
       "captured": true,
@@ -866,25 +945,17 @@
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
-        "hero": {
-          "selector": "div.border.bg-clip-padding.transition-colors.border-[var(--color-brand-border)]",
-          "borderRadius": "15.996px",
-          "marginLeft": "0px",
-          "marginRight": "0px",
-          "left": 16,
-          "right": 16,
-          "width": 358,
-          "viewportWidth": 390,
-          "shape": "rounded card"
-        },
+        "hero": null,
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
         "sheetOpen": true
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "sheet-debtpay": {
       "captured": true,
@@ -897,7 +968,7 @@
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
@@ -920,30 +991,22 @@
       ]
     },
     "sheet-repaid": {
-      "captured": false,
-      "route": "/debts",
-      "reason": "nothing to tap: Record a payment",
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
-    },
-    "sheet-received": {
       "captured": true,
-      "route": "/paydays",
+      "route": "/debts",
       "steps": [
-        "Upwork",
-        "Side hustle Nov 18 payday"
+        "Owed to you",
+        "Record money back"
       ],
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
-          "selector": "section.mx-4.mt-1.5.overflow-hidden.rounded-3xl",
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
           "borderRadius": "24px",
-          "marginLeft": "16px",
-          "marginRight": "16px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
           "left": 16,
           "right": 16,
           "width": 358,
@@ -953,9 +1016,45 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": true
       },
       "pageErrors": [
+        "Loading chunk app/(app)/layout failed.\n(error: http://localhost:3001/_next/static/chunks/app/(app)/layout.js)",
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
+    },
+    "sheet-received": {
+      "captured": true,
+      "route": "/paydays",
+      "steps": [
+        "Paydays and pay cycle",
+        "Upwork",
+        "Log a payday"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true
+      },
+      "pageErrors": [
+        "Invalid or unexpected token",
+        "Loading chunk app/(app)/layout failed.\n(missing: http://localhost:3001/_next/static/chunks/app/(app)/layout.js)",
         "Missing NEXT_PUBLIC_SUPABASE_URL"
       ]
     },
@@ -963,14 +1062,25 @@
       "captured": true,
       "route": "/paydays",
       "steps": [
-        "Add"
+        "Paydays and pay cycle",
+        "Add a payday"
       ],
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
-        "hero": null,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
@@ -989,7 +1099,7 @@
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
@@ -1007,7 +1117,9 @@
         "viewportWidth": 390,
         "sheetOpen": true
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "sheet-s_subadd": {
       "captured": true,
@@ -1019,7 +1131,7 @@
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
@@ -1051,7 +1163,7 @@
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
@@ -1069,7 +1181,9 @@
         "viewportWidth": 390,
         "sheetOpen": true
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "sheet-s_line": {
       "captured": true,
@@ -1080,7 +1194,7 @@
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
@@ -1098,7 +1212,9 @@
         "viewportWidth": 390,
         "sheetOpen": true
       },
-      "pageErrors": []
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     },
     "sheet-s_fixgap": {
       "captured": false,
@@ -1111,19 +1227,9 @@
       "offline": false,
       "state": "empty",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
-        "hero": {
-          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
-          "borderRadius": "24px",
-          "marginLeft": "0px",
-          "marginRight": "0px",
-          "left": 16,
-          "right": 16,
-          "width": 358,
-          "viewportWidth": 390,
-          "shape": "rounded card"
-        },
+        "hero": null,
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
@@ -1140,7 +1246,7 @@
       "offline": false,
       "state": "empty",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
@@ -1169,19 +1275,9 @@
       "offline": false,
       "state": "empty",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
-        "hero": {
-          "selector": "div.flex.flex-col.items-center.rounded-3xl",
-          "borderRadius": "24px",
-          "marginLeft": "0px",
-          "marginRight": "0px",
-          "left": 16,
-          "right": 16,
-          "width": 358,
-          "viewportWidth": 390,
-          "shape": "rounded card"
-        },
+        "hero": null,
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
@@ -1198,7 +1294,7 @@
       "offline": false,
       "state": "free",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.overflow-hidden.rounded-3xl.text-[var(--flow-band-fg)]",
@@ -1227,9 +1323,19 @@
       "offline": true,
       "state": "learning",
       "checks": {
-        "bodyFont": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
-        "geist": false,
-        "hero": null,
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.overflow-hidden.rounded-3xl.text-[var(--flow-band-fg)]",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
@@ -1246,7 +1352,7 @@
       "offline": false,
       "state": "noIncome",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.overflow-hidden.rounded-3xl.text-[var(--flow-band-fg)]",
@@ -1277,13 +1383,37 @@
       "offline": false,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": null,
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false
+      },
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
+    },
+    "state-noresults": {
+      "captured": true,
+      "route": "/flow",
+      "steps": [
+        "Open filters",
+        "css=[role=dialog] button:has-text(\"Today\")",
+        "css=[role=dialog] :text(\"Rent\")",
+        "async (page) => {\n    await page.getByRole('button', { name:"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
-          "selector": "div.mx-4.mt-4.h-[150px].animate-pulse",
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
           "borderRadius": "24px",
-          "marginLeft": "16px",
-          "marginRight": "16px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
           "left": 16,
           "right": 16,
           "width": 358,
@@ -1295,12 +1425,6 @@
         "viewportWidth": 390,
         "sheetOpen": false
       },
-      "pageErrors": []
-    },
-    "state-noresults": {
-      "captured": false,
-      "route": "/flow",
-      "reason": "locator.click: Timeout 30000ms exceeded.",
       "pageErrors": [
         "Missing NEXT_PUBLIC_SUPABASE_URL"
       ]
@@ -1308,7 +1432,38 @@
     "state-buddgy": {
       "captured": false,
       "reason": "Buddgy quick-add card comes from an AI reply; the AI route needs a signed-in Supabase session and a model key."
+    },
+    "page-provider": {
+      "captured": true,
+      "route": "/accounts",
+      "steps": [
+        "CIB, 2 accounts · 2 cards"
+      ],
+      "offline": true,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.overflow-hidden.rounded-3xl.px-[18px].pb-4",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false
+      },
+      "pageErrors": [
+        "Missing NEXT_PUBLIC_SUPABASE_URL"
+      ]
     }
   },
-  "generatedAt": "2026-11-26T07:08:07.839Z"
+  "generatedAt": "2026-11-26T14:46:37.968Z"
 }
