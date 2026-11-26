@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/auth/auth-context'
-import { createClient } from '@/lib/supabase/client'
+import { saveNetWorthSnapshot } from '@/hooks/useDailyNetWorthSnapshot'
+import { fetchNetWorthSnapshots } from '@/hooks/useNetWorthHistory'
 import type { NetWorthBasis } from '@/lib/savings/netWorth'
 import { buildNetWorthTrend, type NetWorthTrend } from '@/lib/savings/netWorthTrend'
 
@@ -28,8 +29,8 @@ export function useNetWorthTrend(netWorth: number, currency: string, ready: bool
   useEffect(() => {
     if (!userId || !ready || !Number.isFinite(netWorth)) return
     let cancelled = false
+    // Never throws (no Supabase env, a client that fails to build, a network reject): the helpers below fail quietly.
     const timer = setTimeout(async () => {
-      const supabase = createClient()
       const now = new Date()
       const since = new Date(now.getTime() - DAYS * 86_400_000)
       // Written only when today's figure actually changed: the same value is not sent again on every visit or edit.
@@ -37,23 +38,12 @@ export function useNetWorthTrend(netWorth: number, currency: string, ready: bool
       const rounded = netWorth.toFixed(2)
       let already = false
       try { already = window.localStorage.getItem(stamp) === rounded } catch { /* storage unavailable: write */ }
-      if (!already) {
-        const { error } = await supabase
-          .from('net_worth_snapshots')
-          .upsert({ user_id: userId, day: isoDay(now), net_worth: netWorth, currency, basis }, { onConflict: 'user_id,day' })
-        if (!error) {
-          try { window.localStorage.setItem(stamp, rounded) } catch { /* ignore */ }
-        }
+      if (!already && await saveNetWorthSnapshot({ user_id: userId, day: isoDay(now), net_worth: netWorth, currency, basis })) {
+        try { window.localStorage.setItem(stamp, rounded) } catch { /* ignore */ }
       }
-      const { data } = await supabase
-        .from('net_worth_snapshots')
-        .select('day, net_worth')
-        .eq('currency', currency)
-        .eq('basis', basis)
-        .gte('day', isoDay(since))
-        .order('day', { ascending: true })
+      const rows = await fetchNetWorthSnapshots(currency, basis, isoDay(since))
       if (cancelled) return
-      setLoaded({ key, trend: buildNetWorthTrend(data) })
+      setLoaded({ key, trend: buildNetWorthTrend(rows) })
     }, SETTLE_MS)
     return () => { cancelled = true; clearTimeout(timer) }
   }, [userId, ready, netWorth, currency, basis, key])

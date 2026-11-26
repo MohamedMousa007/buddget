@@ -149,6 +149,8 @@ export function AmountField({
           grouped={grouped}
           className={cn(
             'min-w-0 flex-1 border-0 bg-transparent p-0 outline-none',
+            // The input fills the 44/52px box, so the whole field takes the tap (it was 36px of text line).
+            glass && 'self-stretch',
             row ? 'text-right rtl:text-left placeholder:font-normal placeholder:text-[var(--color-brand-text-muted)] placeholder:opacity-100' : 'text-start placeholder:opacity-50',
           )}
           style={
