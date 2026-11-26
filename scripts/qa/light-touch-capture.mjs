@@ -47,19 +47,43 @@ const STATES = {
 }
 
 /**
+ * Live gold prices for the Wealth screens (A3). The local server has no Supabase, so the asset_prices cache is filled
+ * through the dev-exposed store.
+ */
+const livePrices = () => async (page) => {
+  await page.evaluate(() => {
+    const now = new Date().toISOString()
+    const rows = [['XAU_24K', 3670], ['XAU_21K', 3210], ['XAU_18K', 2750]]
+    const map = Object.fromEntries(rows.map(([symbol, price]) => [`${symbol}:EGP`, { symbol, currency: 'EGP', price, asOf: now, assetClass: 'gold', confidence: 'high' }]))
+    window.__prices?.getState().setPrices(map)
+    window.__finance.setState({ goldPricePerGram: 3670, goldPriceAvailable: true })
+  })
+  await page.waitForTimeout(800)
+}
+/** Taps a Wealth plan row (emergency fund, zakat) at the end of the page. */
+const planRow = (text) => async (page) => {
+  const row = page.locator('button', { hasText: text }).last()
+  await row.scrollIntoViewIfNeeded()
+  await row.click()
+  await settle(page, 900)
+}
+
+/**
  * Mockup screen -> how to reach it. `offline` = fake offline (Accounts crashes online with empty Supabase env).
  * `steps` are tap labels (aria-label, role name or text) or functions. `blocked` = cannot be reached, with the reason.
  */
 const SCREENS = [
   { name: 'page-flow', route: '/flow' },
   { name: 'page-accounts', route: '/accounts', offline: true },
+  // No mockup png: the mockup draws this view when S.st.prov is set (lt-accounts.js providerView). App shot only.
+  { name: 'page-provider', route: '/accounts', offline: true, steps: ['CIB, 2 accounts · 2 cards'] },
   { name: 'page-budget', route: '/budget' },
   { name: 'page-debts', route: '/debts' },
   { name: 'page-goals', route: '/goals' },
   { name: 'page-insights', route: '/reports' },
   { name: 'page-paydays', route: '/paydays' },
   { name: 'page-subs', route: '/subscriptions' },
-  { name: 'page-wealth', route: '/wealth' },
+  { name: 'page-wealth', route: '/wealth', steps: [livePrices()] },
 
   { name: 'sheet-expense', route: '/flow', steps: ['Talabat'] },
   { name: 'sheet-income', route: '/flow', steps: ['Salary · Nexta'] },
@@ -77,22 +101,27 @@ const SCREENS = [
 
   { name: 'sheet-deposit', route: '/wealth', steps: ['Add money'] },
   { name: 'sheet-s_withdraw', route: '/wealth', steps: ['Withdraw'] },
-  { name: 'sheet-s_ef', route: '/wealth', steps: ['Emergency fund'] },
-  { name: 'sheet-efmonth', route: '/wealth', steps: ['Emergency fund', 'A simple month'] },
-  { name: 'sheet-s_gold', route: '/wealth', steps: ['Add pocket or asset', 'Gold'] },
-  { name: 'sheet-s_zakat', blocked: 'The Zakat badge on the Wealth hero only shows when nisab > 0, which needs live gold prices from the Supabase asset_prices table (empty Supabase env: "Gold prices unavailable").' },
+  { name: 'sheet-s_ef', route: '/wealth', steps: [planRow(/months covered|Not set up yet/)] },
+  { name: 'sheet-efmonth', route: '/wealth', steps: [planRow(/months covered|Not set up yet/), 'A simple month'] },
+  { name: 'sheet-s_gold', route: '/wealth', steps: [livePrices(), 'Add pocket or asset', 'Investment', 'css=[role=dialog] button:has-text("Bars, coins")'] },
+  { name: 'sheet-s_zakat', route: '/wealth', steps: [livePrices(), planRow(/ due/)] },
   { name: 'sheet-s_goal', route: '/goals', steps: ['Trip to Dahab'] },
   { name: 'sheet-goal', route: '/goals', steps: ['Trip to Dahab', 'Add money'] },
   { name: 'sheet-addgoalC', route: '/goals', steps: ['New goal'] },
-  { name: 'sheet-celebrate', route: '/goals', steps: ['Achieved goals, 1', 'Wedding gift'] },
+  { name: 'sheet-celebrate', route: '/goals', steps: [async (page) => {
+    // "You did it" shows when a goal crosses 100% after it was seen: fill Umrah 2027's pocket to its target.
+    await page.waitForTimeout(1500)
+    await page.evaluate(() => window.__finance.setState((s) => ({ savingsAccounts: s.savingsAccounts.map((a) => (a.name === 'Umrah 2027' ? { ...a, currentBalance: 30000 } : a)) })))
+    await page.waitForTimeout(2500)
+  }] },
 
   { name: 'sheet-s_borrow', route: '/debts', steps: ['Add', 'Borrowed money'] },
   { name: 'sheet-s_install', route: '/debts', steps: ['Add', 'Installment plan'] },
   { name: 'sheet-s_vault', route: '/debts', steps: ['1 cleared debt · 18,000 paid off'] },
   { name: 'sheet-debtpay', route: '/debts', steps: ['Installments', 'Car loan', 'Record a payment'] },
-  { name: 'sheet-repaid', route: '/debts', steps: ['Owed to you', 'Record a payment'] },
-  { name: 'sheet-received', route: '/paydays', steps: ['Upwork', 'Side hustle Nov 18 payday'] },
-  { name: 'sheet-s_payday', route: '/paydays', steps: ['Add a payday'] },
+  { name: 'sheet-repaid', route: '/debts', steps: ['Owed to you', 'Record money back'] },
+  { name: 'sheet-received', route: '/paydays', steps: ['Paydays and pay cycle', 'Upwork', 'Log a payday'] },
+  { name: 'sheet-s_payday', route: '/paydays', steps: ['Paydays and pay cycle', 'Add a payday'] },
 
   { name: 'sheet-sub', route: '/subscriptions', steps: ['Netflix'] },
   { name: 'sheet-s_subadd', route: '/subscriptions', steps: ['Add subscription', 'Netflix EGP'] },
@@ -107,7 +136,7 @@ const SCREENS = [
   { name: 'state-inslearn', route: '/reports', state: 'learning', offline: true },
   { name: 'state-insnoinc', route: '/reports', state: 'noIncome' },
   { name: 'state-loading', route: '/flow', steps: [async (page) => { await page.evaluate(() => window.__finance.getState().setDataReady(false)); await page.waitForTimeout(800) }] },
-  { name: 'state-noresults', route: '/flow', steps: ['Open filters', 'Today', 'css=[role=dialog] :text("Rent")', async (page) => {
+  { name: 'state-noresults', route: '/flow', steps: ['Open filters', 'css=[role=dialog] button:has-text("Today")', 'css=[role=dialog] :text("Rent")', async (page) => {
     await page.getByRole('button', { name: /^Show \d+ results?$|^No results$/ }).first().click()
     await settle(page, 800)
   }] },
@@ -168,6 +197,8 @@ function checksInPage() {
 async function composite(name) {
   const mock = path.join(MOCK, `${name}.png`)
   const app = path.join(APP, `${name}.png`)
+  // A screen with no mockup png (page-provider) keeps only its app shot.
+  if (!fs.existsSync(mock)) return false
   const H = 1688
   const left = await sharp(mock).resize({ height: H }).png().toBuffer()
   const right = await sharp(app).resize({ height: H }).png().toBuffer()

@@ -1,6 +1,7 @@
 'use client'
 
-import { Banknote, Bitcoin, FileText, Gem, House, Landmark, Plus, TrendingUp, Vault, Wallet, type LucideIcon } from 'lucide-react'
+import { useState } from 'react'
+import { Banknote, Bitcoin, ChevronDown, FileText, Gem, House, Landmark, Plus, Target, TrendingUp, Vault, Wallet, type LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { TransactionRow } from '@/components/transactions/TransactionRow'
@@ -34,6 +35,11 @@ export interface WealthListProps {
   /** Pocket id → "Feeds New car · 62%". */
   goalLines?: Record<string, string>
   currency: string
+  /**
+   * Pockets that hold goal money. Two or more fold into one "Goal pockets" row (the mockup lists holdings, not every
+   * pocket); tapping it shows or hides them, each with its own menu as before.
+   */
+  goalPocketIds?: ReadonlySet<string>
 }
 
 /** Return since bought, from the holding's own cost per unit; null without a cost in the price's currency. */
@@ -45,6 +51,11 @@ export function holdingReturnPct(row: WealthRowVM): number | null {
 
 export function subtitle(row: WealthRowVM, t: ReturnType<typeof useT>['wealthPage'], identity: ReturnType<typeof useT>['savingsForms']['identity'], locale: AppLocale, goal?: string, lt?: WealthLtCopy): string {
   if (row.account) {
+    // Light touch: a savings product with a yearly return reads as its term and rate ("3 years · 17.5% a year").
+    const rate = row.account.yearlyReturn
+    if (lt && rate != null && rate > 0) {
+      return [productTerm(row.account, lt), lt.aYear(formatRate(rate, locale)), goal].filter(Boolean).join(' · ')
+    }
     // `pocketIdentity` falls back to the stored name when a pocket has no institution or type line; the row title already shows it
     // (translated), so repeating it printed "Monthly Savings" twice, and in English even on an Arabic screen.
     const id = pocketIdentity(row.account, identity, locale)
@@ -65,6 +76,19 @@ export function subtitle(row: WealthRowVM, t: ReturnType<typeof useT>['wealthPag
   return [base, since].filter(Boolean).join(' · ')
 }
 
+const formatRate = (pct: number, locale: AppLocale) =>
+  new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US', { maximumFractionDigits: 2, numberingSystem: 'latn' }).format(pct)
+
+/** Whole years from opening to maturity ("3 years"), or months under a year; empty without a maturity date. */
+export function productTerm(a: { createdAt?: string; maturityDate?: string }, lt: WealthLtCopy): string {
+  if (!a.maturityDate || !a.createdAt) return ''
+  const start = new Date(a.createdAt)
+  const end = new Date(`${a.maturityDate.slice(0, 10)}T00:00:00`)
+  const months = Math.round((end.getFullYear() - start.getFullYear()) * 12 + end.getMonth() - start.getMonth())
+  if (!Number.isFinite(months) || months <= 0) return ''
+  return months >= 12 && months % 12 === 0 ? lt.years(months / 12) : lt.months(months)
+}
+
 /** "Gold 21k · 18 g": a gold holding's grams ride in its title, as in the mockup. */
 export function rowTitle(row: WealthRowVM, systemNames: ReturnType<typeof useT>['savingsForms']['systemNames'], lt: WealthLtCopy): string {
   if (row.account) return pocketDisplayName(row.account, systemNames)
@@ -73,11 +97,28 @@ export function rowTitle(row: WealthRowVM, systemNames: ReturnType<typeof useT>[
 }
 
 /** Light touch Holdings: every balance and position in one rounded list; the quiet "+ Add" sits in the section head. */
-export function WealthList({ rows, onRowPress, onAdd, goalLines, currency }: WealthListProps) {
+export function WealthList({ rows, onRowPress, onAdd, goalLines, currency, goalPocketIds }: WealthListProps) {
   const t = useT().wealthPage
   const sf = useT().savingsForms
   const lt = useWealthLtCopy()
   const { locale } = useLocale()
+  const [open, setOpen] = useState(false)
+
+  const members = goalPocketIds ? rows.filter((r) => goalPocketIds.has(r.id)) : []
+  const grouped = members.length >= 2
+  const groupAt = grouped ? rows.indexOf(members[0]) : -1
+  const groupTotal = members.reduce((sum, r) => sum + (r.amount ?? 0), 0)
+  type Item = { kind: 'row'; row: WealthRowVM; nested: boolean } | { kind: 'group' }
+  const items: Item[] = []
+  rows.forEach((r, i) => {
+    if (i === groupAt) {
+      items.push({ kind: 'group' })
+      if (open) for (const m of members) items.push({ kind: 'row', row: m, nested: true })
+    }
+    if (!grouped || !goalPocketIds?.has(r.id)) items.push({ kind: 'row', row: r, nested: false })
+  })
+  const amountNode = (n: number | null) =>
+    n != null ? <>{formatWhole(n)} <span className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{currency}</span></> : '—'
 
   return (
     <section className="px-4 lg:px-0">
@@ -92,18 +133,36 @@ export function WealthList({ rows, onRowPress, onAdd, goalLines, currency }: Wea
         <p className="py-10 text-center text-sm text-[var(--color-brand-text-muted)]">{t.nothingHeld}</p>
       ) : (
         <Card padding="none" className="overflow-hidden rounded-2xl">
-          {rows.map((r, i) => {
+          {items.map((it, i) => {
+            const sep = i > 0 ? <div aria-hidden className="ms-[82px] h-px bg-[var(--color-brand-border)]" /> : null
+            if (it.kind === 'group') {
+              return (
+                <div key="goal-pockets" data-expanded={open} onClick={() => setOpen((v) => !v)}>
+                  {sep}
+                  <TransactionRow
+                    icon={<Target className="size-5" aria-hidden />}
+                    iconBg={tint('var(--color-brand-primary)')}
+                    iconFg="var(--color-brand-primary-ink)"
+                    title={<span className="inline-flex items-center gap-1">{lt.goalPockets} · {members.length}<ChevronDown aria-hidden className={`size-4 text-[var(--color-brand-text-muted)] transition-transform ${open ? 'rotate-180' : ''}`} /></span>}
+                    subtitle={members.map((m) => rowTitle(m, sf.systemNames, lt)).join(', ')}
+                    amount={amountNode(groupTotal)}
+                    onClick={() => undefined}
+                  />
+                </div>
+              )
+            }
+            const r = it.row
             const { Icon, color } = CAT[r.cat]
             return (
-              <div key={r.id} onClick={(e) => onRowPress(r, e.currentTarget.getBoundingClientRect())}>
-                {i > 0 ? <div aria-hidden className="ms-[82px] h-px bg-[var(--color-brand-border)]" /> : null}
+              <div key={r.id} className={it.nested ? 'bg-[var(--color-brand-elevated)]/40' : undefined} onClick={(e) => onRowPress(r, e.currentTarget.getBoundingClientRect())}>
+                {sep}
                 <TransactionRow
                   icon={<Icon className="size-5" aria-hidden />}
                   iconBg={tint(color)}
                   iconFg={color}
                   title={rowTitle(r, sf.systemNames, lt)}
                   subtitle={subtitle(r, t, sf.identity, locale, goalLines?.[r.id], lt)}
-                  amount={r.amount != null ? <>{formatWhole(r.amount)} <span className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{currency}</span></> : '—'}
+                  amount={amountNode(r.amount)}
                   onClick={() => undefined}
                   dimmed={r.amount == null}
                 />

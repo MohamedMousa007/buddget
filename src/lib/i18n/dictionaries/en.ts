@@ -3056,7 +3056,7 @@ export const en: Dictionary = {
       viewAll: 'All',
       viewActive: 'Active',
       viewPaused: 'Paused',
-      titleAll: 'All goals',
+      titleAll: 'Goals',
       titleActive: 'Active goals',
       titlePaused: 'Paused goals',
       titleAchieved: 'Achieved goals',

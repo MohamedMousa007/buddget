@@ -45,6 +45,7 @@ export function GoalsHero({ rows }: { rows: GoalRow[] }) {
   return (
     <HeroBand
       contained
+      bareBar
       label={c.savedLabel}
       numbers={
         <>

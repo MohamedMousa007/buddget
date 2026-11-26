@@ -3065,7 +3065,7 @@ export const ar: Dictionary = {
       viewAll: 'الكل',
       viewActive: 'النشطة',
       viewPaused: 'المتوقفة',
-      titleAll: 'كل الأهداف',
+      titleAll: 'الأهداف',
       titleActive: 'الأهداف النشطة',
       titlePaused: 'الأهداف المتوقفة',
       titleAchieved: 'الأهداف المحققة',

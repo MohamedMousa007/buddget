@@ -2,7 +2,7 @@
 
 import { intlTag } from '@/lib/i18n/dateFormat'
 import { useMemo, useState } from 'react'
-import { Check, MoreVertical, Pause, Pencil, Play, Repeat, Trash2, Trophy } from 'lucide-react'
+import { Check, MoreHorizontal, Pause, Pencil, Play, Repeat, Trash2, Trophy } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { goalCategoryLabelKey } from '@/components/features/goals/goalCategoryLabel'
 import { CheckpointBar, type CheckpointTone } from '@/components/features/goals/CheckpointBar'
@@ -18,7 +18,6 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
-import { IconButton } from '@/components/ui/IconButton'
 import { DatePickerField } from '@/components/ui/DatePickerField'
 import { Pill } from '@/components/ui/PillButton'
 import { PickerRow } from '@/components/ui/PickerRow'
@@ -91,8 +90,11 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
     [goal, current, runs, keep, now],
   )
   const pockets: PocketVM[] = useMemo(
-    () => s.savingsAccounts.filter(isEligibleCarryPocket).map((account) => ({ account, coverAmount: 0, goalsAmount: 0, goalLabel: '', isAuto: false })),
-    [s.savingsAccounts],
+    // The goal's own pocket is always listed, even one kept inside an account (not a carry target), so the row names it.
+    () => s.savingsAccounts
+      .filter((a) => isEligibleCarryPocket(a) || a.id === goal.linkedSavingsAccountIds[0])
+      .map((account) => ({ account, coverAmount: 0, goalsAmount: 0, goalLabel: '', isAuto: false })),
+    [s.savingsAccounts, goal.linkedSavingsAccountIds],
   )
 
   const money = (n: number) => formatWhole(Math.round(n))
@@ -169,12 +171,7 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
           <V3SheetHeader
             onClose={onClose}
             actions={
-              <>
-                <IconButton variant="sheetAction" aria-label={d.more} aria-haspopup="menu" aria-expanded={menu !== null} onClick={(e) => setMenu(e.currentTarget.getBoundingClientRect())}>
-                  <MoreVertical className="size-4" />
-                </IconButton>
-                <V3SheetHeader.Action icon={<Trash2 className="size-4" />} label={lt.goals.deleteGoal} tone="danger" onClick={() => setDel(true)} />
-              </>
+              <V3SheetHeader.Action icon={<Trash2 className="size-4" />} label={lt.goals.deleteGoal} tone="danger" onClick={() => setDel(true)} />
             }
           >
             <V3SheetHeader.Title size="compact">{goal.name}</V3SheetHeader.Title>
@@ -268,6 +265,19 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
                 <p className="mt-2 px-1 text-xs text-[var(--color-brand-text-secondary)]">{lt.goals.pocketNote}</p>
               </div>
             ) : null}
+
+            {/* Light touch: the header carries only the bin (`lt-v5.js` s_goal); edit, pause and achieve stay one tap away here. */}
+            <Button
+              variant="ghost"
+              size="touch"
+              aria-haspopup="menu"
+              aria-expanded={menu !== null}
+              onClick={(e) => setMenu(e.currentTarget.getBoundingClientRect())}
+              className="-mt-2 self-start gap-1.5 px-1 text-[0.8125rem] font-semibold text-[var(--color-brand-text-secondary)]"
+            >
+              <MoreHorizontal className="size-4" aria-hidden />
+              {d.more}
+            </Button>
           </div>
 
           <div className="sheet-cta flex shrink-0 flex-col gap-2.5 border-t border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-5 pb-6 pt-3 md:px-6">

@@ -292,35 +292,38 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
           </form>
         ) : null}
 
-        <div role="group" aria-label={f.s1.groupSave} className="hide-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
-          {SAVE.map((k) => {
-            const Icon = k === 'custom' && customIcon && !hajj ? customIcon : goalVisual(k).icon
-            const chip = (
-              <OptionChip key={k} selected={form.kind === 'save' && form.category === k && !hajj} onClick={() => pickSave(k)} className="shrink-0">
-                <Icon aria-hidden />
-                {t.goals[goalCategoryLabelKey(k)] as string}
-              </OptionChip>
-            )
-            // Hajj & Umrah has no category of its own: a goal of your own wearing the moon-star icon.
-            return k !== 'phone_device' ? chip : [
-              chip,
-              <OptionChip key="hajj" selected={form.kind === 'save' && hajj} onClick={pickHajj} className="shrink-0">
-                <MoonStar aria-hidden />
-                {c.hajjChip}
-              </OptionChip>,
-            ]
-          })}
-        </div>
-        <div role="group" aria-label={`${f.s1.groupPay} · ${f.s1.groupControl}`} className="hide-scrollbar -mx-5 -mt-1 flex items-center gap-2 overflow-x-auto px-5 pb-1">
-          {OTHER.map(([key, category]) => {
-            const Icon = goalVisual(category).icon
-            return (
-              <OptionChip key={key} size="sm" selected={form.kind !== 'save' && preset === key} onClick={() => pickOther(key)} className="shrink-0">
-                <Icon aria-hidden />
-                {f.s1[OTHER_LABEL[key]]}
-              </OptionChip>
-            )
-          })}
+        {/* One scrolling row of chips (`lt-v6.js` catChips): the saving categories, then pay-off and limit goals at its end. */}
+        <div className="hide-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
+          <div role="group" aria-label={f.s1.groupSave} className="flex gap-2">
+            {SAVE.map((k) => {
+              const Icon = k === 'custom' && customIcon && !hajj ? customIcon : goalVisual(k).icon
+              const chip = (
+                <OptionChip key={k} size="sm" surface="card" selected={form.kind === 'save' && form.category === k && !hajj} onClick={() => pickSave(k)} className="shrink-0">
+                  <Icon aria-hidden />
+                  {t.goals[goalCategoryLabelKey(k)] as string}
+                </OptionChip>
+              )
+              // Hajj & Umrah has no category of its own: a goal of your own wearing the moon-star icon.
+              return k !== 'phone_device' ? chip : [
+                chip,
+                <OptionChip key="hajj" size="sm" surface="card" selected={form.kind === 'save' && hajj} onClick={pickHajj} className="shrink-0">
+                  <MoonStar aria-hidden />
+                  {c.hajjChip}
+                </OptionChip>,
+              ]
+            })}
+          </div>
+          <div role="group" aria-label={`${f.s1.groupPay} · ${f.s1.groupControl}`} className="flex gap-2">
+            {OTHER.map(([key, category]) => {
+              const Icon = goalVisual(category).icon
+              return (
+                <OptionChip key={key} size="sm" surface="card" selected={form.kind !== 'save' && preset === key} onClick={() => pickOther(key)} className="shrink-0">
+                  <Icon aria-hidden />
+                  {f.s1[OTHER_LABEL[key]]}
+                </OptionChip>
+              )
+            })}
+          </div>
         </div>
 
         {form.kind === 'save' ? (

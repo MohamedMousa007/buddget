@@ -27,14 +27,16 @@ export interface SavingsHeroProps {
   netWorthPrefix?: '≈' | 'At least'
   split: HeroSplitSegment[]
   netWorthTrend?: { points: number[]; pct: string; dir: 'up' | 'down' }
-  badges: ReactNode
+  /** Optional: the Light touch hero has none (the emergency fund and zakat sit at the end of the page). */
+  badges?: ReactNode
 }
 
-/** Three tones, all derived from the band so they hold in light and dark. */
+/** The band's own ink at falling strengths (`lt.js` wealth split: 1, .6, .35), so it holds in light and dark. */
 const TONES = [
   'var(--flow-band-fg)',
-  'var(--color-brand-gold)',
-  'color-mix(in oklab, var(--flow-band-fg) 55%, transparent)',
+  'color-mix(in oklab, var(--flow-band-fg) 60%, transparent)',
+  'color-mix(in oklab, var(--flow-band-fg) 35%, transparent)',
+  'color-mix(in oklab, var(--flow-band-fg) 20%, transparent)',
 ]
 
 /**
@@ -51,6 +53,7 @@ export function SavingsHero({
   return (
     <HeroBand
       contained
+      bareBar
       label={t.holdLabel}
       aside={badges}
       numbers={

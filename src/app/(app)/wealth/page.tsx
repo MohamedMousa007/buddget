@@ -21,7 +21,7 @@ import { AddHoldingSheet } from '@/components/features/savings-v3/AddHoldingShee
 import { AddSavingsSheetV3 } from '@/components/features/savings-v3/AddSavingsSheetV3'
 import { EmergencyFundSheet } from '@/components/features/savings-v3/EmergencyFundSheet'
 import { SavingsHero, type HeroSplitSegment } from '@/components/features/savings-v3/SavingsHero'
-import { WealthHeroBadges } from '@/components/features/savings-v3/WealthHeroBadges'
+import { WealthPlanRows } from '@/components/features/savings-v3/WealthPlanRows'
 import { WealthList } from '@/components/features/savings-v3/WealthList'
 import { WithdrawSheetV3 } from '@/components/features/savings-v3/WithdrawSheetV3'
 import { ZakatBasisPrompt } from '@/components/features/savings-v3/ZakatBasisPrompt'
@@ -58,7 +58,7 @@ import { useLedgerInput } from '@/lib/accounts/useAccounts'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import type { InvestmentAssetType, SavingsAccount } from '@/lib/store/types'
-import { formatSignedFlex, formatWhole } from '@/lib/utils/formatters'
+import { formatWhole } from '@/lib/utils/formatters'
 
 /** Past this scroll the band's detail has left the viewport: collapse into the sticky strip. */
 const COLLAPSE_AT = 150
@@ -202,25 +202,30 @@ export default function WealthPage() {
   const trendPct = trendRaw ? changePct(trendRaw.points[trendRaw.points.length - 1], trendRaw.points[0]) : null
   const trend = trendRaw && trendPct !== null ? { points: trendRaw.points, dir: trendRaw.dir, pct: formatChangePct(trendPct, 1) } : undefined
 
+  // Light touch legend (`lt.js` wealth): by what is held, "Savings 52% · Gold 31% · Stocks 17%"; pockets and accounts are Savings.
   const split = useMemo<HeroSplitSegment[]>(() => {
-    const pct = (v: number) => (model.total > 0 ? (v / model.total) * 100 : 0)
-    const seg = (key: string, label: string, v: number, ret?: string): HeroSplitSegment => ({ key, label, value: formatWhole(v), pct: pct(v), ret })
-    const { balance, market, self } = model.byPricing
-    if (market + self > 0) {
-      return [
-        seg('balance', t.balances, balance),
-        seg('market', t.marketPriced, market, model.investReturnPct != null ? `${Math.abs(model.investReturnPct).toFixed(1)}%` : undefined),
-        ...(self > 0 ? [seg('self', t.youValue, self)] : []),
-      ]
+    const by = { savings: 0, gold: 0, stock: 0, crypto: 0, property: 0 }
+    for (const r of model.rows) {
+      if (r.amount == null) continue
+      const k = r.cat === 'gold' || r.cat === 'stock' || r.cat === 'crypto' || r.cat === 'property' ? r.cat : 'savings'
+      by[k] += r.amount
     }
-    const k = model.byKind
+    const pct = (v: number) => (model.total > 0 ? (v / model.total) * 100 : 0)
+    const seg = (key: keyof typeof by, label: string): HeroSplitSegment => ({ key, label, value: formatWhole(by[key]), pct: pct(by[key]) })
     return [
-      seg('bank', t.bankAccounts, k.bank),
-      seg('vault', t.vault, k.vault),
-      seg('cash', t.cash, k.cash),
-      ...(k.other > 0 ? [seg('other', t.other, k.other)] : []),
-    ].filter((s) => s.pct > 0 || model.total === 0)
-  }, [model, t])
+      seg('savings', wl.savings),
+      seg('gold', t.catLabels.gold),
+      seg('stock', t.catLabels.stock),
+      seg('crypto', t.catLabels.crypto),
+      seg('property', t.catLabels.property),
+    ].filter((x) => x.pct > 0)
+  }, [model, t, wl])
+
+  // Pockets that hold a goal's money fold into one Holdings row.
+  const goalPocketIds = useMemo(
+    () => new Set(goals.flatMap((g) => g.linkedSavingsAccountIds)),
+    [goals],
+  )
 
   const devBypass = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1'
   const guard = (fn: () => void) => (devBypass ? fn() : requireAuth(fn, 'Sign in to manage savings'))
@@ -233,7 +238,8 @@ export default function WealthPage() {
   const brandNew = model.rows.length === 0
   const unpricedGrams = model.rows.filter((r) => r.cat === 'gold' && r.amount == null).reduce((s, r) => s + (r.quantity ?? 0), 0)
   const totalText = formatWhole(model.total)
-  const netWorthText = formatSignedFlex(nw.netWorth)
+  // Whole units, as the mockup ("103,907"); the sign stays for a negative net worth.
+  const netWorthText = nw.netWorth < 0 ? `−${formatWhole(Math.abs(nw.netWorth))}` : formatWhole(nw.netWorth)
   const hasZakat = (zakatYear.state === 'estimate' || zakatYear.state === 'dueNow') && zakatYear.result.nisab > 0
 
   /** The warning follows what the delete does to net worth, not the kind of pocket. */
@@ -285,14 +291,6 @@ export default function WealthPage() {
         netWorthPrefix={nw.netWorthIncomplete ? 'At least' : undefined}
         split={split}
         netWorthTrend={model.anyUnpriced ? undefined : trend}
-        badges={
-          <WealthHeroBadges
-            emergency={{ state: efState, months: emergency.monthsCovered.toFixed(1), target: targetMonths }}
-            zakat={hasZakat ? { amount: formatWhole(zakatYear.result.zakat), due: hawl.isPlaceholder ? '' : formatLocalized(parseDateOnly(hawl.dueDate), 'd MMM', locale) } : undefined}
-            onOpenEmergency={() => guard(() => setEmergencyOpen(true))}
-            onOpenZakat={() => guard(() => setZakatOpen(true))}
-          />
-        }
       />
       </PageHero>
 
@@ -321,12 +319,21 @@ export default function WealthPage() {
                 onRowPress={(row, anchor) => setMenu({ row, anchor })}
                 onAdd={() => openHolding()}
                 goalLines={goalLines}
+                goalPocketIds={goalPocketIds}
               />
             </div>
           }
           secondary={
             <div className="mt-2 lg:mt-0">
               <ActivityLedger transactions={savingsTransactions} accounts={savingsAccounts} baseCurrency={base} exchangeRates={exchangeRates} limit={3} staleMonthKeys={staleCarryMonths} />
+              <div className="mt-4">
+                <WealthPlanRows
+                  emergency={{ state: efState, months: emergency.monthsCovered.toFixed(1), target: targetMonths }}
+                  zakat={hasZakat ? { amount: formatWhole(zakatYear.result.zakat), due: hawl.isPlaceholder ? '' : formatLocalized(parseDateOnly(hawl.dueDate), 'd MMM', locale) } : undefined}
+                  onOpenEmergency={() => guard(() => setEmergencyOpen(true))}
+                  onOpenZakat={() => guard(() => setZakatOpen(true))}
+                />
+              </div>
             </div>
           }
         />

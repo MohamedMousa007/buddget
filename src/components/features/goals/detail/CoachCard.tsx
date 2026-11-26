@@ -9,9 +9,9 @@ import { formatWhole } from '@/lib/utils/formatters'
 
 function CoachRow({ title, cta, onPress }: { title: string; cta: string; onPress: () => void }) {
   return (
-    <div className="flex items-center gap-3">
-      <p className="min-w-0 flex-1 text-[0.9375rem] text-[var(--color-brand-text-primary)]">{title}</p>
-      <Button size="touch" variant="outline" onClick={onPress} className="shrink-0 rounded-full bg-[var(--color-brand-elevated)]">
+    <div className="mt-2 flex items-center justify-between gap-3">
+      <p className="min-w-0 flex-1 text-sm text-[var(--color-brand-text-primary)]">{title}</p>
+      <Button size="sm" variant="outline" onClick={onPress} className="h-8 shrink-0 rounded-lg text-sm">
         {cta}
       </Button>
     </div>
@@ -46,10 +46,10 @@ export function CoachCard({
   const { moveDate } = coach.options
 
   return (
-    <section aria-label={title} className="flex flex-col gap-2.5 rounded-[20px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-3.5">
+    <section aria-label={title} className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-3.5">
       <div>
-        <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
-        <p className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{t.coachShort(money(coach.shortfall), sinceLabel)}</p>
+        <p className="text-sm font-bold text-[var(--color-brand-text-primary)]">{title}</p>
+        <p className="text-xs text-[var(--color-brand-text-secondary)]">{t.coachShort(money(coach.shortfall), sinceLabel)}</p>
       </div>
       {moveDate ? <CoachRow title={t.moveTitle(month(moveDate.targetDate))} cta={t.moveCta} onPress={onMove} /> : null}
       <CoachRow title={t.keepTitle(month(targetDate))} cta={t.keepCta} onPress={onKeep} />
