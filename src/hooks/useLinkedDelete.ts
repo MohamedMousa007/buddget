@@ -6,10 +6,13 @@ import { useActionToast } from '@/components/ui/ActionToast'
 import { useT } from '@/lib/i18n'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Expense } from '@/lib/store/types'
+import { holdingFundedBy } from '@/lib/savings/assetPurchase'
+import { deleteHoldingWithUndo } from '@/lib/savings/pocketUndo'
 
 /**
  * Deletes that touch two records at once. A debt payment and its expense always go together
  * (either side starts the delete), the user confirms the money move, and Undo brings both back.
+ * An asset and the expense that paid for it go together the same way.
  */
 export function useLinkedDelete() {
   const t = useT()
@@ -48,6 +51,12 @@ export function useLinkedDelete() {
       const pairedId = expense.linkedDebtPaymentId
       if (pairedId && state.debtPayments.some((p) => p.id === pairedId)) {
         return removeDebtPayment(pairedId, 'expense')
+      }
+      // The money that bought an asset goes with the asset, and Undo brings both back.
+      const bought = holdingFundedBy(state.investmentHoldings, expense.id)
+      if (bought) {
+        toast(t.expenses.expenseDeleted, { undo: deleteHoldingWithUndo(bought.id), undoLabel: t.common.undo })
+        return true
       }
       state.deleteExpense(expense.id)
       toast(t.expenses.expenseDeleted, {

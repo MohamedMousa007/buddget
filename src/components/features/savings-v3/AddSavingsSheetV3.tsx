@@ -22,6 +22,8 @@ import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
 import { pocketDisplayName } from '@/lib/savings/pocketIdentity'
 import { applyPocketDeposit } from '@/lib/savings/moneySourceDeposit'
 import { localTodayISO } from '@/lib/utils/localDate'
+import { manualOccurredAt } from '@/lib/time/occurredAt'
+import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
 import type { Currency } from '@/lib/store/types'
 
 export interface AddSavingsSheetV3Props {
@@ -46,6 +48,8 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
 
   const [amount, setAmount] = useState('')
   const [date, setDate] = useState(() => localTodayISO())
+  const [clock, setClock] = useState('')
+  const timeLabel = useFlowLtCopy().expense.time
   const [selectedId, setSelectedId] = useState<string | null>(defaultAccountId ?? pockets[0]?.account.id ?? null)
   const [currency, setCurrency] = useState<Currency>(
     () => pockets.find((p) => p.account.id === selectedId)?.account.currency ?? baseCurrency,
@@ -106,6 +110,7 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
       source: effective,
       note: note.trim() || undefined,
       date: date !== localTodayISO() ? date : undefined,
+      occurredAt: manualOccurredAt(date, clock),
     })
     if (!ok) return showToast(t.moveFailed)
     onClose()
@@ -117,7 +122,7 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
     <>
     <ModalShell open={open} onBackdropClick={onClose} scrollChild>
       <div className="flex min-h-0 flex-1 flex-col">
-        <V3SheetHeader onClose={onClose} leading={<DatePickerField look="pill" value={date} onChange={setDate} />}>
+        <V3SheetHeader onClose={onClose} leading={<DatePickerField look="pill" value={date} onChange={setDate} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: true }} />}>
           <span className="sr-only"><V3SheetHeader.Title>{c.title}</V3SheetHeader.Title></span>
         </V3SheetHeader>
 

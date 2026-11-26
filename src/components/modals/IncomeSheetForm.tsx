@@ -31,7 +31,7 @@ import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { defaultMethodId } from '@/lib/accounts/resolve'
 import { PaydayFormBody } from '@/components/features/income/PaydayFormBody'
 import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
-import { mergeDayTime } from '@/lib/time/occurredAt'
+import { manualOccurredAt, mergeDayTime, nowClock } from '@/lib/time/occurredAt'
 import { formatClock } from '@/lib/i18n/dateFormat'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 
@@ -105,7 +105,7 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
   const [paydays, setPaydays] = useState<number[]>(seedPaydays)
   const driftDays = source?.paydayDriftDays ?? null
   const [receivedDate, setReceivedDate] = useState(() => localTodayISO())
-  /** A time picked in the date card (`HH:mm`); '' leaves the store's default (now for today, noon otherwise). */
+  /** A time picked in the date card (`HH:mm`); '' = the current time, as the pill shows. */
   const [clock, setClock] = useState('')
   const [calOpen, setCalOpen] = useState(false)
   const { locale } = useLocale()
@@ -153,7 +153,9 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
   }, [settings.baseCurrency, defaultPmId])
 
   const flowLt = useFlowLtCopy()
-  const clockAt = mergeDayTime(receivedDate, clock)
+  // A new entry shows the current time until one is picked.
+  const shownClock = clock || (edit ? '' : nowClock())
+  const clockAt = mergeDayTime(receivedDate, shownClock)
   const amt = parseFloat(amount)
   const amtValid = !Number.isNaN(amt) && amt > 0
   const assignedSource = assigned ? incomeSources.find((s) => s.id === assigned.templateId) : undefined
@@ -200,7 +202,7 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
         sourceType,
         // §8.0: linking picks the payday (occurrenceDate); receivedDate stays the real day.
         receivedDate,
-        ...(clockAt ? { occurredAt: clockAt } : {}),
+        occurredAt: manualOccurredAt(receivedDate, clock),
         ...(assigned ? { occurrenceDate: assigned.date } : {}),
         status: 'confirmed',
         notes: notes.trim() || undefined,
@@ -422,7 +424,7 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
           open
           value={receivedDate}
           onConfirm={setReceivedDate}
-          time={{ value: clock, label: flowLt.expense.time }}
+          time={{ value: shownClock, label: flowLt.expense.time }}
           onConfirmDateTime={(iso, hm) => {
             setReceivedDate(iso)
             setClock(hm)

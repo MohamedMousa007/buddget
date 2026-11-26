@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { localTodayISO } from '@/lib/utils/localDate'
+import { manualOccurredAt } from '@/lib/time/occurredAt'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -159,6 +160,10 @@ export function useAddDebtSheet() {
   const [paymentAmount, setPaymentAmount] = useState('')
   const [paymentCurrency, setPaymentCurrency] = useState<string>(settings.baseCurrency)
   const [paymentDate, setPaymentDate] = useState(localTodayISO())
+  /** A time picked in the date card (`HH:mm`); '' = the current time, as the pill shows. */
+  const [paymentTime, setPaymentTime] = useState('')
+  /** The borrow or lend time picked with its date (`HH:mm`); '' = the current time, as the pill shows. */
+  const [borrowTime, setBorrowTime] = useState('')
   const [paymentNotes, setPaymentNotes] = useState('')
   const [paymentMethodId, setPaymentMethodId] = useState(
     () => defaultMethodId(paymentMethods)
@@ -419,6 +424,8 @@ export function useAddDebtSheet() {
     setPaymentAmount('')
     setPaymentCurrency(settings.baseCurrency)
     setPaymentDate(localTodayISO())
+    setPaymentTime('')
+    setBorrowTime('')
     setPaymentNotes('')
     setPaymentRateError('')
     setPaymentScheduleMode('one_time')
@@ -585,7 +592,9 @@ export function useAddDebtSheet() {
       void _cur; void _gold; void _karat; void _via
       updateDebt(editingDebt.id, currencyLocked ? unlocked : rest)
     } else {
-      const leg = principalAcct && principalMoved ? principalLegFields(principalAcct, total, payload.currency, new Date().toISOString()) : {}
+      // A borrow or lend moved the money on its picked day and time; other debts book it now.
+      const movedAt = debtType === 'personal' ? manualOccurredAt(installmentStartDate, borrowTime) : new Date().toISOString()
+      const leg = principalAcct && principalMoved ? principalLegFields(principalAcct, total, payload.currency, movedAt) : {}
       const debtId = addDebt({ ...payload, ...leg })
       if (principalLinked && principalMatch) {
         if (principalMatch.kind === 'expense') updateExpense(principalMatch.id, linkedExpensePatch(debtId))
@@ -627,6 +636,7 @@ export function useAddDebtSheet() {
     installmentProvider,
     installmentProviderName,
     installmentStartDate,
+    borrowTime,
     installmentPaidWith,
     paymentMethodId,
     paymentMethods,
@@ -704,6 +714,7 @@ export function useAddDebtSheet() {
       addDebtPayment({
         debtId: selectedDebtId,
         date: paymentDate,
+        occurredAt: manualOccurredAt(paymentDate, paymentTime),
         amountPaid: amountInDebtUnit,
         paymentMethodId: pmId,
         paymentCurrency: payCur,
@@ -726,6 +737,7 @@ export function useAddDebtSheet() {
       {
         debtId: selectedDebtId,
         date: paymentDate,
+        occurredAt: manualOccurredAt(paymentDate, paymentTime),
         amountPaid: amountInDebtUnit,
         paymentMethodId: pmId,
         paymentCurrency: payCur,
@@ -762,6 +774,7 @@ export function useAddDebtSheet() {
     paymentAmount,
     paymentCurrency,
     paymentDate,
+    paymentTime,
     paymentMethodId,
     paymentMethods,
     paymentNotes,
@@ -932,6 +945,10 @@ export function useAddDebtSheet() {
     setPaymentCurrency,
     paymentDate,
     setPaymentDate,
+    paymentTime,
+    setPaymentTime,
+    borrowTime,
+    setBorrowTime,
     paymentNotes,
     setPaymentNotes,
     paymentMethodId,

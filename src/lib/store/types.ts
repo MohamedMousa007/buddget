@@ -717,10 +717,14 @@ export interface ZakatConfig {
    */
   nisabBasisChosen?: boolean
   holdsForTrading: boolean
-  /** Master override — replaces the computed figure entirely. */
-  manualAmount?: number | null
-  /** Per-line edits in the "what counts" list, keyed by line id. */
-  lineOverrides?: Record<string, number>
+  // Zakat-only inputs, for what the app cannot know; every other line is live. Older rows may still carry
+  // `manualAmount` / `lineOverrides`: only `zakatLegacy.ts` reads them, and nothing computes with them.
+  /** Gold holdings worn as personal jewellery: left out of zakat. */
+  jewelleryHoldingIds?: string[]
+  /** Owed-to-me debts not likely to be repaid: left out. Absent means every receivable counts. */
+  doubtfulDebtIds?: string[]
+  /** Goods held for trade, in base currency. */
+  tradeGoodsValue?: number | null
   lastPaidDate?: string
   /**
    * The user's own zakat-year anchor (ISO date) — when their wealth first passed
@@ -1347,7 +1351,9 @@ export interface FinanceStore {
       /** Deterministic id: a second post with the same id is a no-op (cross-device idempotency). */
       txId?: string
       /** Ledger date (YYYY-MM-DD) when the deposit belongs to an earlier day than today, e.g. a missed recurring due date. */
-      date?: string }
+      date?: string
+      /** Exact instant (ISO); default: now for today, the "no time" stand-in for another day. */
+      occurredAt?: string }
   ) => boolean
   /** Only 'income' returns the money to this month's spendable income; the rest do not,
    *  so a transfer/debt/spend withdrawal never inflates the income KPI. Defaults to 'income'. */
@@ -1358,13 +1364,16 @@ export interface FinanceStore {
     notes?: string,
     purpose?: SavingsWithdrawalPurpose,
     /** Income withdrawals credit this account (undefined = primary tracked, null = none). Same-currency only. */
-    opts?: { toAccountId?: string | null; /** Caller-chosen id, so a payment or expense funded by this withdrawal can link to it. */ txId?: string }
+    opts?: { toAccountId?: string | null; /** Caller-chosen id, so a payment or expense funded by this withdrawal can link to it. */ txId?: string
+      /** Ledger day (YYYY-MM-DD, default today) and exact instant (default: now for today, the "no time" stand-in otherwise). */
+      date?: string; occurredAt?: string }
   ) => boolean
   /** Move money between two pockets: two ledger legs sharing a transferGroupId, both
    *  non-cash-flow (net worth and left-to-spend unaffected). FX-converts fiat↔fiat; rejects
    *  a move with no conversion path (e.g. into a gold/crypto pocket — that's a buy, not a transfer).
-   *  `date` (`yyyy-MM-dd`, default today) dates both legs; a past date stays day-level (no exact time). */
-  transferBetweenPockets: (fromId: string, toId: string, amount: number, notes?: string, date?: string) => boolean
+   *  `date` (`yyyy-MM-dd`, default today) dates both legs; `occurredAt` defaults to now for today and to the "no time"
+   *  stand-in for a past date. */
+  transferBetweenPockets: (fromId: string, toId: string, amount: number, notes?: string, date?: string, occurredAt?: string) => boolean
   /** False when refused: a reserved pocket cannot be raised above what its account has available. */
   correctSavingsBalance: (accountId: string, newBalance: number, notes?: string) => boolean
   /** Delete a savings ledger row and reverse its balance effect (both legs for a transfer). */

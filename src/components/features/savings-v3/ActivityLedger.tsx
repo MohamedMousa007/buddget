@@ -19,6 +19,8 @@ import { formatClock, formatLocalized } from '@/lib/i18n/dateFormat'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { Badge } from '@/components/ui/badge'
+import { holdingFundedBy } from '@/lib/savings/assetPurchase'
+import { deleteHoldingWithUndo } from '@/lib/savings/pocketUndo'
 
 const fmtSigned = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(Math.round(n)).toLocaleString('en-US')}`
 
@@ -56,6 +58,9 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
   const deleteTx = useFinanceStore((s) => s.deleteSavingsTransaction)
   const showToast = useActionToast()
   const onDelete = (id: string) => {
+    // A withdrawal that bought an asset goes with the asset, and Undo brings both back.
+    const bought = holdingFundedBy(useFinanceStore.getState().investmentHoldings, id)
+    if (bought) return showToast(t.deletedToast(bought.name), { undo: deleteHoldingWithUndo(bought.id), undoLabel: t.deleteUndo })
     const res = deleteTx(id)
     if (res.ok || res.reason !== 'would_go_negative') return
     const pocket = accounts.find((a) => a.id === res.accountId)

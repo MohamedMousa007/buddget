@@ -20,7 +20,7 @@ import { bnplPlanDebt, bnplSplitIssue } from '@/lib/debts/bnplSplit'
 import { useSubmitOnce } from '@/hooks/useSubmitOnce'
 import { defaultMethodId } from '@/lib/accounts/resolve'
 import { canonicalAmount, currencyDecimals, parseLocalizedAmount } from '@/lib/ui/amountParse'
-import { mergeDayTime } from '@/lib/time/occurredAt'
+import { manualOccurredAt } from '@/lib/time/occurredAt'
 
 /** Default BNPL first-installment due: same day next month. */
 function firstOfNextMonth(): string {
@@ -55,7 +55,7 @@ export function useAddExpenseSheet() {
   const submit = useSubmitOnce(isOpen)
 
   const [date, setDate] = useState(localTodayISO())
-  /** A time picked in the date card (`HH:mm`); '' leaves the store's default (now for today, noon otherwise). */
+  /** A time picked in the date card (`HH:mm`); '' = the current time, as the pill shows. */
   const [clock, setClock] = useState('')
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
@@ -201,10 +201,9 @@ export function useAddExpenseSheet() {
       linkedDebtId = debtId
     }
 
-    const occurredAt = mergeDayTime(date, clock)
     addExpense({
       date,
-      ...(occurredAt ? { occurredAt } : {}),
+      occurredAt: manualOccurredAt(date, clock),
       description: title,
       category,
       subcategory,

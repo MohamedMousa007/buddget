@@ -11,7 +11,7 @@ import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { IconButton } from '@/components/ui/IconButton'
 import { Switch } from '@/components/ui/switch'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
-import { changeAccountCurrency, closeAccount, ensureCashAccount, updateBalance } from '@/lib/accounts/actions'
+import { cardsToFollow, changeAccountCurrency, closeAccount, ensureCashAccount, followsAccountCurrency, updateBalance } from '@/lib/accounts/actions'
 import { computeBalances } from '@/lib/accounts/balance'
 import { allowsNegativeBalance, editedBalance } from '@/lib/accounts/balanceEdit'
 import { sheetActivity } from '@/lib/accounts/cardDetails'
@@ -35,6 +35,7 @@ import { BrandMark } from './BrandMark'
 import { CardFaceChip } from './CardFaceChip'
 import { InlineBalanceEdit, type BalanceDraft } from './InlineBalanceEdit'
 import { SheetActivity } from './SheetActivity'
+import { UnsavedChangesDialog } from '@/components/features/expenses/UnsavedChangesDialog'
 import type { MoveMode } from './MoveMoneySheet'
 
 interface AccountDetailSheetProps {
@@ -81,6 +82,9 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onA
   const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null)
   const { method, balance, cards } = account
   const [draft, setDraft] = useState<BalanceDraft | null>(balance ? null : { value: '', negative: false })
+  const [footerEl, setFooterEl] = useState<HTMLDivElement | null>(null)
+  /** A currency change waiting on "Change N cards too?". */
+  const [pending, setPending] = useState<{ value: number; currency: Currency; cards: PaymentMethod[] } | null>(null)
   const cur = String(method.currency)
   const isCash = method.type === 'cash'
   const isPrepaid = method.type === 'prepaid_card'
@@ -95,14 +99,30 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onA
   const month = useMemo(() => (open && balance ? computeBalances({ ...ledger, flowsFrom: monthStart() }).get(method.id) : undefined), [open, balance, ledger, method.id])
   const activity = useMemo(() => sheetActivity(undefined, method.id, expenses, methods), [expenses, methods, method.id])
 
-  const save = (value: number, currency?: string) => {
+  const commit = (value: number, currency?: Currency, cardIds: readonly string[] = []) => {
     if (currency) {
-      changeAccountCurrency(method.id, currency as Currency, value)
+      changeAccountCurrency(method.id, currency, value, { cardIds })
       if (!balance) updateBalance(method.id, 0, value)
     } else updateBalance(method.id, balance?.balance ?? 0, value)
     onBalanceSaved?.()
     // The Cash placeholder becomes a real account with its own id; this sheet's account is gone.
     if (method.id === DEFAULT_CASH_ID) onClose()
+  }
+  const save = (value: number, currency?: string) => {
+    const followers = currency ? cardsToFollow(methods, method.id, currency as Currency) : []
+    if (currency && followers.length) setPending({ value, currency: currency as Currency, cards: followers })
+    else commit(value, currency as Currency | undefined)
+  }
+  const answer = (withCards: boolean) => {
+    if (!pending) return
+    setPending(null)
+    commit(pending.value, pending.currency, withCards ? pending.cards.map((c) => c.id) : [])
+  }
+  // Dismissed: back to the sheet with the typed figure and currency still there.
+  const keepEditing = () => {
+    if (!pending) return
+    setDraft({ value: String(Math.abs(pending.value)), negative: pending.value < 0, currency: pending.currency })
+    setPending(null)
   }
   const setDefault = (on: boolean) => {
     if (on) updatePaymentMethod(isCash ? ensureCashAccount() : method.id, { isDefault: true })
@@ -153,7 +173,7 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onA
               reported={reported} onSave={save} allowNegative={allowsNegativeBalance(method.type)}
               caption={isCash ? lt.cashCaption : undefined} hint={isCash ? lt.cashHint : lt.hint}
               currencyEditable={!isCash} onCurrencyClick={isCash ? onEdit : undefined}
-              badge={balance && balance.balance < 0 ? <Badge variant="warning">{t.overdrawn}</Badge> : null} />
+              badge={balance && balance.balance < 0 ? <Badge variant="warning">{t.overdrawn}</Badge> : null} footerTarget={footerEl} />
             {!editing && balance && balance.held > 0 ? (
               <div className="mt-4">
                 <div className="flex h-1.5 overflow-hidden rounded-full bg-[var(--color-brand-sunken)]" aria-hidden>
@@ -218,12 +238,17 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onA
               </div>
               <div className="relative">
                 <div dir="ltr" className="native-scroll flex snap-x items-center gap-2 overflow-x-auto scroll-px-5 px-5 py-1">
-                  {isPrepaid ? <CardFaceChip method={method} /> : cards.map((c) => (
-                    <button key={c.id} type="button" data-raw-button-ok="a card face is its own tap target" onClick={() => onOpenCard(c)}
-                      aria-label={`${accountTitle(method)} ${c.last4 ?? ''}`.trim()} className="flex min-h-14 shrink-0 snap-start items-center rounded-[9px] transition-transform duration-150 active:scale-[0.97] motion-reduce:transition-none">
-                      <CardFaceChip method={c} parent={method} />
-                    </button>
-                  ))}
+                  {isPrepaid ? <CardFaceChip method={method} /> : cards.map((c) => {
+                    const otherCurrency = followsAccountCurrency(c) && c.currency !== method.currency
+                    return (
+                      <button key={c.id} type="button" data-raw-button-ok="a card face is its own tap target" onClick={() => onOpenCard(c)}
+                        aria-label={[accountTitle(method), c.last4, otherCurrency ? lt.differentCurrency : null].filter(Boolean).join(' ')}
+                        className="flex min-h-14 shrink-0 snap-start flex-col items-center gap-1 rounded-[9px] transition-transform duration-150 active:scale-[0.97] motion-reduce:transition-none">
+                        <CardFaceChip method={c} parent={method} />
+                        {otherCurrency ? <Badge variant="warning" size="xs" aria-hidden>{lt.differentCurrency}</Badge> : null}
+                      </button>
+                    )
+                  })}
                   {parentKind ? (
                     <button type="button" data-raw-button-ok="the dashed add-card slot of the cards row" onClick={onAddCard} aria-label={t.addACard}
                       className="flex min-h-14 shrink-0 snap-start items-center gap-2.5 text-start">
@@ -264,8 +289,18 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onA
 
           <SheetActivity title={t.recent} rows={activity} masked={masked} method={method} emptyLine={t.emptyAccountActivity} onLeave={onClose} />
         </div>
+        <div ref={setFooterEl} className="shrink-0" />
       </div>
       <CardActionMenu anchor={menuAnchor} items={manageItems} onClose={() => setMenuAnchor(null)} zClassName="z-[110]" />
+      <UnsavedChangesDialog open={pending !== null} title={pending ? lt.cardsFollowTitle(pending.cards.length, pending.currency) : undefined}
+        body={lt.cardsFollowBody} saveLabel={lt.changeCardsToo} discardLabel={lt.onlyAccount} discardTone="neutral"
+        onSave={() => answer(true)} onDiscard={() => answer(false)} onKeep={keepEditing}>
+        <ul className="mt-3 space-y-1 text-sm font-medium text-[var(--color-brand-text-primary)]">
+          {pending?.cards.map((c) => (
+            <li key={c.id} dir="auto">{c.label?.trim() || `${accountTitle(method)} ${cardKindLabel(c.type, t)}`}{c.last4 ? <span dir="ltr" className="font-mono-numbers text-[var(--color-brand-text-muted)]"> {'\u2022\u2022'}{c.last4}</span> : null}</li>
+          ))}
+        </ul>
+      </UnsavedChangesDialog>
     </ModalShell>
   )
 }

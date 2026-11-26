@@ -1,4 +1,4 @@
-import { safeLocalDayKey } from '@/lib/utils/localDate'
+import { localTodayISO, safeLocalDayKey } from '@/lib/utils/localDate'
 
 const CLOCK = /^([01]\d|2[0-3]):([0-5]\d)$/
 
@@ -23,6 +23,38 @@ export function mergeDayTime(day: string, time: string): string | undefined {
   const h = Number(m[1])
   const min = Number(m[2])
   return localAt(day, h, min, h === 12 && min === 0 ? 1 : 0)
+}
+
+/**
+ * The `occurredAt` a new row is stored with: the picked clock time on its day; else `now` when the day is today (or
+ * unreadable); else the "no time" stand-in, so a back-dated row never borrows today's clock.
+ */
+export function entryOccurredAt(day: string, clock = '', now: Date = new Date()): string {
+  const picked = mergeDayTime(day, clock)
+  if (picked) return picked
+  const d = day.slice(0, 10)
+  return DAY.test(d) && d !== localTodayISO(now) ? noTimeAt(d) : now.toISOString()
+}
+
+/** The clock time (`HH:mm`) of `now`: what a new manual entry's date+time pill shows until a time is picked. */
+export function nowClock(now: Date = new Date()): string {
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+}
+
+/**
+ * The `occurredAt` a new entry typed by the user is stored with: the picked clock time; else the current instant for
+ * today; else the picked day at the current time of day (what the pill showed). Never the "no time" stand-in, which
+ * is kept for rows with no known time (automatic back-fills, re-dated rows).
+ */
+export function manualOccurredAt(day: string, clock = '', now: Date = new Date()): string {
+  const picked = mergeDayTime(day, clock)
+  if (picked) return picked
+  const d = day.slice(0, 10)
+  if (!DAY.test(d) || d === localTodayISO(now)) return now.toISOString()
+  const at = new Date(localAt(d, now.getHours(), now.getMinutes(), now.getSeconds()))
+  at.setMilliseconds(now.getMilliseconds())
+  // Off the stand-in instant even when the clock reads exactly 12:00:00.000.
+  return (at.toISOString() === noTimeAt(d) ? new Date(at.getTime() + 1) : at).toISOString()
 }
 
 /**

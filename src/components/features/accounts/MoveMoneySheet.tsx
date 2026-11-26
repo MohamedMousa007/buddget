@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState, type ReactNode } from 'react'
-import { Banknote, Calendar, Landmark } from 'lucide-react'
+import { Banknote, Landmark } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Button } from '@/components/ui/button'
@@ -9,7 +9,6 @@ import { Card } from '@/components/ui/card'
 import { AmountHero } from '@/components/ui/AmountHero'
 import { DatePickerField } from '@/components/ui/DatePickerField'
 import { PickerRow } from '@/components/ui/PickerRow'
-import { Pill } from '@/components/ui/PillButton'
 import { PocketPickerField } from '@/components/features/savings-v3/MoneySheetParts'
 import type { PocketVM } from '@/components/features/savings-v3/types'
 import { cashOut, setAside } from '@/lib/accounts/actions'
@@ -18,6 +17,8 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { useAccountsLtCopy } from '@/lib/i18n/accountsLtCopy'
 import { localTodayISO } from '@/lib/utils/localDate'
+import { manualOccurredAt } from '@/lib/time/occurredAt'
+import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
 import { AccountNameValue, AccountPicker } from './AccountPicker'
 import { BrandMark } from './BrandMark'
 import { accountTitle, moneyFlex } from './accountDisplay'
@@ -62,6 +63,8 @@ export function MoveMoneySheet({ open, onClose, accounts, initialAccountId, init
   const [amount, setAmount] = useState(initialAmount)
   const [pocketId, setPocketId] = useState<string | null>(null)
   const [date, setDate] = useState(() => localTodayISO())
+  const [clock, setClock] = useState('')
+  const timeLabel = useFlowLtCopy().expense.time
 
   const sources = useMemo(() => accounts.filter((a) => a.balance), [accounts])
   const account = sources.find((a) => a.method.id === accountId) ?? sources[0]
@@ -85,11 +88,10 @@ export function MoveMoneySheet({ open, onClose, accounts, initialAccountId, init
 
   const submit = () => {
     if (!valid) return
-    if (mode === 'cash') {
-      // Today keeps the moment it is logged; another day is booked at noon, as the date picker sets it.
-      const at = date === localTodayISO() ? new Date() : new Date(`${date}T12:00:00`)
-      cashOut(account.method.id, v, account.method.currency, at)
-    } else setAside(account.method.id, pocket!.id, v, account.method.currency)
+    // The picked time, else the current time (on the picked day), as the pill shows.
+    const at = new Date(manualOccurredAt(date, clock))
+    if (mode === 'cash') cashOut(account.method.id, v, account.method.currency, at)
+    else setAside(account.method.id, pocket!.id, v, account.method.currency, at)
     onDone?.()
     onClose()
   }
@@ -98,7 +100,7 @@ export function MoveMoneySheet({ open, onClose, accounts, initialAccountId, init
     <ModalShell open={open} onBackdropClick={onClose} scrollChild>
       <div className="flex min-h-0 flex-1 flex-col">
         <V3SheetHeader onClose={onClose}
-          leading={mode === 'cash' ? <DatePickerField look="pill" value={date} onChange={setDate} /> : <Pill icon={<Calendar />}>{c.today}</Pill>}>
+          leading={<DatePickerField look="pill" value={date} onChange={setDate} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: true }} />}>
           <V3SheetHeader.Title><span className="sr-only">{title}</span></V3SheetHeader.Title>
         </V3SheetHeader>
         <div className="min-h-0 flex-1 overflow-y-auto pb-3">

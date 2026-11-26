@@ -20,6 +20,8 @@ import { MethodPickerRow } from '@/components/features/debts/lt/MethodPickerRow'
 import { SheetGroup, TxTile } from '@/components/features/debts/lt/SheetParts'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
+import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
+import { clockOf, editedOccurredAt, manualOccurredAt } from '@/lib/time/occurredAt'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { OptionChip } from '@/components/ui/OptionChip'
@@ -83,9 +85,14 @@ export function AmountReceivedSheet() {
   const currentReceivedDate = targetEventId
     ? incomeEvents.find((e) => e.id === targetEventId)?.receivedDate ?? null
     : null
+  const saved = targetEventId ? incomeEvents.find((e) => e.id === targetEventId) : undefined
+  /** The stored time of the row being updated ('' for none, or the "no time" stand-in). */
+  const savedClock = saved ? clockOf(saved.occurredAt, saved.receivedDate) : ''
 
   const [amount, setAmount] = useState('')
   const [receivedDate, setReceivedDate] = useState(todayISO)
+  const [clock, setClock] = useState('')
+  const timeLabel = useFlowLtCopy().expense.time
   const [methodId, setMethodId] = useState('')
   const prevOpen = useRef(false)
   useEffect(() => {
@@ -95,11 +102,12 @@ export function AmountReceivedSheet() {
       // A payday still in the future can only have been received early or today; anything
       // already logged keeps the date it was logged with.
       setReceivedDate(currentReceivedDate ?? todayISO())
+      setClock(savedClock)
       setMethodId(source?.paymentMethodId ?? '')
     }
     prevOpen.current = isOpen
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [isOpen, current, currentReceivedDate, source?.paymentMethodId])
+  }, [isOpen, current, currentReceivedDate, savedClock, source?.paymentMethodId])
 
   const close = () => setActiveModal(null)
   useEscapeClose(isOpen, close)
@@ -120,17 +128,25 @@ export function AmountReceivedSheet() {
     !!current &&
     amt === current.amount &&
     receivedDate === currentReceivedDate &&
+    clock === savedClock &&
     current.status !== 'missed'
   const blocked = !!current && !current.actionable && !isEdit
   const savingRef = useRef(false)
+
+  // A changed or cleared time is sent as picked; a row with no time yet, received today, carries the moment it is logged.
+  const updatedOccurredAt = (): { occurredAt?: string } => {
+    const edited = saved ? editedOccurredAt(receivedDate, clock, { day: saved.receivedDate, clock: savedClock }) : undefined
+    if (edited) return { occurredAt: edited }
+    return !savedClock && !clock && receivedDate === localTodayISO() ? { occurredAt: new Date().toISOString() } : {}
+  }
 
   const save = () => {
     if (!valid || !source || !current || blocked || savingRef.current) return
     savingRef.current = true
     const status = meetsExpected ? 'confirmed' : 'partial'
     if (targetEventId) {
-      // Marked received today: carry the exact time, as a new entry does, so the balance counts it at once.
-      updateIncomeEvent(targetEventId, { amount: amt, status, receivedDate, occurrenceDate: current.dueDate, ...(methodId ? { paymentMethodId: methodId } : {}), ...(receivedDate === localTodayISO() ? { occurredAt: new Date().toISOString() } : {}) })
+      // A picked time, or marked received today: carry the exact time, as a new entry does, so the balance counts it at once.
+      updateIncomeEvent(targetEventId, { amount: amt, status, receivedDate, occurrenceDate: current.dueDate, ...(methodId ? { paymentMethodId: methodId } : {}), ...updatedOccurredAt() })
     } else {
       addIncomeEvent({
         templateId: source.id,
@@ -139,6 +155,7 @@ export function AmountReceivedSheet() {
         currency,
         sourceType: source.sourceType,
         receivedDate,
+        occurredAt: manualOccurredAt(receivedDate, clock),
         occurrenceDate: current.dueDate,
         status,
         ...(methodId ? { paymentMethodId: methodId } : {}),
@@ -161,7 +178,7 @@ export function AmountReceivedSheet() {
   return (
     <ModalShell open={isOpen} onBackdropClick={close} scrollChild>
       <div className="flex min-h-0 flex-1 flex-col">
-        <V3SheetHeader onClose={close} leading={<DatePickerField look="pill" value={receivedDate} onChange={setReceivedDate} />}>
+        <V3SheetHeader onClose={close} leading={<DatePickerField look="pill" value={receivedDate} onChange={setReceivedDate} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: !isEdit }} />}>
           <span className="sr-only"><V3SheetHeader.Title>{t.income.amountReceivedTitle}</V3SheetHeader.Title></span>
         </V3SheetHeader>
         <div className="native-scroll flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-4">

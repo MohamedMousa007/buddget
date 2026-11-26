@@ -12,6 +12,7 @@ import { AddInstallmentForm } from '@/components/features/debts/redesign/AddInst
 import { PayDebtForm } from '@/components/features/debts/redesign/PayDebtForm'
 import { useT } from '@/lib/i18n'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
+import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { DatePickerField } from '@/components/ui/DatePickerField'
 import { isOwedToUser } from '@/lib/debts/debtDirection'
@@ -38,6 +39,7 @@ function HydrateDebtsWhileOpen() {
 export function AddDebtSheet() {
   const shortDate = useShortDate()
   const d = useAddDebtSheet()
+  const timeLabel = useFlowLtCopy().expense.time
   const t = useT()
   const lt = useDebtsSubsLtCopy()
   const confirm = useConfirm()
@@ -105,7 +107,7 @@ export function AddDebtSheet() {
         {/* Header */}
         <V3SheetHeader
           onClose={d.closeSheet}
-          leading={payShowsForm ? <DatePickerField look="pill" value={d.paymentDate} onChange={d.setPaymentDate} /> : undefined}
+          leading={payShowsForm ? <DatePickerField look="pill" value={d.paymentDate} onChange={d.setPaymentDate} time={{ value: d.paymentTime, onChange: d.setPaymentTime, label: timeLabel, defaultNow: true }} /> : undefined}
           actions={d.isEditFlow ? (
             <V3SheetHeader.Action
               tone="danger"

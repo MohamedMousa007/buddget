@@ -17,6 +17,11 @@ export interface AccountsLtCopy {
     defaultOn: string
     defaultOff: string
     correction: string
+    differentCurrency: string
+    cardsFollowTitle: (n: number, currency: string) => string
+    cardsFollowBody: string
+    changeCardsToo: string
+    onlyAccount: string
   }
   card: {
     availableOf: (available: string, limit: string) => string
@@ -51,7 +56,6 @@ export interface AccountsLtCopy {
     save: string
   }
   move: {
-    today: string
     to: string
     into: string
     cashOnHand: string
@@ -85,6 +89,11 @@ export const ACCOUNTS_LT_COPY: Record<Locale, AccountsLtCopy> = {
       defaultOn: 'Default for new expenses',
       defaultOff: 'No longer the default',
       correction: 'Saved as a correction, never as spending',
+      differentCurrency: 'Different currency',
+      cardsFollowTitle: (n, c) => `Change ${n === 1 ? '1 card' : `${n} cards`} to ${c} too?`,
+      cardsFollowBody: 'Past transactions keep their amounts and currency. Nothing is converted.',
+      changeCardsToo: 'Change cards too',
+      onlyAccount: 'Only the account',
     },
     card: {
       availableOf: (a, l) => `${a} available of ${l}`,
@@ -119,7 +128,6 @@ export const ACCOUNTS_LT_COPY: Record<Locale, AccountsLtCopy> = {
       save: 'Save changes',
     },
     move: {
-      today: 'Today',
       to: 'To',
       into: 'Into',
       cashOnHand: 'Cash on hand',
@@ -151,6 +159,11 @@ export const ACCOUNTS_LT_COPY: Record<Locale, AccountsLtCopy> = {
       defaultOn: 'أصبح الافتراضي للمصاريف الجديدة',
       defaultOff: 'لم يعد الافتراضي',
       correction: 'يُحفظ كتصحيح، وليس كمصروف أبداً',
+      differentCurrency: 'عملة مختلفة',
+      cardsFollowTitle: (n, c) => `تغيير ${n === 1 ? 'بطاقة واحدة' : n === 2 ? 'بطاقتين' : `${n} بطاقات`} إلى ${c} أيضاً؟`,
+      cardsFollowBody: 'المعاملات السابقة تحتفظ بمبالغها وعملتها. لا يتم تحويل أي شيء.',
+      changeCardsToo: 'غيّر البطاقات أيضاً',
+      onlyAccount: 'الحساب فقط',
     },
     card: {
       availableOf: (a, l) => `${a} متاح من ${l}`,
@@ -185,7 +198,6 @@ export const ACCOUNTS_LT_COPY: Record<Locale, AccountsLtCopy> = {
       save: 'احفظ التعديلات',
     },
     move: {
-      today: 'اليوم',
       to: 'إلى',
       into: 'في',
       cashOnHand: 'الكاش اللي معك',

@@ -22,6 +22,7 @@ import { formatFlex, formatWhole } from '@/lib/utils/formatters'
 import { useLocale, useT } from '@/lib/i18n'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
+import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
 
 type Every = 'weekly' | 'monthly' | 'quarterly' | 'annually'
 const KARATS: GoldKarat[] = [24, 21, 18]
@@ -32,6 +33,7 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
   const dict = useT()
   const legacy = dict.debts
   const c = useDebtsSubsLtCopy().borrow
+  const timeLabel = useFlowLtCopy().expense.time
   const { locale } = useLocale()
   const gpg = useFinanceStore((s) => s.goldPricePerGram)
   const goldOk = useFinanceStore((s) => s.goldPriceAvailable !== false) && gpg > 0
@@ -96,7 +98,7 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
       <SheetGroup>
         <TextRow label={c.person} value={d.person} onChange={d.setPerson} placeholder={c.personPh} />
         <TextRow label={c.forLabel} value={d.name} onChange={d.setName} placeholder={c.forPh} />
-        <PickerRow label={c.date} value={<DatePickerField look="pill" value={d.installmentStartDate} onChange={d.setInstallmentStartDate} />} />
+        <PickerRow label={c.date} value={<DatePickerField look="pill" value={d.installmentStartDate} onChange={d.setInstallmentStartDate} time={{ value: d.borrowTime, onChange: d.setBorrowTime, label: timeLabel, defaultNow: !d.isEditFlow }} />} />
         {!isGold ? (
           <MethodPickerRow label={owe ? c.receivedIn : c.paidFrom} value={d.paymentMethodId} onChange={d.setPaymentMethodId} paymentMethods={d.paymentMethods} />
         ) : null}

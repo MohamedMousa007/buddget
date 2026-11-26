@@ -29,6 +29,8 @@ import { MASK } from '@/lib/privacy/mask'
 import { useMask } from '@/lib/privacy/useMask'
 import { formatCurrency, formatWhole } from '@/lib/utils/formatters'
 import { localTodayISO } from '@/lib/utils/localDate'
+import { manualOccurredAt } from '@/lib/time/occurredAt'
+import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
 
 const isSaveGoal = (g: Goal) => g.category !== 'debt_freedom' && g.category !== 'spending_control'
 
@@ -58,6 +60,8 @@ function GoalMoney({ goal: initial, onClose }: { goal: Goal; onClose: () => void
   const pocket = savingsAccounts.find((a) => goal.linkedSavingsAccountIds.includes(a.id) && isEligibleCarryPocket(a))
   const [amount, setAmount] = useState('')
   const [date, setDate] = useState(() => localTodayISO())
+  const [clock, setClock] = useState('')
+  const timeLabel = useFlowLtCopy().expense.time
   const [source, setSource] = useState<MoneySource>({ kind: 'account' })
   const value = Number(amount) || 0
 
@@ -98,6 +102,7 @@ function GoalMoney({ goal: initial, onClose }: { goal: Goal; onClose: () => void
       applyPocketDeposit(useFinanceStore.getState(), {
         pocketId, amount: value, currency: goal.currency, source: effective, note: goal.name,
         date: date !== localTodayISO() ? date : undefined,
+        occurredAt: manualOccurredAt(date, clock),
       }),
     )
     if (!ok) return showToast(tMoney.moveFailed)
@@ -107,7 +112,7 @@ function GoalMoney({ goal: initial, onClose }: { goal: Goal; onClose: () => void
   return (
     <ModalShell open onBackdropClick={onClose} scrollChild>
       <div className="flex min-h-0 flex-1 flex-col">
-        <V3SheetHeader onClose={onClose} leading={<DatePickerField look="pill" value={date} onChange={setDate} />}>
+        <V3SheetHeader onClose={onClose} leading={<DatePickerField look="pill" value={date} onChange={setDate} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: true }} />}>
           <span className="sr-only"><V3SheetHeader.Title>{t.goals.home.addMoneyTitle(goal.name)}</V3SheetHeader.Title></span>
         </V3SheetHeader>
 

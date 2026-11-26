@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { ChevronDown, Pencil } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { SheetFooter } from '@/components/features/savings-v3/MoneySheetParts'
 import { CurrencySheet } from '@/components/ui/CurrencySheet'
 import { formatAmount } from '@/components/ui/NumberPad'
 import { useNumberPad } from '@/components/ui/useNumberPad'
@@ -52,6 +54,11 @@ interface InlineBalanceEditProps {
   currencyEditable?: boolean
   /** Hero look: the currency opens the caller's own sheet instead (Cash's currency sheet). Wins over `currencyEditable`. */
   onCurrencyClick?: () => void
+  /**
+   * Hero look: the sheet's footer slot. Given, Cancel | Set balance sit there as the sheet's pinned footer, shown only
+   * while the balance or currency differs (null while the slot mounts). Unset keeps the pair under the figure.
+   */
+  footerTarget?: HTMLElement | null
 }
 
 /**
@@ -152,7 +159,7 @@ const HERO_DIGITS = 'truncate font-mono-numbers text-[2.5rem] font-semibold lead
 const HERO_UNIT = 'font-mono-numbers text-[1.625rem] font-semibold leading-none tracking-[-0.03em] text-[var(--color-brand-text-muted)]'
 
 /** The Light touch look: the balance centred like `AmountHero`, its currency tappable, and the correction spelled out. */
-function HeroBalanceEdit({ current, currency, masked, draft, onDraftChange, reported, onSave, allowNegative = false, hint, badge, refusal, caption, currencyEditable, onCurrencyClick }: InlineBalanceEditProps) {
+function HeroBalanceEdit({ current, currency, masked, draft, onDraftChange, reported, onSave, allowNegative = false, hint, badge, refusal, caption, currencyEditable, onCurrencyClick, footerTarget }: InlineBalanceEditProps) {
   const all = useT()
   const t = all.accountsPage
   const c = useAccountsLtCopy().account
@@ -160,7 +167,7 @@ function HeroBalanceEdit({ current, currency, masked, draft, onDraftChange, repo
   const [curOpen, setCurOpen] = useState(false)
   const neg = !!draft?.negative && allowNegative
   const cur = draft?.currency ?? currency
-  const { openPad, closePad, pad } = useNumberPad({
+  const { isOpen: padOpen, openPad, closePad, pad } = useNumberPad({
     value: draft?.value ?? '',
     onChange: (value) => onDraftChange({ ...draft, value, negative: neg }),
     currency: cur,
@@ -193,6 +200,12 @@ function HeroBalanceEdit({ current, currency, masked, draft, onDraftChange, repo
   const diff = draft && reported !== null && has && !curChanged ? balanceDelta(current, reported, currency) : 0
   const dirty = draft !== null && (reported !== null && (!has || curChanged || diff !== 0))
   const fmt = (n: number, code: string) => `${moneyFlex(n, code)} ${code}`
+  const pinned = footerTarget !== undefined
+
+  // With the pinned footer hidden until something differs, an untouched draft would leave no Cancel: the pad closing drops it.
+  useEffect(() => {
+    if (pinned && has && draft && !dirty && !padOpen) onDraftChange(null)
+  }, [pinned, has, draft, dirty, padOpen, onDraftChange])
 
   const line = !draft
     ? (hint ?? c.hint)
@@ -218,6 +231,13 @@ function HeroBalanceEdit({ current, currency, masked, draft, onDraftChange, repo
     onDraftChange(null)
   }
 
+  const actions = (
+    <div className="grid w-full grid-cols-2 gap-2">
+      <Button variant="outline" size="cta-block" onClick={cancel}>{all.common.cancel}</Button>
+      <Button size="cta-block" className="font-semibold" disabled={reported === null || !!refusal} onClick={save}>{t.setBalance}</Button>
+    </div>
+  )
+
   return (
     <div className="flex flex-col items-center text-center">
       <div className="flex items-center gap-2">
@@ -238,11 +258,10 @@ function HeroBalanceEdit({ current, currency, masked, draft, onDraftChange, repo
       </div>
       <p dir="auto" className="mt-2 min-h-5 text-[0.8125rem] text-[var(--color-brand-text-secondary)] [text-wrap:pretty]">{line}</p>
       {refusal ? <p role="alert" className="mt-1 text-[0.8125rem] text-[var(--color-brand-amber)]">{refusal}</p> : null}
-      {draft ? (
-        <div className="mt-4 grid w-full grid-cols-2 gap-2">
-          <Button variant="outline" size="cta-block" onClick={cancel}>{all.common.cancel}</Button>
-          <Button size="cta-block" className="font-semibold" disabled={reported === null || !!refusal} onClick={save}>{t.setBalance}</Button>
-        </div>
+      {draft && !pinned ? <div className="mt-4 w-full">{actions}</div> : null}
+      {pinned && footerTarget && dirty ? createPortal(
+        <div className="border-t border-[var(--color-brand-border)]"><SheetFooter safeArea>{actions}</SheetFooter></div>,
+        footerTarget,
       ) : null}
       {pad}
       {currencyEditable && !onCurrencyClick ? (

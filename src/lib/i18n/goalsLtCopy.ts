@@ -138,18 +138,30 @@ const EN = {
     gramsLead: (grams: string) => `${grams} g · `,
     priceRefreshing: 'Live price is refreshing',
     paidFrom: 'Paid from',
-    paidFromTitle: 'Where the money came from',
-    thisMonth: 'This month’s money',
-    thisMonthSub: 'Counts as savings this month',
-    outside: 'Outside buddget',
-    outsideSub: 'Gold you already had · nothing leaves your accounts',
     paid: 'Paid',
     boughtOn: 'Bought on',
     noteBudget: 'Logged as moving money into gold, not as spending.',
+    notePocket: 'Moved out of the pocket into gold. Your net worth stays the same.',
     noteOutside: 'Only added to what you hold. Nothing leaves your accounts.',
     cta: (qty: string, unit: string, karat: number) => `Add ${qty} ${unit} of ${karat}k`,
   },
   // en-end:gold
+  // en:assetBuy
+  assetBuy: {
+    noteAccount: 'Logged as moving money into this asset, not as spending.',
+    notePocket: 'Moved out of the pocket into this asset. Your net worth stays the same.',
+    noteOutside: 'Only added to what you hold. Nothing leaves your accounts.',
+    refusals: {
+      no_paid: 'Enter what you paid.',
+      no_account: 'Pick the account it was paid from.',
+      no_pocket: 'Pick the pocket it was paid from.',
+      no_price: 'The live price hasn’t loaded, so nothing can leave an account or pocket yet. Try again shortly, or pick Outside.',
+      no_rate: 'There’s no exchange rate for this currency yet. Nothing was added.',
+      over_available: 'That’s more than this account has free to spend.',
+      over_pocket: 'That’s more than this pocket holds.',
+    },
+  },
+  // en-end:assetBuy
   // en:zakat
   zakat: {
     yearEnds: (date: string) => `This year ends ${date}`,
@@ -335,18 +347,30 @@ const AR: GoalsLtCopy = {
     gramsLead: (grams) => `${grams} جم · `,
     priceRefreshing: 'السعر الحي يتحدّث',
     paidFrom: 'دُفع من',
-    paidFromTitle: 'من أين جاء المال',
-    thisMonth: 'مال هذا الشهر',
-    thisMonthSub: 'يُحسب ادخارًا هذا الشهر',
-    outside: 'من خارج buddget',
-    outsideSub: 'ذهب كان معك · لا يخرج شيء من حساباتك',
     paid: 'المدفوع',
     boughtOn: 'تاريخ الشراء',
     noteBudget: 'يُسجَّل كنقل مال إلى الذهب، لا كإنفاق.',
+    notePocket: 'نُقل من الجيب إلى الذهب. صافي ثروتك لا يتغيّر.',
     noteOutside: 'يُضاف فقط إلى ما تملكه. لا يخرج شيء من حساباتك.',
     cta: (qty, unit, karat) => `أضف ${qty} ${unit} عيار ${karat}`,
   },
   // ar-end:gold
+  // ar:assetBuy
+  assetBuy: {
+    noteAccount: 'يُسجَّل كنقل مال إلى هذا الأصل، لا كإنفاق.',
+    notePocket: 'نُقل من الجيب إلى هذا الأصل. صافي ثروتك لا يتغيّر.',
+    noteOutside: 'يُضاف فقط إلى ما تملكه. لا يخرج شيء من حساباتك.',
+    refusals: {
+      no_paid: 'أدخل المبلغ المدفوع.',
+      no_account: 'اختر الحساب الذي دُفع منه.',
+      no_pocket: 'اختر الجيب الذي دُفع منه.',
+      no_price: 'السعر الحي لم يُحمَّل بعد، فلا يمكن أن يخرج شيء من حساب أو جيب الآن. حاول بعد قليل، أو اختر من خارج buddget.',
+      no_rate: 'لا يوجد سعر صرف لهذه العملة بعد. لم يُضَف شيء.',
+      over_available: 'هذا أكثر من المتاح للإنفاق في هذا الحساب.',
+      over_pocket: 'هذا أكثر مما في هذا الجيب.',
+    },
+  },
+  // ar-end:assetBuy
   // ar:zakat
   zakat: {
     yearEnds: (date) => `تنتهي هذه السنة ${date}`,

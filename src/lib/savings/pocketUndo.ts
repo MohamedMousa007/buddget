@@ -1,4 +1,6 @@
 import { reconcileGoalsForState, useFinanceStore } from '@/lib/store/useFinanceStore'
+import { assetFundingId } from '@/lib/savings/assetPurchase'
+import { balanceEpsilon, settleBalance } from '@/lib/savings/balanceMath'
 
 /** Original order with the pocket back in; links the user changed during the Undo window are kept as they are now. */
 function mergeLinks(original: string[], current: string[], id: string): string[] {
@@ -48,10 +50,38 @@ export function deletePocketWithUndo(id: string): () => void {
   }
 }
 
+/**
+ * Deletes a holding together with the money row that paid for it (see `assetFundingId`): the expense out of an account,
+ * or the pocket withdrawal, whose money goes back. Undo puts both back; it does nothing when the pocket no longer holds
+ * enough to take the money out again, so the asset is never restored without its cost.
+ */
 export function deleteHoldingWithUndo(id: string): () => void {
   const before = useFinanceStore.getState()
   const holding = before.investmentHoldings.find((h) => h.id === id)
   if (!holding) return () => {}
+  const fundingId = assetFundingId(id)
+  const expense = before.expenses.find((e) => e.id === fundingId)
+  const tx = before.savingsTransactions.find((t) => t.id === fundingId)
   before.deleteInvestmentHolding(id)
-  return () => useFinanceStore.setState((s) => ({ investmentHoldings: [...s.investmentHoldings, holding] }))
+  if (expense) before.deleteExpense(expense.id)
+  // Removing a withdrawal only adds money back, so it is never refused for going negative.
+  if (tx) useFinanceStore.getState().deleteSavingsTransaction(tx.id)
+  return () => {
+    const s = useFinanceStore.getState()
+    const now = new Date().toISOString()
+    if (tx && !s.savingsTransactions.some((t) => t.id === tx.id)) {
+      const pocket = s.savingsAccounts.find((a) => a.id === tx.accountId)
+      if (!pocket || pocket.currentBalance + balanceEpsilon(pocket.currency) < tx.amount) return
+      useFinanceStore.setState((st) => {
+        const next = {
+          ...st,
+          savingsTransactions: [...st.savingsTransactions, { ...tx, updatedAt: now }],
+          savingsAccounts: st.savingsAccounts.map((a) => (a.id === tx.accountId ? { ...a, currentBalance: settleBalance(a.currentBalance - tx.amount) } : a)),
+        }
+        return { savingsTransactions: next.savingsTransactions, savingsAccounts: next.savingsAccounts, goals: reconcileGoalsForState(next) }
+      })
+    }
+    if (expense) useFinanceStore.getState().restoreExpense(expense)
+    useFinanceStore.setState((st) => (st.investmentHoldings.some((h) => h.id === id) ? {} : { investmentHoldings: [...st.investmentHoldings, { ...holding, updatedAt: now }] }))
+  }
 }

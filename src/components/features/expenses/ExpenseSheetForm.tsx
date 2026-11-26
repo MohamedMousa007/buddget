@@ -38,7 +38,7 @@ import { useShortDate } from '@/hooks/useShortDate'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { getMonthRange } from '@/lib/utils/calculations'
-import { mergeDayTime } from '@/lib/time/occurredAt'
+import { mergeDayTime, nowClock } from '@/lib/time/occurredAt'
 import { formatClock } from '@/lib/i18n/dateFormat'
 import { format } from 'date-fns'
 import { tryConvertCurrency } from '@/lib/utils/currency'
@@ -312,7 +312,9 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
             : lt.expense.budgetOver(catName(budget.row), formatWhole(-leftAfter))
   const conversion = currency !== base && amountBase > 0 ? `≈ ${formatWhole(amountBase)} ${base}` : undefined
   const colors = category ? categoryChipColors(category) : null
-  const clockAt = mergeDayTime(date, clock)
+  // A new expense shows the current time until one is picked; an edit shows its stored time (none for a row with none).
+  const shownClock = clock || (mode === 'add' ? nowClock() : '')
+  const clockAt = mergeDayTime(date, shownClock)
   const datePill = `${formatDatePillLabel(date, locale, t.expenseForm.today)}${clockAt ? ` · ${formatClock(new Date(clockAt), locale)}` : ''}`
   const originValue = origin
     ? origin.kind === 'receipt'
@@ -570,7 +572,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
             open
             value={date}
             onConfirm={(iso) => setDate(iso)}
-            time={{ value: clock, label: lt.expense.time }}
+            time={{ value: shownClock, label: lt.expense.time }}
             onConfirmDateTime={(iso, hm) => {
               setDate(iso)
               setClock(hm)

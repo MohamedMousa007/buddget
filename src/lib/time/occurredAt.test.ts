@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clockOf, editedOccurredAt, mergeDayTime, noTimeAt } from '@/lib/time/occurredAt'
+import { clockOf, editedOccurredAt, entryOccurredAt, manualOccurredAt, mergeDayTime, noTimeAt, nowClock } from '@/lib/time/occurredAt'
 
 describe('mergeDayTime', () => {
   it('puts the picked clock time on the local day', () => {
@@ -51,5 +51,58 @@ describe('editedOccurredAt', () => {
   it('a cleared time on the same day sends the no-time stand-in; on a new day the store re-dates it', () => {
     expect(editedOccurredAt('2026-10-27', '', saved)).toBe(noTimeAt('2026-10-27'))
     expect(editedOccurredAt('2026-10-28', '', saved)).toBeUndefined()
+  })
+})
+
+describe('entryOccurredAt', () => {
+  const now = new Date(2026, 10, 26, 9, 41, 7)
+
+  it('today with no time picked is the current instant', () => {
+    expect(entryOccurredAt('2026-11-26', '', now)).toBe(now.toISOString())
+  })
+
+  it('a picked time wins, today or another day', () => {
+    expect(entryOccurredAt('2026-11-26', '20:42', now)).toBe(mergeDayTime('2026-11-26', '20:42'))
+    expect(entryOccurredAt('2026-11-10', '07:05', now)).toBe(mergeDayTime('2026-11-10', '07:05'))
+  })
+
+  it('a back-dated row with no time gets the no-time stand-in, never today\'s clock', () => {
+    const iso = entryOccurredAt('2026-11-10', '', now)
+    expect(iso).toBe(noTimeAt('2026-11-10'))
+    expect(clockOf(iso, '2026-11-10')).toBe('')
+  })
+
+  it('an unreadable day falls back to the current instant', () => {
+    expect(entryOccurredAt('', '', now)).toBe(now.toISOString())
+  })
+})
+
+describe('manualOccurredAt', () => {
+  const now = new Date(2026, 10, 26, 9, 41, 7, 250)
+
+  it('today with no time picked is the current instant', () => {
+    expect(manualOccurredAt('2026-11-26', '', now)).toBe(now.toISOString())
+  })
+
+  it('a picked time wins', () => {
+    expect(manualOccurredAt('2026-11-10', '07:05', now)).toBe(mergeDayTime('2026-11-10', '07:05'))
+  })
+
+  it('a back-dated entry with no time picked gets the current time of day on that day, as the pill showed', () => {
+    const iso = manualOccurredAt('2026-11-10', '', now)
+    expect(clockOf(iso, '2026-11-10')).toBe(nowClock(now))
+    expect(new Date(iso).getDate()).toBe(10)
+  })
+
+  it('never lands on the no-time stand-in, even at exactly 12:00', () => {
+    const noon = new Date(2026, 10, 26, 12, 0, 0, 0)
+    expect(manualOccurredAt('2026-11-10', '', noon)).not.toBe(noTimeAt('2026-11-10'))
+    expect(clockOf(manualOccurredAt('2026-11-10', '', noon), '2026-11-10')).toBe('12:00')
+  })
+})
+
+describe('nowClock', () => {
+  it('is the zero-padded clock time', () => {
+    expect(nowClock(new Date(2026, 0, 1, 7, 5))).toBe('07:05')
   })
 })

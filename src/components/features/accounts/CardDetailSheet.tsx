@@ -6,6 +6,7 @@ import { ChevronRight, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { CardFace, FACE_W } from '@/components/features/payments/CardFace'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { PickerRow } from '@/components/ui/PickerRow'
@@ -13,6 +14,7 @@ import { Switch } from '@/components/ui/switch'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { IconButton } from '@/components/ui/IconButton'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
+import { followsAccountCurrency } from '@/lib/accounts/actions'
 import { availableCredit, cardDetails, sheetActivity } from '@/lib/accounts/cardDetails'
 import { cardLook } from '@/lib/payment/cardThemes'
 import { allowsLast4 } from '@/lib/payment/paymentMethodDefaults'
@@ -141,6 +143,9 @@ export function CardDetailSheet({ open, onClose, card, parent, masked, onEdit, o
             <CardFace theme={look.theme} style={look.style} bank={bank} kind={kind} last4={allowsLast4(card.type) ? card.last4 : undefined}
               currency={String(card.currency)} scale={scale} />
           </div>
+          {parent && followsAccountCurrency(card) && card.currency !== parent.currency ? (
+            <div className="flex justify-center"><Badge variant="warning" size="sm">{lt.account.differentCurrency}</Badge></div>
+          ) : null}
           {detail}
           <Card padding="none" divide className="mx-4 overflow-hidden rounded-2xl">
             {uses}

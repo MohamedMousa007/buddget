@@ -41,7 +41,7 @@ type DepositStore = Pick<
  */
 export function applyPocketDeposit(
   store: DepositStore,
-  input: { pocketId: string; amount: number; currency: Currency; source: DepositSource; note?: string; date?: string },
+  input: { pocketId: string; amount: number; currency: Currency; source: DepositSource; note?: string; date?: string; occurredAt?: string },
 ): boolean {
   const plan = planPocketDeposit(input.source, input.pocketId)
   if (plan.action === 'none' || !(input.amount > 0)) return false
@@ -55,10 +55,11 @@ export function applyPocketDeposit(
           available: store.goldPriceAvailable !== false,
         })
     if (inFrom === null || !(inFrom > 0)) return false
-    return store.transferBetweenPockets(plan.fromPocketId, input.pocketId, inFrom, input.note, input.date)
+    return store.transferBetweenPockets(plan.fromPocketId, input.pocketId, inFrom, input.note, input.date, input.occurredAt)
   }
   return store.depositToSavings(input.pocketId, input.amount, input.currency, input.note, {
     ...plan.opts,
     ...(input.date ? { date: input.date } : {}),
+    ...(input.occurredAt ? { occurredAt: input.occurredAt } : {}),
   })
 }

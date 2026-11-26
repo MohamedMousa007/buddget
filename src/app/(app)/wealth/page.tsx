@@ -41,6 +41,7 @@ import { pocketDeleteEffect } from '@/lib/savings/pocketDeleteEffect'
 import { accountTitle } from '@/components/features/accounts/accountDisplay'
 import { useLocale, useT } from '@/lib/i18n'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { buildGoalProgressContext, computeGoalProgress } from '@/lib/goals/computeGoalProgress'
 import { computeEmergencyFund } from '@/lib/savings/emergencyFund'
 import { parseDateOnly } from '@/lib/time/calendarDays'
@@ -49,10 +50,9 @@ import { deriveSimpleMonth } from '@/lib/savings/simpleMonth'
 import { savingsAccountBalanceInBase } from '@/lib/savings/savingsConversions'
 import { buildWealth, emergencyState, plannedSavingsRatePct, type CatKey, type WealthRowVM } from '@/lib/savings/wealthModel'
 import { computeZakat } from '@/lib/savings/zakat'
-import { deriveZakatBase } from '@/lib/savings/zakatInputs'
-import { zakatAccountsFromLedger } from '@/lib/savings/zakatAccounts'
+import { toZakatInput } from '@/lib/savings/zakatInputs'
+import { evaluateZakatYear, zakatBaseAt, type ZakatSources } from '@/lib/savings/zakatYear'
 import { useLedgerInput } from '@/lib/accounts/useAccounts'
-import { effectiveNisabBasis } from '@/lib/savings/zakatBasis'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import type { InvestmentAssetType, SavingsAccount } from '@/lib/store/types'
@@ -144,32 +144,19 @@ export default function WealthPage() {
 
   // Zakat: gold until the user picks a basis (see zakatBasis.ts).
   const ledger = useLedgerInput()
-  const zakatBase = useMemo(
-    () => deriveZakatBase({
-      savingsAccounts, investmentHoldings, debts, debtPayments, baseCurrency: base, exchangeRates, goldPricePerGram, goldPriceAvailable: goldOk, lookup,
-      ...zakatAccountsFromLedger(ledger),
-    }),
-    [savingsAccounts, investmentHoldings, debts, debtPayments, base, exchangeRates, goldPricePerGram, goldOk, lookup, ledger],
+  const zakatSources = useMemo<ZakatSources>(
+    () => ({ ledger, investmentHoldings, debts, debtPayments, baseCurrency: base, exchangeRates, goldPricePerGram, goldPriceAvailable: goldOk, lookup }),
+    [ledger, investmentHoldings, debts, debtPayments, base, exchangeRates, goldPricePerGram, goldOk, lookup],
   )
-  const zakatResult = useMemo(() => {
-    const zc = profile.zakatConfig
-    const ov = zc?.lineOverrides ?? {}
-    return computeZakat({
-      cashAndSavings: ov.cash ?? zakatBase.cashAndSavings,
-      goldValue: ov.gold ?? zakatBase.goldValue,
-      cryptoValue: ov.crypto ?? zakatBase.cryptoValue,
-      stocksValue: ov.stocks ?? zakatBase.stocksValue,
-      debtsDueThisYear: ov.debts ?? zakatBase.debtsDueThisYear,
-      holdsForTrading: zc?.holdsForTrading ?? false,
-      nisabBasis: effectiveNisabBasis(zc),
-      gold24kSellPerGram: zakatBase.gold24kSellPerGram,
-      silverPerGram: zakatBase.silverPerGram,
-      manualAmount: zc?.manualAmount ?? null,
-    })
-  }, [zakatBase, profile.zakatConfig])
+  const zakatBase = useMemo(() => zakatBaseAt(zakatSources, profile.zakatConfig), [zakatSources, profile.zakatConfig])
+  const zakatResult = useMemo(() => computeZakat(toZakatInput(zakatBase, profile.zakatConfig)), [zakatBase, profile.zakatConfig])
   const hawl = useMemo(
     () => deriveHawl({ yearStartDate: profile.zakatConfig?.yearStartDate, lastPaidDate: profile.zakatConfig?.lastPaidDate, createdAt: profile.createdAt }),
     [profile.zakatConfig?.yearStartDate, profile.zakatConfig?.lastPaidDate, profile.createdAt],
+  )
+  const zakatYear = useMemo(
+    () => evaluateZakatYear(zakatSources, profile.zakatConfig, hawl.dueDate, localTodayISO()),
+    [zakatSources, profile.zakatConfig, hawl.dueDate],
   )
   const hawlDate = useMemo(() => formatLocalized(parseDateOnly(hawl.dueDate), 'd MMM yyyy', locale), [hawl.dueDate, locale])
   const silverNisab = 595 * zakatBase.silverPerGram
@@ -242,7 +229,7 @@ export default function WealthPage() {
   const unpricedGrams = model.rows.filter((r) => r.cat === 'gold' && r.amount == null).reduce((s, r) => s + (r.quantity ?? 0), 0)
   const totalText = formatWhole(model.total)
   const netWorthText = formatSignedFlex(nw.netWorth)
-  const hasZakat = zakatResult.due && zakatResult.nisab > 0
+  const hasZakat = (zakatYear.state === 'estimate' || zakatYear.state === 'dueNow') && zakatYear.result.nisab > 0
   const rate = plannedSavingsRatePct(stats)
 
   /** The warning follows what the delete does to net worth, not the kind of pocket. */
@@ -297,7 +284,7 @@ export default function WealthPage() {
         badges={
           <WealthHeroBadges
             emergency={{ state: efState, months: emergency.monthsCovered.toFixed(1), target: targetMonths }}
-            zakat={hasZakat ? { amount: formatWhole(zakatResult.zakat), due: hawl.isPlaceholder ? '—' : formatLocalized(parseDateOnly(hawl.dueDate), 'd MMM', locale) } : undefined}
+            zakat={hasZakat ? { amount: formatWhole(zakatYear.result.zakat), due: hawl.isPlaceholder ? '—' : formatLocalized(parseDateOnly(hawl.dueDate), 'd MMM', locale) } : undefined}
             onOpenEmergency={() => guard(() => setEmergencyOpen(true))}
             onOpenZakat={() => guard(() => setZakatOpen(true))}
           />
@@ -386,7 +373,7 @@ export default function WealthPage() {
           onAddMoney={() => { setEmergencyOpen(false); openAdd(null) }}
         />
       )}
-      {zakatOpen && <ZakatSheet open onClose={() => setZakatOpen(false)} base={zakatBase} hawlDate={hawlDate} />}
+      {zakatOpen && <ZakatSheet open onClose={() => setZakatOpen(false)} sources={zakatSources} year={zakatYear} hawlDate={hawlDate} />}
       {editAcc && <EditSavingsAccountSheet open account={editAcc} onClose={() => setEditAcc(null)} />}
     </div>
   )
