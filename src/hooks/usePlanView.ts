@@ -19,7 +19,9 @@ import { isLearning } from '@/lib/budget/learning'
 import type { PlanMode, PlanView } from '@/lib/budget/planView.types'
 import { fundingBasis } from '@/lib/goals/fundingBasis'
 import { deriveSimpleMonth } from '@/lib/savings/simpleMonth'
-import { getMonthRange, projectedIncomeForMonth } from '@/lib/utils/calculations'
+import { calculateDebtRemaining, getMonthRange, projectedIncomeForMonth } from '@/lib/utils/calculations'
+import { convertCurrency } from '@/lib/utils/currency'
+import { owedDebtOverdue } from '@/lib/debts/debtSchedule'
 
 const DEFAULT_TARGET_MONTHS = 3
 
@@ -42,6 +44,7 @@ export function usePlanView(mode: PlanMode, planId?: string): PlanView | null {
       subscriptions: st.subscriptions,
       debts: countedDebts(st.debts, st.paymentMethods),
       debtPayments: countedDebtPayments(st.debtPayments, st.debts, st.paymentMethods),
+      recurringDebtPayments: st.recurringDebtPayments,
       savingsAccounts: st.savingsAccounts,
       exchangeRates: st.exchangeRates,
       budgetCategories: st.budgetCategories,
@@ -106,6 +109,12 @@ export function usePlanView(mode: PlanMode, planId?: string): PlanView | null {
         extras: subscriptionsExtras({ subs: s.subscriptions, cycleExpenses: stats.monthlyExpenses, today: now, cycleStart: start, cycleEnd: end, base, rates }),
       },
       debts: liveDebts(s.debts, debtCtx).map((d) => debtExtras(d, debtPaid[d.debt.id] ?? 0, debtCtx)),
+      debtOverdue: owedDebtOverdue(s.debts, {
+        payments: s.debtPayments,
+        recurring: s.recurringDebtPayments,
+        remaining: (d, pays) => calculateDebtRemaining(d, pays, { expenses: s.expenses, exchangeRates: rates, allDebts: s.debts }),
+        toBase: (amount, currency) => convertCurrency(amount, currency, base, rates),
+      }, now),
       goals: goalExtras(goalRows, fundingBasis(s, now).usualKeep, base, rates),
       safety: {
         liquid: liquidSavings(s.savingsAccounts, base, rates, s.goldPricePerGram, s.goldPriceAvailable),

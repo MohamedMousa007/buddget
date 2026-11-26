@@ -107,3 +107,23 @@ describe('formatCustomRange', () => {
     expect(formatCustomRange({ start: new Date(2026, 5, 28), end: new Date(2026, 6, 4) })).toBe('28 Jun – 4 Jul')
   })
 })
+
+describe('Flow ranges', () => {
+  it('all spans every month, past and future', () => {
+    const { start, end } = resolveRange(range('all'), '2026-07', 1, REF)
+    expect(start.getTime()).toBe(0)
+    expect(end.getFullYear()).toBe(9999)
+  })
+
+  it('lastMonth is the cycle before the viewed one', () => {
+    const { start, end } = resolveRange(range('lastMonth'), '2026-07', 1, REF)
+    expect(start).toEqual(new Date(2026, 5, 1))
+    expect(end.getMonth()).toBe(5)
+    expect(end.getDate()).toBe(30)
+  })
+
+  it('lastMonth follows a pay cycle start day', () => {
+    const { start } = resolveRange(range('lastMonth'), '2026-01', 25, REF)
+    expect(start).toEqual(new Date(2025, 11, 25))
+  })
+})

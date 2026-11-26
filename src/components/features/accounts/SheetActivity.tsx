@@ -1,18 +1,24 @@
 'use client'
 
-import { Plus, Receipt, ShoppingBag } from 'lucide-react'
+import { Plus, Receipt } from 'lucide-react'
+import { CategoryIcon } from '@/components/dashboard/CategoryIcon'
 import { TransactionRow } from '@/components/transactions/TransactionRow'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { instantOf } from '@/lib/accounts/balance'
+import { arrivesIn } from '@/lib/accounts/cardDetails'
 import { categoryLabel } from '@/lib/i18n/categoryLabel'
+import { categoryChipColors } from '@/lib/expenses/categoryChip'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { useLocale, useT } from '@/lib/i18n'
 import { MASK } from '@/lib/privacy/mask'
 import type { Expense, PaymentMethod } from '@/lib/store/types'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { splitMoney } from './accountDisplay'
+import { clockOf } from '@/lib/time/occurredAt'
+import { localTodayISO } from '@/lib/utils/localDate'
+import { moneyFlex } from './accountDisplay'
 
 interface SheetActivityProps {
   title: string
@@ -33,9 +39,22 @@ export function SheetActivity({ title, rows, masked, method, emptyLine, onLeave 
   const all = useT()
   const { locale } = useLocale()
   const ready = useFinanceStore((s) => s.dataReady)
+  const methods = useFinanceStore((s) => s.paymentMethods)
   const setEditingExpenseId = useSettingsStore((s) => s.setEditingExpenseId)
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
   const openAddExpenseWithPrefill = useSettingsStore((s) => s.openAddExpenseWithPrefill)
+
+  // "Today · 20:42", "Yesterday · 08:15", "Nov 16 · 13:05": the day, then the clock time when the row has one.
+  const now = new Date()
+  const today = localTodayISO(now)
+  const yesterday = localTodayISO(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1))
+  const when = (e: Expense) => {
+    const at = new Date(instantOf(e.occurredAt, e.date))
+    const day = localTodayISO(at)
+    const label = day === today ? all.common.today : day === yesterday ? all.common.yesterday : formatLocalized(at, 'MMM d', locale)
+    const clock = clockOf(e.occurredAt, day)
+    return clock ? `${label} \u00b7 ${clock}` : label
+  }
 
   let body
   if (!ready) {
@@ -60,16 +79,18 @@ export function SheetActivity({ title, rows, masked, method, emptyLine, onLeave 
     )
   } else {
     body = rows.map((e) => (
-      <TransactionRow key={e.id} icon={<ShoppingBag className="size-5" aria-hidden />} title={e.description || categoryLabel(all, e.category)}
+      <TransactionRow key={e.id} icon={<CategoryIcon category={e.category} className="size-5" />}
+        iconBg={categoryChipColors(e.category).bg} iconFg={categoryChipColors(e.category).fg} title={e.description || categoryLabel(all, e.category)}
         onClick={() => { onLeave(); setEditingExpenseId(e.id); setActiveModal('editExpense') }}
-        subtitle={formatLocalized(new Date(instantOf(e.occurredAt, e.date)), 'MMM d', locale)}
-        amount={masked ? MASK : `−${splitMoney(e.amount, String(e.currency)).int}`} />
+        subtitle={when(e)}
+        amount={masked ? MASK : <>{arrivesIn(e, method.id, methods) ? '+' : '−'}{moneyFlex(e.amount, String(e.currency))} <span className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{String(e.currency)}</span></>}
+        amountColor={arrivesIn(e, method.id, methods) ? 'var(--color-brand-green)' : undefined} />
     ))
   }
   return (
     <section>
-      <h3 className="mb-1 px-5 text-[0.8125rem] font-bold text-[var(--color-brand-text-secondary)]">{title}</h3>
-      {body}
+      <h3 className="px-5 pb-2 pt-2 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{title}</h3>
+      {ready && rows.length > 0 ? <Card padding="none" divide className="mx-4 overflow-hidden rounded-2xl">{body}</Card> : body}
     </section>
   )
 }

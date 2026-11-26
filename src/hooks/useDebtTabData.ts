@@ -6,11 +6,12 @@ import { useLocale, useT } from '@/lib/i18n'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { useShallow } from 'zustand/react/shallow'
 import { currentCycle } from '@/lib/settings/payCycle'
-import { parseISO, addMonths, differenceInCalendarMonths, isWithinInterval } from 'date-fns'
-import { addCalendarWeeks, weeksElapsed } from '@/lib/time/calendarDays'
+import { parseISO, isWithinInterval } from 'date-fns'
+import { borrowGoalSchedule, borrowScheduleStart } from '@/lib/debts/borrowGoal'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { debtFamily, type DebtFamily } from '@/lib/debts/debtFamily'
+import { isOwedToUser } from '@/lib/debts/debtDirection'
 import {
   calculateDebtRemaining,
   totalPaidTowardDebt,
@@ -26,9 +27,9 @@ import {
   creditUtilizationRatio,
 } from '@/lib/debt/computeCreditCardBalance'
 import { cardDue } from '@/lib/debt/cardDue'
-import { debtFreeBy, lastPaymentDate, paymentsToClear } from '@/lib/debts/heroStats'
+import { debtOutlook, debtSchedule, type ScheduledDebtPayment } from '@/lib/debts/debtSchedule'
 import { paidAsEntered } from '@/lib/debts/paymentAmounts'
-import { installmentOverdueDays, installmentPaymentsCompleted, nextInstallmentDueDate, nextInstallmentDueFormatted } from '@/lib/debts/installmentSchedule'
+import { installmentOverdueDays, installmentPaymentsCompleted, nextInstallmentDueFormatted } from '@/lib/debts/installmentSchedule'
 import { findProviderBrand } from '@/lib/constants/installmentProviders'
 import { decomposePaymentMethodName, providerInitials } from '@/lib/payment/paymentMethodDefaults'
 import type { Currency, Debt, DebtGoal, DebtPayment, GoldKarat } from '@/lib/store/types'
@@ -94,13 +95,7 @@ export interface InstallmentVM {
   onCardLast4?: string
 }
 
-export interface ScheduledPaymentVM {
-  debtId: string
-  name: string
-  date: Date
-  /** Amount in the base currency. */
-  amount: number
-}
+export type ScheduledPaymentVM = ScheduledDebtPayment
 
 export interface PaymentVM {
   id: string
@@ -170,7 +165,8 @@ export function useDebtTabData() {
 
     // --- portfolio totals ---
     const owed = stats.debtRemainingTotal
-    const paidOff = debts.reduce((s, d) => s + paidInBase(d, paymentsFor(d.id), base, exchangeRates, goldPricePerGram, goldPriceAvailable), 0)
+    // Same population as `owed` (what the user owes): money coming back from a loan they gave is not debt paid off.
+    const paidOff = debts.filter((d) => !isOwedToUser(d)).reduce((s, d) => s + paidInBase(d, paymentsFor(d.id), base, exchangeRates, goldPricePerGram, goldPriceAvailable), 0)
     const everBorrowed = owed + paidOff
     const clearedPct = everBorrowed > 0 ? Math.round((paidOff / everBorrowed) * 100) : 0
 
@@ -207,18 +203,7 @@ export function useDebtTabData() {
           accent: d.isGold ? 'var(--color-brand-gold)' : d.direction === 'they_owe' ? 'var(--color-brand-green)' : 'var(--color-brand-primary)',
           gold: d.isGold && d.goldKarat ? { grams: remaining, karat: d.goldKarat } : undefined,
           goal: g ? ((): BorrowVM['goal'] => {
-            const start = parseISO(d.createdAt)
-            const now = new Date()
-            const monthsPer = g.paymentFrequency === 'quarterly' ? 3 : g.paymentFrequency === 'annually' ? 12 : 1
-            let elapsed: number
-            let nextDate: Date
-            if (g.paymentFrequency === 'weekly') {
-              elapsed = weeksElapsed(now, start)
-              nextDate = addCalendarWeeks(start, elapsed + 1)
-            } else {
-              elapsed = Math.floor(Math.max(0, differenceInCalendarMonths(now, start)) / monthsPer)
-              nextDate = addMonths(start, (elapsed + 1) * monthsPer)
-            }
+            const { elapsed, next: nextDate } = borrowGoalSchedule(borrowScheduleStart(d), g.paymentFrequency)
             // On track = paid at least what the schedule expects by now (capped at total).
             const expected = Math.min(g.calculatedAmount * elapsed, d.startingBalance)
             return {
@@ -365,55 +350,15 @@ export function useDebtTabData() {
 
     // --- hero stats: one scheduled payment per debt (recurring plan > installment cycle > payoff goal) ---
     const now = new Date()
-    const nameOf = (d: Debt) => d.name || d.personName || d.person || '—'
     const toBase = (amount: number, currency: string) => convertCurrency(amount, currency, base, exchangeRates)
-    const scheduled: ScheduledPaymentVM[] = []
-    const projectedEnds: (Date | null)[] = []
-    for (const d of active) {
-      const plan = recurring.find((r) => r.debtId === d.id && r.isActive)
-      const trackEnd = debtFamily(d) !== 'credit_card'
-      if (plan) {
-        if (trackEnd) {
-          const left = d.isGold ? 0 : toBase(calculateDebtRemaining(d, paymentsFor(d.id), balanceCtx), d.currency)
-          const periods = paymentsToClear(left, toBase(plan.amount, plan.currency))
-          const end = lastPaymentDate(parseISO(plan.nextDueDate), plan.frequency, periods)
-          projectedEnds.push(end ?? (d.goal ? parseISO(d.goal.targetDate) : null))
-        }
-        scheduled.push({ debtId: d.id, name: nameOf(d), date: parseISO(plan.nextDueDate), amount: toBase(plan.amount, plan.currency) })
-        continue
-      }
-      if (d.debtType === 'installment') {
-        const next = nextInstallmentDueDate(d, installmentPaymentsCompleted(d, paymentsFor(d.id)))
-        if (next && d.installmentAmount) {
-          scheduled.push({ debtId: d.id, name: nameOf(d), date: next, amount: toBase(d.installmentAmount, d.currency) })
-          const left = (d.installmentCount ?? 0) - installmentPaymentsCompleted(d, paymentsFor(d.id))
-          projectedEnds.push(lastPaymentDate(next, d.installmentFrequency ?? 'monthly', left))
-        } else projectedEnds.push(null)
-        continue
-      }
-      const g = d.goal
-      if (trackEnd) projectedEnds.push(g ? parseISO(g.targetDate) : null)
-      if (g && debtFamily(d) === 'borrow' && !d.isGold && g.calculatedAmount > 0) {
-        const start = parseISO(d.createdAt)
-        const monthsPer = g.paymentFrequency === 'quarterly' ? 3 : g.paymentFrequency === 'annually' ? 12 : 1
-        const date =
-          g.paymentFrequency === 'weekly'
-            ? addCalendarWeeks(start, weeksElapsed(now, start) + 1)
-            : addMonths(start, (Math.floor(Math.max(0, differenceInCalendarMonths(now, start)) / monthsPer) + 1) * monthsPer)
-        scheduled.push({ debtId: d.id, name: nameOf(d), date, amount: toBase(g.calculatedAmount, d.currency) })
-      }
-    }
-    const { date: debtFreeDate, unplanned: unplannedCount } = debtFreeBy(projectedEnds)
+    const { scheduled, ends } = debtSchedule(active, { payments: debtPayments, recurring, remaining: (d, pays) => calculateDebtRemaining(d, pays, balanceCtx), toBase }, now)
+    const cycle = currentCycle(now, settings.monthStartDay)
+    const outlook = debtOutlook(scheduled, ends, now, cycle.end)
     const lastClearedAt = debts.reduce<Date | null>((best, d) => {
       if (d.status !== 'cleared' || !d.clearedAt) return best
       const at = parseISO(d.clearedAt)
       return !best || at > best ? at : best
     }, null)
-    scheduled.sort((a, b) => a.date.getTime() - b.date.getTime())
-    const nextPayment = scheduled[0] ?? null
-    const cycle = currentCycle(now, settings.monthStartDay)
-    const dueList = scheduled.filter((p) => p.date <= cycle.end)
-    const dueThisMonth = dueList.reduce((sum, p) => sum + p.amount, 0)
     const paidThisMonth = debtPayments
       .filter((p) => isWithinInterval(parseISO(p.date), { start: cycle.start, end: cycle.end }))
       .reduce((sum, p) => {
@@ -424,10 +369,11 @@ export function useDebtTabData() {
       }, 0)
 
     return {
-      nextPayment,
-      dueThisMonth,
-      debtFreeDate,
-      unplannedCount,
+      nextPayment: outlook.next,
+      overdue: outlook.overdue,
+      dueThisMonth: outlook.dueAhead,
+      debtFreeDate: outlook.debtFreeDate,
+      unplannedCount: outlook.unplanned,
       lastClearedAt,
       paidThisMonth,
       owed,

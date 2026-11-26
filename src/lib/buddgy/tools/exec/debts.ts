@@ -561,15 +561,19 @@ function planPayment(args: Record<string, unknown>, ctx: ToolContext) {
   }
   const date = args.date === undefined ? localTodayISO(ctx.now) : parseIsoDate(args.date)
   if (!date) return { error: fail('The date must be a real date like 2026-10-19.') }
-  const method = resolveMethod(s, args.method)
+  // No card named: the plan's own default card (installments), like the pay sheet; else the usual method.
+  const own = debt.defaultPaymentMethodId
+  const useOwn = (args.method === undefined || args.method === null || args.method === '') && !!own && s.paymentMethods.some((m) => m.id === own && !m.closedAt)
+  const method = resolveMethod(s, useOwn ? undefined : args.method)
   if (method.error) return { error: method.error }
+  const pmId = useOwn ? (own as string) : method.id
   const computed = computeDebtPaymentRecord(debt, amount, payCur, base, s.exchangeRates, s.goldPricePerGram, s.debtPayments, ledger)
   if (!computed.ok) return { error: fail(computed.error) }
   const remaining = calculateDebtRemainingRaw(debt, s.debtPayments, ledger)
   const after = Math.max(0, remaining - computed.amountInDebtUnit)
   const clears = debt.debtType !== 'credit_card' && after <= 1e-6
   const notes = text(args.notes, 200)
-  return { s, debt, amount, payCur, date, pmId: method.id, computed, after, clears, notes }
+  return { s, debt, amount, payCur, date, pmId, computed, after, clears, notes }
 }
 
 const record_debt_payment: WriteImpl = {

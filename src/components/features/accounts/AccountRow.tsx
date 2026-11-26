@@ -6,7 +6,7 @@ import { BrandMark } from './BrandMark'
 import { bankLogoForName } from '@/lib/payment/bankLogos'
 import { CardStrip } from './CardStrip'
 import { Badge } from '@/components/ui/badge'
-import { accountColor, accountSubtitle, accountTitle, splitMoney } from './accountDisplay'
+import { accountColor, accountDisplayName, accountSubtitle, accountTitle, moneyFlex, smartSplit, splitMoney } from './accountDisplay'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
 import { createElement } from 'react'
 
@@ -31,28 +31,32 @@ export function AccountRow({ account, masked, gap, shared = false, baseEquivalen
   const base = useFinanceStore((s) => String(s.settings.baseCurrency))
   const { method, balance, cards } = account
   const cur = String(method.currency)
-  const money = balance ? splitMoney(balance.balance, cur) : null
+  const money = balance ? smartSplit(balance.balance, cur) : null
   const hasGap = gap != null && gap !== 0
   const isCash = method.type === 'cash'
   const isPrepaid = method.type === 'prepaid_card'
+  // The user's Name leads; the line under it then carries the digits, never the Name a second time.
+  const title = accountDisplayName(method)
+  const idLine = accountSubtitle({ ...method, label: undefined }, shared)
   const sub = method.excluded
     ? dict.exclusion.reasonMethod
     : hasGap
     ? (gap > 0 ? t.extraFindIt : t.missingFindIt)(splitMoney(Math.abs(gap), cur).int)
     : balance
       ? isCash
-        ? [t.estimateCountedByYou, accountSubtitle(method, shared)].filter(Boolean).join(' · ')
-        : accountSubtitle(method, shared) ?? (method.type === 'wallet' ? t.typeWallet : '')
+        ? [t.estimateCountedByYou, idLine].filter(Boolean).join(' · ')
+        // "••1234 · EGP" as the mockup's account rows read; a shared provider's line already leads with the currency.
+        : (shared ? idLine : [idLine, cur].filter(Boolean).join(' · ')) || (method.type === 'wallet' ? t.typeWallet : '')
       : t.addBalanceToInclude
   return (
     <div>
       <button type="button" onClick={hasGap && onFix ? onFix : onOpen} data-raw-button-ok="a whole-row tap target, sized by its content"
-        className="flex min-h-[72px] w-full items-center gap-3.5 px-4 py-3 text-start" aria-label={accountTitle(method)}>
+        className="flex min-h-[72px] w-full items-center gap-3.5 px-4 py-3 text-start" aria-label={title}>
         <BrandMark name={accountTitle(method)} color={accountColor(method)} alert={hasGap} logo={isCash ? null : bankLogoForName(accountTitle(method))}
           icon={isCash ? createElement(paymentTypeIcon('cash'), { className: 'size-5', 'aria-hidden': true }) : undefined} />
         <span className="min-w-0 flex-1">
           <span className="flex min-w-0 items-center gap-1.5">
-            <span className="truncate text-base font-semibold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{accountTitle(method)}</span>
+            <span className="truncate text-base font-semibold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{title}</span>
             {shared || cur === base ? null : <Badge variant="muted" size="xs" className="font-mono-numbers">{cur}</Badge>}
             {isPrepaid ? <Badge variant="muted" size="xs">{t.typePrepaid}</Badge> : null}
           </span>
@@ -62,10 +66,10 @@ export function AccountRow({ account, masked, gap, shared = false, baseEquivalen
           {money ? (
             <>
               <span className="block font-mono-numbers text-base font-medium tracking-[-0.02em] text-[var(--color-brand-text-primary)]">
-                {masked ? MASK : <>{money.int}<span className="opacity-60">{money.dec}</span></>}
+                {masked ? MASK : money.int + money.dec}
               </span>
               {!masked && balance && balance.held > 0 ? (
-                <span dir="auto" className="mt-0.5 block font-mono-numbers text-[0.71875rem] font-semibold text-[var(--color-brand-primary-ink)]">{t.freeLabel(splitMoney(balance.free, cur).int)}</span>
+                <span dir="auto" className="mt-0.5 block font-mono-numbers text-[0.71875rem] font-semibold text-[var(--color-brand-primary-ink)]">{t.freeLabel(moneyFlex(balance.free, cur))}</span>
               ) : null}
               {!masked && baseEquivalent ? (
                 <span dir="auto" className="mt-0.5 block whitespace-nowrap font-mono-numbers text-[0.71875rem] text-[var(--color-brand-text-muted)]">{baseEquivalent}</span>

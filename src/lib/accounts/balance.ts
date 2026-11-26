@@ -90,6 +90,34 @@ export function computeBalances(input: LedgerInput, asOf: number = Date.now()): 
     }
   }
 
+  walkLegs(input, apply)
+
+  const out = new Map<string, AccountBalance>()
+  for (const [id, a] of acc) {
+    if (a.from > asOf) continue // the account did not have a known balance yet at that instant
+    const u = unit(a.currency)
+    let heldMinor = 0
+    let approx = a.approx
+    for (const s of input.savingsAccounts) {
+      if (s.heldInPaymentMethodId !== id) continue
+      const c = s.currency === a.currency ? s.currentBalance : input.convert(s.currentBalance, s.currency, a.currency)
+      if (c == null) approx = true
+      else heldMinor += Math.round(c * u)
+    }
+    out.set(id, {
+      id, currency: a.currency, approx,
+      balance: a.minor / u, held: heldMinor / u, free: Math.max(0, a.minor - heldMinor) / u,
+      ...(flowsFrom !== undefined ? { flowsIn: a.inMinor / u, flowsOut: a.outMinor / u } : {}),
+    })
+  }
+  return out
+}
+
+type ApplyLeg = (accountId: string | null, amount: number, currency: string, at: number, flow?: boolean) => void
+
+/** Every account leg the ledger implies, in no particular order: the one walk both balance views share. */
+function walkLegs(input: LedgerInput, apply: ApplyLeg): void {
+  const { paymentMethods: pms } = input
   const settledByExpense = new Set<string>()
   for (const e of input.expenses) {
     if (e.linkedDebtPaymentId) settledByExpense.add(e.linkedDebtPaymentId)
@@ -170,24 +198,59 @@ export function computeBalances(input: LedgerInput, asOf: number = Date.now()): 
     const pm = pms.find((m) => m.id === j.paymentMethodId)
     apply(j.paymentMethodId, j.delta, pm ? String(pm.currency) : '', new Date(j.occurredAt).getTime(), false)
   }
+}
 
-  const out = new Map<string, AccountBalance>()
-  for (const [id, a] of acc) {
-    if (a.from > asOf) continue // the account did not have a known balance yet at that instant
-    const u = unit(a.currency)
-    let heldMinor = 0
-    let approx = a.approx
-    for (const s of input.savingsAccounts) {
-      if (s.heldInPaymentMethodId !== id) continue
-      const c = s.currency === a.currency ? s.currentBalance : input.convert(s.currentBalance, s.currency, a.currency)
-      if (c == null) approx = true
-      else heldMinor += Math.round(c * u)
-    }
-    out.set(id, {
-      id, currency: a.currency, approx,
-      balance: a.minor / u, held: heldMinor / u, free: Math.max(0, a.minor - heldMinor) / u,
-      ...(flowsFrom !== undefined ? { flowsIn: a.inMinor / u, flowsOut: a.outMinor / u } : {}),
-    })
+/** Tracked account balances at an instant: balance and currency only. */
+export type BalancesAt = (asOf: number) => Map<string, Pick<AccountBalance, 'balance' | 'currency'>>
+
+/**
+ * The ledger walked once, for many instants: `at(asOf)` gives the same balance and currency as `computeBalances(input,
+ * asOf)` (accounts with no known balance yet left out), without rebuilding the ledger each time.
+ */
+export function balancesOverTime(input: LedgerInput): BalancesAt {
+  const accounts = new Map<string, { base: number; from: number; currency: string; legs: { at: number; minor: number }[] }>()
+  for (const pm of input.paymentMethods) {
+    if (!isTracked(pm)) continue
+    const cur = String(pm.currency)
+    accounts.set(pm.id, { base: Math.round((pm.openingBalance as number) * unit(cur)), from: new Date(pm.openingAt as string).getTime(), currency: cur, legs: [] })
   }
-  return out
+  walkLegs(input, (accountId, amount, currency, at) => {
+    if (!accountId) return
+    const a = accounts.get(accountId)
+    if (!a || at <= a.from) return
+    let v = amount
+    if (currency && currency !== a.currency) {
+      const c = input.convert(amount, currency, a.currency)
+      if (c == null) {
+        if (currency === 'XAU' || a.currency === 'XAU') return
+      } else v = c
+    }
+    const minor = Math.round(v * unit(a.currency))
+    // An unreadable instant passes every cut-off in computeBalances, so it is always in.
+    if (Number.isNaN(at)) a.base += minor
+    else a.legs.push({ at, minor })
+  })
+  const series = [...accounts].map(([id, a]) => {
+    a.legs.sort((x, y) => x.at - y.at)
+    const sums: number[] = []
+    let run = a.base
+    for (const l of a.legs) sums.push((run += l.minor))
+    return { id, a, sums }
+  })
+  return (asOf) => {
+    const out = new Map<string, Pick<AccountBalance, 'balance' | 'currency'>>()
+    for (const { id, a, sums } of series) {
+      if (a.from > asOf) continue
+      // Legs at or before asOf: the last index with at <= asOf.
+      let lo = 0
+      let hi = a.legs.length
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1
+        if (a.legs[mid].at <= asOf) lo = mid + 1
+        else hi = mid
+      }
+      out.set(id, { currency: a.currency, balance: (lo ? sums[lo - 1] : a.base) / unit(a.currency) })
+    }
+    return out
+  }
 }

@@ -134,10 +134,10 @@ describe('the action-card shell, one render per pattern', () => {
   })
 
   it('status: the state now and after as badges, and the verb on the button', () => {
-    const html = card(made('pause_subscription', { domain: 'subscriptions', tone: 'change', title: 'Pause Gold’s Gym', rows: [{ label: 'Price', value: '1,200' }] }))
+    const html = card(made('resume_subscription', { domain: 'subscriptions', tone: 'change', title: 'Re-subscribe Gold’s Gym', rows: [{ label: 'Price', value: '1,200' }] }))
+    expect(html).toContain('>Cancelled<')
     expect(html).toContain('>Active<')
-    expect(html).toContain('>Paused<')
-    expect(html).toContain('>Pause<')
+    expect(html).toContain('>Resume<')
   })
 
   it('go: the link chip is the action; there is no separate primary button', () => {

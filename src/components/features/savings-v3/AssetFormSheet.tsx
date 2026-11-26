@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DatePickerField } from '@/components/ui/DatePickerField'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
-import { ArrowDownLeft, Gem } from 'lucide-react'
+import { GoldFormSheet } from '@/components/features/savings-v3/GoldFormSheet'
 import { AmountField } from '@/components/ui/AmountField'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { useT } from '@/lib/i18n'
@@ -20,6 +20,13 @@ import { COINGECKO_IDS } from '@/lib/prices/coingecko'
 import { micro } from '@/lib/ui/microLabelStyle'
 import type { GoldKarat, InvestmentAssetType } from '@/lib/store/types'
 import { SelectableCard } from '@/components/ui/SelectableCard'
+import { useActionToast } from '@/components/ui/ActionToast'
+import { MoneySourceField, type MoneySource } from '@/components/features/savings-v3/MoneySourceField'
+import { useAssetPurchaseSources } from '@/components/features/savings-v3/useAssetPurchaseSources'
+import { applyAssetPurchase, assetPayCurrency, planAssetPurchase, type NewHolding } from '@/lib/savings/assetPurchase'
+import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
+import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
+import { manualOccurredAt } from '@/lib/time/occurredAt'
 
 const ACCENT: Record<InvestmentAssetType, string> = { gold: 'var(--color-brand-gold)', crypto: 'var(--color-cat-6)', stock: 'var(--color-cat-2)', property: 'var(--color-cat-5)' }
 const tint = (color: string, pct: number) => `color-mix(in oklab, ${color} ${pct}%, transparent)`
@@ -33,11 +40,19 @@ export interface AssetFormSheetProps {
   onDone?: () => void
 }
 
-export function AssetFormSheet({ open, type, onClose, onDone }: AssetFormSheetProps) {
+/** Gold has its own Light touch sheet; crypto, stocks and property keep this form. */
+export function AssetFormSheet(props: AssetFormSheetProps) {
+  if (props.type === 'gold') return <GoldFormSheet open={props.open} onClose={props.onClose} onDone={props.onDone} />
+  return <OtherAssetFormSheet {...props} />
+}
+
+function OtherAssetFormSheet({ open, type, onClose, onDone }: AssetFormSheetProps) {
   const t = useT().addHolding
   const a = useT().savingsForms.asset
   const UNIT_SUFFIX = a.unitSuffix
-  const addHolding = useFinanceStore((s) => s.addInvestmentHolding)
+  const lt = useGoalsLtCopy().assetBuy
+  const timeLabel = useFlowLtCopy().expense.time
+  const showToast = useActionToast()
   const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
   const { lookup } = useAssetPrices()
   const accent = ACCENT[type]
@@ -45,8 +60,12 @@ export function AssetFormSheet({ open, type, onClose, onDone }: AssetFormSheetPr
   // shared
   const [amount, setAmount] = useState('')
   const [purchaseDate, setPurchaseDate] = useState('')
+  const [clock, setClock] = useState('')
   const [paid, setPaid] = useState('')
-  const [source, setSource] = useState<'budget' | 'had'>('budget')
+  // An account with no id follows the primary tracked account.
+  const [source, setSource] = useState<MoneySource>({ kind: 'account' })
+  const { store, accounts, pockets, effective } = useAssetPurchaseSources(source)
+  const outside = effective.kind === 'outside'
   // gold
   const [karat, setKarat] = useState<GoldKarat>(21)
   const [goldUnit, setGoldUnit] = useState<GoldUnit>('grams')
@@ -68,19 +87,34 @@ export function AssetFormSheet({ open, type, onClose, onDone }: AssetFormSheetPr
     return valueProperty(parseFloat(propValue) || 0).value
   }, [type, qty, goldUnit, karat, symbol, propValue, lookup, sagha])
 
+  const holding = (): NewHolding => {
+    if (type === 'gold') return { assetType: 'gold', name: `${karat}k gold`, karat, quantity: goldToGrams(qty, goldUnit), goldUnit, currency: 'EGP' }
+    if (type === 'crypto') return { assetType: 'crypto', name: symbol, symbol, quantity: qty, currency: baseCurrency }
+    if (type === 'stock') return { assetType: 'stock', name: symbol.toUpperCase(), symbol: symbol.toUpperCase(), quantity: qty, currency: 'USD' }
+    return { assetType: 'property', name: 'Property', quantity: parseFloat(size) || 0, propertyValue: parseFloat(propValue) || 0, sharePercent: parseFloat(share) || 100, currency: baseCurrency }
+  }
+  const units = type === 'property' ? 1 : type === 'gold' ? goldToGrams(qty, goldUnit) : qty
+  const paidNum = parseFloat(paid) || 0
+  const payCurrency = assetPayCurrency(store, effective, type === 'stock' ? 'USD' : baseCurrency)
+  // Money that left an account or pocket is dated (today unless picked); an asset already held may have no known day.
+  const date = purchaseDate || (outside ? undefined : localTodayISO())
+  const plan = planAssetPurchase(store, { source: effective, paid: paidNum, currency: payCurrency, priced: liveValue != null })
+  const refusal = plan.action === 'refuse' ? plan.reason : null
+
   const submit = () => {
-    const date = purchaseDate || (source === 'budget' ? localTodayISO() : undefined)
-    const base = { purchaseDate: date, unitCost: paid ? (parseFloat(paid) || 0) / (qty || 1) : undefined, costBasisCurrency: baseCurrency }
-    if (type === 'gold') addHolding({ assetType: 'gold', name: `${karat}k gold`, karat, quantity: goldToGrams(qty, goldUnit), goldUnit, currency: 'EGP', ...base })
-    else if (type === 'crypto') addHolding({ assetType: 'crypto', name: symbol, symbol, quantity: qty, currency: baseCurrency, ...base })
-    else if (type === 'stock') addHolding({ assetType: 'stock', name: symbol.toUpperCase(), symbol: symbol.toUpperCase(), quantity: qty, currency: 'USD', ...base })
-    else addHolding({ assetType: 'property', name: 'Property', quantity: parseFloat(size) || 0, propertyValue: parseFloat(propValue) || 0, sharePercent: parseFloat(share) || 100, currency: baseCurrency, ...base })
+    if (!canSubmit) return
+    const failed = applyAssetPurchase(useFinanceStore.getState(), {
+      source: effective, paid: paidNum, currency: payCurrency, priced: liveValue != null, holding: holding(), units,
+      date, occurredAt: date ? manualOccurredAt(date, clock) : new Date().toISOString(),
+    })
+    if (failed) return showToast(lt.refusals[failed])
     ;(onDone ?? onClose)()
   }
 
-  const needsPaid = source === 'budget' && type !== 'property'
   const hasHolding = type === 'property' ? (parseFloat(propValue) || 0) > 0 : qty > 0 && (type !== 'crypto' && type !== 'stock' ? true : !!symbol)
-  const canSubmit = hasHolding && (!needsPaid || (parseFloat(paid) || 0) > 0)
+  const canSubmit = hasHolding && !refusal
+  // An empty paid amount only disables the button; every other refusal is said once the asset is filled in.
+  const alert = hasHolding && refusal && refusal !== 'no_paid' ? lt.refusals[refusal] : null
   const grams = goldToGrams(qty, goldUnit)
 
   if (!open) return null
@@ -172,29 +206,36 @@ export function AssetFormSheet({ open, type, onClose, onDone }: AssetFormSheetPr
             </div>
           )}
 
-          <Field label={a.moneySource}>
-            <div className="space-y-2.5" role="radiogroup" aria-label={a.moneySource}>
-              <SelectableCard selected={source === 'budget'} onClick={() => setSource('budget')}>
-                <SourceIcon><ArrowDownLeft size={18} /></SourceIcon>
-                <SourceText title={t.boughtThisMonth} sub={t.boughtThisMonthSub} />
-              </SelectableCard>
-              <SelectableCard selected={source === 'had'} onClick={() => setSource('had')}>
-                <SourceIcon><Gem size={18} /></SourceIcon>
-                <SourceText title={t.alreadyHad} sub={t.alreadyHadSub} />
-              </SelectableCard>
-            </div>
-          </Field>
+          <MoneySourceField
+            value={effective}
+            onChange={setSource}
+            paymentMethods={accounts.map((v) => v.method)}
+            accounts={accounts}
+            pockets={pockets}
+            labels={{ title: a.moneySource }}
+          />
 
-          {type !== 'property' && source === 'had' && (
-            <Field label={`${t.whenBought} · ${t.optional}`}>
-              <DatePickerField value={purchaseDate} onChange={setPurchaseDate} />
+          {outside ? (
+            type !== 'property' && (
+              <Field label={`${t.whenBought} · ${t.optional}`}>
+                <DatePickerField value={purchaseDate} onChange={setPurchaseDate} />
+              </Field>
+            )
+          ) : (
+            <Field label={t.whenBought}>
+              <DatePickerField value={date ?? ''} onChange={setPurchaseDate} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: true }} />
             </Field>
           )}
-          {type !== 'property' && (
-            <Field label={source === 'had' ? `${t.whatYouPaid} · ${t.optional}` : t.whatYouPaid}>
-              <UnitField value={paid} onChange={setPaid} suffix={type === 'stock' ? 'USD' : 'EGP'} label={t.whatYouPaid} placeholder={a.total} decimalsFor={type === 'stock' ? 'USD' : 'EGP'} />
-              {source === 'had' && <p className="mt-2 text-xs text-[var(--color-brand-text-muted)]">{t.paidHint}</p>}
+          {(!outside || type !== 'property') && (
+            <Field label={outside ? `${t.whatYouPaid} · ${t.optional}` : t.whatYouPaid}>
+              <UnitField value={paid} onChange={setPaid} suffix={payCurrency} label={t.whatYouPaid} placeholder={a.total} decimalsFor={payCurrency} />
+              {outside && <p className="mt-2 text-xs text-[var(--color-brand-text-muted)]">{t.paidHint}</p>}
             </Field>
+          )}
+          {alert ? (
+            <p role="alert" className="text-[0.8125rem] text-[var(--color-brand-amber)]">{alert}</p>
+          ) : (
+            <p className="text-xs text-[var(--color-brand-text-secondary)]">{outside ? lt.noteOutside : effective.kind === 'pocket' ? lt.notePocket : lt.noteAccount}</p>
           )}
         </div>
 
@@ -227,19 +268,6 @@ function UnitField({ value, onChange, suffix, label, placeholder, compact, decim
     <div className="relative">
       <AmountField value={value} onChange={onChange} label={label} decimalsFor={decimalsFor} placeholder={placeholder ?? '0'} size={compact ? 'compact' : 'default'} />
       <span className="pointer-events-none absolute end-4 top-1/2 -translate-y-1/2 font-mono-numbers text-sm text-[var(--color-brand-text-muted)]">{suffix}</span>
-    </div>
-  )
-}
-
-function SourceIcon({ children }: { children: React.ReactNode }) {
-  return <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-card)] text-[var(--color-brand-text-secondary)]">{children}</span>
-}
-
-function SourceText({ title, sub }: { title: string; sub: string }) {
-  return (
-    <div className="min-w-0 flex-1">
-      <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
-      <p className="text-xs text-[var(--color-brand-text-muted)]">{sub}</p>
     </div>
   )
 }

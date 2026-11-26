@@ -1,24 +1,36 @@
 'use client'
 
+import { inlineMoney } from '@/components/features/budget/chromeFormat'
 import { useCategoryLabel } from '@/hooks/useCategoryLabel'
-import { useState } from 'react'
-import { Check, Minus, Plus, RefreshCw, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
+import { Calendar, RefreshCw, Sparkles, Trash2 } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
-import { AmountField } from '@/components/ui/AmountField'
+import { AmountHero } from '@/components/ui/AmountHero'
 import { Button } from '@/components/ui/button'
-import { IconButton } from '@/components/ui/IconButton'
-import { Switch } from '@/components/ui/switch'
+import { DayOfMonthSheet } from '@/components/ui/DayOfMonthSheet'
+import { OptionSheet } from '@/components/ui/OptionSheet'
+import { Pill } from '@/components/ui/PillButton'
+import { PickerRow } from '@/components/ui/PickerRow'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
-import { LineIcon } from '@/components/features/budget/LineIcon'
-import { TintedTile } from '@/components/features/budget/TintedTile'
+import { SettingsSwitchRow } from '@/components/features/settings/SettingsSwitchRow'
+import { SheetGroup } from '@/components/features/debts/lt/SheetParts'
+import { LineTile } from '@/components/features/budget/LineTile'
 import { useBudgetSheetsCopy } from '@/components/features/budget/useSheetsCopy'
-import { BLOCK_META } from '@/lib/budget/blocks'
-import { lineEditPatch } from '@/lib/budget/lineEdit'
+import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
+import { cycleKeyOf } from '@/lib/budget/activations'
+import { lineEditDirty, lineEditPatch } from '@/lib/budget/lineEdit'
+import { lineHistory } from '@/lib/budget/lineHistory'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useLocale } from '@/lib/i18n'
+import { joinList, useBudgetLtCopy } from '@/lib/i18n/budgetLtCopy'
 import type { LineView, PlanView } from '@/lib/budget/planView.types'
 import type { BudgetPlanCategory } from '@/lib/store/types'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { formatFlex, formatWhole } from '@/lib/utils/formatters'
+import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
+import { useLightTouchCopy } from '@/lib/i18n/lightTouchCopy'
 
 export interface LineSheetProps {
   open: boolean
@@ -34,12 +46,16 @@ export interface LineSheetProps {
 export function LineSheet(props: LineSheetProps) {
   const { open, line, onClose } = props
   return (
-    <ModalShell open={open && !!line} onBackdropClick={onClose} padContent>
+    <ModalShell open={open && !!line} onBackdropClick={onClose} scrollChild>
       {line ? <LineForm key={line.line.id} {...props} line={line} /> : null}
     </ModalShell>
   )
 }
 
+/**
+ * The budget line (Light touch `s_line`): icon, name and block in the header with a bin, the monthly amount and its share
+ * of income, Buddgy's sizing note, then Essential · Lock · Due day (a 1–31 grid) · Spending from (categories, several).
+ */
 function LineForm({
   line: lv,
   view,
@@ -49,6 +65,8 @@ function LineForm({
   onSyncLive,
 }: LineSheetProps & { line: LineView }) {
   const c = useBudgetSheetsCopy()
+  const lt = useDebtsSubsLtCopy().line
+  const ordinal = useLightTouchCopy().dayOfMonth.ordinal
   const catLabel = useCategoryLabel()
   const confirm = useConfirm()
   const { line } = lv
@@ -57,17 +75,32 @@ function LineForm({
   const [amount, setAmount] = useState(String(shown))
   const [essential, setEssential] = useState(!!line.essential)
   const [locked, setLocked] = useState(!!line.locked)
-  const [dueDay, setDueDay] = useState<number | null>(lv.dueDay ?? line.dueDay ?? null)
-
-  const meta = BLOCK_META[lv.block]
+  const initialDue = lv.dueDay ?? line.dueDay ?? null
+  const [dueDay, setDueDay] = useState<number | null>(initialDue)
+  const [categories, setCategories] = useState<string[]>(line.expenseCategories ?? [])
+  const [sheet, setSheet] = useState<'due' | 'cats' | null>(null)
+  const sz = useBudgetLtCopy().line
+  const { locale } = useLocale()
+  const { expenses, monthStartDay, rates } = useFinanceStore(useShallow((s) => ({ expenses: s.expenses, monthStartDay: s.settings.monthStartDay, rates: s.exchangeRates })))
+  // Buddgy's sizing note: what the line's categories cost in the last three months, when there is any.
+  const history = useMemo(
+    () => (linked ? null : lineHistory({ name: line.name, expenseCategories: categories }, expenses, cycleKeyOf(new Date(), monthStartDay), monthStartDay, view.base, rates)),
+    [linked, line.name, categories, expenses, monthStartDay, view.base, rates],
+  )
   const parsed = Number(amount)
   const value = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0
   const pct = view.income > 0 ? Math.round((value / view.income) * 100) : 0
   const liveDiffers = linked && lv.liveAmount !== null && Math.round(lv.liveAmount) !== Math.round(lv.amount)
-  const categories = line.expenseCategories ?? []
+  const catsChanged = categories.join('|') !== (line.expenseCategories ?? []).join('|')
+  const dirty = lineEditDirty(
+    { amount: shown, essential: !!line.essential, locked: !!line.locked, dueDay: initialDue, categories: line.expenseCategories ?? [] },
+    { amount: value, essential, locked, dueDay, categories },
+    linked,
+  )
 
   const save = () => {
-    onSave(lineEditPatch({ shown, value, base: view.base, linked, essential, locked, isBill: lv.block === 'bills', dueDay }))
+    const patch = lineEditPatch({ shown, value, base: view.base, linked, essential, locked, isBill: lv.block === 'bills', dueDay })
+    onSave(catsChanged ? { ...patch, expenseCategories: categories } : patch)
     onClose()
   }
 
@@ -85,151 +118,96 @@ function LineForm({
   }
 
   return (
-    <div className="flex flex-col gap-4 pt-1">
-      <div className="flex items-center gap-3">
-        <TintedTile cat={meta.cat}>
-          <LineIcon name={line.icon} />
-        </TintedTile>
-        <div className="min-w-0 flex-1">
-          <V3SheetHeader title={catLabel(line.name)} onClose={onClose} />
-          <p className="-mt-0.5 text-xs text-[var(--color-brand-text-muted)]">{c.blocks[lv.block]}</p>
-        </div>
-      </div>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <V3SheetHeader
+        onClose={onClose}
+        leading={<LineTile line={{ ...line, expenseCategories: categories }} block={lv.block} />}
+        actions={<V3SheetHeader.Action tone="danger" icon={<Trash2 />} label={c.line.deleteLine} onClick={remove} />}
+      >
+        <V3SheetHeader.Title size="compact">{catLabel(line.name)}</V3SheetHeader.Title>
+        <V3SheetHeader.Subtitle>{lt.subtitle(c.blocks[lv.block])}</V3SheetHeader.Subtitle>
+      </V3SheetHeader>
 
-      <div className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-[var(--color-brand-text-secondary)]">{c.line.amountLabel}</span>
-        <div className="flex items-center gap-3">
-          <div className="min-w-0 flex-1">
-            <AmountField
-              value={amount}
-              onChange={setAmount}
-              currency={view.base}
-              label={c.line.amountLabel}
-              disabled={linked}
-            />
-          </div>
-          <span className="font-mono-numbers text-sm font-semibold text-[var(--color-brand-text-secondary)]">
-            {c.line.ofIncome(`${pct}%`)}
-          </span>
-        </div>
+      <div className="native-scroll flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-4">
         {linked ? (
-          <div className="flex flex-col gap-2">
-            <p className="text-xs text-[var(--color-brand-text-muted)]">{c.line.linkedNote}</p>
-            {liveDiffers && lv.liveAmount !== null ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="touch"
-                onClick={() => onSyncLive(line.id)}
-              >
-                <RefreshCw aria-hidden />
-                <span className="font-mono-numbers">{c.line.updateToLive(formatCurrency(lv.liveAmount, view.base, false))}</span>
-              </Button>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-
-      {line.rationale ? (
-        <div className="flex items-start gap-3 rounded-2xl bg-[var(--color-brand-primary-soft)] p-3">
-          <BuddgyIcon mood="happy" size={28} className="shrink-0 text-[var(--color-brand-primary-ink)]" />
-          <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <span className="flex items-center gap-2">
-              <span className="text-[0.6875rem] font-bold uppercase tracking-wide text-[var(--color-brand-primary-ink)]">
-                {c.line.whyTitle}
-              </span>
-              {line.confidence ? (
-                <span className="inline-flex h-5 items-center rounded-full bg-[var(--color-brand-card)] px-2 text-[0.6875rem] font-semibold text-[var(--color-brand-text-secondary)]">
-                  {line.confidence === 'high' ? c.line.confidenceHigh : c.line.confidenceEstimated}
-                </span>
-              ) : null}
-            </span>
-            <p className="text-[0.8125rem] leading-snug text-[var(--color-brand-text-primary)]">{line.rationale}</p>
-          </div>
-        </div>
-      ) : null}
-
-      <div className="flex flex-col">
-        <ToggleRow title={c.line.essential} sub={c.line.essentialSub} checked={essential} onChange={setEssential} />
-        <ToggleRow title={c.line.lock} sub={c.line.lockSub} checked={locked} onChange={setLocked} />
-        {lv.block === 'bills' ? (
-          <div className="flex min-h-[52px] items-center gap-3">
-            <span className="flex-1 text-[0.90625rem] font-semibold text-[var(--color-brand-text-primary)]">{c.line.dueDay}</span>
-            <IconButton
-              variant="outlined"
-              aria-label={`${c.line.dueDay} -`}
-              disabled={dueDay === null || dueDay <= 1}
-              onClick={() => setDueDay((d) => Math.max(1, (d ?? 2) - 1))}
-              className="size-9 rounded-full"
-            >
-              <Minus className="size-4" aria-hidden />
-            </IconButton>
-            <span className="font-mono-numbers min-w-16 text-center text-sm font-semibold">
-              {dueDay === null ? '-' : c.line.dueDayValue(dueDay)}
-            </span>
-            <IconButton
-              variant="outlined"
-              aria-label={`${c.line.dueDay} +`}
-              disabled={dueDay !== null && dueDay >= 31}
-              onClick={() => setDueDay((d) => Math.min(31, (d ?? 0) + 1))}
-              className="size-9 rounded-full"
-            >
-              <Plus className="size-4" aria-hidden />
-            </IconButton>
-          </div>
-        ) : null}
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <p className="text-xs font-medium text-[var(--color-brand-text-secondary)]">{c.line.countsCategories}</p>
-        {categories.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {categories.map((cat) => (
-              <span
-                key={cat}
-                className="inline-flex h-9 items-center rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-[0.8125rem] font-semibold text-[var(--color-brand-text-secondary)]"
-              >
-                {cat}
-              </span>
-            ))}
+          <div className="flex flex-col items-center pt-2 text-center">
+            <p className="font-mono-numbers text-[2.5rem] font-semibold leading-none tracking-[-0.04em] text-[var(--color-brand-text-primary)]">
+              {formatFlex(shown)} <span className="text-base font-medium text-[var(--color-brand-text-muted)]">{view.base} {lt.perMonth}</span>
+            </p>
+            <p className="mt-2 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{lt.ofIncome(pct)}</p>
+            <p className="mt-1 text-xs text-[var(--color-brand-text-muted)]">{c.line.linkedNote}</p>
           </div>
         ) : (
-          <p className="text-xs text-[var(--color-brand-text-muted)]">{c.line.noCategories}</p>
+          <AmountHero
+            value={amount}
+            onChange={setAmount}
+            currency={view.base}
+            // Mockup `s_line`: "EGP a month" is a small 15px caption beside the digits, not the big currency code.
+            unit={<span className="font-sans text-[0.9375rem] tracking-normal">{`${view.base} ${lt.perMonth}`}</span>}
+            line={lt.ofIncome(pct)}
+            aria-label={c.line.amountLabel}
+            className="px-0 pb-0"
+          />
         )}
+        {liveDiffers && lv.liveAmount !== null ? (
+          <Button type="button" variant="outline" size="touch" onClick={() => onSyncLive(line.id)}>
+            <RefreshCw aria-hidden />
+            <span className="font-mono-numbers">{c.line.updateToLive(inlineMoney(lv.liveAmount, view.base))}</span>
+          </Button>
+        ) : null}
+
+        {history ? (
+          <div className="flex items-start gap-3 rounded-2xl bg-[var(--color-brand-primary-soft)] p-3" role="note">
+            <Sparkles aria-hidden className="mt-0.5 size-5 shrink-0 text-[var(--color-brand-primary-ink)]" />
+            <p dir="auto" className="min-w-0 flex-1 text-[0.8125rem] leading-snug text-[var(--color-brand-text-primary)]">
+              {sz.sized(history.months.length, lv.block === 'bills' ? 'bills' : 'months', joinList(locale, history.months.map((m) => formatWhole(m))))}
+              <b className="font-semibold"> {history.steady ? sz.high : sz.estimated}</b>
+            </p>
+          </div>
+        ) : line.rationale ? (
+          <div className="flex items-start gap-3 rounded-2xl bg-[var(--color-brand-primary-soft)] p-3">
+            <BuddgyIcon mood="happy" size={24} className="shrink-0 text-[var(--color-brand-primary-ink)]" />
+            <p className="min-w-0 flex-1 text-[0.8125rem] leading-snug text-[var(--color-brand-text-primary)]">
+              {line.rationale}
+              {line.confidence ? <b className="font-semibold"> {line.confidence === 'high' ? c.line.confidenceHigh : c.line.confidenceEstimated}.</b> : null}
+            </p>
+          </div>
+        ) : null}
+
+        <SheetGroup note={lt.spendingNote}>
+          <SettingsSwitchRow label={c.line.essential} hint={c.line.essentialSub} checked={essential} onChange={setEssential} />
+          <SettingsSwitchRow label={c.line.lock} hint={c.line.lockSub} checked={locked} onChange={setLocked} />
+          {lv.block === 'bills' ? (
+            <PickerRow
+              label={lt.dueDay}
+              chevron={false}
+              onClick={() => setSheet('due')}
+              value={<Pill icon={<Calendar />}>{dueDay === null ? lt.noDueDay : ordinal(dueDay)}</Pill>}
+            />
+          ) : null}
+          <PickerRow
+            label={lt.spendingFrom}
+            onClick={() => setSheet('cats')}
+            value={<span dir="auto" className="truncate">{categories.length ? categories.map((x) => catLabel(x)).join(', ') : lt.none}</span>}
+          />
+        </SheetGroup>
       </div>
 
-      <div className="flex flex-col gap-2 pt-1">
-        <Button type="button" size="cta-block" onClick={save}>
-          <Check aria-hidden />
-          {c.common.save}
-        </Button>
-        <Button type="button" variant="destructive" size="touch" className="w-full" onClick={remove}>
-          <Trash2 aria-hidden />
-          {c.line.deleteLine}
-        </Button>
+      <div className="sheet-cta shrink-0 border-t border-[var(--color-brand-border)] px-5 pb-[calc(16px+env(safe-area-inset-bottom))] pt-3">
+        <Button type="button" size="cta-block" onClick={save} disabled={!dirty}>{c.common.save}</Button>
       </div>
-    </div>
-  )
-}
 
-function ToggleRow({
-  title,
-  sub,
-  checked,
-  onChange,
-}: {
-  title: string
-  sub: string
-  checked: boolean
-  onChange: (next: boolean) => void
-}) {
-  return (
-    <div className="flex min-h-[52px] items-center gap-3">
-      <div className="flex min-w-0 flex-1 flex-col">
-        <span className="text-[0.90625rem] font-semibold text-[var(--color-brand-text-primary)]">{title}</span>
-        <span className="text-xs text-[var(--color-brand-text-muted)]">{sub}</span>
-      </div>
-      <Switch size="touch" checked={checked} onCheckedChange={onChange} aria-label={title} />
+      <DayOfMonthSheet open={sheet === 'due'} value={dueDay} onChange={setDueDay} onClose={() => setSheet(null)} title={lt.dueDayTitle} zIndexClassName="z-[110]" />
+      <OptionSheet
+        multiple
+        open={sheet === 'cats'}
+        onClose={() => setSheet(null)}
+        title={lt.spendingFromTitle}
+        value={categories}
+        onChange={setCategories}
+        options={[...new Set([...EXPENSE_ENTRY_CATEGORIES, ...categories])].map((x) => ({ value: x, title: catLabel(x) }))}
+        zIndexClassName="z-[110]"
+      />
     </div>
   )
 }

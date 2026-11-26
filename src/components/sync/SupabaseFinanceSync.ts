@@ -505,9 +505,12 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
             parkedNow = []
           }
           const flushed = await flush()
+          const beforePull = skippedSent ? snapshot(useFinanceStore.getState()) : null
           const { incoming, serverBaseline } = await runFullSync(supabase, userId, prevSnap.current, stillCurrent)
-          // Newest edit wins: tell the device whose edit was the older one.
-          if (skippedSent && countReplaced(skippedSent, snapshot(useFinanceStore.getState())) > 0) useSyncFailures.getState().setNotice('editReplaced')
+          // Newest edit wins: tell the device whose edit was the older one (not for rows it changed or deleted itself since).
+          if (skippedSent && beforePull && countReplaced(skippedSent, snapshot(useFinanceStore.getState()), beforePull) > 0) {
+            useSyncFailures.getState().setNotice('editReplaced')
+          }
           skippedSent = null
           // S-1: the new baseline is what the server holds (the delivered baseline plus the pulled rows), never the live
           // store: an edit made while the pull was in flight stays unsent and goes out with the next flush.

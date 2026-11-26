@@ -31,17 +31,28 @@ function view(lines: LineView[], extra: Partial<PlanView> = {}): PlanView {
 describe('MonthHero', () => {
   const lines = [line('everyday', 'Groceries', 2400, 1000), line('everyday', 'Dining', 900, 1070), line('debts', 'Visa', 700, 0, { dueDay: 25 })]
 
-  it('shows the everyday label, per-day allowance, a status without a number, and the three facts', () => {
+  it('Light touch hero: left to spend in the month, "of" the plan, per day until the end, a spent scale and one note line', () => {
     const html = renderToStaticMarkup(h(MonthHero, { view: view(lines) }))
-    expect(html).toContain('Left to spend · Everyday')
-    expect(html).toContain('a day')
-    expect(html).toContain('16 days left')
-    expect(html).toContain('Top category')
-    expect(html).toContain('Over budget')
-    expect(html).toContain('1 category')
-    expect(html).toContain('Still to pay')
+    expect(html).toMatch(/Left to spend · [A-Z][a-z]+/)
+    expect(html).toContain('of 3,300')
+    expect(html).toContain('/day')
+    expect(html).toContain('until ')
+    expect(html).toContain('spent 2,070')
+    expect(html).toContain('Dining</b> is over')
+    expect(html).toContain('still to pay')
+    expect(html).toContain('Ahead of pace')
     expect(html).not.toMatch(/forecast/i)
-    expect(html).not.toContain('Day 14 of 30')
+  })
+  it('with a month to close, the corner holds the Close chip instead of the pace pill', () => {
+    const html = renderToStaticMarkup(h(MonthHero, { view: view(lines), onCloseMonth: () => undefined }))
+    expect(html).toContain('Close')
+    expect(html).not.toContain('of pace')
+  })
+  it('a plan not applied yet shows everything it plans, not only everyday (QA W5: 0 planned with a 173,500 row)', () => {
+    const html = renderToStaticMarkup(h(MonthHero, { view: view([line('bills', 'Rent', 173500)]), onApply: () => undefined }))
+    expect(html).toContain('173,500')
+    expect(html).toContain('planned')
+    expect(html).toContain('Apply budget')
   })
   it('Still to pay reads All paid at zero', () => {
     const v = view([line('everyday', 'Groceries', 2400, 100), line('debts', 'Visa', 700, 700, { paid: true })])
@@ -66,6 +77,11 @@ describe('PlanHero', () => {
     expect(html).toContain('Debt-free')
     expect(html).toContain('Spending')
     expect(html).toContain('Debt')
+  })
+  it('the split percentages of a balanced plan add up to 100, not 100.3 (QA W4)', () => {
+    const v = view([line('bills', 'Rent', 1015), line('debts', 'Visa', 1015), line('safety', 'Fund', 7970)], { mode: 'plan', income: 10000 })
+    const pcts = [...renderToStaticMarkup(h(PlanHero, { view: v })).matchAll(/>(\d+(?:\.\d)?)%</g)].map((m) => Number(m[1]))
+    expect(pcts.slice(-3).reduce((a, b) => a + b, 0)).toBeCloseTo(100, 5)
   })
   it('turns red when the plan exceeds income', () => {
     const html = renderToStaticMarkup(h(PlanHero, { view: view(lines, { mode: 'plan', free: -500, balanced: false }) }))

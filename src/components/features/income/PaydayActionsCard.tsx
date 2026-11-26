@@ -17,7 +17,8 @@ import { isRealizedOccurrence, missedAfterDaysFor, pendingStatus, type IncomeOcc
 import { toISODate } from '@/lib/utils/paydaySchedule'
 import { formatFixed2, formatFlex } from '@/lib/utils/formatters'
 import { useShortDate } from '@/hooks/useShortDate'
-import { overdueDays, isLate } from '@/lib/income/paydaySummary'
+import { paydayState } from '@/lib/income/paydaySummary'
+import { paydayBadge } from '@/components/features/income/paydayBadge'
 import { fillSlots } from '@/lib/ui/fillSlots'
 import { useT } from '@/lib/i18n'
 import type { IncomeEvent, IncomeSource } from '@/lib/store/types'
@@ -59,19 +60,7 @@ export function PaydayActionsCard({ source, occ }: { source: IncomeSource; occ: 
           : 'missedRecent'
         : 'untouched'
 
-  const late = isLate(source, occ, today)
-  const badge =
-    state === 'received'
-      ? occ.daysLate
-        ? { variant: 'warning' as const, label: t.income.daysLateChip(occ.daysLate) }
-        : occ.status === 'partial'
-          ? { variant: 'brand' as const, label: t.income.statusPartial }
-          : { variant: 'positive' as const, label: t.income.statusReceived }
-      : state === 'missedRecent' || state === 'missedPast'
-        ? { variant: 'muted' as const, label: t.income.statusMissed }
-        : late || overdueDays(occ, today) > 0
-          ? { variant: 'warning' as const, label: t.income.daysLateChip(overdueDays(occ, today)) }
-          : { variant: 'muted' as const, label: t.paydays.dueOn(shortDate(occ.dueDate)) }
+  const badge = paydayBadge(paydayState(occ, today), t, shortDate(occ.dueDate))
 
   const amountSlot = <b className="font-mono-numbers text-[var(--color-brand-text-primary)]">{formatFixed2(occ.amount)}</b>
   const body =

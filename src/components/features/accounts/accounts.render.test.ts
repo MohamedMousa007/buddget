@@ -19,7 +19,7 @@ describe('accounts UI renders', () => {
   it('row shows title without the digits baked into the name, balance, free amount and both cards', () => {
     const html = renderToStaticMarkup(h(AccountRow, { account: { method: bank, cards: [visa, mc], balance: bal }, masked: false, onOpen: noop, onAddCard: noop }))
     expect(html).toContain('CIB')
-    expect(html).toContain('•• 2016')
+    expect(html).toContain('••2016')
     expect(html).toContain('84,250')
     expect(html).toContain('59,250')
     expect(html).toContain('2 cards')

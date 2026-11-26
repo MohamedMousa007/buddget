@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- test code reads the untyped persisted store */
 import type { Page } from '@playwright/test'
 import { expect, goto as gotoTab, localWait, test } from '../lib/fixtures'
-import { addAccount, addBorrow, addExpense, addMoneyIn, blur, dialog } from '../lib/ui'
+import { addAccount, addBorrow, addExpense, addMoneyIn, blur, dialog, pickMethod } from '../lib/ui'
 
 /** The Add sheet's tiles, top-left to bottom-right, as the accessible name starts. */
 const TILES = [/^Expense/, /^Money in/, /^Receipt/, /^Pay debt/, /^Savings/, /^Subscription/, /^Add by voice/]
@@ -82,7 +82,7 @@ test('Q3 Savings opens Add money directly on Wealth, once, and saves', async ({ 
     await page.waitForTimeout(1000)
     await expect(dialog(page, 'Add money')).toBeHidden()
   })
-  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 5000 })
+  await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: 5000 })
   await test.step('with an account: deposit 500 from the + on another screen', async () => {
     await goto(page, '/reports')
     await openTile(page, /^Savings/)
@@ -91,7 +91,7 @@ test('Q3 Savings opens Add money directly on Wealth, once, and saves', async ({ 
     await expect(d.getByRole('button', { name: /^Into: / })).toBeVisible()
     await d.getByRole('textbox', { name: 'Amount' }).fill('500')
     await blur(page)
-    await d.getByRole('button', { name: /^Add [\d,]+ to / }).click()
+    await d.getByRole('button', { name: 'Add money', exact: true }).click()
     await expect(d).toBeHidden()
     await localWait(page, (s) => (s.savingsTransactions ?? s.savingsDeposits ?? []).find((t: any) => Number(t.amount) === 500) ?? (s.savingsAccounts ?? []).find((a: any) => Number(a.balance ?? a.currentBalance) === 500))
   })
@@ -105,7 +105,12 @@ test('Q4 Pay debt: empty state leads to adding one; with a debt it pays', async 
     const picker = childSheet(page)
     await expect(picker).toContainText('No active debts')
     await picker.getByRole('button', { name: 'Add a debt' }).click()
-    await expect(dialog(page, 'Add debt')).toBeVisible()
+    // The light-touch "Add a debt" option sheet opens over the picker (the same one as on Debts), and its choice leads to the form.
+    const add = dialog(page, 'Add a debt')
+    await expect(add).toContainText('What are you tracking?')
+    for (const family of [/^Borrowed money/, /^Installment plan/, /^Credit card/]) await expect(add.getByRole('radio', { name: family })).toBeVisible()
+    await add.getByRole('radio', { name: /^Borrowed money/ }).click()
+    await expect(dialog(page, 'New borrow')).toBeVisible()
     await closeAll(page)
   })
   await addBorrow(page, { person: 'QA Sami', what: 'QA loan', amount: 1000 })
@@ -116,7 +121,7 @@ test('Q4 Pay debt: empty state leads to adding one; with a debt it pays', async 
     const pay = dialog(page, 'Make a payment')
     await pay.getByRole('textbox', { name: 'Amount' }).fill('200')
     await blur(page)
-    await pay.getByRole('button', { name: /^Pay [\d,]+ EGP$/ }).click()
+    await pay.getByRole('button', { name: /^(Record payment|Pay [\d,]+ EGP)$/ }).click()
     await expect(pay).toBeHidden()
     await localWait(page, (s) => s.debtPayments.find((p: any) => p.amountPaid === 200))
   })
@@ -125,7 +130,7 @@ test('Q4 Pay debt: empty state leads to adding one; with a debt it pays', async 
 test('Q5 Subscription, Receipt and voice work from a page with no add button', async ({ page, user, context }) => {
   void user
   await context.grantPermissions(['microphone', 'camera'])
-  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 3000 })
+  await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: 3000 })
   await test.step('Subscription lands on Subscriptions with the add sheet open, and saves', async () => {
     await goto(page, '/budget-history')
     await openTile(page, /^Subscription/)
@@ -133,9 +138,10 @@ test('Q5 Subscription, Receipt and voice work from a page with no add button', a
     const picker = childSheet(page)
     await expect(picker).toBeVisible()
     await picker.getByRole('button', { name: /^Netflix/ }).first().click()
-    const d = dialog(page, 'Add Netflix Standard')
-    await d.getByRole('group', { name: 'Paid with' }).getByRole('button', { name: 'QNB Alahli' }).click()
-    await d.getByRole('button', { name: 'Add Netflix Standard' }).click()
+    const d = dialog(page, 'Add a subscription')
+    await d.getByRole('button', { name: /^Paid with/ }).click()
+    await pickMethod(page, /^QNB Alahli/)
+    await d.getByRole('button', { name: 'Add Netflix' }).click()
     await expect(d).toBeHidden()
     await localWait(page, (s) => (s.subscriptions ?? []).find((x: any) => /Netflix/.test(x.name ?? '')))
   })

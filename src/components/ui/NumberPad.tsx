@@ -18,6 +18,7 @@ import { registerBackGuard } from '@/lib/navigation/backGuard'
 import { setNumpadInset } from '@/lib/ui/numpadInset'
 import { useScrollLock } from '@/lib/ui/scrollLock'
 import { useDialogFocus } from '@/hooks/useDialogFocus'
+import { useEscapeClose } from '@/hooks/useEscapeClose'
 
 export type NumberPadMode = 'decimal' | 'integer' | 'pin'
 
@@ -67,6 +68,18 @@ export function formatAmount(v: string): string {
   return dec !== undefined ? `${grouped}.${dec}` : grouped
 }
 
+/** The pad key a hardware key press stands for; null for keys the pad ignores, a modifier chord, or typing in a field. */
+export function padKeyFor(e: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey' | 'target'>): string | null {
+  if (e.ctrlKey || e.metaKey || e.altKey) return null
+  const el = e.target as HTMLElement | null
+  if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return null
+  if (/^[0-9]$/.test(e.key)) return e.key
+  if (e.key === '.' || e.key === ',' || e.key === 'Decimal') return '.'
+  if (e.key === 'Backspace') return 'back'
+  if (e.key === 'Enter') return 'done'
+  return null
+}
+
 const KEYS_DECIMAL = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'back']
 const KEYS_NODOT = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'blank', '0', 'back']
 
@@ -95,17 +108,9 @@ export function NumberPad({
   // so the modal behind it survives the first press — like a system keyboard.
   useEffect(() => registerBackGuard(() => { close(); return true }))
 
-  // Escape closes only the pad — capture + stopPropagation keeps the modal behind it open.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return
-      e.stopPropagation()
-      e.preventDefault()
-      close()
-    }
-    window.addEventListener('keydown', onKey, true)
-    return () => window.removeEventListener('keydown', onKey, true)
-  })
+  // Escape closes only the pad: it joins the sheets' LIFO Escape stack as the topmost layer, so the sheet behind it stays.
+  // (A listener of its own lost to that stack's window listener, registered earlier, and Escape closed the sheet too.)
+  useEscapeClose(true, close)
 
   // Lock background scroll while the pad is open; ref-counted so it composes with the ModalShell behind it.
   useScrollLock(true)
@@ -139,6 +144,19 @@ export function NumberPad({
     latest.current = next
     onChange(next)
   }
+
+  // A hardware keyboard types into the pad: digits, the decimal point, Backspace, and Enter for Done.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const key = padKeyFor(e)
+      if (!key) return
+      e.preventDefault()
+      if (key === 'done') onDone()
+      else press(key)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
 
   // Press-and-hold backspace: deletes faster the longer it is held, like a keyboard.
   const holdTimer = useRef<number | undefined>(undefined)

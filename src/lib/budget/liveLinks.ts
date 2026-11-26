@@ -21,6 +21,7 @@ import { subscriptionToMonthlyPlannerAmount } from '@/lib/subscriptions/subscrip
 import { savingsAccountBalanceInBase } from '@/lib/savings/savingsConversions'
 import { computeGoalProgress, type GoalProgressContext } from '@/lib/goals/computeGoalProgress'
 import { withDebtDerived } from '@/lib/goals/debtGoal'
+import { periodMonths } from '@/lib/goals/goalPlan'
 import {
   calculateDebtRemaining,
   calculateDebtRemainingInBaseCurrency,
@@ -177,7 +178,7 @@ export function debtExtras(live: LiveDebt, paidThisCycle: number, c: DebtLiveCtx
   const done = installmentPaymentsCompleted(debt, c.debtPayments.filter((p) => p.debtId === debt.id))
   return {
     id: debt.id,
-    name: debt.name,
+    name: debt.name || debt.personName || debt.person,
     kind,
     balance,
     paidPercent,
@@ -204,10 +205,10 @@ export const savingGoals = (goals: Goal[]): Goal[] =>
 
 /**
  * Planned monthly draw (base). Fixed amounts are stored in base like `allocateMonth` reads them;
- * quarterly goals spread over three months. A share is a percent of what the user usually keeps.
+ * quarterly and yearly goals spread over their period's months. A share is a percent of what the user usually keeps.
  */
 export function goalMonthlyDraw(g: Goal, usualKeep: number | null): number {
-  if (g.fundingMode === 'fixed') return (g.monthlyContribution ?? 0) / (g.frequency === 'quarterly' ? 3 : 1)
+  if (g.fundingMode === 'fixed') return (g.monthlyContribution ?? 0) / periodMonths(g.frequency)
   if (g.fundingMode === 'share') return ((g.sharePct ?? 0) / 100) * (usualKeep ?? 0)
   return 0
 }

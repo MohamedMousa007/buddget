@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
-import { Check, Lock } from 'lucide-react'
+import { Check, Lock, Trash2 } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { SheetBody, SheetFooter } from '@/components/features/savings-v3/MoneySheetParts'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/IconButton'
 import { SelectableCard, selectableCardVariants } from '@/components/ui/SelectableCard'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import { cn } from '@/lib/utils'
@@ -127,12 +128,89 @@ export interface ResolveRowProps {
   detailDefaultOpen?: boolean
   /** The full spoken label: merchant, amount, date and chip. */
   label?: string
+  /** A bin beside the row (Light touch held messages): removes it without choosing it. Absent: no bin. */
+  remove?: { label: string; onPress: () => void; disabled?: boolean }
+  /**
+   * `card` (default): each row its own selectable card. `list`: a flat row for a {@link ResolveList} card, the tick
+   * box and the bin at its end (Light touch held messages). Same states and selection either way.
+   */
+  look?: 'card' | 'list'
+  /** `list` only: answers under the row, e.g. two buttons for a question the row asks. */
+  footer?: ReactNode
+  /** `list` only: the sub line's colour (amber for a question). */
+  subTone?: string
+}
+
+/** Rows of a `look="list"` run in one rounded card, with hairlines between them. */
+export function ResolveList({ children }: { children: ReactNode }) {
+  return <div className="divide-y divide-[var(--color-brand-border)] overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">{children}</div>
+}
+
+/** The 22px tick box of a `list` row. */
+function TickBox({ on }: { on: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        'flex size-[22px] items-center justify-center rounded-[7px] border-2',
+        on ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]' : 'border-[var(--color-brand-border-strong)]',
+      )}
+    >
+      {on ? <Check className="size-3.5" strokeWidth={3} /> : null}
+    </span>
+  )
 }
 
 /** One selectable row of a resolve sheet. Selection is announced as a checkbox, never left to colour. */
-export function ResolveRow({ leading, title, sub, trailing, chip, state, onToggle, detail, detailLabels, detailDefaultOpen, label }: ResolveRowProps) {
+export function ResolveRow({ leading, title, sub, trailing, chip, state, onToggle, detail, detailLabels, detailDefaultOpen, label, remove, look = 'card', footer, subTone }: ResolveRowProps) {
   const [open, setOpen] = useState(Boolean(detailDefaultOpen))
   const selectable = state === 'idle' || state === 'selected' || state === 'failed'
+  const detailBlock =
+    detail && detailLabels ? (
+      <div className={look === 'list' ? 'px-3' : 'px-1'}>
+        <Button variant="link" size="touch" className="px-2 text-xs font-semibold" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+          {open ? detailLabels.hide : detailLabels.show}
+        </Button>
+        {open ? <div className="pb-2">{detail}</div> : null}
+      </div>
+    ) : null
+
+  if (look === 'list') {
+    return (
+      <div
+        aria-label={selectable ? undefined : label}
+        className={cn('bg-[var(--color-brand-card)]', state === 'locked' && 'bg-[var(--color-brand-sunken)]', state === 'failed' && 'bg-[var(--color-brand-red-soft)]')}
+      >
+        <div className="flex min-h-16 items-center gap-2 py-2.5 pe-2 ps-4">
+          {leading}
+          <span className="ms-1 min-w-0 flex-1">
+            <span dir="auto" className="block truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{title}</span>
+            {sub ? <span className="block truncate text-xs" style={{ color: subTone ?? 'var(--color-brand-text-muted)' }}>{sub}</span> : null}
+            {chip ? (
+              <Badge tone={chip.tone} size="xs" bordered={false} className="mt-1 max-w-full whitespace-normal">
+                {chip.text}
+              </Badge>
+            ) : null}
+          </span>
+          {trailing ? <span className="font-mono-numbers text-[0.9375rem] font-medium text-[var(--color-brand-text-primary)]">{trailing}</span> : null}
+          {selectable ? (
+            <IconButton role="checkbox" aria-checked={state !== 'idle'} aria-label={label ?? title} onClick={onToggle}>
+              <TickBox on={state !== 'idle'} />
+            </IconButton>
+          ) : state === 'locked' ? (
+            <Lock className="mx-3.5 size-4 shrink-0 text-[var(--color-brand-text-secondary)]" aria-hidden />
+          ) : null}
+          {remove ? (
+            <IconButton variant="sheetActionDanger" aria-label={remove.label} disabled={remove.disabled} onClick={remove.onPress}>
+              <Trash2 />
+            </IconButton>
+          ) : null}
+        </div>
+        {footer}
+        {detailBlock}
+      </div>
+    )
+  }
   const body = (
     <>
       {leading}
@@ -155,32 +233,35 @@ export function ResolveRow({ leading, title, sub, trailing, chip, state, onToggl
       ) : null}
     </>
   )
+  const card = selectable ? (
+    <SelectableCard
+      as="checkbox"
+      layout="row"
+      selected={state !== 'idle'}
+      aria-label={label}
+      onClick={onToggle}
+      className={cn('h-auto min-h-[56px] py-2.5', state === 'failed' && 'border-[var(--color-brand-red)]')}
+    >
+      {body}
+    </SelectableCard>
+  ) : (
+    <div aria-label={label} className={cn(selectableCardVariants({ layout: 'row', selected: false }), 'h-auto min-h-[56px] py-2.5', state === 'locked' && 'bg-[var(--color-brand-sunken)]')}>
+      {body}
+    </div>
+  )
   return (
     <div>
-      {selectable ? (
-        <SelectableCard
-          as="checkbox"
-          layout="row"
-          selected={state !== 'idle'}
-          aria-label={label}
-          onClick={onToggle}
-          className={cn('h-auto min-h-[56px] py-2.5', state === 'failed' && 'border-[var(--color-brand-red)]')}
-        >
-          {body}
-        </SelectableCard>
+      {remove ? (
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">{card}</div>
+          <IconButton variant="sheetActionDanger" aria-label={remove.label} disabled={remove.disabled} onClick={remove.onPress}>
+            <Trash2 />
+          </IconButton>
+        </div>
       ) : (
-        <div aria-label={label} className={cn(selectableCardVariants({ layout: 'row', selected: false }), 'h-auto min-h-[56px] py-2.5', state === 'locked' && 'bg-[var(--color-brand-sunken)]')}>
-          {body}
-        </div>
+        card
       )}
-      {detail && detailLabels ? (
-        <div className="px-1">
-          <Button variant="link" size="touch" className="px-2 text-xs font-semibold" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-            {open ? detailLabels.hide : detailLabels.show}
-          </Button>
-          {open ? <div className="pb-2">{detail}</div> : null}
-        </div>
-      ) : null}
+      {detailBlock}
     </div>
   )
 }

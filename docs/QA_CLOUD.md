@@ -9,9 +9,9 @@ A cloud session gets a short brief ("follow `docs/QA_CLOUD.md`, check X") and no
 
 ## Run the app (dev auth bypass, signed-in stand-in, no Supabase)
 ```bash
-NEXT_PUBLIC_SUPABASE_URL= NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY= NEXT_PUBLIC_DEV_AUTH_BYPASS=1 npm run dev -- -p 3001
+NEXT_PUBLIC_SUPABASE_URL= NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY= SUPABASE_SECRET_KEY= NEXT_PUBLIC_API_BASE_URL= NEXT_PUBLIC_DEV_AUTH_BYPASS=1 npm run dev -- -p 3001
 ```
-The first page compile is slow; wait for it before screenshots. Use a mobile viewport (375x667, 375x812) and 1440.
+Blank every Supabase variable, the secret key too, and the API base: a cloud environment sets them, and with them set the bypass talks to the live project (or sends `/api` calls to the native host). The first page compile is slow; wait for it before screenshots. Use a mobile viewport (375x667, 375x812) and 1440.
 
 ## Seed state from the browser console
 ```js
@@ -23,3 +23,9 @@ localStorage.qa_staff = '1'  // then reload: the admin staff strip
 
 ## Rules
 Screenshots under `docs/design/<area>/qa/`, not committed. Report defects as: file, what is wrong, what the design shows. Fix nothing unless the brief says so.
+
+## Known noise on a QA server
+- `POST /api/auth/welcome` answers 502 on a new account's first sign-in when `RESEND_API_KEY` is not set (`src/lib/server/email/send.ts:58`): the send fails, the claim is given back, nothing else breaks. Expected on a cloud runner; do not add the key there (it would try to email synthetic addresses).
+- The pro-rewards H8 case needs `REVENUECAT_IGNORE_SANDBOX=1` in the server's environment, or it skips.
+- Journey runs: prefer `next build --webpack && next start -p 3100` (with `NEXT_PUBLIC_DEV_AUTH_BYPASS=0 NEXT_PUBLIC_API_BASE_URL=`) over `next dev`; the dev server restarts on its memory threshold mid-run and leaves pages on "Loading…".
+- Synthetic users: `npx tsx e2e/journeys/lib/cleanup.ts --mine` deletes only the users this checkout made (ledger `e2e/.qa-users.local.txt`); `--check-mine` counts what is left. `--all` also deletes other sessions' running users.

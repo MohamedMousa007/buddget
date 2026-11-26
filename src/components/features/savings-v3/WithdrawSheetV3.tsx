@@ -3,7 +3,7 @@
 import { defaultWithdrawSource } from '@/lib/savings/withdrawSource'
 import { balanceEpsilon } from '@/lib/savings/balanceMath'
 import { useMemo, useState } from 'react'
-import { ShoppingCart, CreditCard, Gem, TrendingUp, ArrowRight, Coins, Bitcoin, LineChart } from 'lucide-react'
+import { ArrowLeftRight, Bitcoin, Briefcase, Coins, Landmark, LineChart, Receipt, TrendingUp } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Card } from '@/components/ui/card'
 import { reconcileDebtSchedule } from '@/lib/debts/recurringDebtDueHandlers'
@@ -17,10 +17,17 @@ import { convertCurrency, tryConvertWithGold } from '@/lib/utils/currency'
 import { debtPaymentForWithdrawal } from '@/lib/debts/withdrawalPayment'
 import { investTopUpPatch } from '@/lib/savings/investTopUp'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
-import { AccountLegRow, AmountCurrencyRow, LabeledBlock, NoteField, PocketPickerField, SheetBody, SheetFooter, tint } from '@/components/features/savings-v3/MoneySheetParts'
+import { LabeledBlock, NoteRow, PocketPickerField, PocketTile, SheetBody, SheetFooter } from '@/components/features/savings-v3/MoneySheetParts'
+import { AmountHero } from '@/components/ui/AmountHero'
+import { PickerRow } from '@/components/ui/PickerRow'
+import { OptionSheet, type OptionSheetOption } from '@/components/ui/OptionSheet'
+import { accountTitle } from '@/components/features/accounts/accountDisplay'
+import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
 import { useLegAccount } from '@/components/features/savings-v3/useLegAccount'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { localTodayISO } from '@/lib/utils/localDate'
+import { manualOccurredAt } from '@/lib/time/occurredAt'
+import { useDiscardPrompt } from '@/components/features/savings-v3/useDiscardPrompt'
 import { useT } from '@/lib/i18n'
 import { pocketDisplayName } from '@/lib/savings/pocketIdentity'
 import { incomeDestination } from '@/lib/savings/withdrawDestination'
@@ -32,8 +39,6 @@ import { Button } from '@/components/ui/button'
 import { SettingsSwitchRow } from '@/components/features/settings/SettingsSwitchRow'
 import { EXPENSE_CATEGORY_GRID } from '@/lib/constants/categoryGrid'
 import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
-import { FieldButton } from '@/components/ui/FieldButton'
-import { SelectableCard } from '@/components/ui/SelectableCard'
 import { OptionChip } from '@/components/ui/OptionChip'
 
 const INVEST_CLASSES: Array<{ type: InvestmentAssetType; label: 'assetGold' | 'assetCrypto' | 'assetStocks'; icon: React.ReactNode }> = [
@@ -46,12 +51,15 @@ type Reason = SavingsWithdrawalPurpose // 'income' | 'transfer' | 'debt' | 'spen
 type Purpose = Reason | 'move'
 
 const PURPOSES: Array<{ key: Purpose; color: string; icon: React.ReactNode }> = [
-  { key: 'spend', color: 'var(--color-brand-red)', icon: <ShoppingCart size={18} /> },
-  { key: 'debt', color: 'var(--cat-debt-fg)', icon: <CreditCard size={18} /> },
-  { key: 'transfer', color: 'var(--color-brand-gold)', icon: <Gem size={18} /> },
-  { key: 'income', color: 'var(--color-brand-green)', icon: <TrendingUp size={18} /> },
-  { key: 'move', color: 'var(--color-cat-5)', icon: <ArrowRight size={18} className="rtl:rotate-180" /> },
+  { key: 'spend', color: 'var(--color-brand-primary)', icon: <Receipt /> },
+  { key: 'debt', color: 'var(--color-brand-amber)', icon: <Landmark /> },
+  { key: 'transfer', color: 'var(--color-brand-green)', icon: <TrendingUp /> },
+  { key: 'income', color: 'var(--color-brand-green)', icon: <Briefcase /> },
+  { key: 'move', color: 'var(--color-brand-text-secondary)', icon: <ArrowLeftRight /> },
 ]
+
+/** The "To" choice that keeps income in the account holding the pocket. */
+const HOLDER = '__holder'
 
 export interface WithdrawSheetV3Props {
   open: boolean
@@ -65,6 +73,7 @@ export interface WithdrawSheetV3Props {
 export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNeedAsset }: WithdrawSheetV3Props) {
   const t = useT().wealthSheets.money
   const sf = useT().savingsForms
+  const lt = useGoalsLtCopy()
   const withdraw = useFinanceStore((s) => s.withdrawFromSavings)
   const showToast = useActionToast()
   const transfer = useFinanceStore((s) => s.transferBetweenPockets)
@@ -95,15 +104,15 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
     if (c) setCurrency(c)
   }
   const [purpose, setPurpose] = useState<Purpose>('spend')
-  const [debtOpen, setDebtOpen] = useState(false)
+  const [sheet, setSheet] = useState<'for' | 'debt' | 'asset' | 'to' | null>(null)
   const [moveToId, setMoveToId] = useState<string | null>(null)
   const [debtId, setDebtId] = useState<string | null>(null)
   const [assetClass, setAssetClass] = useState<InvestmentAssetType | null>(null)
-  const [noteOpen, setNoteOpen] = useState(false)
   const [note, setNote] = useState('')
   const [logExpense, setLogExpense] = useState(false)
   const [awayFromHolder, setAwayFromHolder] = useState(false)
   const [expenseCategory, setExpenseCategory] = useState('Other')
+  const discard = useDiscardPrompt(amount.trim() !== '' || note.trim() !== '', onClose)
 
   const moveOn = purpose === 'move'
   const reason: Reason | null = moveOn ? null : purpose
@@ -150,17 +159,20 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
   // True once the money moved; false when a check refused it, so the guard can re-arm.
   const commit = (from: PocketVM): boolean => {
     const txId = newClientId()
+    // One instant for every row this withdrawal writes (no time pill here: the current time).
+    const day = localTodayISO()
+    const occurredAt = manualOccurredAt(day)
     if (moveOn) {
       if (!moveToId) return false
-      if (!transfer(from.account.id, moveToId, amountInPocket, note.trim() || undefined)) { showToast(t.moveFailed); return false }
+      if (!transfer(from.account.id, moveToId, amountInPocket, note.trim() || undefined, day, occurredAt)) { showToast(t.moveFailed); return false }
     } else if (reason === 'debt') {
       const debt = debts.find((d) => d.id === debtId)
       if (!debt) return false
       const noteTrim = note.trim() || undefined
       const { amountPaid, amountInBase, exceeds } = debtPaymentForWithdrawal({ debt, amount: amountNum, currency, base: baseCurrency, rates: exchangeRates, goldPricePerGram, goldAvailable: goldPriceAvailable !== false, left: debtChips.find((d) => d.id === debt.id)?.left })
       if (!(amountPaid > 0) || exceeds || overpaysDebt(useFinanceStore.getState(), { debtId: debt.id, amountPaid })) { showToast(t.moveFailed); return false }
-      if (!withdraw(from.account.id, amountNum, currency, noteTrim, 'debt', { txId })) { showToast(t.moveFailed); return false }
-      addDebtPayment({ debtId: debt.id, date: localTodayISO(), amountPaid, paymentCurrency: debt.currency, amountInPrimary: amountInBase, notes: noteTrim, fundedFromSavings: true, fundedFromSavingsTxId: txId })
+      if (!withdraw(from.account.id, amountNum, currency, noteTrim, 'debt', { txId, date: day, occurredAt })) { showToast(t.moveFailed); return false }
+      addDebtPayment({ debtId: debt.id, date: day, occurredAt, amountPaid, paymentCurrency: debt.currency, amountInPrimary: amountInBase, notes: noteTrim, fundedFromSavings: true, fundedFromSavingsTxId: txId })
       reconcileDebtSchedule(debt.id, { amount: amountPaid, currency: debt.currency })
     } else if (reason === 'transfer') {
       if (!assetClass) return false
@@ -171,15 +183,15 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
       const qtyAdd = amountEgp / target.unitEgp
       const existing = useFinanceStore.getState().investmentHoldings.find((h) => h.id === target.id)
       if (!existing || qtyAdd <= 0) return false
-      if (!withdraw(from.account.id, amountNum, currency, note.trim() || undefined, 'transfer')) { showToast(t.moveFailed); return false }
+      if (!withdraw(from.account.id, amountNum, currency, note.trim() || undefined, 'transfer', { date: day, occurredAt })) { showToast(t.moveFailed); return false }
       updateHolding(target.id, investTopUpPatch(existing, qtyAdd, amountEgp, 'EGP', exchangeRates))
     } else if (reason) {
       const spendAndLog = reason === 'spend' && logExpense
-      const opts = reason === 'income' ? { toAccountId: incomeDestination(holderName ? from.account : undefined, awayFromHolder ? leg.accountId : null, leg.accountId) } : spendAndLog ? { txId } : undefined
+      const opts = { date: day, occurredAt, ...(reason === 'income' ? { toAccountId: incomeDestination(holderName ? from.account : undefined, awayFromHolder ? leg.accountId : null, leg.accountId) } : spendAndLog ? { txId } : {}) }
       if (!withdraw(from.account.id, amountNum, currency, note.trim() || undefined, reason, opts)) { showToast(t.moveFailed); return false }
       if (spendAndLog) {
         addExpense({
-          date: localTodayISO(), description: note.trim() || pocketDisplayName(from.account, sf.systemNames), category: expenseCategory,
+          date: day, occurredAt, description: note.trim() || pocketDisplayName(from.account, sf.systemNames), category: expenseCategory,
           amount: amountNum, currency, paymentMethodId: DEFAULT_CASH_ID, isRecurring: false, fundedFromSavingsTxId: txId,
         })
       }
@@ -189,26 +201,21 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
   }
 
   const submit = () => {
-    if (!from || amountNum <= 0 || !submitOnce.claim()) return
+    if (!from || !canSubmit || !submitOnce.claim()) return
     if (!commit(from)) submitOnce.release()
   }
-
-  const ctaLabel = (() => {
-    if (!from) return t.choosePocket
-    const verb = { spend: t.verbSpend, debt: t.verbPay, transfer: t.verbInvest, income: t.verbIncome, move: t.verbMove }[purpose]
-    return t.withdrawCta(verb, amountNum > 0 ? fmtNum(amountNum) : '', pocketDisplayName(from.account, sf.systemNames))
-  })()
 
   const debtOverpay = (() => {
     const debt = reason === 'debt' ? debts.find((d) => d.id === debtId) : undefined
     return !!debt && debtPaymentForWithdrawal({ debt, amount: amountNum, currency, base: baseCurrency, rates: exchangeRates, goldPricePerGram, goldAvailable: goldPriceAvailable !== false, left: debtChips.find((d) => d.id === debt.id)?.left }).exceeds
   })()
 
+  const overPocket = !!from && amountNum > 0 && free + balanceEpsilon(from.account.currency) < amountInPocket
   const canSubmit =
     !debtOverpay &&
     !!from &&
     amountNum > 0 &&
-    free + balanceEpsilon(from.account.currency) >= amountInPocket &&
+    !overPocket &&
     (moveOn
       ? !!moveToId
       : reason === 'debt'
@@ -217,107 +224,76 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
           ? !!assetClass && topupByClass.has(assetClass)
           : !!reason)
 
+  const w = lt.withdraw
+  const purposeOptions: OptionSheetOption<Purpose>[] = PURPOSES.map((p) => ({
+    value: p.key,
+    title: t[p.key === 'transfer' ? 'invest' : p.key],
+    subtitle: t[`${p.key === 'transfer' ? 'invest' : p.key}Sub` as 'spendSub'],
+    icon: p.icon,
+    tone: p.color,
+  }))
+  const pickPurpose = (k: Purpose) => { setPurpose(k); setDebtId(null); setAssetClass(null); setMoveToId(null); setAwayFromHolder(false) }
+  const debt = debtChips.find((d) => d.id === debtId)
+  const asset = INVEST_CLASSES.find((c) => c.type === assetClass)
+  const toAccount = leg.views.find((v) => v.method.id === leg.accountId)?.method
+  const showTo = reason === 'income' && leg.views.length > 0 && (!!holderName || !!leg.accountId)
+  const toValue = holderName && !awayFromHolder ? t.staysIn(holderName) : toAccount ? accountTitle(toAccount) : ''
+  const toOptions: OptionSheetOption<string>[] = [
+    ...(holderName ? [{ value: HOLDER, title: t.staysIn(holderName) }] : []),
+    ...leg.views.map((v) => ({ value: v.method.id, title: accountTitle(v.method) })),
+  ]
+  const fromName = from ? pocketDisplayName(from.account, sf.systemNames) : ''
+  const after = from && Number.isFinite(amountInPocket) ? Math.max(0, from.account.currentBalance - amountInPocket) : null
+
   if (!open) return null
 
   return (
     <ModalShell open={open} onBackdropClick={onClose} scrollChild>
+      {discard.prompt}
       <div className="flex min-h-0 flex-1 flex-col">
-        <V3SheetHeader onClose={onClose}>
-          <V3SheetHeader.Title>{t.withdrawTitle}</V3SheetHeader.Title>
+        <V3SheetHeader onClose={discard.close}>
+          <V3SheetHeader.Title size="compact">{t.withdrawTitle}</V3SheetHeader.Title>
           <V3SheetHeader.Subtitle>{t.withdrawSub}</V3SheetHeader.Subtitle>
         </V3SheetHeader>
 
-        <SheetBody>
-          <LabeledBlock label={t.from}>
-            <PocketPickerField pockets={pockets} value={fromId} onChange={pickFrom} label={t.from} />
-          </LabeledBlock>
-
-          <AmountCurrencyRow
-            amount={amount} onAmount={setAmount} currency={currency} onCurrency={setCurrency}
-            amountLabel={t.amount} currencyLabel={t.currency}
+        <SheetBody className="space-y-3 pt-0">
+          <AmountHero
+            value={amount}
+            onChange={setAmount}
+            currency={currency}
+            onCurrencyChange={(c) => setCurrency(c as Currency)}
+            base={baseCurrency}
+            aria-label={t.amount}
+            top={from ? <PocketTile account={from.account} className="size-[52px] rounded-2xl" iconClassName="size-6" /> : undefined}
+            line={from && after !== null ? w.goesFrom(fromName, fmtNum(from.account.currentBalance), fmtNum(after)) : ''}
           />
 
-          <LabeledBlock label={t.purpose}>
-            <div role="radiogroup" aria-label={t.purpose} className="space-y-2">
-              {PURPOSES.map((p) => (
-                <SelectableCard key={p.key} selected={purpose === p.key} onClick={() => { setPurpose(p.key); setDebtId(null); setDebtOpen(false); setAssetClass(null); setMoveToId(null); setAwayFromHolder(false) }}>
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl" style={{ background: tint(p.color, 14), color: p.color }}>{p.icon}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{t[p.key === 'transfer' ? 'invest' : p.key]}</p>
-                    <p className="text-xs text-[var(--color-brand-text-muted)]">{t[`${p.key === 'transfer' ? 'invest' : p.key}Sub` as 'spendSub']}</p>
-                  </div>
-                </SelectableCard>
-              ))}
-            </div>
-          </LabeledBlock>
+          <Card padding="none" divide className="overflow-hidden">
+            <PocketPickerField look="row" pockets={pockets} value={fromId} onChange={pickFrom} label={t.from} />
+            <PickerRow label={w.forLabel} value={purposeOptions.find((o) => o.value === purpose)?.title} onClick={() => setSheet('for')} />
+            {reason === 'debt' ? (
+              <PickerRow
+                label={w.debtLabel}
+                value={debt ? w.debtValue(debt.name, fmtNum(debt.left)) : <span className="text-[var(--color-brand-text-muted)]">{debtChips.length ? t.pickDebt : t.noDebts}</span>}
+                onClick={debtChips.length ? () => setSheet('debt') : undefined}
+              />
+            ) : null}
+            {reason === 'transfer' ? (
+              <PickerRow
+                label={w.assetLabel}
+                value={asset ? t[asset.label] : <span className="text-[var(--color-brand-text-muted)]">{t.whichAsset}</span>}
+                onClick={() => setSheet('asset')}
+              />
+            ) : null}
+            {moveOn ? (
+              <PocketPickerField look="row" pockets={pockets.filter((p) => p.account.id !== fromId)} value={moveToId} onChange={setMoveToId} label={w.intoLabel} />
+            ) : null}
+            {showTo ? <PickerRow label={w.toLabel} value={toValue} onClick={() => setSheet('to')} /> : null}
+          </Card>
 
-          {!moveOn && reason === 'debt' && (
-            <LabeledBlock label={t.whichDebt}>
-              {debtChips.length === 0 ? (
-                <p className="text-xs text-[var(--color-brand-text-muted)]">{t.noDebts}</p>
-              ) : (
-                <>
-                  <FieldButton
-                    icon={<CreditCard size={16} className="text-[var(--cat-debt-fg)]" />}
-                    value={debtChips.find((d) => d.id === debtId)?.name}
-                    placeholder={t.pickDebt}
-                    aria-expanded={debtOpen}
-                    onClick={() => setDebtOpen((o) => !o)}
-                  />
-                  {debtOpen && (
-                    <div role="radiogroup" aria-label={t.whichDebt} className="mt-2 space-y-2">
-                      {debtChips.map((d) => (
-                        <SelectableCard key={d.id} layout="list" selected={debtId === d.id} onClick={() => { setDebtId(d.id); setDebtOpen(false) }}>
-                          <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{d.name}</span>
-                          <span dir="auto" className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{t.left(fmtNum(d.left))}</span>
-                        </SelectableCard>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-            </LabeledBlock>
-          )}
-
-          {/* Which asset? (screen 08) */}
-          {!moveOn && reason === 'transfer' && (
-            <Card padding="sm">
-              <p className="mb-2 text-[0.8125rem] font-bold text-[var(--color-brand-text-primary)]">{t.whichAsset}</p>
-              <div className="flex gap-2 overflow-x-auto hide-scrollbar">
-                {INVEST_CLASSES.map((c) => {
-                  const target = topupByClass.get(c.type)
-                  const on = assetClass === c.type
-                  return (
-                    <SelectableCard key={c.type} layout="list" selected={on}
-                      onClick={() => { if (target) setAssetClass(c.type); else onNeedAsset?.(c.type) }}
-                      className="w-auto shrink-0 gap-2 px-3 py-2">
-                      <span className="text-[var(--color-brand-gold)]">{c.icon}</span>
-                      <span>
-                        <span className="block text-[0.78125rem] font-semibold text-[var(--color-brand-text-primary)]">{t[c.label]}</span>
-                        <span className="block text-[0.625rem] text-[var(--color-brand-text-muted)]">{target ? t.addToAsset(target.name) : t.addOneFirst}</span>
-                      </span>
-                    </SelectableCard>
-                  )
-                })}
-              </div>
-            </Card>
-          )}
-
-          {moveOn && (
-            <LabeledBlock label={t.moveTo}>
-              <div className="flex gap-2 overflow-x-auto hide-scrollbar">
-                {pockets.filter((p) => p.account.id !== fromId).map((p) => (
-                  <OptionChip key={p.account.id} selected={moveToId === p.account.id} onClick={() => setMoveToId(p.account.id)}>
-                    {pocketDisplayName(p.account, sf.systemNames)}
-                  </OptionChip>
-                ))}
-              </div>
-            </LabeledBlock>
-          )}
-
-          {!moveOn && reason === 'spend' && (
+          {reason === 'spend' && (
             <>
-              {holderName && <p className="text-xs text-[var(--color-brand-text-muted)]">{t.heldSpendHint(holderName)}</p>}
+              {holderName && <p className="px-1 text-xs text-[var(--color-brand-text-muted)]">{t.heldSpendHint(holderName)}</p>}
               <SettingsSwitchRow label={t.logExpense} hint={t.logExpenseHint} checked={logExpense} onChange={setLogExpense} />
               {logExpense && (
                 <LabeledBlock label={t.expenseCategory}>
@@ -333,26 +309,54 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
             </>
           )}
 
-          {!moveOn && reason === 'income' && holderName && leg.views.length > 0 ? (
-            <LabeledBlock label={t.toAccount}>
-              <div className="flex gap-2 overflow-x-auto hide-scrollbar">
-                <OptionChip selected={!awayFromHolder} onClick={() => setAwayFromHolder(false)}>{t.staysIn(holderName)}</OptionChip>
-                <OptionChip selected={awayFromHolder} onClick={() => setAwayFromHolder(true)}>{t.otherAccount}</OptionChip>
-              </div>
-              {awayFromHolder && <div className="mt-2"><AccountLegRow leg={leg} label={t.toAccount} /></div>}
-            </LabeledBlock>
-          ) : !moveOn && reason === 'income' && !holderName ? <AccountLegRow leg={leg} label={t.toAccount} /> : null}
+          {overPocket && from ? (
+            <p role="alert" className="text-[0.8125rem] text-[var(--color-brand-amber)]">
+              {lt.money.overPocket(fromName, fmtNum(from.account.currentBalance))}
+            </p>
+          ) : null}
 
-          <NoteField open={noteOpen} onOpen={() => setNoteOpen(true)} onClose={() => setNoteOpen(false)} value={note} onChange={setNote}
-            labels={{ add: t.note, placeholder: t.notePlaceholder, clear: t.clearNote }} />
+          <NoteRow value={note} onChange={setNote} placeholder={w.addNote} />
         </SheetBody>
 
         <SheetFooter safeArea>
           <Button size="cta-block" onClick={submit} disabled={!canSubmit} className="font-semibold">
-            {ctaLabel}
+            {from ? w.cta(amountNum > 0 ? fmtNum(amountNum) : '') : t.choosePocket}
           </Button>
         </SheetFooter>
       </div>
+
+      <OptionSheet<Purpose> open={sheet === 'for'} onClose={() => setSheet(null)} title={t.purpose} options={purposeOptions} value={purpose} onChange={pickPurpose} />
+      <OptionSheet<string>
+        open={sheet === 'debt'}
+        onClose={() => setSheet(null)}
+        title={t.whichDebt}
+        options={debtChips.map((d) => ({ value: d.id, title: d.name, subtitle: t.left(fmtNum(d.left)) }))}
+        value={debtId}
+        onChange={setDebtId}
+      />
+      <OptionSheet<InvestmentAssetType>
+        open={sheet === 'asset'}
+        onClose={() => setSheet(null)}
+        title={t.whichAsset}
+        options={INVEST_CLASSES.map((c) => {
+          const target = topupByClass.get(c.type)
+          return { value: c.type, title: t[c.label], subtitle: target ? t.addToAsset(target.name) : t.addOneFirst, icon: c.icon, tone: 'var(--color-brand-gold)' }
+        })}
+        value={assetClass}
+        onChange={(v) => { if (topupByClass.has(v)) setAssetClass(v); else onNeedAsset?.(v) }}
+      />
+      <OptionSheet<string>
+        open={sheet === 'to'}
+        onClose={() => setSheet(null)}
+        title={t.toAccount}
+        options={toOptions}
+        value={holderName && !awayFromHolder ? HOLDER : leg.accountId}
+        onChange={(v) => {
+          if (v === HOLDER) return setAwayFromHolder(false)
+          setAwayFromHolder(true)
+          leg.setAccountId(v)
+        }}
+      />
     </ModalShell>
   )
 }

@@ -2,33 +2,41 @@
 
 import { PageBody, PageDivider } from '@/components/layout/PageContainer'
 import dynamic from 'next/dynamic'
+import { addMonths, parseISO } from 'date-fns'
 import { ChartPlaceholder } from '@/components/reports/ChartPlaceholder'
 import { ReportFilters } from '@/components/reports/ReportFilters'
 import { ReportExpenseDebtFilter } from '@/components/reports/ReportExpenseDebtFilter'
 import { useReportsPage } from '@/hooks/useReportsPage'
-import { expenseAmountInBase } from '@/lib/utils/calculations'
+import { budgetMonthKeyFor, expenseAmountInBase, getMonthRange } from '@/lib/utils/calculations'
 import { ReportsSummaryPanel } from '@/components/features/reports/ReportsSummaryPanel'
 import { ReportsPaymentMethodPanel } from '@/components/features/reports/ReportsPaymentMethodPanel'
 import { ReportsExportBar } from '@/components/features/reports/ReportsExportBar'
 import { SpendingPacePanel } from '@/components/reports/SpendingPacePanel'
 import { ReportsSavingsPanel } from '@/components/reports/ReportsSavingsPanel'
 import { ReportsNetWorthPanel } from '@/components/reports/ReportsNetWorthPanel'
-import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { reportCycles } from '@/lib/reports/reportsPeriod'
+import { reportCycles, type ReportRangePreset } from '@/lib/reports/reportsPeriod'
 import { useBillingStore } from '@/lib/billing/billingStore'
-import { canSeeAdvancedInsights, FREE_RANGES } from '@/lib/insights/access'
+import { canSeeAdvancedInsights, rangeIsFree } from '@/lib/insights/access'
 import { useInsightSource, useInsights } from '@/lib/insights/useInsights'
+import { heroTiles, heroVerdict, learningProgress, paceVerdict, type PlanFigures } from '@/lib/insights/analysis'
+import { buildInsightCharts, categorySlices, cumulative } from '@/lib/insights/charts'
+import { composeRead } from '@/lib/insights/narrative'
 import { InsightsHero } from '@/components/features/insights/InsightsHero'
 import { InsightsFeed } from '@/components/features/insights/InsightsFeed'
 import { InsightsLearning } from '@/components/features/insights/InsightsLearning'
 import { InsightsAreas } from '@/components/features/insights/InsightsAreas'
+import { BuddgyReadCard, ExplainMonthCard } from '@/components/features/insights/BuddgyRead'
+import { PaceChart } from '@/components/features/insights/PaceChart'
+import { WhereItWent } from '@/components/features/insights/WhereItWent'
+import { MonthByMonth } from '@/components/features/insights/MonthByMonth'
+import { PatternsSection } from '@/components/features/insights/PatternsSection'
+import { LockedFindingSheet, type LockedFinding } from '@/components/features/insights/LockedFindingSheet'
 import { navigate } from '@/lib/navigation/navigate'
-import { useT } from '@/lib/i18n'
-import { useEffect, useMemo } from 'react'
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
+import { useLocale, useT } from '@/lib/i18n'
+import { formatLocalized } from '@/lib/i18n/dateFormat'
+import { useInsightsLtCopy } from '@/lib/i18n/insightsLtCopy'
+import { useEffect, useMemo, useState } from 'react'
 import { InsightsFold } from '@/components/features/insights/InsightsFold'
 import { insightsSignature } from '@/lib/insights/useInsightsDot'
 import { track } from '@/lib/analytics/events'
@@ -46,12 +54,23 @@ const CategoryPieChart = dynamic(
   { ssr: false, loading: () => <ChartPlaceholder /> }
 )
 
+const RANGES: readonly ReportRangePreset[] = ['thisMonth', 'lastMonth', 'last3Months', 'last6Months', 'thisYear']
+const SECTION_HEAD = 'px-1 pt-2 text-[0.6875rem] font-bold uppercase tracking-wide text-[var(--color-brand-text-muted)]'
+
 export default function ReportsPage() {
   const r = useReportsPage()
   const t = useT()
-  const { input, hero, insights } = useInsights()
+  const lt = useInsightsLtCopy()
+  const { locale } = useLocale()
+  const { input, hero, insights, stats } = useInsights()
   const advanced = canSeeAdvancedInsights(useBillingStore((b) => b.me))
-  const lockedRanges = advanced ? [] : (['last6Months', 'thisYear'] as const).filter((x) => !FREE_RANGES.includes(x))
+  // Free keeps every range up to 6 months; only what `FREE_RANGES` leaves out is locked.
+  const lockedRanges = advanced ? [] : RANGES.filter((x) => !rangeIsFree(x))
+  const { dateRange, setDateRange } = r
+  // Billing loads after the page: a Pro range picked while it was unknown falls back once the plan says Free.
+  useEffect(() => {
+    if (!advanced && !rangeIsFree(dateRange)) setDateRange('thisMonth')
+  }, [advanced, dateRange, setDateRange])
   const focusInsightId = useSettingsStore((s) => s.focusInsightId)
   useEffect(() => {
     if (!focusInsightId) return
@@ -60,8 +79,15 @@ export default function ReportsPage() {
   }, [focusInsightId, insights])
   const source = useInsightSource()
   const recap = useMemo(() => buildRecap(source, new Date()), [source])
+  const charts = useMemo(() => buildInsightCharts(source, new Date()), [source])
+  const [lockSheet, setLockSheet] = useState<LockedFinding | null>(null)
+  const openLocked = (finding: LockedFinding = {}) => {
+    track('insights.locked_open', { finding: finding.tag ?? 'pro' })
+    setLockSheet(finding)
+  }
   const openUpgrade = () => {
-    track('insights.paywall_open', { source: 'page' })
+    track('insights.paywall_open', { source: lockSheet?.tag ? 'finding' : 'page' })
+    setLockSheet(null)
     navigate('/settings/pro')
   }
   const signature = insightsSignature(insights)
@@ -73,59 +99,55 @@ export default function ReportsPage() {
   useEffect(() => {
     if (signature) useSettingsStore.getState().setInsightsSeen(signature)
   }, [signature])
-  const stats = useMonthlyStats()
   const monthFilter = useSettingsStore((s) => s.monthFilter)
   // The pace panel reads the viewed month's stats, so it shows only when that month is the report's current cycle.
   const paceInRange = r.dateRange === 'thisMonth' && reportCycles('thisMonth', new Date(), r.settings.monthStartDay).at(-1) === monthFilter
 
-  return (
-    <div>
-      <PageBody className="space-y-4 pt-3">
-        <InsightsHero hero={hero} input={input} currency={r.settings.baseCurrency} />
+  const startDay = r.settings.monthStartDay
+  const cycleKey = budgetMonthKeyFor(new Date(), startDay)
+  const cycleFirst = parseISO(`${cycleKey}-01`)
+  const monthName = (d: Date) => formatLocalized(d, 'MMMM', locale)
+  const month = monthName(cycleFirst)
+  const plan: PlanFigures = {
+    budget: stats.totalExpenseBudget,
+    projected: stats.projectedSpend,
+    dailyRate: stats.dailyRate,
+    landDaily: stats.suggestedDaily,
+    status: stats.paceStatus,
+  }
+  const verdict = heroVerdict(input, hero, plan)
+  const tiles = heroTiles(insights, advanced)
+  // The chart and the read follow spending even with no income; only the hero waits for it.
+  const pace = paceVerdict(input, hero, plan)
+  const read = advanced ? composeRead(pace, insights) : null
+  const slices = categorySlices(charts.categories)
+  // The learning page is for a member with no spending history yet; an established one early in a cycle gets the hero's early state.
+  const learning = hero.state === 'learning' && charts.months.slice(0, -1).every((m) => m.spent === 0)
+  const addIncome = () => useSettingsStore.getState().setActiveModal('addIncome')
+  const projected = pace.kind === 'budget' || pace.kind === 'usual' || pace.kind === 'projection' ? pace.projected : null
 
-        <section className="space-y-2">
-          <h2 className="px-1 text-[0.6875rem] font-bold uppercase tracking-wide text-[var(--color-brand-text-muted)]">{t.insights.feedTitle}</h2>
-          {insights.length === 0 ? (
-            <InsightsLearning daysMore={hero.daysMore} totalDays={input.cycle.totalDays} />
-          ) : (
-            <InsightsFeed insights={insights} currency={r.settings.baseCurrency} advanced={advanced} />
-          )}
-        </section>
+  const feed = (
+    <section className="space-y-2">
+      <h2 className={SECTION_HEAD}>{lt.changed.title}</h2>
+      <InsightsFeed insights={insights} currency={r.settings.baseCurrency} advanced={advanced} onLocked={openLocked} />
+    </section>
+  )
 
-        <section className="space-y-2">
-          <h2 className="px-1 text-[0.6875rem] font-bold uppercase tracking-wide text-[var(--color-brand-text-muted)]">{t.insights.whatIf.ahead}</h2>
-          {input.debtPlan.monthly > 0 && input.debtPlan.remaining > 0 ? (
-            <WhatIfCard plan={input.debtPlan} currency={r.settings.baseCurrency} locked={!advanced} onUnlock={openUpgrade} />
-          ) : (
-            <p className="px-1 text-[0.78125rem] text-[var(--color-brand-text-muted)]">{t.insights.whatIf.none}</p>
-          )}
-          <h3 className="px-1 pt-1 text-sm font-bold text-[var(--color-brand-text-primary)]">{t.insights.recap.title}</h3>
-          <RecapCards recap={recap} currency={r.settings.baseCurrency} locked={!advanced} onUnlock={openUpgrade} />
-          <Card padding="md" className="flex items-center gap-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]">
-              <BuddgyIcon size={26} mood="happy" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <b className="block text-[0.9375rem] text-[var(--color-brand-text-primary)]">{t.insights.explain.title}</b>
-              <span className="block text-xs text-[var(--color-brand-text-muted)]">{t.insights.explain.sub}</span>
-            </span>
-            <Button
-              size="touch"
-              variant={advanced ? 'default' : 'outline'}
-              onClick={() => (advanced ? useSettingsStore.getState().openAiChatWithSeed(t.insights.explain.seed, true) : openUpgrade())}
-            >
-              {advanced ? t.insights.askBuddgy : t.insights.seePro}
-            </Button>
-          </Card>
-        </section>
-
-        <InsightsFold title={t.insights.areasTitle}>
-          <InsightsAreas />
+  const folds = (
+    <>
+      {input.debtPlan.monthly > 0 && input.debtPlan.remaining > 0 ? (
+        <InsightsFold title={lt.lookingAhead}>
+          <WhatIfCard plan={input.debtPlan} locked={!advanced} onUnlock={() => openLocked()} />
         </InsightsFold>
+      ) : null}
 
-        <InsightsFold title={t.insights.detailsTitle}>
+      <InsightsFold title={t.insights.areasTitle}>
+        <InsightsAreas />
+      </InsightsFold>
+
+      <InsightsFold title={lt.more}>
         <ReportsNetWorthPanel contained />
-        <ReportFilters selected={r.dateRange} onSelect={r.setDateRange} lockedRanges={lockedRanges} onLocked={() => navigate('/settings/pro')} />
+        <ReportFilters selected={r.dateRange} onSelect={r.setDateRange} lockedRanges={lockedRanges} onLocked={() => openLocked()} />
 
         <ReportExpenseDebtFilter value={r.expenseDebtFilter} onChange={r.setExpenseDebtFilter} />
 
@@ -182,8 +204,66 @@ export default function ReportsPage() {
         <ReportsPaymentMethodPanel methods={r.methodBreakdown} baseCurrency={r.settings.baseCurrency} />
 
         <ReportsExportBar onExportCsv={r.handleExportCSV} onCopySummary={r.handleCopySummary} />
-        </InsightsFold>
+      </InsightsFold>
+    </>
+  )
+
+  return (
+    <div>
+      {/* One centred column on desktop, the width /flow uses. */}
+      <PageBody narrow className="space-y-3 pt-3 pb-6">
+        {learning ? (
+          <>
+            <InsightsLearning progress={learningProgress(input)} />
+            {insights.length > 0 ? feed : null}
+          </>
+        ) : (
+          <>
+            <InsightsHero
+              verdict={verdict}
+              tiles={tiles}
+              dayLabel={lt.hero.dayOf(month, input.cycle.daysElapsed, input.cycle.totalDays)}
+              month={month}
+              lockedCount={tiles.filter((x) => x.locked).length}
+              onSeePro={() => openLocked()}
+              onAddIncome={addIncome}
+              onSetBudget={plan.budget > 0 ? undefined : () => navigate('/budget-setup')}
+            />
+
+            {advanced ? read && <BuddgyReadCard read={read} month={month} /> : <ExplainMonthCard onSeePro={() => openLocked()} />}
+
+            {charts.daily.length > 0 ? (
+              <PaceChart cumulative={cumulative(charts.daily)} totalDays={input.cycle.totalDays} start={getMonthRange(cycleKey, startDay).start} budget={plan.budget} projected={projected} />
+            ) : null}
+
+            {slices.length > 0 ? (
+              <WhereItWent slices={slices} currency={r.settings.baseCurrency} lastMonth={monthName(addMonths(cycleFirst, -1))} days={input.cycle.daysElapsed} />
+            ) : null}
+
+            <MonthByMonth
+              months={charts.months}
+              yearKeys={reportCycles('thisYear', new Date(), startDay)}
+              budget={plan.budget}
+              yearLocked={!advanced}
+              onLocked={() => openLocked()}
+            />
+
+            <PatternsSection input={input} insights={insights} locked={!advanced} onLocked={() => openLocked()} />
+
+            {insights.length > 0 ? feed : null}
+
+            <RecapCards
+              recap={recap}
+              month={recap ? monthName(parseISO(`${recap.cycle}-01`)) : monthName(addMonths(cycleFirst, -1))}
+              locked={!advanced}
+              onUnlock={() => openLocked()}
+            />
+          </>
+        )}
+
+        {folds}
       </PageBody>
+      <LockedFindingSheet finding={lockSheet} onSeePro={openUpgrade} onClose={() => setLockSheet(null)} />
     </div>
   )
 }

@@ -9,6 +9,8 @@ export interface PageGridProps {
   railFirst?: boolean
   /** Without `secondary`, fill the wide column instead of the narrow one. */
   wide?: boolean
+  /** Keep the phone order on desktop too: `secondary` stacks under `primary` in one centred `--page-max` column. */
+  stack?: boolean
   className?: string
 }
 
@@ -23,13 +25,17 @@ const BODY_PT = 'lg:pt-[var(--page-body-pt)]'
  * Page body below the hero band. Single column below lg (primary first, then secondary: the
  * phone order). From lg a hairline closes the hero band, primary fills and `secondary` is a
  * 22rem sticky rail split off by a vertical hairline; both start at the same y. Without
- * `secondary`, one column centred at `--page-max`. Phone spacing stays with the children.
+ * `secondary` (or with `stack`), one column centred at `--page-max`. Phone spacing stays with the children.
  */
-export function PageGrid({ primary, secondary, railFirst, wide, className }: PageGridProps) {
-  if (!secondary) {
+export function PageGrid({ primary, secondary, railFirst, wide, stack, className }: PageGridProps) {
+  if (!secondary || stack) {
     return (
-      <div className={cn('w-full lg:border-t', PAGE_HAIRLINE)}>
-        <div className={cn(SHELL, BODY_PT, wide ? 'max-w-[var(--page-max)] lg:max-w-[var(--page-max-wide)]' : 'max-w-[var(--page-max)]', className)}>{primary}</div>
+      <div className={cn('w-full', !stack && 'lg:border-t', PAGE_HAIRLINE)}>
+        <div className={cn(SHELL, BODY_PT, wide && !stack ? 'max-w-[var(--page-max)] lg:max-w-[var(--page-max-wide)]' : 'max-w-[var(--page-max)] lg:max-w-[var(--page-max)]', stack && 'flex flex-col gap-y-4', className)}>
+          {railFirst && secondary ? <div className="min-w-0">{secondary}</div> : null}
+          <div className="min-w-0">{primary}</div>
+          {!railFirst && secondary ? <div className="min-w-0">{secondary}</div> : null}
+        </div>
       </div>
     )
   }

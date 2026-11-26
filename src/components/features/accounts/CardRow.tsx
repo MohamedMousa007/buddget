@@ -5,8 +5,9 @@ import type { CardDetails } from '@/lib/accounts/cardDetails'
 import { MASK } from '@/lib/privacy/mask'
 import type { PaymentMethod } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
+import { useAccountsLtCopy } from '@/lib/i18n/accountsLtCopy'
 import { CardFaceChip } from './CardFaceChip'
-import { accountTitle, cardKindLabel, moneyFlex } from './accountDisplay'
+import { accountDisplayName, accountTitle, cardKindLabel, moneyFlex } from './accountDisplay'
 
 interface CardRowProps {
   method: PaymentMethod
@@ -24,6 +25,7 @@ interface CardRowProps {
 export function CardRow({ method, parent, details, masked, onOpen }: CardRowProps) {
   const dict = useT()
   const t = dict.accountsPage
+  const dueDayLabel = useAccountsLtCopy().addCard.dueDay
   const kind = cardKindLabel(method.type, t)
   const bank = accountTitle(parent ?? method)
   const fmt = (n: number, cur: string) => (masked ? MASK : `${moneyFlex(n, cur)} ${cur}`)
@@ -31,7 +33,7 @@ export function CardRow({ method, parent, details, masked, onOpen }: CardRowProp
   if (details?.kind === 'credit') {
     const owed = details.outstanding ?? 0
     const limit = details.limit != null ? `${t.cardLimit} ${fmt(details.limit, details.currency)}` : null
-    const due = details.dueDay != null ? `${dict.moneyFlows.ccDueDay} ${details.dueDay}` : null
+    const due = details.dueDay != null ? `${dueDayLabel} ${details.dueDay}` : null
     const rest = [limit, due].filter(Boolean).join(' · ')
     sub = owed > 0
       ? <>{t.owed} <b className="font-mono-numbers font-semibold text-[var(--color-brand-amber)]">{fmt(owed, details.currency)}</b>{rest ? ` · ${rest}` : ''}</>
@@ -39,8 +41,10 @@ export function CardRow({ method, parent, details, masked, onOpen }: CardRowProp
   } else if (method.type === 'bnpl') {
     sub = [kind, details?.kind === 'bnpl' ? `${details.paid}/${details.count}` : null, t.planInDebts].filter(Boolean).join(' · ')
   } else {
-    sub = [method.label?.trim() || kind, String(method.currency)].filter(Boolean).join(' · ')
+    sub = [kind, String(method.currency)].filter(Boolean).join(' · ')
   }
+  // The card's own Name, else the account's Name (or provider) with the kind, as the card sheet titles it.
+  const title = method.label?.trim() || (parent ? `${accountDisplayName(parent)} ${kind}` : bank)
   return (
     <button type="button" onClick={onOpen} data-raw-button-ok="a whole-row tap target, sized by its content"
       aria-label={[bank, kind, method.last4].filter(Boolean).join(' ')}
@@ -48,7 +52,7 @@ export function CardRow({ method, parent, details, masked, onOpen }: CardRowProp
       <CardFaceChip method={method} parent={parent} />
       <span className="min-w-0 flex-1">
         <span className="flex min-w-0 items-center gap-1.5">
-          <span className="truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{parent ? `${bank} ${kind}` : bank}</span>
+          <span className="truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{title}</span>
           {method.isDefault ? <Badge variant="muted" size="xs">{dict.paymentMethods.default}</Badge> : null}
         </span>
         <span dir="auto" className="mt-0.5 block truncate text-[0.8125rem] text-[var(--color-brand-text-muted)]">{sub}</span>

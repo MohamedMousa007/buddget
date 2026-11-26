@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight, Lightbulb, Search, SquarePen, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
+import { ChatHeaderButton } from '@/components/features/ai-chat/ChatHeaderButton'
 import { Input } from '@/components/ui/input'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { groupChats, searchChats, type SavedChat } from '@/lib/buddgy/client/savedChats'
@@ -35,9 +36,9 @@ export function AIChatList({ chats, activeId, onOpen, onNew, onDelete, onBack, o
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center gap-2 border-b border-[var(--color-brand-border)] px-3 py-2">
-        <IconButton onClick={onBack} aria-label={copy.back} variant="ghost" size="sm" shape="round">
+        <ChatHeaderButton onClick={onBack} label={copy.back} tone="ghost">
           <ChevronLeft className="h-5 w-5 rtl:rotate-180" />
-        </IconButton>
+        </ChatHeaderButton>
         <h3 className="flex-1 text-center text-base font-bold text-[var(--color-brand-text-primary)]">{copy.title}</h3>
         <span className="w-11" aria-hidden />
       </div>

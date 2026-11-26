@@ -1,6 +1,9 @@
+import { existsSync } from 'node:fs'
 import { chromium as pwChromium } from '@playwright/test'
-// Cloud sandboxes ship a Chromium that differs from the pinned Playwright build: PW_CHROMIUM_EXECUTABLE points at it.
-export const chromium={launch:(o={})=>pwChromium.launch({...(process.env.PW_CHROMIUM_EXECUTABLE?{executablePath:process.env.PW_CHROMIUM_EXECUTABLE,args:['--no-sandbox']}:{}),...o})}
+// Cloud sandboxes ship a Chromium that differs from the pinned Playwright build: PW_CHROMIUM_EXECUTABLE points at it,
+// else the cloud image's /opt/pw-browsers/chromium when it is there.
+const EXE=process.env.PW_CHROMIUM_EXECUTABLE??(existsSync('/opt/pw-browsers/chromium')?'/opt/pw-browsers/chromium':undefined)
+export const chromium={launch:(o={})=>pwChromium.launch({...(EXE?{executablePath:EXE,args:['--no-sandbox']}:{}),...o})}
 export const BASE='http://localhost:3100'
 export const SHOTS='e2e/ui/out/'
 export const PW='QaUi!Pass-7391xZ'

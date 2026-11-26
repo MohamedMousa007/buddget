@@ -1,5 +1,6 @@
 'use client'
 
+import { inlineMoney } from '@/components/features/budget/chromeFormat'
 import type { ReactNode } from 'react'
 import {
   CircleAlert, CircleCheck, CircleDashed, CircleHelp, Gauge, Lock, RefreshCw, TriangleAlert, CalendarClock,
@@ -15,7 +16,6 @@ import { lineIconKey } from '@/lib/budget/lineIcons'
 import type { LineAction, LineStatusView } from '@/lib/budget/lineStatus'
 import type { LineView, PlanView } from '@/lib/budget/planView.types'
 import type { StatusTextParams } from '@/lib/i18n/budgetPage/blocksCopy'
-import { formatCurrency } from '@/lib/utils/formatters'
 import { cn } from '@/lib/utils'
 import { formatShare } from './geometry'
 
@@ -83,7 +83,7 @@ export function lineStatusIcon(key: string): LucideIcon {
 export function useLineStatusText(view: PlanView) {
   const t = useBudgetBlocksCopy()
   return (s: LineStatusView): string => {
-    const money = (n: number | undefined) => (n == null ? undefined : formatCurrency(Math.abs(n), view.base, false))
+    const money = (n: number | undefined) => (n == null ? undefined : inlineMoney(Math.abs(n), view.base))
     const p: StatusTextParams = {
       percent: s.params.percent,
       daysLeft: s.params.daysLeft,
@@ -206,7 +206,7 @@ export function LineRow({
         </span>
         <span className="flex flex-col items-end">
           <span className="font-mono-numbers text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">
-            {figure ? figure.amount : formatCurrency(lv.amount, view.base, false)}
+            {figure ? figure.amount : inlineMoney(lv.amount, view.base)}
           </span>
           {figure ? (
             figure.sub ? <span className="font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">{figure.sub}</span> : null

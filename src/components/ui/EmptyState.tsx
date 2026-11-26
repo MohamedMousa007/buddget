@@ -4,12 +4,12 @@ import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 type EmptyStateVariant = 'default' | 'hero' | 'card'
-type EmptyStateTone = 'brand' | 'positive'
+type EmptyStateTone = 'brand' | 'positive' | 'neutral'
 
 interface EmptyStateProps {
   /** Glyph drawn inside the unified 56px tile. */
   icon?: ReactNode
-  /** Tile colour behind `icon`: brand for a first step, positive for "all clear". */
+  /** Tile colour behind `icon`: brand for a first step, positive for "all clear", neutral for no results. */
   iconTone?: EmptyStateTone
   /** Replaces `icon` with a ready-made visual (mascot) rendered as given, above the title. */
   illustration?: ReactNode
@@ -25,11 +25,18 @@ interface EmptyStateProps {
    * `card` is `hero` on the brand card surface for page-level first-run states.
    */
   variant?: EmptyStateVariant
+  /**
+   * The light-touch sizes, only with `variant="card"`: `page` for a screen's own empty state (56px tile, 17px title),
+   * `section` for an empty block inside a populated screen (44px tile, 15px title). Unset keeps the original look.
+   */
+  size?: 'page' | 'section'
 }
 
 const TILE: Record<EmptyStateTone, string> = {
   brand: 'bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]',
   positive: 'bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]',
+  /** A quiet grey tile: nothing to fix, nothing to celebrate (no matching results). */
+  neutral: 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]',
 }
 
 export function emptyStateClasses(variant: EmptyStateVariant) {
@@ -47,18 +54,34 @@ export function emptyStateClasses(variant: EmptyStateVariant) {
   return { root: root[variant], ...shared }
 }
 
-export function EmptyState({ icon, iconTone = 'brand', illustration, title, description, action, children, className, variant = 'default' }: EmptyStateProps) {
+/** Light-touch sizes (`ltEmpty` in the mockup): flat card, tile, title and body per size. */
+const LT_SIZE = {
+  page: {
+    root: 'flex flex-col items-center rounded-3xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-6 py-8 text-center',
+    tile: 'size-14 rounded-[18px] [&_svg]:size-7',
+    title: 'mt-4 text-[1.0625rem] font-bold text-[var(--color-brand-text-primary)]',
+  },
+  section: {
+    root: 'flex flex-col items-center rounded-3xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-6 py-6 text-center',
+    tile: 'size-11 rounded-[14px] [&_svg]:size-5',
+    title: 'mt-4 text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]',
+  },
+} as const
+const LT_DESCRIPTION = 'mt-1 max-w-[30ch] text-[0.84375rem] leading-snug text-[var(--color-brand-text-secondary)]'
+
+export function EmptyState({ icon, iconTone = 'brand', illustration, title, description, action, children, className, variant = 'default', size }: EmptyStateProps) {
   const c = emptyStateClasses(variant)
+  const lt = size ? LT_SIZE[size] : null
   return (
-    <div className={cn(c.root, className)} role={children ? undefined : 'status'}>
+    <div className={cn(lt?.root ?? c.root, className)} role={children ? undefined : 'status'}>
       {illustration ??
         (icon != null ? (
-          <span className={cn('flex size-14 items-center justify-center rounded-2xl [&_svg]:size-7', TILE[iconTone])} aria-hidden>
+          <span className={cn('flex items-center justify-center', lt?.tile ?? 'size-14 rounded-2xl [&_svg]:size-7', TILE[iconTone])} aria-hidden>
             {icon}
           </span>
         ) : null)}
-      <p className={c.title}>{title}</p>
-      {description ? <p className={c.description}>{description}</p> : null}
+      <p className={lt?.title ?? c.title}>{title}</p>
+      {description ? <p className={lt ? LT_DESCRIPTION : c.description}>{description}</p> : null}
       {children ? <div className={c.body}>{children}</div> : null}
       {action ? <div className={c.action}>{action}</div> : null}
     </div>

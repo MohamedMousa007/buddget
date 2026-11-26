@@ -3,7 +3,7 @@
 import { AppLink } from '@/components/ui/AppLink'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useGoalProgress } from '@/hooks/useGoalProgress'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { formatWhole } from '@/lib/utils/formatters'
 import type { Goal, GoalCategory } from '@/lib/store/types'
 
 function GoalLensLine({ goal }: { goal: Goal }) {
@@ -17,7 +17,7 @@ function GoalLensLine({ goal }: { goal: Goal }) {
       <span aria-hidden>{goal.emoji}</span>
       <span className="min-w-0 flex-1 truncate font-medium text-[var(--color-brand-text-primary)]">{goal.name}</span>
       <span className="shrink-0 text-xs text-[var(--color-brand-text-secondary)] font-mono-numbers">
-        {target ? `${formatCurrency(currentAmount, goal.currency, false)} / ${formatCurrency(target, goal.currency, false)}` : ''}
+        {target ? `${formatWhole(currentAmount)} / ${formatWhole(target)}` : ''}
         {percent !== null ? ` · ${percent}%` : ''}
       </span>
     </AppLink>

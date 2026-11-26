@@ -1,8 +1,9 @@
 'use client'
 
 import { useLedgerInput } from '@/lib/accounts/useAccounts'
-import { accountTitle, splitMoney } from '@/components/features/accounts/accountDisplay'
+import { accountTitle } from '@/components/features/accounts/accountDisplay'
 import { useT } from '@/lib/i18n'
+import { formatFlex } from '@/lib/utils/formatters'
 import { availableIn, correctionRefusal, depositRefusal, pocketHome, type DepositIntent, type DepositRefusal } from '@/lib/savings/pocketHome'
 import type { PaymentMethod, SavingsAccount } from '@/lib/store/types'
 
@@ -41,8 +42,7 @@ export function useDepositGuard(pocket: Pocket | undefined): DepositGuard {
       if (!short) return null
       if (refusal === 'no_rate') return t.noRateFrom(accountTitle(short))
       const cur = String(short.currency)
-      const free = splitMoney(availableIn(short.id, ledger), cur)
-      return t.overAvailable(`${free.int}${free.dec} ${cur}`, accountTitle(short))
+      return t.overAvailable(`${formatFlex(availableIn(short.id, ledger))} ${cur}`, accountTitle(short))
     },
   }
 }

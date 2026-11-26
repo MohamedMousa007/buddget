@@ -15,6 +15,9 @@ export type IncomeOccurrenceStatus = 'received' | 'late' | 'partial' | 'missed' 
 /** Days past the due date before an unactioned payday displays as missed. */
 export const MISSED_AFTER_DAYS = 5
 
+/** How far (days) an occurrence-dated event may sit from its payday and still fill it: the weekend shift's reach. */
+const MAX_SHIFT_PAIR_DAYS = 2
+
 export interface IncomeOccurrence {
   /** Stable key: the paired event id, else `<sourceId>@<payday ISO>`. */
   key: string
@@ -204,10 +207,30 @@ export function buildOccurrences(
     }
   })
 
+  // An event stamped a day or two off its scheduled payday still fills it: the weekend
+  // rule moved the payday (stamped on the raw day, or under another weekend setting,
+  // e.g. the 5th vs a Fri+Sat shift to the 3rd). Nearest open payday wins; it must be
+  // in the same calendar month so a payday is never filled from the next one.
+  const pairedIds = new Set(occ.map((o) => o.eventId).filter(Boolean))
+  const stray = [...byOcc.values()].filter((e) => !pairedIds.has(e.id)).sort((a, b) => a.occurrenceDate!.localeCompare(b.occurrenceDate!))
+  for (const e of stray) {
+    const at = parseISO(e.occurrenceDate!).getTime()
+    let best = -1
+    let bestGap = Infinity
+    occ.forEach((o, i) => {
+      if (o.eventId || o.dueDate.slice(0, 7) !== e.occurrenceDate!.slice(0, 7)) return
+      const gap = Math.round(Math.abs(parseISO(o.dueDate).getTime() - at) / 86_400_000)
+      if (gap <= MAX_SHIFT_PAIR_DAYS && gap < bestGap) { best = i; bestGap = gap }
+    })
+    if (best === -1) continue
+    const o = occ[best]
+    occ[best] = { ...o, key: e.id, status: EVENT_STATUS[e.status] as IncomeOccurrenceStatus, amount: e.amount, currency: e.currency, eventId: e.id, daysLate: eventDaysLate(e) ?? undefined }
+    pairedIds.add(e.id)
+  }
+
   // Occurrence-dated events whose payday is no longer scheduled (schedule edited
   // after marking) and surplus legacy receipts are still real money — keep them
   // as extra entries.
-  const pairedIds = new Set(occ.map((o) => o.eventId).filter(Boolean))
   for (const e of byOcc.values()) {
     if (pairedIds.has(e.id)) continue
     occ.push({ key: e.id, date: e.occurrenceDate!, dueDate: e.occurrenceDate!, status: EVENT_STATUS[e.status] as IncomeOccurrenceStatus, amount: e.amount, currency: e.currency, eventId: e.id, daysLate: eventDaysLate(e) ?? undefined, actionable: true })

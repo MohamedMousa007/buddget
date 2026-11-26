@@ -39,4 +39,38 @@ describe('QA-106: the device whose edit was replaced by a newer one is told', ()
     expect(countReplaced(sent, withExpenses(sameEdit))).toBe(1) // e2 is gone
     expect(countReplaced(sent, withExpenses(sameEdit, mine.expenses[1]))).toBe(0)
   })
+
+  it('W1/W2: a row this device deleted or edited again after the flush is its own doing, not a replaced edit', () => {
+    const mine = withExpenses(expenseAt('e1', 55, T0), expenseAt('e2', 7, T0))
+    const sent = sentRows(emptySnapshot(), mine)
+    // Before the pull: e1 binned here, e2 edited again here a minute later.
+    const local = withExpenses(expenseAt('e2', 8, T0 + MIN))
+    expect(countReplaced(sent, local, local)).toBe(0)
+    // Without the local copy the same picture reads as two lost edits (the false toast).
+    expect(countReplaced(sent, local)).toBe(2)
+  })
+
+  it('W1: a delete made after a replaced edit sticks on the server and on both devices', async () => {
+    const clock = { now: T0 + 60 * MIN }
+    const s = fakeEditTimeServer(clock)
+    const base = expenseAt('e1', 0, T0)
+    await flushDiff(s.client as never, 'u', emptySnapshot(), withExpenses(base))
+    // B edits at +30 min; A's offline edit at +10 min is skipped and A pulls B's copy.
+    const b = withExpenses(expenseAt('e1', 99, T0 + 30 * MIN))
+    await flushDiff(s.client as never, 'u', withExpenses(base), b)
+    clock.now = T0 + 120 * MIN
+    const aStale = withExpenses(expenseAt('e1', 55, T0 + 10 * MIN))
+    expect((await flushDiff(s.client as never, 'u', withExpenses(base), aStale)).skippedWrites).toBe(1)
+    const cursor = clock.now
+    const aMerged = applyDelta(aStale, s.delta(null), aStale)
+    // A bins the row while the notice is up.
+    clock.now = T0 + 125 * MIN
+    const pending = { expenses: { e1: new Date(clock.now).toISOString() } }
+    await flushDiff(s.client as never, 'u', aMerged, emptySnapshot(), pending)
+    expect(s.rows.get('e1')?.deleted_at).not.toBeNull()
+    // B pushes nothing new and pulls; A pulls again: the row stays gone on both.
+    clock.now = T0 + 130 * MIN
+    expect(applyDelta(b, s.delta(cursor), b).expenses).toEqual([])
+    expect(applyDelta(emptySnapshot(), s.delta(cursor), emptySnapshot()).expenses).toEqual([])
+  })
 })

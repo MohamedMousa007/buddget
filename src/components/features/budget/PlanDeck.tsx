@@ -8,10 +8,9 @@ import { type CardMenuItem } from '@/components/ui/CardActionMenu'
 import { IconButton } from '@/components/ui/IconButton'
 import { Input } from '@/components/ui/input'
 import { SelectableCard } from '@/components/ui/SelectableCard'
-import { formatCurrency } from '@/lib/utils/formatters'
 import type { PlanSummary } from '@/lib/budget/planSummary'
 import type { BudgetPlan, Currency } from '@/lib/store/types'
-import { blockColor, percentText } from './chromeFormat'
+import { blockColor, percentText, inlineMoney } from './chromeFormat'
 import { useBudgetDeckCopy } from './useDeckCopy'
 
 export interface PlanDeckProps {
@@ -109,7 +108,7 @@ export function PlanDeck(p: PlanDeckProps) {
               <span className="grid w-full grid-cols-2 gap-2">
                 <span>
                   <span className="block text-xs text-[var(--color-brand-text-muted)]">{c.income}</span>
-                  <span className="font-mono-numbers text-sm font-semibold text-[var(--color-brand-text-primary)]">{formatCurrency(p.income, p.base, false)}</span>
+                  <span className="font-mono-numbers text-sm font-semibold text-[var(--color-brand-text-primary)]">{inlineMoney(p.income, p.base)}</span>
                 </span>
                 <span>
                   <span className="block text-xs text-[var(--color-brand-text-muted)]">{c.savingsRate}</span>

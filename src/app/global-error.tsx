@@ -7,6 +7,8 @@ import { en } from '@/lib/i18n/dictionaries/en'
 import { ar } from '@/lib/i18n/dictionaries/ar'
 import { readStoredLocale } from '@/lib/i18n/readStoredLocale'
 import type { Locale } from '@/lib/i18n/types'
+import { appFontClasses } from '@/lib/fonts/appFonts'
+import './globals.css'
 
 /** Shown when the root layout itself fails, so it carries its own html and body. */
 export default function GlobalError({
@@ -31,10 +33,11 @@ export default function GlobalError({
 
   return (
     <html lang={locale} dir="ltr" data-locale={locale}>
-      <body className="font-sans antialiased bg-[var(--color-brand-bg,#fff)]">
-        <div className="min-h-screen flex items-center justify-center p-6">
+      <body className={`${appFontClasses} font-sans antialiased bg-[var(--color-brand-bg,#fff)]`}>
+        {/* The whole page when the app shell itself failed: it carries the main landmark and the page's one h1. */}
+        <main className="min-h-screen flex items-center justify-center p-6">
           <div className="text-center max-w-md space-y-4">
-            <h2 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{t.title}</h2>
+            <h1 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{t.title}</h1>
             <p className="text-sm text-[var(--color-brand-text-muted)]">{t.body}</p>
             {reportId ? (
               <p dir="auto" className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{t.report(reportId.slice(0, 8))}</p>
@@ -43,7 +46,7 @@ export default function GlobalError({
               {t.retry}
             </Button>
           </div>
-        </div>
+        </main>
       </body>
     </html>
   )

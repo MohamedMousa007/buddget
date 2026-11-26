@@ -55,11 +55,11 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
   const { setEditingExpenseId, setActiveModal } = useSettingsStore()
   const { isMonthRange, hasFilters, resetFilters } = useExpenseFilterStore(
     useShallow((s) => ({
-      isMonthRange: s.range.preset === 'month',
+      isMonthRange: s.range.preset === 'month' || s.range.preset === 'all',
       hasFilters:
         s.cats.length > 0 ||
         s.methods.length > 0 ||
-        s.range.preset !== 'month' ||
+        (s.range.preset !== 'month' && s.range.preset !== 'all') ||
         amountIsFiltered(s.amtMin, s.amtMax),
       resetFilters: s.reset,
     })),

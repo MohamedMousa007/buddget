@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- in-page globals */
 import { expect, type Page } from '@playwright/test'
+import { pickCategory } from '../journeys/lib/ui'
 import { longTaskMs, settle, type netLog } from './lib'
 
 export async function openProfileLink(page: Page, name: string) {
@@ -12,7 +13,8 @@ export async function addExpenseFast(page: Page, m: Record<string, number>, net:
   const d = page.getByRole('dialog', { name: 'Add expense' })
   await d.getByRole('textbox', { name: 'Amount' }).fill('123')
   await d.getByRole('textbox', { name: 'Description' }).fill(desc)
-  await d.getByRole('radio', { name: 'Food', exact: true }).click()
+  // Light touch: the category sits behind a "Category › Choose" row.
+  await pickCategory(page, d, 'Food')
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
   await page.waitForTimeout(300)
   net.step = 'save_expense'

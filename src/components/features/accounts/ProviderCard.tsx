@@ -10,7 +10,7 @@ import type { PaymentMethod } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
 import { BrandMark } from './BrandMark'
 import { ProviderCardFaces, useFacesFit } from './ProviderCardFaces'
-import { splitMoney } from './accountDisplay'
+import { moneyFlex } from './accountDisplay'
 
 /** The provider's own colour: the catalogue's first brand colour, else its first account's, else the type colour. */
 export function providerColor(group: ProviderGroup): string {
@@ -47,20 +47,20 @@ export function ProviderCard({ group, base, masked, alert = false, onOpen, onFac
   const meta = providerMeta(group, t)
   const byId = new Map<string, PaymentMethod>(group.accounts.map((a) => [a.method.id, a.method]))
   const parentOf = (f: ProviderFace) => (f.parentAccountId ? byId.get(f.parentAccountId) : undefined)
-  const amount = (n: number) => (masked ? MASK : splitMoney(n, base).int)
+  const amount = (n: number) => (masked ? MASK : moneyFlex(n, base))
 
   const head = (
     <span className="flex items-center gap-3">
       <BrandMark name={group.name} color={providerColor(group)} alert={alert} logo={bankLogoForName(group.name)} />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-base font-bold text-[var(--color-brand-text-primary)]">{group.name}</span>
-        <span className="mt-0.5 block text-[0.8125rem] text-[var(--color-brand-text-muted)] [text-wrap:pretty]">{meta}</span>
+        <span className="mt-0.5 block truncate whitespace-nowrap text-[0.8125rem] text-[var(--color-brand-text-muted)]">{meta}</span>
       </span>
       <span className="shrink-0 text-end">
         <span className="block whitespace-nowrap font-mono-numbers text-base font-semibold tracking-[-0.02em] text-[var(--color-brand-text-primary)]">
-          {group.approx && !masked ? '≈ ' : ''}{amount(group.totalInBase)}
+          {group.approx && !masked ? '≈ ' : ''}{amount(group.totalInBase)}{' '}
+          <span className="text-[0.71875rem] font-normal text-[var(--color-brand-text-muted)]">{base}</span>
         </span>
-        <span className="text-[0.71875rem] text-[var(--color-brand-text-muted)]">{base}</span>
         {group.heldInBase > 0 ? (
           <span dir="auto" className="mt-0.5 block whitespace-nowrap font-mono-numbers text-[0.71875rem] font-semibold text-[var(--color-brand-primary-ink)]">{t.setAsideAt(amount(group.heldInBase))}</span>
         ) : null}

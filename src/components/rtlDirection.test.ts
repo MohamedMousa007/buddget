@@ -10,8 +10,7 @@ describe('TZL-6: direction icons flip in RTL', () => {
     ['features/settings/SettingsSubPageShell.tsx', /<ChevronLeft[^>]*rtl:rotate-180/],
     ['ui/UnifiedDatePicker.tsx', /<ChevronLeft className="rtl:rotate-180"/],
     ['ui/UnifiedDatePicker.tsx', /<ChevronRight className="rtl:rotate-180"/],
-    ['features/income/PaydaysPage.tsx', /<ChevronLeft[^>]*rtl:rotate-180/],
-    ['features/income/PaydayDetail.tsx', /<ChevronLeft[^>]*rtl:rotate-180/],
+    ['features/income/PaydaysPage.tsx', /<ChevronRight[^>]*rtl:rotate-180/],
     ['features/budget/PlanHistoryPage.tsx', /<ChevronLeft[^>]*rtl:rotate-180/],
   ])('%s', (f, re) => expect(read(f)).toMatch(re))
 })

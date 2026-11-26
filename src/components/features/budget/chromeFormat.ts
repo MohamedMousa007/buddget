@@ -1,3 +1,4 @@
+import { formatWhole } from '@/lib/utils/formatters'
 import { BLOCK_META } from '@/lib/budget/blocks'
 import type { BudgetBlock } from '@/lib/store/types'
 import { intlTag, type AppLocale } from '@/lib/i18n/dateFormat'
@@ -24,4 +25,9 @@ export function percentText(p: number): string {
 /** `YYYY-MM` as "Sep 2027" in the user's language. */
 export function monthKeyLabel(key: string, locale: AppLocale): string {
   return new Date(Number(key.slice(0, 4)), Number(key.slice(5, 7)) - 1, 1).toLocaleDateString(intlTag(locale), { month: 'short', year: 'numeric' })
+}
+
+/** Light touch money: the grouped whole amount, then the currency code ("12,500 EGP"), never a sign like "E£". */
+export function inlineMoney(n: number, base: string): string {
+  return `${formatWhole(n)} ${base}`
 }

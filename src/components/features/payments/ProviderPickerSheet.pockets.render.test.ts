@@ -15,7 +15,8 @@ const pockets: ProviderPickerItem[] = [
 ]
 
 const noop = () => {}
-const brandName = Object.values(PAYMENT_BRANDS).find((b) => /^[A-Za-z0-9 ]+$/.test(b.name))!.name
+// Retired brands (InstaPay) leave the catalogue, so pick a live one.
+const brandName = Object.values(PAYMENT_BRANDS).find((b) => !b.retired && /^[A-Za-z0-9 ]+$/.test(b.name))!.name
 
 describe('ProviderPickerSheet, pocket variant (BDG-026-028)', () => {
   const html = renderToStaticMarkup(h(ProviderPickerSheet, {
@@ -54,6 +55,7 @@ describe('ProviderPickerSheet, provider mode unchanged', () => {
     expect(html).toContain(en.paymentMethods.chooseProvider)
     expect(html).toContain(en.paymentMethods.allProviders)
     expect(html).toContain(brandName)
+    expect(html).not.toContain(PAYMENT_BRANDS.instapay.name)
     expect(html).toContain(en.paymentMethods.addCustom)
     expect(html).toContain(en.paymentMethods.searchProviderPlaceholder)
     expect(html).not.toContain('role="radiogroup"')
@@ -69,7 +71,7 @@ describe('ProviderPickerSheet, bank logos (BDG-024)', () => {
     expect(html).toContain('data-brand-logo')
   })
   it('a brand without a file keeps its tinted initials', () => {
-    const b = Object.values(PAYMENT_BRANDS).find((x) => !BANK_LOGO_FILES[x.id] && !PROVIDER_LOGO_FILES[x.id] && /^[A-Z]+$/.test(x.short))!
+    const b = Object.values(PAYMENT_BRANDS).find((x) => !x.retired && !BANK_LOGO_FILES[x.id] && !PROVIDER_LOGO_FILES[x.id] && /^[A-Z]+$/.test(x.short))!
     expect(html).toMatch(new RegExp(`>${b.short}</span>`))
     expect(html).not.toContain(`/logos/banks/${b.id}.`)
   })

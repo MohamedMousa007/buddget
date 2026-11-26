@@ -1,15 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- test code reads untyped store and PostgREST JSON */
 import type { Page } from '@playwright/test'
-import { appNav, expect, goto, localState, localWait, signIn, test, tile } from '../../lib/fixtures'
+import { appNav, expect, goto, localState, localWait, signIn, test, tile, moneyIn, netWorth } from '../../lib/fixtures'
 import { rows } from '../../lib/admin'
 import { serverRows } from '../../lib/server'
 import { installApiShim, forceFlags } from '../../lib/apiShim'
-import { addAccount, addBorrow, addExpense, addMoneyIn, blur, dialog, payDebt, pickMethod, pickPocket } from '../../lib/ui'
+import { addAccount, addBorrow, addExpense, addMoneyIn, blur, dialog, payDebt, pickMethod, pickPocket, shown, pickCategory } from '../../lib/ui'
 
 const ERR = /Something went wrong|Application error|Unhandled Runtime Error/i
 const qnbTile = (p: Page) => p.getByRole('button', { name: /QNB Alahli/ }).first()
 async function withQnb(page: Page, bal: number) {
-  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: bal })
+  await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: bal })
   return localWait(page, (s) => s.paymentMethods.find((m: any) => m.name === 'QNB Alahli' && m.openingBalance === bal))
 }
 
@@ -22,9 +22,9 @@ test('R01 money in dated today counts in the balance at once, with an exact inst
   const [row] = await serverRows('income_events', user.id, `id=eq.${ev.id}`, (r: any[]) => r.length === 1)
   expect(Number(row.amount)).toBe(500)
   expect(row.payment_method_id).toBe(qnb.id)
-  expect(await tile(page, 'Net worth')).toBe(1500)
+  expect(await netWorth(page)).toBe(1500)
   await goto(page, '/accounts')
-  await expect(qnbTile(page)).toContainText('1,500.00')
+  await expect(qnbTile(page)).toContainText(shown('1,500'))
 })
 
 test('R02 pocket funding is an internal move: Flow shows no income and no spending, net worth unchanged', async ({ page, user }) => {
@@ -45,15 +45,15 @@ test('R02 pocket funding is an internal move: Flow shows no income and no spendi
   await pickPocket(page, d, 'Into', /QA R02 pocket/)
   await d.getByRole('textbox', { name: 'Amount' }).fill('600')
   await blur(page)
-  await d.getByRole('button', { name: /^Add [\d,]+ to QA R02 pocket/ }).click()
+  await d.getByRole('button', { name: 'Add money', exact: true }).click()
   await expect(d).toBeHidden()
   await serverRows('savings_transactions', user.id, 'amount=eq.600', (r) => r.length === 1)
   // No income event and no expense row may exist for an internal move.
   expect(await rows('income_events', user.id, 'deleted_at=is.null')).toHaveLength(0)
   expect((await rows('expenses', user.id, 'deleted_at=is.null')).filter((e: any) => e.category !== 'Savings')).toHaveLength(0)
   await goto(page, '/flow')
-  expect(await tile(page, 'Net worth')).toBe(2000)
-  expect(await tile(page, 'Money in')).toBe(0)
+  expect(await netWorth(page)).toBe(2000)
+  expect(await moneyIn(page)).toBe(0)
   const main = (await page.locator('main').innerText()).replace(/\s+/g, ' ')
   test.info().annotations.push({ type: 'evidence', description: `flow after funding 600: ${main.slice(0, 300)}` })
   expect(main).not.toMatch(/Spent\s*600/)
@@ -67,8 +67,8 @@ test('R03 double tap on Save creates one expense (store and server)', async ({ p
   const d = dialog(page, 'Add expense')
   await d.getByRole('textbox', { name: 'Amount' }).fill('75')
   await d.getByRole('textbox', { name: 'Description' }).fill('QA R03 dup')
-  await d.getByRole('radio', { name: 'Food', exact: true }).click()
-  await d.getByRole('button', { name: /EGP$/ }).filter({ hasNotText: 'Egyptian' }).last().click()
+  await pickCategory(page, d, 'Food')
+  await d.getByRole('button', { name: /^Paid with/ }).click()
   await pickMethod(page, /QNB/)
   await blur(page)
   const save = d.getByRole('button', { name: 'Save expense' })
@@ -79,7 +79,7 @@ test('R03 double tap on Save creates one expense (store and server)', async ({ p
   const st = await localState(page)
   expect(st.expenses.filter((e: any) => e.description === 'QA R03 dup' && !e.deletedAt)).toHaveLength(1)
   await serverRows('expenses', user.id, 'description=eq.QA R03 dup&deleted_at=is.null', (r) => r.length === 1)
-  expect(await tile(page, 'Net worth')).toBe(925)
+  expect(await netWorth(page)).toBe(925)
 })
 
 async function deleteThenUndo(page: Page, userId: string, desc: string, reloadFirst: boolean, waitMs = 0) {
@@ -91,6 +91,10 @@ async function deleteThenUndo(page: Page, userId: string, desc: string, reloadFi
   if (reloadFirst) { await page.reload({ waitUntil: 'domcontentloaded' }); await expect(page.locator('main')).toContainText(desc, { timeout: 30_000 }) }
   await page.getByText(desc).first().click()
   await dialog(page, 'Edit expense').getByRole('button', { name: 'Delete' }).click()
+  // Light touch asks first ("Delete this expense? … You can undo right after.").
+  const ask = page.getByRole('alertdialog', { name: 'Delete this expense?' })
+  await ask.getByRole('button', { name: 'Delete', exact: true }).click()
+  await expect(ask).toBeHidden()
   const undo = page.getByRole('button', { name: /^Undo/ })
   await expect(undo, 'an undo action is offered after delete').toBeVisible({ timeout: 8000 })
   if (waitMs) { await page.waitForTimeout(waitMs); await expect(undo, 'Undo still on screen').toBeVisible() }
@@ -102,7 +106,7 @@ async function deleteThenUndo(page: Page, userId: string, desc: string, reloadFi
 test('R04a delete an expense then undo within a second: one live row, balance restored, server agrees', async ({ page, user }) => {
   const e = await deleteThenUndo(page, user.id, 'QA R04a del', false)
   await expect(page.locator('main')).toContainText('QA R04a del')
-  expect(await tile(page, 'Net worth')).toBe(800)
+  expect(await netWorth(page)).toBe(800)
   const live = await serverRows('expenses', user.id, 'description=eq.QA R04a del&deleted_at=is.null', (r) => r.length === 1)
   expect(live[0].id).toBe(e.id)
   expect(await rows('expenses', user.id, 'description=eq.QA R04a del')).toHaveLength(1)
@@ -136,8 +140,8 @@ test('R05 Reports: Biggest purchase skips debt payments; money in shows expected
   await payDebt(page, { debt: 'QA R05 loan', amount: 1500, method: 'QNB Alahli' })
   await goto(page, '/reports')
   const main = page.locator('main')
-  // Reports is Insights now (782a1e18): the summary panel sits in the closed "The numbers behind it" fold.
-  await main.getByText('The numbers behind it', { exact: true }).click()
+  // Reports is Insights now: the summary panel sits in the closed "More reports" fold (light touch).
+  await main.getByText('More reports', { exact: true }).click()
   await expect(main.getByText(/Biggest purchase/i).first()).toBeVisible()
   const txt = (await main.innerText()).replace(/\s+/g, ' ')
   test.info().annotations.push({ type: 'evidence', description: txt.slice(0, 500) })
@@ -152,18 +156,26 @@ test('R05 Reports: Biggest purchase skips debt payments; money in shows expected
 test('R06 paydays: add salary on the 25th, listed, server row has the day and amount', async ({ page, user }) => {
   await withQnb(page, 100)
   await goto(page, '/paydays')
-  await page.getByRole('button', { name: 'Add a payday' }).click()
+  // With a payday already set, Add sits behind the quiet "Paydays and pay cycle" row (light touch).
+  if (!(await page.getByRole('button', { name: 'Add a payday' }).isVisible())) await page.getByRole('button', { name: 'Paydays and pay cycle' }).click()
+  await page.getByRole('button', { name: /^Add a payday/ }).first().click()
   const d = page.getByRole('dialog', { name: 'New payday' })
   await d.getByRole('textbox', { name: 'Amount' }).fill('7000')
   await d.getByRole('textbox', { name: 'Name' }).fill('QA R06 Payroll')
-  await d.getByRole('button', { name: '25', exact: true }).click()
+  await d.getByRole('button', { name: /^Payday/ }).click()
+  const day = dialog(page, /^Payday$/)
+  await day.getByRole('radio', { name: '25', exact: true }).click()
+  await day.getByRole('button', { name: 'Done' }).click()
+  await expect(day).toBeHidden()
   await blur(page)
   await d.getByRole('button', { name: 'Add payday' }).click()
   await expect(d).toBeHidden()
-  await expect(page.locator('main')).toContainText('QA R06 Payroll')
+  // Light touch: the Paydays hero names the payday by its type and account ("Salary · Monthly → …") and its amount; the
+  // name lives on the server row and in the payday's own sheet.
+  await expect(page.locator('main')).toContainText(/7,000\s*EGP each month/)
   await serverRows('income_sources', user.id, 'name=eq.QA R06 Payroll&deleted_at=is.null', (r: any[]) => r.length === 1 && r[0].day_of_month === 25 && Number(r[0].amount) === 7000)
   await page.reload({ waitUntil: 'domcontentloaded' })
-  await expect(page.locator('main')).toContainText('QA R06 Payroll')
+  await expect(page.locator('main')).toContainText(/7,000\s*EGP each month/)
 })
 
 test('R07 budget: manual builder and budget history open for a new user without errors; Zakat prompt absent when it changes nothing', async ({ page, user }) => {
@@ -247,6 +259,23 @@ test('R11 invite link /i/<code> shows the guest pass, saves the code in the 30-d
   await page.goto('/i/!!')
   await expect.poll(() => new URL(page.url()).pathname).toBe('/')
   expect((await page.context().cookies()).some((c) => c.name === 'buddget_invite')).toBe(false)
+})
+
+test('R11b invite link: "Create your account" tapped before the page hydrates still goes on to sign-up, and the code is kept', async ({ page, context }) => {
+  // Hold the app's script back, as a slow phone or a cold server does, so the tap lands on the server-rendered page.
+  let hold = true
+  await context.route(/\/_next\/static\/chunks\/.*\.js/, async (r) => {
+    while (hold) await new Promise((x) => setTimeout(x, 100))
+    await r.continue()
+  })
+  await page.goto('/i/layla-7k2', { waitUntil: 'domcontentloaded' })
+  const cookie = (await context.cookies()).find((c) => c.name === 'buddget_invite')
+  expect(cookie?.value, 'the proxy keeps the code before any script runs').toBe('LAYLA-7K2')
+  expect((cookie?.expires ?? 0) * 1000 - Date.now()).toBeGreaterThan(29 * 86_400_000)
+  await page.getByRole('button', { name: 'Create your account' }).click()
+  hold = false
+  await expect(page).toHaveURL(/\/flow/)
+  await context.unroute(/\/_next\/static\/chunks\/.*\.js/)
 })
 
 test('R12 Quick add lists its entries; scan receipt and voice entry reachable on web (recorded)', async ({ page, user }) => {
@@ -387,7 +416,10 @@ test.describe('two devices', () => {
       await goto(B, '/flow')
       await expect(B.locator('main')).toContainText('QA R14 from A', { timeout: 30_000 })
       // The list can show A's expense a moment before the Net worth tile recomputes: poll the tile.
-      await expect.poll(() => tile(B, 'Net worth'), { timeout: 15_000 }).toBe(2900)
+      await expect.poll(() => netWorth(B), { timeout: 15_000 }).toBe(2900)
+      // Net worth lives on Accounts now: back to Flow while still online (a navigation would fail offline).
+      await goto(B, '/flow')
+      await expect(B.locator('main')).toContainText('QA R14 from A')
 
       // B goes offline, adds an expense and deletes A's.
       await ctxB.setOffline(true)
@@ -422,8 +454,8 @@ test.describe('two devices', () => {
       await expect.poll(async () => { sa = await ids(page); sb = await ids(B); return JSON.stringify([sa, sb]) }, { timeout: 40_000 }).toBe(JSON.stringify([want, want]))
       test.info().annotations.push({ type: 'evidence', description: `converged: A=${sa.join(',')} B=${sb.join(',')} server=${want.join(',')}` })
       await goto(page, '/flow'); await goto(B, '/flow')
-      const nwA = await tile(page, 'Net worth')
-      await expect.poll(() => tile(B, 'Net worth'), { timeout: 15_000 }).toBe(nwA)
+      const nwA = await netWorth(page)
+      await expect.poll(() => netWorth(B), { timeout: 15_000 }).toBe(nwA)
     } finally { await ctxB.close() }
   })
 
@@ -440,7 +472,7 @@ test.describe('two devices', () => {
     await serverRows('expenses', user.id, 'description=like.QA R15*&deleted_at=is.null', (r) => r.length === 2)
     await page.reload({ waitUntil: 'domcontentloaded' })
     await expect(page.locator('main')).toContainText('QA R15 tab2', { timeout: 20_000 })
-    expect(await tile(page, 'Net worth')).toBe(950)
+    expect(await netWorth(page)).toBe(950)
     void appNav
   })
 })

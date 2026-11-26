@@ -2,7 +2,7 @@
 
 import { partitionGoals } from '@/lib/goals/partitionGoals'
 import { useMemo, useState } from 'react'
-import { AlertTriangle, Plus } from 'lucide-react'
+import { AlertTriangle, Flag, PauseCircle, Plus } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { AchievedView } from '@/components/features/goals/AchievedView'
 import { GoalAddMoneySheet } from '@/components/features/goals/GoalAddMoneySheet'
@@ -15,6 +15,7 @@ import { TrophyChip } from '@/components/features/goals/TrophyChip'
 import { PageGrid } from '@/components/layout/PageGrid'
 import { GoalDetailSheet } from '@/components/features/goals/detail/GoalDetailSheet'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { StatTile } from '@/components/ui/StatTile'
 import { PromptBanner } from '@/components/ui/PromptBanner'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
@@ -25,7 +26,9 @@ import { navigate } from '@/lib/navigation/navigate'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Goal } from '@/lib/store/types'
 import { microClassName } from '@/lib/ui/microLabelStyle'
-import { Badge } from '@/components/ui/badge'
+import { GoalsHero } from '@/components/features/goals/GoalsHero'
+import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
+import { useGoalsEmptyCopy } from '@/lib/i18n/goalsEmptyCopy'
 
 type View = 'all' | 'active' | 'paused' | 'achieved'
 const VIEW_KEY = 'goals-view'
@@ -33,14 +36,16 @@ const VIEW_KEY = 'goals-view'
 function readView(): View {
   try {
     const v = sessionStorage.getItem(VIEW_KEY)
-    return v === 'all' || v === 'paused' || v === 'achieved' ? v : 'active'
+    return v === 'active' || v === 'paused' || v === 'achieved' ? v : 'all'
   } catch {
-    return 'active'
+    return 'all'
   }
 }
 
 export default function GoalsPage() {
   const t = useT().goals
+  const lt = useGoalsLtCopy()
+  const emptyCopy = useGoalsEmptyCopy()
   const { dataReady, baseCurrency, rates, updateGoal } = useFinanceStore(
     useShallow((s) => ({ dataReady: s.dataReady, baseCurrency: s.settings.baseCurrency, rates: s.exchangeRates, updateGoal: s.updateGoal })),
   )
@@ -75,6 +80,15 @@ export default function GoalsPage() {
     [running],
   )
 
+  // The trophy room's nudge: the running saving goal closest to its target.
+  const nextToFinish = useMemo(
+    () =>
+      running
+        .filter((r) => r.goal.status === 'active' && r.goal.category !== 'spending_control' && r.goal.category !== 'debt_freedom' && r.percent < 100)
+        .sort((a, b) => b.percent - a.percent)[0] ?? null,
+    [running],
+  )
+
   const openAdd = (seed: FlowSeed = {}) => setFlow(seed)
   const openDetail = (g: Goal) => setDetailId(g.id)
   const onAction = (g: Goal, a: GoalCardAction) => {
@@ -93,6 +107,7 @@ export default function GoalsPage() {
   return (
     <div>
       <PageGrid
+        stack
         wide={empty}
         primary={
           <div className="flex min-w-0 flex-col gap-3.5 px-4 pb-4 pt-4 lg:px-0 lg:pb-0 lg:pt-0">
@@ -100,7 +115,7 @@ export default function GoalsPage() {
               <GoalsEmpty onStart={openAdd} />
             ) : (
               <>
-                <GoalsInsight rows={rows} className="lg:hidden" />
+                {view === 'achieved' ? null : <GoalsHero rows={rows} />}
                 <div className="flex items-center gap-2">
                   <SegmentedControl<'all' | 'active' | 'paused'>
                     ariaLabel={t.home.viewLabel}
@@ -113,14 +128,16 @@ export default function GoalsPage() {
                     ]}
                     className="flex-1"
                   />
-                  <TrophyChip count={achieved.length} pressed={view === 'achieved'} onClick={() => setView(view === 'achieved' ? 'active' : 'achieved')} />
+                  <TrophyChip count={achieved.length} pressed={view === 'achieved'} onClick={() => setView(view === 'achieved' ? 'all' : 'achieved')} />
                 </div>
 
                 {view !== 'achieved' && worstBehind && bannerOff !== worstBehind.goal.id ? (
                   <PromptBanner
                     tone="warning"
                     icon={<AlertTriangle />}
-                    title={t.home.bannerBehind(worstBehind.goal.name, worstBehind.status.params.count ?? 2, worstBehind.goal.frequency === 'quarterly')}
+                    title={worstBehind.goal.frequency === 'yearly'
+                      ? lt.frequency.bannerBehind(worstBehind.goal.name, worstBehind.status.params.count ?? 2)
+                      : t.home.bannerBehind(worstBehind.goal.name, worstBehind.status.params.count ?? 2, worstBehind.goal.frequency === 'quarterly')}
                     confirmLabel={t.home.bannerReplan(worstBehind.goal.name)}
                     onConfirm={() => openDetail(worstBehind.goal)}
                     dismissLabel={t.home.dismiss}
@@ -128,33 +145,50 @@ export default function GoalsPage() {
                   />
                 ) : null}
 
-                <div className="flex min-h-11 items-center justify-between gap-3">
-                  <h2 className="flex items-center gap-2 text-lg font-bold text-[var(--color-brand-text-primary)]">
-                    {titleByView[view]}
-                    <Badge tone="soft" bordered={false} className="min-w-6 font-mono-numbers font-semibold">{count}</Badge>
-                  </h2>
-                  <Button size="touch" onClick={() => openAdd()}>
-                    <Plus aria-hidden />
-                    {t.home.newGoal}
-                  </Button>
-                </div>
+                {view === 'achieved' ? null : (
+                  <div className="mt-2.5 flex min-h-11 items-center gap-2 px-1">
+                    <h2 className="text-[0.8125rem] font-bold text-[var(--color-brand-text-primary)]">{titleByView[view]}</h2>
+                    <span className="font-mono-numbers text-[0.8125rem] font-semibold text-[var(--color-brand-text-muted)]">{count}</span>
+                    <Button variant="link" size="touch" onClick={() => openAdd()} className="ms-auto gap-1 px-1 font-semibold no-underline">
+                      <Plus className="size-4" aria-hidden />
+                      {t.home.newGoal}
+                    </Button>
+                  </div>
+                )}
 
                 {view === 'paused' ? (
                   <p className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{t.home.pausedHelper}</p>
                 ) : null}
 
                 {view === 'achieved' ? (
-                  <AchievedView goals={achieved} base={baseCurrency} rates={rates} onNewGoal={() => openAdd()} />
+                  <AchievedView goals={achieved} base={baseCurrency} rates={rates} next={nextToFinish} onOpen={openDetail} onNewGoal={() => openAdd()} />
                 ) : visible.length === 0 ? (
-                  <p className="py-6 text-center text-sm text-[var(--color-brand-text-secondary)]">{t.home.emptyFilter}</p>
+                  <EmptyState
+                    variant="card"
+                    icon={view === 'paused' ? <PauseCircle /> : <Flag />}
+                    iconTone={view === 'paused' ? 'neutral' : 'brand'}
+                    title={view === 'paused' ? emptyCopy.pausedTitle : emptyCopy.activeTitle}
+                    description={view === 'paused' ? emptyCopy.pausedBody : emptyCopy.activeBody}
+                    action={
+                      <div className="flex w-full flex-col gap-1">
+                        <Button size="cta-block" onClick={() => openAdd()}>{emptyCopy.newGoal}</Button>
+                        {view === 'active' && paused.length > 0 ? (
+                          <Button variant="link" size="touch" className="font-semibold" onClick={() => setView('paused')}>{emptyCopy.seePaused}</Button>
+                        ) : null}
+                        {view !== 'paused' && achieved.length > 0 ? (
+                          <Button variant="link" size="touch" className="whitespace-normal font-semibold" onClick={() => setView('achieved')}>{lt.goals.seeAchieved(achieved.length)}</Button>
+                        ) : null}
+                      </div>
+                    }
+                  />
                 ) : (
-                  <div className="flex flex-col gap-3.5 lg:grid lg:grid-cols-2">
+                  <div className="-mt-1.5 flex flex-col gap-2">
                     {visible.map((r, i) => (
                       <div key={r.goal.id} className="contents">
                         {view === 'all' && paused.length > 0 && i === running.length ? (
-                          <h3 className={`${microClassName} lg:col-span-2`}>{t.home.viewPaused}</h3>
+                          <h3 className={microClassName}>{t.home.viewPaused}</h3>
                         ) : null}
-                        <GoalCard row={r} onOpen={openDetail} onAction={onAction} />
+                        <GoalCard look="light" row={r} onOpen={openDetail} onAction={onAction} />
                       </div>
                     ))}
                   </div>
@@ -180,7 +214,7 @@ export default function GoalsPage() {
         <GoalDetailSheet row={detailRow} onClose={() => setDetailId(null)} onAddMoney={() => setMoneyGoal(detailRow.goal)} />
       ) : null}
       <NewGoalFlow open={flow !== false} seed={flow || null} onClose={() => setFlow(false)} />
-      <GoalAddMoneySheet goal={moneyGoal} onClose={() => setMoneyGoal(null)} />
+      <GoalAddMoneySheet goal={moneyGoal} onClose={() => setMoneyGoal(null)} overSheet={!!detailRow} />
     </div>
   )
 }

@@ -26,6 +26,20 @@ describe('evaluateGoalAlerts', () => {
     const next = evaluateGoalAlerts({ ...base, today: new Date(2026, 10, 2), runsByGoal: { g: behind } })
     expect(next[0].dedupeKey).toBe('goal_behind:g:2026-11')
   })
+  it('keys a quarterly or yearly alert by its cycle, so it fires once per cycle', () => {
+    const runs = [
+      { period: '2025-10', planned: 1000, amount: 0 }, { period: '2026-01', planned: 1000, amount: 0 },
+      { period: '2026-04', planned: 1000, amount: 0 }, { period: '2026-07', planned: 1000, amount: 0 },
+    ]
+    const quarterly = { ...goal, frequency: 'quarterly' as const }
+    const oct = evaluateGoalAlerts({ ...base, goals: [quarterly], runsByGoal: { g: runs } })
+    const nov = evaluateGoalAlerts({ ...base, today: new Date(2026, 10, 2), goals: [quarterly], runsByGoal: { g: runs } })
+    expect(oct[0]?.dedupeKey).toBe('goal_behind:g:2026-Q4')
+    expect(nov[0]?.dedupeKey).toBe('goal_behind:g:2026-Q4')
+    const yearly = { ...goal, frequency: 'yearly' as const }
+    const yRuns = [{ period: '2024-01', planned: 12000, amount: 0 }, { period: '2025-01', planned: 12000, amount: 0 }]
+    expect(evaluateGoalAlerts({ ...base, goals: [yearly], runsByGoal: { g: yRuns } })[0]?.dedupeKey).toBe('goal_behind:g:2026')
+  })
   it('stays quiet for one missed cycle, manual goals, paused goals and when disabled', () => {
     expect(evaluateGoalAlerts({ ...base, runsByGoal: { g: behind.slice(0, 1) } })).toEqual([])
     expect(evaluateGoalAlerts({ ...base, goals: [{ ...goal, fundingMode: 'manual' }], runsByGoal: { g: behind } })).toEqual([])

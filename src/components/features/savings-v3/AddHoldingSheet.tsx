@@ -11,6 +11,7 @@ import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccount
 import { AssetFormSheet } from '@/components/features/savings-v3/AssetFormSheet'
 import { PocketFormSheet } from '@/components/features/savings-v3/PocketFormSheet'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
+import { accountTitle } from '@/components/features/accounts/accountDisplay'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { POCKET_KINDS, type PocketKind, type PocketKindDef } from '@/lib/savings/pocketKinds'
@@ -76,10 +77,11 @@ function AddHoldingBody({ onClose, initialTab, presetAssetType, pocketOnly, onPo
   }
 
   // Chooser and forms are sibling ModalShells so each registers its own back guard: hardware back
-  // peels the form first, then the chooser.
+  // peels the form first, then the chooser. The chooser steps aside while a form is up, so the page is dimmed once
+  // (one scrim, as the approved sheets show), and comes back with its choice when the form closes.
   return (
     <>
-      <ModalShell open onBackdropClick={onClose} scrollChild>
+      <ModalShell open={!formDef && !asset} onBackdropClick={onClose} scrollChild>
         <div className="flex min-h-0 flex-1 flex-col">
           <V3SheetHeader onClose={onClose}>
             <V3SheetHeader.Title>{t.title}</V3SheetHeader.Title>
@@ -112,7 +114,7 @@ function AddHoldingBody({ onClose, initialTab, presetAssetType, pocketOnly, onPo
                             </span>
                             <div className="min-w-0 flex-1">
                               <p className="truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">
-                                {pm.name}{pm.last4 ? <span className="font-mono-numbers"> ••{pm.last4}</span> : null}
+                                {accountTitle(pm)}{pm.last4 ? <span className="font-mono-numbers"> ••{pm.last4}</span> : null}
                               </p>
                               <p className="truncate text-xs text-[var(--color-brand-text-muted)]">
                                 {linked ? `${t.alreadyPocket}: ${linked}` : `${PM_TYPE_LABEL[pm.type] ?? ''} · ${pm.currency} · ${t.notPocketYet}`}

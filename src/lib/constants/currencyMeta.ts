@@ -26,6 +26,16 @@ export function currencySymbol(code: string): string {
   return CURRENCY_META[code]?.symbol ?? code
 }
 
+/**
+ * The sign written before a foreign amount ("−$9.99 USD"): only for a currency other than the base whose symbol is a real
+ * sign ($, €, £), never a letter code (AED, SAR) or the base's own (E£). Empty otherwise.
+ */
+export function foreignSymbol(code: string, base: string): string {
+  if (!code || code === base) return ''
+  const sym = currencySymbol(code)
+  return sym !== code && !/[A-Za-z]/.test(sym) ? sym : ''
+}
+
 export function currencyName(code: string): string {
   return CURRENCY_META[code]?.name ?? code
 }

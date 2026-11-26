@@ -91,7 +91,7 @@ export const savingsFormsCopyEn: SavingsFormsCopy = {
   },
   pocketKinds: {
     bank: { label: 'Bank account', sub: 'Current or savings' },
-    wallet: { label: 'Mobile wallet', sub: 'Vodafone Cash, InstaPay' },
+    wallet: { label: 'Mobile wallet', sub: 'Vodafone Cash, Orange Cash' },
     cash: { label: 'Cash', sub: 'At home or in a safe' },
     certificate: { label: 'Certificate', sub: 'Fixed term, matures' },
     stablecoin: { label: 'Stablecoin', sub: 'USDT and friends' },
@@ -183,7 +183,7 @@ export const savingsFormsCopyAr: SavingsFormsCopy = {
   },
   pocketKinds: {
     bank: { label: 'حساب بنكي', sub: 'الحساب الجاري أو التوفير' },
-    wallet: { label: 'محفظة إلكترونية', sub: 'فودافون كاش، إنستاباي' },
+    wallet: { label: 'محفظة إلكترونية', sub: 'فودافون كاش، أورنج كاش' },
     cash: { label: 'نقد', sub: 'في المنزل أو في خزنة' },
     certificate: { label: 'شهادة ادخار', sub: 'مدة ثابتة وتاريخ استحقاق' },
     stablecoin: { label: 'عملة مستقرة', sub: 'مثل USDT' },

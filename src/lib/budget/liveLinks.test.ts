@@ -121,6 +121,7 @@ describe('goals', () => {
   it('draws by funding mode', () => {
     expect(goalMonthlyDraw(goal({ fundingMode: 'fixed', monthlyContribution: 300 }), null)).toBe(300)
     expect(goalMonthlyDraw(goal({ fundingMode: 'fixed', monthlyContribution: 300, frequency: 'quarterly' }), null)).toBe(100)
+    expect(goalMonthlyDraw(goal({ fundingMode: 'fixed', monthlyContribution: 1200, frequency: 'yearly' }), null)).toBe(100)
     expect(goalMonthlyDraw(goal({ fundingMode: 'share', sharePct: 25 }), 2000)).toBe(500)
     expect(goalMonthlyDraw(goal({ fundingMode: 'share', sharePct: 25 }), null)).toBe(0)
     expect(goalMonthlyDraw(goal({}), 2000)).toBe(0)

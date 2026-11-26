@@ -19,9 +19,8 @@ import { templateDraft } from '@/lib/budget/templates'
 import { useLocale } from '@/lib/i18n'
 import type { BudgetBlock } from '@/lib/store/types'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { formatCurrency } from '@/lib/utils/formatters'
 import { SplitBar } from './BudgetHero'
-import { monthKeyLabel } from './chromeFormat'
+import { monthKeyLabel, inlineMoney } from './chromeFormat'
 import { LedgerList } from './LedgerList'
 import { SegmentPage } from './SegmentPage'
 import type { SegmentMark } from './SegmentRail'
@@ -70,7 +69,7 @@ export function PlanFlow({ planId, mode, flagEmpty = false, initialSkipped = [],
   const selected = useMemo(() => (view && lineId ? findLineView(view, lineId) : null), [view, lineId])
 
   if (!view) return null
-  const money = (n: number) => formatCurrency(n, view.base, false)
+  const money = (n: number) => inlineMoney(n, view.base)
   const flagMarks = { reviewed, skipped, flagEmpty: build || flagEmpty }
   const flagged = flaggedBlocks(view.plan, flagMarks)
   const summary = reviewSummary(view, flagged)

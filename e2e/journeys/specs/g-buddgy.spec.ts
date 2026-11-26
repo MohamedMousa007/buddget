@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- test code reads untyped store and PostgREST JSON */
-import { expect, goto, localWait, test, tile } from '../lib/fixtures'
+import { expect, goto, localWait, test, tile, netWorth } from '../lib/fixtures'
 import { serverRows } from '../lib/server'
 import { addAccount, dialog } from '../lib/ui'
 
@@ -9,10 +9,10 @@ import { addAccount, dialog } from '../lib/ui'
  * on the account nothing is auto-applied, so the request needs an explicit approval.
  */
 test('G Buddgy request > approve > verify > undo', async ({ page, user }) => {
-  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 1000 })
+  await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: 1000 })
   await localWait(page, (s) => s.paymentMethods.find((m: any) => m.name === 'QNB Alahli' && m.openingBalance === 1000))
   await goto(page, '/flow')
-  const before = await tile(page, 'Net worth')
+  const before = await netWorth(page)
 
   // QA-64 (99d714f5) renamed the floating Buddgy button from "Set up your budget" (E2E-004) to "Ask Buddgy".
   await page.getByRole('button', { name: 'Ask Buddgy' }).click()
@@ -40,6 +40,6 @@ test('G Buddgy request > approve > verify > undo', async ({ page, user }) => {
     await serverRows('expenses', user.id, `id=eq.${exp.id}`, (r: any[]) => r.length === 0 || !!r[0].deleted_at)
     await chat.getByRole('button', { name: 'Close chat' }).click()
     await goto(page, '/flow')
-    expect(await tile(page, 'Net worth')).toBe(before)
+    expect(await netWorth(page)).toBe(before)
   })
 })

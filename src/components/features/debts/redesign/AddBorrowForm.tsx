@@ -1,246 +1,177 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-import { Lock } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Repeat } from 'lucide-react'
 import type { AddDebtHook } from '@/hooks/useAddDebtSheet'
 import type { Currency, GoldKarat } from '@/lib/store/types'
-import { CurrencyField } from '@/components/ui/CurrencyField'
-import { Input } from '@/components/ui/input'
-import { AmountField } from '@/components/ui/AmountField'
-import { Switch } from '@/components/ui/switch'
-import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
-import { useMonthlyStats } from '@/hooks/useMonthlyStats'
-import { Button } from '@/components/ui/button'
+import { AmountHero } from '@/components/ui/AmountHero'
+import { DatePickerField } from '@/components/ui/DatePickerField'
+import { NumberPickerSheet } from '@/components/ui/NumberPickerSheet'
+import { OptionSheet } from '@/components/ui/OptionSheet'
+import { Pill } from '@/components/ui/PillButton'
+import { PickerRow } from '@/components/ui/PickerRow'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
-import { goalAmountPerPayment, goalPaymentCount, type GoalFrequency, type GoalUnit } from '@/lib/debts/borrowGoal'
+import { SettingsSwitchRow } from '@/components/features/settings/SettingsSwitchRow'
+import { accountTitle } from '@/components/features/accounts/accountDisplay'
+import { MethodPickerRow } from '@/components/features/debts/lt/MethodPickerRow'
+import { SheetGroup, TextRow } from '@/components/features/debts/lt/SheetParts'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { goalAmountPerPayment, goalPaymentCount } from '@/lib/debts/borrowGoal'
+import { goldGramsToMoney } from '@/lib/utils/calculations'
+import { formatFlex, formatWhole } from '@/lib/utils/formatters'
 import { useLocale, useT } from '@/lib/i18n'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
-import { accountTitle } from '@/components/features/accounts/accountDisplay'
-import { soft } from './heroCardShared'
+import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
+import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
 
-const MICRO = 'font-semibold text-[0.625rem] tracking-[0.08em] uppercase text-[var(--color-brand-text-muted)]'
+type Every = 'weekly' | 'monthly' | 'quarterly' | 'annually'
+const KARATS: GoldKarat[] = [24, 21, 18]
+const OVER_PRESETS = [3, 6, 9, 12, 18, 24, 36, 48] as const
 
-// Demo gold prices (EGP/g) — wire to the live gold-price source in the store.
-const GOLD_PRICE: Record<GoldKarat, number> = { 24: 4600, 22: 4210, 21: 4025, 18: 3450 }
+/** New / edit borrow (Light touch `s_borrow`): amount hero, I owe · Owed to me, the details group, then the pay-off plan. */
 export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: boolean }) {
   const dict = useT()
+  const legacy = dict.debts
+  const c = useDebtsSubsLtCopy().borrow
+  const timeLabel = useFlowLtCopy().expense.time
   const { locale } = useLocale()
-  const t = dict.debts
-  const stats = useMonthlyStats()
-  const isGold = d.receivedVia === 'gold'
-  const grams = parseFloat(d.startingBalance)
-  const goldValue = isGold && !Number.isNaN(grams) ? grams * GOLD_PRICE[d.goldKarat] : null
+  const gpg = useFinanceStore((s) => s.goldPricePerGram)
+  const goldOk = useFinanceStore((s) => s.goldPriceAvailable !== false) && gpg > 0
+  const base = d.settings.baseCurrency
+  const [sheet, setSheet] = useState<'karat' | 'over' | 'every' | null>(null)
 
-  const goalRef = useRef<HTMLDivElement>(null)
+  const isGold = d.receivedVia === 'gold'
+  const owe = d.direction === 'i_owe'
+  const amount = parseFloat(d.startingBalance)
+  const amountText = amount > 0 ? formatFlex(amount) : '0'
+  const who = d.person.trim()
+  const perGram = (k: GoldKarat) => goldGramsToMoney(1, gpg, k)
+
+  const line = d.amountCleared
+    ? c.goldCleared
+    : isGold
+    ? goldOk
+      ? c.goldLine(`${formatWhole(goldGramsToMoney(amount > 0 ? amount : 0, gpg, d.goldKarat))} ${base}`, formatWhole(perGram(d.goldKarat)), d.goldKarat)
+      : c.goldUnavailable
+    : owe ? c.youOwe(who || c.them) : c.owesYou(who || c.they)
+
+  // A plan stored in years shows (and, once changed, saves) as months; the cadence is shown as stored.
+  const span = Math.max(1, parseFloat(d.goalDuration) || 12)
+  const months = d.goalUnit === 'years' ? Math.round(span * 12) : Math.round(span)
+  const every: Every = d.goalCadence
+  const planOn = owe && d.goalEnabled
+  const per = planOn && amount > 0 ? goalAmountPerPayment(amount, months, 'months', every) : null
+  const count = planOn ? goalPaymentCount(months, 'months', every) : 0
+
+  const planRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    if (d.goalIntent) goalRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    if (d.goalIntent) planRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
   }, [d.goalIntent])
 
-  const FREQS: { v: GoalFrequency; label: string; per: string }[] = [
-    { v: 'weekly', label: t.fWeekly, per: t.fPerWeek },
-    { v: 'monthly', label: t.fMonthly, per: t.fPerMonth },
-    { v: 'quarterly', label: t.fQuarterly, per: t.fPerQuarter },
-    { v: 'annually', label: t.fAnnually, per: t.fPerYear },
-  ]
-  const PAYMENTS_PER_MONTH: Record<GoalFrequency, number> = { weekly: 4.345, monthly: 1, quarterly: 1 / 3, annually: 1 / 12 }
-
-  // Live payoff-goal preview + gentle income-strain hint.
-  const goalSpan = parseFloat(d.goalDuration)
-  const goalTotal = parseFloat(d.startingBalance)
-  const goalValid = d.goalEnabled && goalSpan > 0 && goalTotal > 0
-  const goalPreview = goalValid ? goalAmountPerPayment(goalTotal, goalSpan, d.goalUnit, d.goalCadence) : null
-  const goalCount = goalValid ? goalPaymentCount(goalSpan, d.goalUnit, d.goalCadence) : 0
-  const monthlyPay = goalPreview != null ? goalPreview * PAYMENTS_PER_MONTH[d.goalCadence] : null
-  const strain = monthlyPay != null && stats.totalIncome > 0 ? monthlyPay / stats.totalIncome : null
+  const account = d.principalAccount ? accountTitle(d.principalAccount) : ''
+  const matchDate = d.principalMatch ? formatLocalized(new Date(`${d.principalMatch.date}T12:00:00`), 'd MMM', locale) : null
 
   return (
-    <div className="flex flex-col gap-[18px] pt-1">
-      {/* Direction (locked in Edit) */}
-      <div>
-        <div className={`${MICRO} mb-2 flex items-center gap-1.5`}>{t.fDirection} {locked ? <Lock className="h-3 w-3" /> : null}</div>
-        <SegmentedControl
-          ariaLabel={t.fDirection}
-          value={d.direction}
-          onChange={d.setDirection}
-          options={[
-            { value: 'i_owe' as const, label: t.iOwe },
-            { value: 'they_owe' as const, label: t.owedToMe },
-          ].filter((o) => !locked || o.value === d.direction)}
-        />
-      </div>
+    <div className="flex flex-col gap-4 pt-1">
+      <AmountHero
+        value={d.startingBalance}
+        onChange={d.setStartingBalance}
+        currency={isGold ? 'XAU' : d.currency}
+        onCurrencyChange={!isGold && !d.currencyLocked ? (code) => d.setCurrency(code as Currency) : undefined}
+        unit={isGold ? `g · ${d.goldKarat}k` : undefined}
+        onUnitClick={isGold && !d.currencyLocked ? () => setSheet('karat') : undefined}
+        unitKind={isGold ? 'unit' : 'currency'}
+        base={base}
+        line={line}
+        aria-label={isGold ? legacy.fGrams : legacy.fAmount}
+        className="px-0 pb-0"
+      />
 
-      {/* Person + name */}
-      <div>
-        <div className={`${MICRO} mb-2`}>{t.fPerson}</div>
-        <Input size="brand" value={d.person} onChange={(e) => d.setPerson(e.target.value)} placeholder={t.fPersonPh} />
-      </div>
-      <div>
-        <div className={`${MICRO} mb-2`}>{t.fWhatFor}</div>
-        <Input size="brand" value={d.name} onChange={(e) => d.setName(e.target.value)} placeholder={t.fWhatForPh} />
-      </div>
+      <SegmentedControl
+        ariaLabel={legacy.fDirection}
+        value={d.direction}
+        onChange={d.setDirection}
+        options={[
+          { value: 'i_owe' as const, label: c.iOwe },
+          { value: 'they_owe' as const, label: c.owedToMe },
+        ].filter((o) => !locked || o.value === d.direction)}
+      />
 
-      {d.currencyLocked ? <p className="px-0.5 text-[0.75rem] text-[var(--color-brand-text-muted)]">{dict.moneyFlows.debtLocked}</p> : null}
-
-      {/* Gold-backed toggle */}
-      <div className="flex items-center justify-between rounded-[16px] border border-[var(--color-brand-gold)]/20 bg-[var(--color-brand-gold)]/5 px-4 py-3.5">
-        <div>
-          <span className="block text-sm font-bold text-[var(--color-brand-text-primary)]">{t.fGoldBacked}</span>
-          <span className="mt-0.5 block text-[0.75rem] text-[var(--color-brand-text-muted)]">{t.fGoldHint}</span>
-        </div>
-        <Switch
-          size="touch"
-          aria-label={t.fGoldBacked}
+      <SheetGroup>
+        <TextRow label={c.person} value={d.person} onChange={d.setPerson} placeholder={c.personPh} />
+        <TextRow label={c.forLabel} value={d.name} onChange={d.setName} placeholder={c.forPh} />
+        <PickerRow label={c.date} value={<DatePickerField look="pill" value={d.installmentStartDate} onChange={d.setInstallmentStartDate} time={{ value: d.borrowTime, onChange: d.setBorrowTime, label: timeLabel, defaultNow: !d.isEditFlow }} />} />
+        {!isGold ? (
+          <MethodPickerRow label={owe ? c.receivedIn : c.paidFrom} value={d.paymentMethodId} onChange={d.setPaymentMethodId} paymentMethods={d.paymentMethods} accountsOnly={owe} />
+        ) : null}
+        {!isGold && d.principalAccount && matchDate ? (
+          <SettingsSwitchRow
+            label={owe ? legacy.fPrincipalMatchIn(matchDate) : legacy.fPrincipalMatchOut(matchDate)}
+            checked={d.principalLinked}
+            onChange={d.setPrincipalLinked}
+          />
+        ) : null}
+        {!isGold && d.principalAccount && !d.principalLinked ? (
+          <SettingsSwitchRow
+            label={owe ? c.arrivedIn(account) : c.leftAccount(account)}
+            hint={owe ? c.adds(amountText) : c.takes(amountText)}
+            checked={d.principalMoved}
+            onChange={d.setPrincipalMoved}
+          />
+        ) : null}
+        <SettingsSwitchRow
+          label={c.gold}
+          hint={c.goldHelp}
           checked={isGold}
           disabled={d.currencyLocked}
-          onCheckedChange={(on) => d.applyDebtReceivedVia(on ? 'gold' : 'cash')}
-          className="data-checked:bg-[var(--color-brand-gold)]"
+          onChange={(on) => d.applyDebtReceivedVia(on ? 'gold' : 'cash')}
         />
-      </div>
+      </SheetGroup>
+      {d.currencyLocked ? <p className="-mt-2 px-1 text-xs text-[var(--color-brand-text-muted)]">{dict.moneyFlows.debtLocked}</p> : null}
 
-      {isGold ? (
-        <>
-          <div>
-            <div className={`${MICRO} mb-2`}>{t.fKarat}</div>
-            <div className="flex gap-2">
-              {([24, 21, 18] as GoldKarat[]).map((k) => {
-                const on = d.goldKarat === k
-                return (
-                  <Button
-                    key={k}
-                    onClick={() => d.setGoldKarat(k)}
-                    className="flex-1"
-                    style={on ? { background: soft('var(--color-brand-gold)', 14), borderColor: soft('var(--color-brand-gold)', 55), color: 'var(--color-brand-gold)' } : { background: 'var(--color-brand-elevated)', borderColor: 'var(--color-brand-border)', color: 'var(--color-brand-text-muted)' }}
-                    variant="outline"
-                    size="touch"
-                  >
-                    {k}K
-                  </Button>
-                )
-              })}
-            </div>
-          </div>
-          <div>
-            <div className={`${MICRO} mb-2`}>{t.fGrams}</div>
-            <AmountField value={d.startingBalance} onChange={d.setStartingBalance} mode="decimal" decimalsFor="XAU" aria-label={t.fGrams} placeholder={t.fGramsPh} />
-            {goldValue != null ? (
-              <p dir="auto" className="mt-2 px-0.5 font-mono-numbers text-[0.75rem] text-[var(--color-brand-gold)]">{t.fGoldValue(goldValue.toLocaleString('en-US'), GOLD_PRICE[d.goldKarat].toLocaleString('en-US'))}</p>
+      {owe ? (
+        <div ref={planRef}>
+          <SheetGroup label={c.plan} note={per != null ? c.planNote(`${formatFlex(per)}${isGold ? ' g' : ''}`, every, count) : undefined}>
+            <SettingsSwitchRow label={c.planSwitch} checked={d.goalEnabled} onChange={d.setGoalEnabled} />
+            {d.goalEnabled ? (
+              <>
+                <PickerRow label={c.over} value={<Pill>{c.months(months)}</Pill>} chevron={false} onClick={() => setSheet('over')} />
+                <PickerRow label={c.every} value={<Pill icon={<Repeat />}>{c.everyValue[every]}</Pill>} chevron={false} onClick={() => setSheet('every')} />
+              </>
             ) : null}
-          </div>
-        </>
-      ) : (
-        <>
-          <div>
-            <div className={`${MICRO} mb-2`}>{t.fAmount}</div>
-            <div className="flex gap-2">
-              <div className="min-w-0 flex-1"><AmountField value={d.startingBalance} onChange={d.setStartingBalance} mode="decimal" decimalsFor={d.currency} aria-label={t.fAmount} placeholder="0" /></div>
-              <CurrencyField
-                compact
-                value={d.currency}
-                onChange={(c) => d.setCurrency(c as unknown as Currency)}
-                disabled={d.currencyLocked}
-                className="h-[52px] w-24 shrink-0 rounded-[14px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3"
-              />
-            </div>
-          </div>
-          {/* Received via = the payment-method card carousel (§5) */}
-          <PaymentMethodPicker label={d.direction === 'i_owe' ? t.fReceivedVia : t.fGivenVia} value={d.paymentMethodId} onChange={d.setPaymentMethodId} paymentMethods={d.paymentMethods} />
-          {d.principalAccount ? <PrincipalLegQuestion d={d} account={accountTitle(d.principalAccount)} matchDate={d.principalMatch ? formatLocalized(new Date(`${d.principalMatch.date}T12:00:00`), 'd MMM', locale) : null} /> : null}
-        </>
-      )}
-
-      {/* Payoff goal — same-height card for both directions so the sheet never jumps */}
-      <div ref={goalRef} className="rounded-[16px] border border-[var(--color-brand-gold)]/20 bg-[var(--color-brand-gold)]/5 p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <span className="block text-sm font-bold text-[var(--color-brand-text-primary)]">{t.fPayoffGoal}</span>
-            <span className="mt-0.5 block text-[0.75rem] text-[var(--color-brand-text-muted)]">{d.direction === 'i_owe' ? t.fPayoffGoalHint : t.fOwedGoalNote}</span>
-          </div>
-          <Switch
-            size="touch"
-            aria-label={t.fPayoffGoal}
-            checked={d.direction === 'i_owe' && d.goalEnabled}
-            disabled={d.direction !== 'i_owe'}
-            onCheckedChange={d.setGoalEnabled}
-            className="data-checked:bg-[var(--color-brand-gold)]"
-          />
-        </div>
-        {d.direction === 'i_owe' && d.goalEnabled ? (
-          <div className="mt-3 flex flex-col gap-3">
-            <div>
-              <div className={`${MICRO} mb-2`}>{t.fDuration}</div>
-              <div className="grid grid-cols-2 gap-3">
-                <AmountField value={d.goalDuration} onChange={d.setGoalDuration} mode="integer" aria-label={t.fDuration} placeholder="12" />
-                <SegmentedControl<GoalUnit>
-                  size="field"
-                  ariaLabel={t.fDuration}
-                  value={d.goalUnit}
-                  onChange={d.setGoalUnit}
-                  options={[
-                    { value: 'months', label: t.fUnitMonths },
-                    { value: 'years', label: t.fUnitYears },
-                  ]}
-                />
-              </div>
-            </div>
-            <div>
-              <div className={`${MICRO} mb-2`}>{t.fFrequency}</div>
-              <SegmentedControl<GoalFrequency>
-                ariaLabel={t.fFrequency}
-                value={d.goalCadence}
-                onChange={d.setGoalCadence}
-                options={FREQS.map((f) => ({ value: f.v, label: f.label }))}
-              />
-            </div>
-            {goalPreview != null ? (
-              <div className="rounded-[12px] bg-[var(--color-brand-gold)]/5 px-3.5 py-2.5">
-                <p className="font-mono-numbers text-[0.875rem] font-bold text-[var(--color-brand-gold)]">
-                  {t.fYoudPay(goalPreview.toLocaleString('en-US'), d.currency, FREQS.find((f) => f.v === d.goalCadence)!.per)} · {t.fPaymentsCount(goalCount)}
-                </p>
-                {strain != null ? (
-                  <p className={`mt-1 text-[0.75rem] ${strain > 0.35 ? 'text-[var(--color-brand-amber)]' : 'text-[var(--color-brand-text-muted)]'}`}>
-                    {strain > 0.35 ? t.fStrainHeavy(Math.round(strain * 100)) : t.fStrainOk}
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-    </div>
-  )
-}
-
-/** Did creating the debt move the picked account? One explicit answer; a matching bank transfer is linked instead of counted twice. */
-function PrincipalLegQuestion({ d, account, matchDate }: { d: AddDebtHook; account: string; matchDate: string | null }) {
-  const t = useT().debts
-  const lent = d.direction === 'they_owe'
-  const question = lent ? t.fPrincipalLeft(account) : t.fPrincipalArrived(account)
-  const hint = d.principalLinked
-    ? (lent ? t.fPrincipalMatchOutHint(account) : t.fPrincipalMatchInHint(account))
-    : d.principalMoved ? (lent ? t.fPrincipalOutHint(account) : t.fPrincipalInHint(account)) : t.fPrincipalNoHint(account)
-  return (
-    <div className="flex flex-col gap-2">
-      {matchDate ? (
-        <div className="flex items-center justify-between gap-3 rounded-[16px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-4 py-3.5">
-          <span className="min-w-0 text-sm font-bold text-[var(--color-brand-text-primary)]">{lent ? t.fPrincipalMatchOut(matchDate) : t.fPrincipalMatchIn(matchDate)}</span>
-          <Switch size="touch" aria-label={lent ? t.fPrincipalMatchOut(matchDate) : t.fPrincipalMatchIn(matchDate)} checked={d.principalLinked} onCheckedChange={d.setPrincipalLinked} />
+          </SheetGroup>
         </div>
       ) : null}
-      {d.principalLinked ? null : (
-        <>
-          <div className="text-sm font-bold text-[var(--color-brand-text-primary)]">{question}</div>
-          <SegmentedControl
-            ariaLabel={question}
-            value={d.principalMoved ? 'yes' : 'no'}
-            onChange={(v) => d.setPrincipalMoved(v === 'yes')}
-            options={[
-              { value: 'yes' as const, label: t.fPrincipalYes },
-              { value: 'no' as const, label: t.fPrincipalNo },
-            ]}
-          />
-        </>
-      )}
-      <p aria-live="polite" className="px-0.5 text-[0.75rem] text-[var(--color-brand-text-muted)]">{hint}</p>
+
+      <OptionSheet
+        open={sheet === 'karat'}
+        onClose={() => setSheet(null)}
+        title={c.karatTitle}
+        subtitle={c.karatSub}
+        value={String(d.goldKarat)}
+        onChange={(k) => d.setGoldKarat(Number(k) as GoldKarat)}
+        options={KARATS.map((k) => ({ value: String(k), title: `${k}k`, subtitle: goldOk ? c.karatSubtitle(`${formatWhole(perGram(k))} ${base}`) : undefined }))}
+        zIndexClassName="z-[110]"
+      />
+      <NumberPickerSheet
+        open={sheet === 'over'}
+        onClose={() => setSheet(null)}
+        title={c.overTitle}
+        value={months}
+        presets={OVER_PRESETS}
+        unit={c.monthsUnit}
+        onChange={(n) => { d.setGoalUnit('months'); d.setGoalDuration(String(n)) }}
+        zIndexClassName="z-[110]"
+      />
+      <OptionSheet
+        open={sheet === 'every'}
+        onClose={() => setSheet(null)}
+        title={c.everyTitle}
+        value={every}
+        onChange={(e) => d.setGoalCadence(e)}
+        options={(['weekly', 'monthly', 'quarterly', 'annually'] as const).map((e) => ({ value: e, title: c.everyValue[e] }))}
+        zIndexClassName="z-[110]"
+      />
     </div>
   )
 }

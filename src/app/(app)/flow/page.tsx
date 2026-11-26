@@ -2,33 +2,32 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
+import { SearchX, SlidersHorizontal, X, Receipt } from 'lucide-react'
 import { useSmsArmed } from '@/hooks/useSmsTracking'
 import { FlowSetupState } from '@/components/features/onboarding/FlowSetupState'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { AMOUNT_MAX, AMOUNT_MIN, amountIsFiltered, ONE_TIME_INCOME, useExpenseFilterStore, type FlowSegment } from '@/lib/store/useExpenseFilterStore'
 import type { IncomeSourceType } from '@/lib/store/types'
+import type { RangePreset } from '@/lib/expenses/dateRange'
+import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { navigate } from '@/lib/navigation/navigate'
-import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
-import { formatWhole, formatFixed2, formatSigned } from '@/lib/utils/formatters'
-import { useShortDate } from '@/hooks/useShortDate'
+import { formatWhole, formatSigned } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
+import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
 import { orderedCategories, categoryFilterIds } from '@/lib/budget/categoryOrder'
-import { sharedBudgetKey } from '@/lib/budget/budgetPlans'
 import { CategoryGlyph } from '@/components/dashboard/CategoryIcon'
-import { IncomeTypeIcon } from '@/components/features/income/IncomeTypeIcon'
-import { format } from 'date-fns'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
-import { SkeletonList } from '@/components/ui/SkeletonList'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/IconButton'
 import { ExpenseFilters } from '@/components/expenses/ExpenseFilters'
-import { FlowMonthRow } from '@/components/features/flow/FlowMonthRow'
 import { FlowSummaryBand } from '@/components/features/flow/FlowSummaryBand'
 import { FlowStickyStrip } from '@/components/features/flow/FlowStickyStrip'
-import { FlowChipRail, FlowChipRow, type FlowChip } from '@/components/features/flow/FlowChipRow'
+import { FlowChipItem, type FlowChip } from '@/components/features/flow/FlowChipRow'
 import { FlowLedger } from '@/components/features/flow/FlowLedger'
+import { FlowSkeleton } from '@/components/features/flow/FlowSkeleton'
 import { IncomePrompts } from '@/components/features/flow/IncomePrompts'
 import { OwnTransferPrompts } from '@/components/features/flow/OwnTransferPrompts'
 import { SmsFlagPrompts } from '@/components/features/flow/SmsFlagPrompts'
@@ -37,28 +36,27 @@ import { MerchantCategoryPrompt } from '@/components/features/flow/MerchantCateg
 import { CarryStalePrompt } from '@/components/features/savings-v3/CarryStalePrompt'
 import { FlowPendingRow } from '@/components/features/flow/FlowPendingRow'
 import { methodLabel, useFlowLedger } from '@/components/features/flow/useFlowLedger'
-import { periodText, useFlowBand } from '@/components/features/flow/useFlowBand'
+import { useFlowBand } from '@/components/features/flow/useFlowBand'
 import { PageGrid } from '@/components/layout/PageGrid'
 import { selectFlowEmptyState } from '@/lib/flow/emptyState'
 
-/** Past this scroll the band's stat row has left the viewport: collapse into the strip. */
-const COLLAPSE_AT = 94
+/** Past this scroll the hero has left the viewport: collapse into the strip. */
+const COLLAPSE_AT = 150
 
 /**
- * Flow — money in and money out in one ledger (Expenses and Income collapsed into one tab).
- * The band follows the segment (All = budget, In = paydays, Out = spending) and the
- * filters; payday questions surface on All and In, and only when they would change a number.
+ * Flow — money in and money out in one ledger. The hero is this month's spending against the budget; below it the
+ * All / In / Out segment and a filters button, then every month in one list. Filters narrow the list only; while any
+ * apply, the removable chips and the result count sit under the segment.
  */
 export default function FlowPage() {
-  const shortDate = useShortDate()
   const t = useT()
+  const lt = useFlowLtCopy()
   const dataReady = useFinanceStore((s) => s.dataReady)
   const hasHistory = useFinanceStore((s) => s.expenses.length + s.incomeEvents.length > 0)
   const smsArmed = useSmsArmed()
   const { paymentMethods, incomeSources, base } = useFinanceStore(
     useShallow((s) => ({ paymentMethods: s.paymentMethods, incomeSources: s.incomeSources, base: s.settings.baseCurrency })),
   )
-  const monthFilter = useSettingsStore((s) => s.monthFilter)
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
   const filters = useExpenseFilterStore(
     useShallow((s) => ({
@@ -71,7 +69,6 @@ export default function FlowPage() {
       rangePreset: s.range.preset,
       setRangePreset: s.setRangePreset,
       setSegment: s.setSegment,
-      selectCat: s.selectCat,
       toggleCat: s.toggleCat,
       toggleMethod: s.toggleMethod,
       toggleIncomeType: s.toggleIncomeType,
@@ -81,7 +78,7 @@ export default function FlowPage() {
     })),
   )
   const stats = useMonthlyStats()
-  const { all, items, groups, resolved } = useFlowLedger()
+  const { all, items, groups } = useFlowLedger()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
 
@@ -94,110 +91,54 @@ export default function FlowPage() {
 
   const { segment } = filters
   const amountOn = amountIsFiltered(filters.amtMin, filters.amtMax)
-  const amountLabel = `${formatWhole(filters.amtMin)}–${formatWhole(filters.amtMax)}`
-  // Filters are the dimensions that narrow the list; the date range is the period, like the month.
+  // The date range counts as a filter once it is narrower than all time.
+  const rangeOn = filters.rangePreset !== 'all'
   const filterCount =
     (segment !== 'in' && filters.cats.length ? 1 : 0) +
     (segment === 'in' && filters.incomeTypes.length ? 1 : 0) +
     (filters.methods.length ? 1 : 0) +
-    (amountOn ? 1 : 0)
+    (amountOn ? 1 : 0) +
+    (rangeOn ? 1 : 0)
   const methodName = useCallback(
     (id: string) => methodLabel(paymentMethods.find((m) => m.id === id)) ?? id,
     [paymentMethods],
   )
-  const filterNames = useMemo(
-    () => [...(segment !== 'in' ? [sharedBudgetKey(filters.cats, Object.keys(stats.categoryBudgetCaps)) ?? filters.cats].flat() : []), ...filters.methods.map(methodName), ...(amountOn ? [amountLabel] : [])],
-    [segment, filters.cats, filters.methods, methodName, amountOn, amountLabel, stats.categoryBudgetCaps],
-  )
 
   const onSetBudget = useCallback(() => navigate('/budget-setup'), [])
-  const { band, sticky, monthName } = useFlowBand({
-    items,
-    all,
-    resolved,
-    filterNames,
-    filterCount,
-    loading: !dataReady,
-    onSetBudget,
-  })
+  const { band, sticky, monthName } = useFlowBand({ loading: !dataReady, onSetBudget })
 
   const catLabel = useCallback((c: string) => t.expenseForm.categoryLabels[c] ?? c, [t])
-  const spentByCategory = useMemo(() => {
-    const m: Record<string, number> = {}
-    for (const i of all) if (i.dir === 'out' && i.counted) m[i.facet] = (m[i.facet] ?? 0) + i.amountBase
-    return m
-  }, [all])
+  const incomeTypeLabel = useCallback(
+    (f: string) => (f === ONE_TIME_INCOME ? t.flow.oneTime : incomeSourceTypeLabel(t.income, f as IncomeSourceType)),
+    [t],
+  )
+  const rangeLabel: Record<RangePreset, string> = {
+    all: lt.filters.allTime,
+    today: t.common.today,
+    yesterday: t.common.yesterday,
+    week: t.expenses.periodThisWeek,
+    month: t.expenses.periodThisMonth,
+    lastMonth: lt.filters.lastMonth,
+    custom: t.expenses.periodCustom,
+  }
+  // Category order and "% of budget" follow this month's budget, not the all-months list.
   const orderedCats = useMemo(
-    () => orderedCategories({ caps: stats.categoryBudgetCaps, rowSpent: stats.categorySpending, spentByCategory }),
-    [stats.categoryBudgetCaps, stats.categorySpending, spentByCategory],
+    () => orderedCategories({ caps: stats.categoryBudgetCaps, rowSpent: stats.categorySpending, spentByCategory: stats.categorySpending }),
+    [stats.categoryBudgetCaps, stats.categorySpending],
   )
 
-  // Category quick filters: budgeted rows (% + bar, most used first), then unassigned categories
-  // with spend, then the remaining defaults. A tap filters to the row and the aliases it absorbs.
-  const budgetChips = useMemo<FlowChip[]>(
-    () =>
-      orderedCats.map((c) => {
-        const on = filters.cats.length === c.members.length && c.members.every((m) => filters.cats.includes(m))
-        const label = catLabel(c.key)
-        const spent = formatWhole(spentByCategory[c.key] ?? 0)
-        const budget = c.state === 'budgeted' ? { kind: 'budgeted' as const, pct: c.pct ?? 0 } : c.state === 'unassigned' ? { kind: 'unassigned' as const } : undefined
-        const ariaLabel =
-          c.state === 'budgeted'
-            ? t.flow.chipBudgetedAria(label, Math.round((c.pct ?? 0) * 100))
-            : c.state === 'unassigned'
-              ? (spentByCategory[c.key] ?? 0) > 0 ? t.flow.chipUnassignedAria(label, spent) : t.flow.chipUnassignedIdleAria(label)
-              : undefined
-        return {
-          key: `b-${c.key}`,
-          label,
-          icon: <CategoryGlyph category={c.key} className="size-4" />,
-          selected: on,
-          budget,
-          ariaLabel,
-          onPress: () => {
-            filters.selectCat(on ? null : c.members[0])
-            if (!on) c.members.slice(1).forEach(filters.toggleCat)
-          },
-        }
-      }),
-    [orderedCats, filters, catLabel, spentByCategory, t],
-  )
-
-  // In: the income types present this month, in Paydays order, then one-time.
-  const incomeChips = useMemo<FlowChip[]>(() => {
-    // Repayments of money owed to the user are not an income type: no chip for them.
-    const present = new Set(all.filter((i) => i.dir === 'in' && i.facet !== 'repayment').map((i) => i.facet))
-    const order = [...incomeSources]
-      .filter((s) => s.isRecurring)
-      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-      .map((s) => s.sourceType ?? 'other')
-    const facets = [...new Set([...order, ...present])].filter((f) => present.has(f) && f !== ONE_TIME_INCOME)
-    if (present.has(ONE_TIME_INCOME)) facets.push(ONE_TIME_INCOME)
-    return facets.map((f) => ({
-      key: `in-${f}`,
-      label: f === ONE_TIME_INCOME ? t.flow.oneTime : incomeSourceTypeLabel(t.income, f as IncomeSourceType),
-      icon: <IncomeTypeIcon type={(f === ONE_TIME_INCOME ? 'other' : f) as IncomeSourceType} className="size-4" />,
-      selected: filters.incomeTypes.includes(f),
-      onPress: () => filters.toggleIncomeType(f),
-    }))
-  }, [all, incomeSources, filters, t])
-
-  const chipRowCatOnly = filterCount === 1 && budgetChips.some((c) => c.selected)
-  const chips: FlowChip[] =
-    segment === 'in'
-      ? incomeChips
-      : filterCount === 0 || chipRowCatOnly
-        ? budgetChips
-        : [
-            ...filters.cats.map((c) => ({ key: `c-${c}`, label: catLabel(c), icon: <CategoryGlyph category={c} className="size-4" />, selected: true, onPress: () => filters.toggleCat(c) })),
-            ...filters.methods.map((m) => ({ key: `m-${m}`, label: methodName(m), selected: true, onPress: () => filters.toggleMethod(m) })),
-            ...(amountOn
-              ? [{ key: 'amt', label: amountLabel, selected: true, onPress: () => { filters.setAmtMin(AMOUNT_MIN); filters.setAmtMax(AMOUNT_MAX) } }]
-              : []),
-          ]
+  // The applied filters, each removable with its ✕.
+  const appliedChips: FlowChip[] = [
+    ...(rangeOn ? [{ key: 'range', label: rangeLabel[filters.rangePreset], selected: true, onPress: () => filters.setRangePreset('all') }] : []),
+    ...(segment !== 'in' ? filters.cats : []).map((c) => ({ key: `c-${c}`, label: catLabel(c), icon: <CategoryGlyph category={c} className="size-4" />, selected: true, onPress: () => filters.toggleCat(c) })),
+    ...(segment === 'in' ? filters.incomeTypes : []).map((f) => ({ key: `i-${f}`, label: incomeTypeLabel(f), selected: true, onPress: () => filters.toggleIncomeType(f) })),
+    ...filters.methods.map((m) => ({ key: `m-${m}`, label: methodName(m), selected: true, onPress: () => filters.toggleMethod(m) })),
+    ...(amountOn
+      ? [{ key: 'amt', label: `${formatWhole(filters.amtMin)}–${formatWhole(filters.amtMax)}`, selected: true, onPress: () => { filters.setAmtMin(AMOUNT_MIN); filters.setAmtMax(AMOUNT_MAX) } }]
+      : []),
+  ]
 
   const countSum = items.filter((i) => i.counted).reduce((s, i) => s + (i.dir === 'in' ? i.amountBase : -i.amountBase), 0)
-  const showCount = filterCount > 0
   const empty = dataReady
     ? selectFlowEmptyState({
         allCount: all.length,
@@ -209,23 +150,21 @@ export default function FlowPage() {
       })
     : 'none'
 
-  const noMatchBody = (() => {
-    const cats = segment !== 'in' ? filters.cats : []
-    const kind = segment === 'in' ? t.flow.noMatchIncome : segment === 'out' || cats.length ? t.flow.noMatchSpending : t.flow.noMatchTransactions
-    const what = cats.length ? `${cats.join(', ')} ${kind}` : kind
-    const paid = filters.methods.length ? ` ${t.flow.noMatchPaidWith(filters.methods.map(methodName).join(', '))}` : ''
-    const from = shortDate(format(resolved.start, 'yyyy-MM-dd'))
-    const to = resolved.start.getMonth() === resolved.end.getMonth() ? format(resolved.end, 'd') : shortDate(format(resolved.end, 'yyyy-MM-dd'))
-    const when = filters.rangePreset === 'month' ? t.flow.noMatchIn(monthName) : t.flow.noMatchBetween(from, to)
-    return `${t.flow.noMatchNo} ${what}${paid} ${when}.`
-  })()
-
   const categoryOptions = useMemo(() => {
     const seen = all.filter((i) => i.dir === 'out' && i.facet).map((i) => i.facet)
     return categoryFilterIds(orderedCats, seen).map((c) => ({ id: c, label: catLabel(c) }))
   }, [all, orderedCats, catLabel])
-  const incomeTypeOptions = useMemo(() => incomeChips.map((c) => ({ id: c.key.slice(3), label: c.label })), [incomeChips])
-  const resultCount = items.length
+  // In: the income types present in the list, in Paydays order, then one-time.
+  const incomeTypeOptions = useMemo(() => {
+    const present = new Set(all.filter((i) => i.dir === 'in' && i.facet !== 'repayment').map((i) => i.facet))
+    const order = [...incomeSources]
+      .filter((s) => s.isRecurring)
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      .map((s) => s.sourceType ?? 'other')
+    const facets = [...new Set([...order, ...present])].filter((f) => present.has(f) && f !== ONE_TIME_INCOME)
+    if (present.has(ONE_TIME_INCOME)) facets.push(ONE_TIME_INCOME)
+    return facets.map((f) => ({ id: f, label: incomeTypeLabel(f) }))
+  }, [all, incomeSources, incomeTypeLabel])
 
   return (
     <div>
@@ -237,105 +176,144 @@ export default function FlowPage() {
       <MerchantCategoryPrompt />
       <CarryStalePrompt />
 
-      <FlowSummaryBand {...band} />
-
+      {/* One centred column on desktop too (the mockup is a single phone column). The blocks carry their own 16px
+          gutter, so the shell adds 8px to land on the 24px desktop gutter every other page uses. */}
       <PageGrid
-          secondary={<div className="lg:-me-4"><FlowChipRail title={segment === 'in' ? t.flow.railIncomeTypes : t.flow.railCategories} chips={chips} /></div>}
-          primary={
-            <div className="lg:-mx-4 lg:-mt-2.5">
-      <FlowMonthRow
-        range={filters.rangePreset === 'month' ? undefined : periodText(resolved, shortDate)}
-        onBackToMonth={() => filters.setRangePreset('month')}
-      />
+        className="lg:px-2"
+        primary={
+          !dataReady ? (
+            <FlowSkeleton />
+          ) : (
+            <div className="pb-6">
+              <div className="mx-4 mt-4">
+                <FlowSummaryBand {...band} />
+              </div>
 
-      <div className="mx-4 mt-2.5">
-        <SegmentedControl<FlowSegment>
-          ariaLabel={t.flow.segmentAria}
-          value={segment}
-          onChange={filters.setSegment}
-          options={[
-            { value: 'all', label: t.flow.segAll },
-            { value: 'in', label: t.flow.segIn },
-            { value: 'out', label: t.flow.segOut },
-          ]}
-        />
-      </div>
+              <div className="mx-4 mt-4 flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <SegmentedControl<FlowSegment>
+                    ariaLabel={t.flow.segmentAria}
+                    value={segment}
+                    onChange={filters.setSegment}
+                    options={[
+                      { value: 'all', label: t.flow.segAll },
+                      { value: 'in', label: t.flow.segIn },
+                      { value: 'out', label: t.flow.segOut },
+                    ]}
+                  />
+                </div>
+                <span className="relative inline-flex shrink-0">
+                  <IconButton
+                    variant="outlined"
+                    aria-label={filterCount > 0 ? t.flow.filtersCount(filterCount) : t.flow.openFilters}
+                    aria-haspopup="dialog"
+                    onClick={() => setSheetOpen(true)}
+                  >
+                    <SlidersHorizontal />
+                  </IconButton>
+                  {filterCount > 0 ? (
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute -end-1 -top-1 z-[2] flex size-[18px] items-center justify-center rounded-full bg-[var(--color-brand-primary)] font-mono-numbers text-[0.625rem] font-bold text-[var(--color-brand-on-primary)] ring-2 ring-[var(--color-brand-bg)]"
+                    >
+                      {filterCount > 9 ? '9+' : filterCount}
+                    </span>
+                  ) : null}
+                </span>
+              </div>
 
-      <FlowChipRow
-        filterCount={filterCount}
-        onOpenFilters={() => setSheetOpen(true)}
-        chips={chips}
-        results={
-          showCount
-            ? {
-                count: resultCount,
-                summary: segment === 'in' ? formatSigned(countSum, 2) : `−${formatFixed2(Math.abs(countSum))}`,
-                onClear: filters.reset,
-              }
-            : undefined
+              {filterCount > 0 ? (
+                <div className="mx-4 mt-2 flex flex-col gap-1">
+                  {appliedChips.length ? (
+                    <div className="hide-scrollbar -my-1 flex gap-2 overflow-x-auto py-1">
+                      {appliedChips.map((c) => (
+                        <FlowChipItem key={c.key} chip={c} />
+                      ))}
+                    </div>
+                  ) : null}
+                  <div className="flex items-center justify-between text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
+                    <span>
+                      <b dir="auto" className="font-mono-numbers text-[var(--color-brand-text-primary)]">{lt.page.results(items.length)}</b>
+                      {' · '}
+                      <span className="font-mono-numbers" dir="ltr">{formatSigned(countSum, 2)}</span>
+                    </span>
+                    <Button variant="link" size="touch" className="px-1.5" onClick={filters.reset}>
+                      <X className="size-3.5" aria-hidden />
+                      {t.expenses.clearFilters}
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+
+              <FlowPendingRow />
+
+              {empty === 'setup' ? (
+                <FlowSetupState className="mx-4 mt-4" />
+              ) : empty === 'emptyMonth' ? (
+                <div className="mx-4 mt-6">
+                  <EmptyState
+                    variant="card"
+                    size="page"
+                    icon={<Receipt />}
+                    title={lt.page.emptyTitle(monthName)}
+                    description={lt.page.emptyBody}
+                    action={
+                      <div className="flex w-full flex-col gap-1">
+                        <Button size="cta-block" onClick={() => setActiveModal('addExpense')}>
+                          {lt.page.addAnExpense}
+                        </Button>
+                        {smsArmed ? null : (
+                          <Button variant="link" size="touch" className="font-semibold" onClick={() => navigate('/settings/sms')}>
+                            {t.flow.turnOnSms}
+                          </Button>
+                        )}
+                      </div>
+                    }
+                  />
+                </div>
+              ) : empty === 'emptySegment' ? (
+                <div className="mx-4 mt-6">
+                  <EmptyState
+                    variant="card"
+                    size="page"
+                    icon={<Receipt />}
+                    title={segment === 'in' ? t.flow.emptySegmentInTitle(monthName) : t.flow.emptySegmentOutTitle(monthName)}
+                    description={segment === 'in' ? t.flow.emptySegmentInBody : t.flow.emptySegmentOutBody}
+                    action={
+                      <div className="flex w-full flex-col gap-1">
+                        <Button size="cta-block" onClick={() => setActiveModal(segment === 'in' ? 'addIncome' : 'addExpense')}>
+                          {segment === 'in' ? t.flow.addIncome : t.flow.addExpense}
+                        </Button>
+                        <Button variant="link" size="touch" className="font-semibold" onClick={() => filters.setSegment('all')}>
+                          {t.flow.viewAll}
+                        </Button>
+                      </div>
+                    }
+                  />
+                </div>
+              ) : empty === 'noMatch' ? (
+                <div className="mx-4 mt-3">
+                  <EmptyState
+                    variant="card"
+                    size="section"
+                    icon={<SearchX />}
+                    iconTone="neutral"
+                    title={t.flow.noMatchTitle}
+                    description={lt.page.noMatchBody}
+                    action={
+                      <Button size="cta-block" onClick={filters.reset}>
+                        {t.expenses.clearFilters}
+                      </Button>
+                    }
+                  />
+                </div>
+              ) : (
+                <FlowLedger look="card" groups={groups} fadeKey={`${segment}:${filters.rangePreset}:${filterCount}`} />
+              )}
+            </div>
+          )
         }
       />
-
-      <FlowPendingRow />
-
-      {!dataReady ? (
-        <div className="mx-4 mt-3.5">
-          <SkeletonList rows={7} />
-        </div>
-      ) : empty === 'setup' ? (
-        <FlowSetupState className="mx-4 mt-4" />
-      ) : empty === 'emptyMonth' ? (
-        <div className="mx-4 mt-7">
-          <EmptyState
-            variant="card"
-            title={t.flow.emptyMonthTitle(monthName)}
-            description={t.flow.emptyMonthBody}
-            action={
-              smsArmed ? undefined : (
-                <Button size="cta" onClick={() => navigate('/settings/sms')}>
-                  {t.flow.turnOnSms}
-                </Button>
-              )
-            }
-          />
-        </div>
-      ) : empty === 'emptySegment' ? (
-        <div className="mx-4 mt-7">
-          <EmptyState
-            variant="card"
-            title={segment === 'in' ? t.flow.emptySegmentInTitle(monthName) : t.flow.emptySegmentOutTitle(monthName)}
-            description={segment === 'in' ? t.flow.emptySegmentInBody : t.flow.emptySegmentOutBody}
-            action={
-              <div className="flex flex-col items-center gap-2">
-                <Button size="cta" onClick={() => setActiveModal(segment === 'in' ? 'addIncome' : 'addExpense')}>
-                  {segment === 'in' ? t.flow.addIncome : t.flow.addExpense}
-                </Button>
-                <Button variant="ghost" size="touch" onClick={() => filters.setSegment('all')}>
-                  {t.flow.viewAll}
-                </Button>
-              </div>
-            }
-          />
-        </div>
-      ) : empty === 'noMatch' ? (
-        <div className="mx-4 mt-7">
-          <EmptyState
-            variant="card"
-            title={t.flow.noMatchTitle}
-            description={noMatchBody}
-            action={
-              <Button size="cta" onClick={filters.reset}>
-                {t.expenses.clearFilters}
-              </Button>
-            }
-          />
-        </div>
-      ) : (
-        <FlowLedger groups={groups} fadeKey={`${segment}:${monthFilter}:${filterNames.join('|')}`} />
-      )}
-            </div>
-          }
-        />
 
       <ExpenseFilters
         open={sheetOpen}
@@ -343,7 +321,7 @@ export default function FlowPage() {
         segment={segment}
         categories={categoryOptions}
         incomeTypes={incomeTypeOptions}
-        resultCount={resultCount}
+        resultCount={items.length}
         currency={base}
       />
     </div>

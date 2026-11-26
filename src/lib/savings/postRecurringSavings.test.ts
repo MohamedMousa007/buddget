@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { backfillDueDates, recurringTxId } from '@/lib/savings/recurringDue'
 import { postDueRecurringSavings } from '@/lib/savings/postRecurringSavings'
+import { noTimeAt } from '@/lib/time/occurredAt'
 import type { RecurringSavingsDeposit, SavingsAccount } from '@/lib/store/types'
 
 const S = () => useFinanceStore.getState()
@@ -45,8 +46,8 @@ describe('DEB-12: missed recurring savings months are each posted, on their due 
     expect(S().savingsAccounts[0].currentBalance).toBe(300)
   })
 
-  it('a back-dated deposit carries no time stamp of today', () => {
+  it('a back-dated deposit gets the no-time stand-in, not today\'s clock', () => {
     postDueRecurringSavings('2026-03-05')
-    expect(S().savingsTransactions[0].occurredAt).toBeUndefined()
+    for (const tx of S().savingsTransactions) expect(tx.occurredAt).toBe(noTimeAt(tx.date))
   })
 })

@@ -145,9 +145,7 @@ export interface SubscriptionsCopy {
     since: (date: string) => string
     before: string
     noCharges: string
-    noChargesPaused: string
     edit: string
-    pause: string
     resume: string
     cancel: string
     delete: string
@@ -158,7 +156,6 @@ export interface SubscriptionsCopy {
     applyPlan: string
     banner: {
       trial: { title: (date: string) => string; body: string }
-      paused: { title: string; body: (date: string) => string }
       cancelled: { title: (date: string) => string; body: string }
       price: { title: (amount: string) => string; body: (amount: string) => string }
       plan: { title: (plan: string, date: string) => string; body: (amount: string) => string }
@@ -354,9 +351,7 @@ export const subscriptionsCopyEn: SubscriptionsCopy = {
     since: (d) => `Since ${d}`,
     before: 'Before',
     noCharges: 'No upcoming charges.',
-    noChargesPaused: 'No charges while paused.',
     edit: 'Edit',
-    pause: 'Pause',
     resume: 'Resume',
     cancel: 'Cancel subscription',
     delete: 'Delete',
@@ -369,10 +364,6 @@ export const subscriptionsCopyEn: SubscriptionsCopy = {
       trial: {
         title: (d) => `Trial ends ${d}`,
         body: 'Alerts 2 days before and on the day. Not counted in Committed until it converts to paid.',
-      },
-      paused: {
-        title: 'No charges, no reminders',
-        body: (d) => `Paused since ${d}. Resume restarts from the next cycle.`,
       },
       cancelled: {
         title: (d) => `Access until ${d}`,
@@ -584,9 +575,7 @@ export const subscriptionsCopyAr: SubscriptionsCopy = {
     since: (d) => `منذ ${d}`,
     before: 'قبل ذلك',
     noCharges: 'لا خصومات قادمة.',
-    noChargesPaused: 'لا خصم أثناء الإيقاف.',
     edit: 'تعديل',
-    pause: 'إيقاف مؤقت',
     resume: 'استئناف',
     cancel: 'إلغاء الاشتراك',
     delete: 'حذف',
@@ -599,10 +588,6 @@ export const subscriptionsCopyAr: SubscriptionsCopy = {
       trial: {
         title: (d) => `تنتهي التجربة ${d}`,
         body: 'تنبيه قبل يومين وفي اليوم نفسه. لا يُحتسب ضمن الملتزم به حتى يتحول إلى مدفوع.',
-      },
-      paused: {
-        title: 'لا خصم ولا تذكيرات',
-        body: (d) => `متوقف منذ ${d}. الاستئناف يبدأ من الدورة التالية.`,
       },
       cancelled: {
         title: (d) => `الوصول حتى ${d}`,

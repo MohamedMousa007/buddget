@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Archive, Landmark, MoreVertical, Plus, Star } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { IconButton } from '@/components/ui/IconButton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { PageContainer } from '@/components/layout/PageContainer'
+import { PageGrid } from '@/components/layout/PageGrid'
+import { PageHero } from '@/components/layout/PageHero'
 import { AccountsHero } from '@/components/features/accounts/AccountsHero'
 import { AccountRow } from '@/components/features/accounts/AccountRow'
 import { CardRow } from '@/components/features/accounts/CardRow'
@@ -19,12 +20,12 @@ import { accountTitle, sharesProvider, splitMoney } from '@/components/features/
 import { AccountDetailSheet } from '@/components/features/accounts/AccountDetailSheet'
 import { AddAccountSheet } from '@/components/features/accounts/AddAccountSheet'
 import { CashCurrencySheet } from '@/components/features/accounts/CashCurrencySheet'
-import { BrandMark } from '@/components/features/accounts/BrandMark'
 import { FixGapSheet } from '@/components/features/accounts/FixGapSheet'
 import { DetectedAccountsSheet } from '@/components/features/accounts/DetectedAccountsSheet'
 import { PendingRow } from '@/components/ui/PendingRow'
 import { useDetectedAccounts } from '@/hooks/useDetectedAccounts'
-import { MoveMoneySheet, type MoveMode } from '@/components/features/accounts/MoveMoneySheet'
+import { CashOnHandMark, MoveMoneySheet, type MoveMode } from '@/components/features/accounts/MoveMoneySheet'
+import { useAccountsLtCopy } from '@/lib/i18n/accountsLtCopy'
 import { UnplacedSmsSheet } from '@/components/features/accounts/UnplacedSmsSheet'
 import { CardDetailSheet } from '@/components/features/accounts/CardDetailSheet'
 import { PaymentMethodSetupSheet } from '@/components/features/payments/PaymentMethodSetupSheet'
@@ -47,14 +48,14 @@ import type { PaymentMethod } from '@/lib/store/types'
 import { totalDebtRemainingInBase } from '@/lib/utils/calculations'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import { useT } from '@/lib/i18n'
-import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
-import { createElement } from 'react'
 import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
 
 /** A sheet stacked over the account or card sheet, which scales back behind it. */
 type Over = { kind: 'addCard' } | { kind: 'card'; cardId: string } | { kind: 'editCard'; cardId: string }
 
 const NOT_FX = new Set(['XAU', 'BTC', 'ETH'])
+/** A card under an account: Debit | Credit | Prepaid only (pay-later lives in Debts, wallets are accounts). */
+const CARD_ONLY: PaymentMethod['type'][] = ['wallet', 'bnpl', 'other']
 
 type Sheet =
   | { kind: 'detail'; id: string }
@@ -74,10 +75,14 @@ type Sheet =
 /** The Wealth and Debts header row: title, count, and the page's add action at the end. */
 function SectionHeader({ title, count, onAdd, addLabel }: { title: string; count: number; onAdd?: () => void; addLabel?: string }) {
   return (
-    <div className="mb-2 flex items-center gap-2 px-1">
+    <div className="mb-2 flex min-h-11 items-center gap-2 px-1">
       <h2 className="text-[17px] font-bold text-[var(--color-brand-text-primary)]">{title}</h2>
-      <Badge variant="muted" className="min-w-[21px] px-1.5 font-mono-numbers text-[0.6875rem] font-semibold">{count}</Badge>
-      {onAdd ? <Button variant="secondary" size="touch" className="ms-auto" onClick={onAdd}><Plus aria-hidden />{addLabel}</Button> : null}
+      <span className="font-mono-numbers text-[0.8125rem] font-semibold text-[var(--color-brand-text-muted)]">{count}</span>
+      {onAdd ? (
+        <Button variant="ghost" size="touch" className="ms-auto gap-1 px-1 text-[0.875rem] font-semibold text-[var(--color-brand-primary-ink)] hover:text-[var(--color-brand-primary-ink)] [&_svg:not([class*='size-'])]:size-4" onClick={onAdd}>
+          <Plus aria-hidden />{addLabel}
+        </Button>
+      ) : null}
     </div>
   )
 }
@@ -109,6 +114,8 @@ export default function AccountsPage() {
   const cashIsDefault = paymentMethods.some((m) => m.type === 'cash' && m.isDefault && m.id !== DEFAULT_CASH_ID && !m.closedAt)
   const accountPrefill = useSettingsStore((s) => s.accountPrefill)
   const clearAccountPrefill = useSettingsStore((s) => s.clearAccountPrefill)
+  const setActiveModal = useSettingsStore((s) => s.setActiveModal)
+  const ltCash = useAccountsLtCopy().cash
   const base = String(settings.baseCurrency)
 
   const owed = useMemo(
@@ -126,6 +133,14 @@ export default function AccountsPage() {
   const missingRates = [...new Set(model.accounts.filter((a) => a.balance && !a.method.excluded).map((a) => String(a.method.currency)))].filter(noRate).sort()
   // The ≈ stays on every total that includes a currency with no live rate, even while the fallback table converts it.
   const approxGroup = (g: ProviderGroup): ProviderGroup => (!g.approx && g.accounts.some((a) => a.balance && missingRates.includes(String(a.method.currency))) ? { ...g, approx: true } : g)
+
+  const heroSegments = useMemo(() => [
+    ...[...groups.banks, ...groups.wallets].map((g) => ({ key: g.key, label: g.name, value: g.totalInBase })),
+    ...groups.cash.filter((a) => a.balance).map((a) => ({
+      key: a.method.id, label: accountTitle(a.method),
+      value: tryConvertCurrency(a.balance!.balance, String(a.method.currency), base, exchangeRates) ?? 0,
+    })),
+  ], [groups, base, exchangeRates])
 
   const unplaced = useMemo(() => unplacedSmsExpenses(expenses), [expenses])
   const provider = providerKey ? [...groups.banks, ...groups.wallets].find((g) => g.key === providerKey) : undefined
@@ -199,17 +214,16 @@ export default function AccountsPage() {
 
   // Every user has a Cash; until it has a balance it waits here, on the empty page too (docs/SYSTEM_CASH_PLAN.md).
   // Untracked Cash can still be the default payment (BUD-87): its menu sits beside the row's tap target, not inside it.
+  // Light touch: a dimmed "Cash on hand · Not tracked" row whose Start tracking asks how much cash there is.
   const cashRow = model.needsCash ? (
-          <div className="flex min-h-[72px] w-full items-center gap-1 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] pe-2">
-            <button type="button" onClick={() => setSheet({ kind: 'detail', id: cashMethod?.id ?? ensureCashAccount() })} data-raw-button-ok="a whole-row tap target, sized by its content"
-              className="flex min-h-[72px] min-w-0 flex-1 items-center gap-3.5 ps-4 text-start">
-              <BrandMark name="Cash" color="var(--color-brand-sunken)" icon={createElement(paymentTypeIcon('cash'), { className: 'size-5', 'aria-hidden': true })} />
-              <span className="min-w-0 flex-1">
-                <span className="block text-base font-semibold text-[var(--color-brand-text-primary)]">{t.typeCash}</span>
-                <span className="block text-[0.8125rem] text-[var(--color-brand-text-muted)]">{t.addBalanceToInclude}</span>
-              </span>
-              <span className="text-sm font-semibold text-[var(--color-brand-primary-ink)]">{t.setBalance}</span>
-            </button>
+          <div className={`flex min-h-[72px] w-full items-center rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] py-3 ps-4 ${cashIsDefault ? 'gap-3.5 pe-4' : 'gap-3 pe-0'}`}>
+            <span className="opacity-50"><CashOnHandMark size={44} /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-base font-semibold tracking-[-0.01em] text-[var(--color-brand-text-secondary)]">{ltCash.title}</span>
+              <span className="mt-0.5 block truncate text-[0.8125rem] text-[var(--color-brand-text-muted)]">{ltCash.notTracked}</span>
+            </span>
+            {/* The mockup's quiet 36px option pill; its ::after keeps the 44px touch target. */}
+            <Button variant="outline" className="relative h-9 shrink-0 rounded-full px-3 text-[0.8125rem] font-semibold text-[var(--color-brand-primary-ink)] after:absolute after:left-1/2 after:top-1/2 after:min-h-11 after:min-w-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']" onClick={() => setActiveModal('askCashOnHand')}>{ltCash.startTracking}</Button>
             {cashIsDefault ? null : (
               <IconButton aria-label={all.common.moreActions} aria-haspopup="menu" aria-expanded={cashMenu !== null} onClick={(e) => setCashMenu(e.currentTarget.getBoundingClientRect())}>
                 <MoreVertical size={18} />
@@ -236,8 +250,11 @@ export default function AccountsPage() {
   const walletCount = groups.wallets.length + groups.cash.length
   const home = (
     <>
-      <AccountsHero model={missingRates.length > 0 && !model.approx ? { ...model, approx: true } : model} currency={base} netWorth={nw.netWorth} creditOwed={owed} hidden={heroMasked} onToggleHidden={toggle} />
-      <PageContainer className="space-y-5 py-4">
+      <PageHero inset>
+        <AccountsHero model={missingRates.length > 0 && !model.approx ? { ...model, approx: true } : model} currency={base} netWorth={nw.netWorth} creditOwed={owed}
+          segments={heroSegments} hidden={heroMasked} onToggleHidden={toggle} />
+      </PageHero>
+      <PageGrid stack primary={<div className="space-y-5 px-4 py-4 lg:px-0 lg:pt-0">
         {rateDismissed ? null : <RateAlert currencies={missingRates} onDismiss={() => setRateDismissed(true)} />}
         {detected.length > 0 ? (
           <PendingRow tone="teal" icon={Landmark} title={all.notifications.accountsLabel(detected.length)} subtitle={all.notifications.accountsHint} onPress={() => setSheet({ kind: 'found' })} />
@@ -274,7 +291,7 @@ export default function AccountsPage() {
             {cardList(groups.otherCards.map((f) => f.method))}
           </section>
         ) : null}
-      </PageContainer>
+      </div>} />
     </>
   )
 
@@ -288,8 +305,10 @@ export default function AccountsPage() {
     const prepaid = group.accounts.filter((a) => a.method.type === 'prepaid_card')
     return (
       <>
-        <ProviderHero group={approxGroup(group)} base={base} hidden={heroMasked} onToggleHidden={toggle} onBack={() => setProviderKey(null)} />
-        <PageContainer className="space-y-5 py-4">
+        <PageHero inset className="pt-2">
+          <ProviderHero group={approxGroup(group)} base={base} hidden={heroMasked} onToggleHidden={toggle} onBack={() => setProviderKey(null)} />
+        </PageHero>
+        <PageGrid stack primary={<div className="space-y-5 px-4 py-4 lg:px-0 lg:pt-0">
           <section>
             <SectionHeader title={t.title} count={group.accountCount} onAdd={() => setSheet({ kind: 'add' })} addLabel={t.addAccount} />
             {held.length > 0 ? <Card padding="none" className="divide-y divide-[var(--color-brand-border)] overflow-hidden rounded-2xl">{held.map(renderRow)}</Card> : null}
@@ -313,7 +332,7 @@ export default function AccountsPage() {
               <Archive aria-hidden className="size-4 shrink-0" />{t.closedAccounts(closed)}
             </p>
           ) : null}
-        </PageContainer>
+        </div>} />
       </>
     )
   }
@@ -329,7 +348,9 @@ export default function AccountsPage() {
             behind={over !== null} gap={gaps[open.method.id]?.amount} onFix={() => setSheet({ kind: 'fix', id: open.method.id })}
             onBalanceSaved={() => balanceSaved(open.method.id)}
             onMove={(mode) => setSheet({ kind: 'move', id: open.method.id, mode })}
-            onAddCard={() => setOver({ kind: 'addCard' })} onEdit={() => setSheet({ kind: open.method.type === 'cash' ? 'cashCurrency' : 'edit', id: open.method.id })}
+            onAddCard={() => setOver({ kind: 'addCard' })}
+            onSeeAllCards={() => { const key = providerKeyOf(open.method); close(); openProvider(key) }}
+            onEdit={() => setSheet({ kind: open.method.type === 'cash' ? 'cashCurrency' : 'edit', id: open.method.id })}
             onOpenCard={(c) => setOver({ kind: 'card', cardId: c.id })} />
           <MoveMoneySheet key={`m-${open.method.id}-${sheet?.kind === 'move' ? sheet.mode : ''}`} open={sheet?.kind === 'move'} onClose={close}
             accounts={model.accounts} initialAccountId={open.method.id} initialMode={sheet?.kind === 'move' ? sheet.mode : 'cash'} initialAmount={sheet?.kind === 'move' ? sheet.amount : undefined}
@@ -341,9 +362,9 @@ export default function AccountsPage() {
             <FixGapSheet key={`f-${open.method.id}`} open={sheet?.kind === 'fix'} onClose={close} account={open} gap={gaps[open.method.id]}
               onSetAside={(amount) => setSheet({ kind: 'move', id: open.method.id, mode: 'set', amount: String(amount), fromGap: true })} onResolved={refresh} />
           ) : null}
-          <PaymentMethodSetupSheet open={sheet?.kind === 'card'} editing={null} baseCurrency={settings.baseCurrency} parentAccountId={open.method.id} extraChoices={['virtual']} excludeTypes={['wallet']} nested onClose={close} />
+          <PaymentMethodSetupSheet open={sheet?.kind === 'card'} editing={null} baseCurrency={settings.baseCurrency} parentAccountId={open.method.id} excludeTypes={CARD_ONLY} nested onClose={close} />
           <PaymentMethodSetupSheet open={sheet?.kind === 'detail' && over?.kind === 'addCard'} editing={null} baseCurrency={settings.baseCurrency} parentAccountId={open.method.id}
-            titleOverride={t.addCardTo(accountTitle(open.method))} extraChoices={['virtual']} excludeTypes={['wallet']} nested onClose={() => setOver(null)} />
+            excludeTypes={CARD_ONLY} nested onClose={() => setOver(null)} />
           <PaymentMethodSetupSheet key={`e-${open.method.id}`} open={sheet?.kind === 'edit'} editing={open.method} baseCurrency={settings.baseCurrency} nested onClose={close} />
           {shownOverCard ? (
             <CardDetailSheet key={`oc-${shownOverCard.id}`} open={sheet?.kind === 'detail' && over?.kind === 'card' && !!overCard} card={shownOverCard} parent={open.method} masked={listMasked} zIndexClassName="z-[110]"

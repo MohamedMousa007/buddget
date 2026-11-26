@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { buildAIActionHandlerContext, describeActionTarget, executeActionItem, validateActionItem } from '@/lib/ai/aiActionHandlers'
 import { friendlyLineForActionItem } from '@/lib/ai/gemini'
 import { checkDate } from '@/lib/ai/legacyGuards'
-import type { Debt, Expense } from '@/lib/store/types'
+import type { Debt, Expense, InvestmentHolding } from '@/lib/store/types'
+import { assetFundingId } from '@/lib/savings/assetPurchase'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { localTodayISO } from '@/lib/utils/localDate'
 
@@ -18,6 +19,7 @@ beforeEach(() => {
   useFinanceStore.setState({
     expenses: [exp('e1', 'Coffee', 30, '2026-10-10T10:00:00Z'), exp('e2', 'Coffee beans', 400, '2026-10-11T10:00:00Z'), exp('e3', '', 5, '2026-10-12T10:00:00Z')],
     debts: [debt('d1', 'Car loan', 'Ahmed'), debt('d2', 'Phone', 'Sara')],
+    investmentHoldings: [],
     debtPayments: [],
     exchangeRates: {},
     settings: { ...useFinanceStore.getState().settings, baseCurrency: 'EGP' },
@@ -57,6 +59,17 @@ describe('legacy fuzzy targets (I7)', () => {
     expect(validateActionItem(ctx(), 'delete_expense', { description: 'coffee' })).toBeNull()
     executeActionItem(ctx(), 'delete_expense', { description: 'coffee' })
     expect(useFinanceStore.getState().expenses.map((e) => e.id)).toEqual(['e2', 'e3'])
+  })
+
+  it('deletes an asset purchase together with its holding', () => {
+    const funding = assetFundingId('h1')
+    useFinanceStore.setState({
+      investmentHoldings: [{ id: 'h1', assetType: 'gold', name: 'Ring', quantity: 5, currency: 'EGP', createdAt: '2026-10-10T10:00:00Z', updatedAt: '2026-10-10T10:00:00Z' } as InvestmentHolding],
+      expenses: [exp(funding, 'Gold ring', 20000, '2026-10-10T10:00:00Z'), exp('e2', 'Coffee beans', 400, '2026-10-11T10:00:00Z')],
+    })
+    executeActionItem(ctx(), 'delete_expense', { description: 'gold ring' })
+    expect(useFinanceStore.getState().expenses.map((e) => e.id)).toEqual(['e2'])
+    expect(useFinanceStore.getState().investmentHoldings).toHaveLength(0)
   })
 
   it('asks which one when several partial matches remain', () => {

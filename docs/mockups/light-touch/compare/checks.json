@@ -1,0 +1,1484 @@
+{
+  "screens": {
+    "page-flow": {
+      "captured": true,
+      "route": "/flow",
+      "steps": [],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "page-accounts": {
+      "captured": true,
+      "route": "/accounts",
+      "steps": [],
+      "offline": true,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "page-provider": {
+      "captured": true,
+      "route": "/accounts",
+      "steps": [
+        "CIB, 2 accounts · 3 cards"
+      ],
+      "offline": true,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.overflow-hidden.rounded-3xl.px-[18px].pb-4",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "page-budget": {
+      "captured": true,
+      "route": "/budget",
+      "steps": [],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": null,
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "page-debts": {
+      "captured": true,
+      "route": "/debts",
+      "steps": [],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "page-goals": {
+      "captured": true,
+      "route": "/goals",
+      "steps": [],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "page-insights": {
+      "captured": true,
+      "route": "/reports",
+      "steps": [],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.overflow-hidden.rounded-3xl.text-[var(--flow-band-fg)]",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "page-paydays": {
+      "captured": true,
+      "route": "/paydays",
+      "steps": [],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "page-subs": {
+      "captured": true,
+      "route": "/subscriptions",
+      "steps": [],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "page-wealth": {
+      "captured": true,
+      "route": "/wealth",
+      "steps": [
+        "async (page) => {\n  await page.evaluate(() => {\n    const no"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-expense": {
+      "captured": true,
+      "route": "/flow",
+      "steps": [
+        "Talabat"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-income": {
+      "captured": true,
+      "route": "/flow",
+      "steps": [
+        "Salary · Nexta"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": null,
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-scan": {
+      "captured": true,
+      "route": "/flow",
+      "steps": [
+        "Carrefour"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-s_held": {
+      "captured": false,
+      "reason": "Held bank messages are fetched from Supabase (HeldMessagesSheet); with empty Supabase env there are none, so the Flow row never shows."
+    },
+    "sheet-account": {
+      "captured": true,
+      "route": "/accounts",
+      "steps": [
+        "CIB, 2 accounts · 3 cards",
+        "CIB Current"
+      ],
+      "offline": true,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.overflow-hidden.rounded-3xl.px-[18px].pb-4",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-card": {
+      "captured": true,
+      "route": "/accounts",
+      "steps": [
+        "CIB, 2 accounts · 3 cards",
+        "CIB Credit"
+      ],
+      "offline": true,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.overflow-hidden.rounded-3xl.px-[18px].pb-4",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-addaccount": {
+      "captured": true,
+      "route": "/accounts",
+      "steps": [
+        "Add account"
+      ],
+      "offline": true,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-addcard": {
+      "captured": true,
+      "route": "/accounts",
+      "steps": [
+        "CIB, 2 accounts · 3 cards",
+        "CIB Current",
+        "Add card"
+      ],
+      "offline": true,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.overflow-hidden.rounded-3xl.px-[18px].pb-4",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": [
+        "Loading chunk app/global-error failed.\n(timeout: http://localhost:3001/_next/static/chunks/app/global-error.js)"
+      ]
+    },
+    "sheet-cashout": {
+      "captured": true,
+      "route": "/accounts",
+      "steps": [
+        "CIB, 2 accounts · 3 cards",
+        "CIB Current",
+        "Cash out",
+        "async (page) => {\n  const input = page.locator('[role=dialog"
+      ],
+      "offline": true,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.overflow-hidden.rounded-3xl.px-[18px].pb-4",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-setaside": {
+      "captured": true,
+      "route": "/accounts",
+      "steps": [
+        "CIB, 2 accounts · 3 cards",
+        "CIB Current",
+        "Set aside",
+        "async (page) => {\n  const input = page.locator('[role=dialog"
+      ],
+      "offline": true,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.overflow-hidden.rounded-3xl.px-[18px].pb-4",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-cashhand": {
+      "captured": true,
+      "route": "/accounts",
+      "steps": [
+        "Start tracking"
+      ],
+      "offline": true,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": null,
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "state-cashoff": {
+      "captured": true,
+      "route": "/accounts",
+      "steps": [],
+      "offline": true,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": null,
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": [
+        "Invalid or unexpected token",
+        "Loading chunk app/(app)/layout failed.\n(missing: http://localhost:3001/_next/static/chunks/app/(app)/layout.js)"
+      ]
+    },
+    "sheet-deposit": {
+      "captured": true,
+      "route": "/wealth",
+      "steps": [
+        "Add money",
+        "async (page) => {\n  const input = page.locator('[role=dialog"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-s_withdraw": {
+      "captured": true,
+      "route": "/wealth",
+      "steps": [
+        "Withdraw",
+        "css=[role=dialog] button[aria-label^=\"From:\"]",
+        "async (page) => {\n  // The picker row's or option's own labe",
+        "async (page) => {\n  // The picker row's or option's own labe",
+        "async (page) => {\n  // The picker row's or option's own labe",
+        "async (page) => {\n  // The picker row's or option's own labe",
+        "async (page) => {\n  // The picker row's or option's own labe",
+        "async (page) => {\n  const input = page.locator('[role=dialog"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-s_ef": {
+      "captured": true,
+      "route": "/wealth",
+      "steps": [
+        "async (page) => {\n  const row = page.locator('button', { has"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": null,
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-efmonth": {
+      "captured": true,
+      "route": "/wealth",
+      "steps": [
+        "async (page) => {\n  const row = page.locator('button', { has",
+        "A simple month"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": null,
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-s_gold": {
+      "captured": true,
+      "route": "/wealth",
+      "steps": [
+        "async (page) => {\n  await page.evaluate(() => {\n    const no",
+        "Add pocket or asset",
+        "Investment",
+        "css=[role=dialog] button:has-text(\"Bars, coins\")",
+        "async (page) => {\n  const input = page.locator('[role=dialog",
+        "async (page) => {\n  const input = page.locator('[role=dialog"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-s_zakat": {
+      "captured": true,
+      "route": "/wealth",
+      "steps": [
+        "async (page) => {\n  await page.evaluate(() => {\n    const no",
+        "async (page) => {\n  const row = page.locator('button', { has"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": null,
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-s_goal": {
+      "captured": true,
+      "route": "/goals",
+      "steps": [
+        "Trip to Dahab"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-goal": {
+      "captured": true,
+      "route": "/goals",
+      "steps": [
+        "Trip to Dahab",
+        "Add money",
+        "async (page) => {\n  const input = page.locator('[role=dialog"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-addgoalC": {
+      "captured": true,
+      "route": "/goals",
+      "steps": [
+        "New goal"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-celebrate": {
+      "captured": true,
+      "route": "/goals",
+      "steps": [
+        "async (page) => {\n    // \"You did it\" shows when a goal cros"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-s_borrow": {
+      "captured": true,
+      "route": "/debts",
+      "steps": [
+        "Add",
+        "Borrowed money"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-s_install": {
+      "captured": true,
+      "route": "/debts",
+      "steps": [
+        "Add",
+        "Installment plan"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-s_vault": {
+      "captured": true,
+      "route": "/debts",
+      "steps": [
+        "1 cleared debt · 18,000 paid off"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-debtpay": {
+      "captured": true,
+      "route": "/debts",
+      "steps": [
+        "Installments",
+        "Car loan",
+        "Record a payment"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-repaid": {
+      "captured": true,
+      "route": "/debts",
+      "steps": [
+        "Owed to you",
+        "Record money back"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": [
+        "Invalid or unexpected token",
+        "Internal Next.js error: Router action dispatched before initialization."
+      ]
+    },
+    "sheet-received": {
+      "captured": true,
+      "route": "/paydays",
+      "steps": [
+        "Log a payday"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-s_payday": {
+      "captured": true,
+      "route": "/paydays",
+      "steps": [
+        "Paydays and pay cycle",
+        "Add a payday"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-sub": {
+      "captured": true,
+      "route": "/subscriptions",
+      "steps": [
+        "Netflix"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-s_subadd": {
+      "captured": true,
+      "route": "/subscriptions",
+      "steps": [
+        "Add subscription",
+        "Netflix EGP",
+        "css=[role=dialog] button:text-is(\"Premium\")"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-s_subcancel": {
+      "captured": true,
+      "route": "/subscriptions",
+      "steps": [
+        "Netflix",
+        "Cancel subscription"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-s_line": {
+      "captured": true,
+      "route": "/budget",
+      "steps": [
+        "Utilities"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "sheet-s_fixgap": {
+      "captured": false,
+      "reason": "Needs an SMS balance report: useAccountGaps reads latest_balance_reports from Supabase, which this server has no URL for."
+    },
+    "state-emptydebts": {
+      "captured": true,
+      "route": "/debts",
+      "steps": [],
+      "offline": false,
+      "state": "empty",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": null,
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "state-emptyflow": {
+      "captured": true,
+      "route": "/flow",
+      "steps": [],
+      "offline": false,
+      "state": "emptyMonth",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "state-emptysubs": {
+      "captured": true,
+      "route": "/subscriptions",
+      "steps": [],
+      "offline": false,
+      "state": "empty",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": null,
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "state-insfree": {
+      "captured": true,
+      "route": "/reports",
+      "steps": [],
+      "offline": false,
+      "state": "free",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.overflow-hidden.rounded-3xl.text-[var(--flow-band-fg)]",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "state-inslearn": {
+      "captured": true,
+      "route": "/reports",
+      "steps": [],
+      "offline": true,
+      "state": "learning",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.overflow-hidden.rounded-3xl.text-[var(--flow-band-fg)]",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "state-insnoinc": {
+      "captured": true,
+      "route": "/reports",
+      "steps": [],
+      "offline": false,
+      "state": "noIncome",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.overflow-hidden.rounded-3xl.text-[var(--flow-band-fg)]",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "state-loading": {
+      "captured": true,
+      "route": "/flow",
+      "steps": [
+        "async (page) => { await page.evaluate(() => window.__finance"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": null,
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "state-noresults": {
+      "captured": true,
+      "route": "/flow",
+      "steps": [
+        "Open filters",
+        "css=[role=dialog] button:has-text(\"Today\")",
+        "css=[role=dialog] :text(\"Rent\")",
+        "async (page) => {\n    await page.getByRole('button', { name:"
+      ],
+      "offline": false,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
+    },
+    "state-buddgy": {
+      "captured": false,
+      "reason": "Buddgy quick-add card comes from an AI reply; the AI route needs a signed-in Supabase session and a model key."
+    }
+  },
+  "generatedAt": "2026-11-26T21:59:35.166Z"
+}

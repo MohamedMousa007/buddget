@@ -14,7 +14,7 @@ export interface Recap {
   spentBefore: number | null
   received: number
   topCategory: { name: string; amount: number } | null
-  biggest: { description: string; amount: number } | null
+  biggest: { description: string; amount: number; date: string } | null
 }
 
 export const MIN_RECAP_PURCHASES = 8
@@ -43,7 +43,7 @@ export function buildRecap(src: InsightSource, now: Date): Recap | null {
     if (e.isDebtPayment || isExpenseUnconverted(e, base, rates)) continue
     const a = expenseAmountInBase(e, base, rates)
     byCategory.set(e.category, (byCategory.get(e.category) ?? 0) + a)
-    if (!e.refundedAt && (!biggest || a > biggest.amount)) biggest = { description: e.description, amount: a }
+    if (!e.refundedAt && (!biggest || a > biggest.amount)) biggest = { description: e.description, amount: a, date: e.date }
   }
   let topCategory: Recap['topCategory'] = null
   for (const [name, amount] of byCategory) if (!topCategory || amount > topCategory.amount) topCategory = { name, amount }

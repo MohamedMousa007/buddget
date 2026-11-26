@@ -6,6 +6,8 @@ import { useActionToast } from '@/components/ui/ActionToast'
 import { useBudgetPageCopy } from '@/components/features/budget/usePageCopy'
 import { upgradeLegacyLines } from '@/lib/budget/legacyUpgrade'
 import { patchAmountInBase } from '@/lib/budget/lineEdit'
+import { bufferAfterChange } from '@/lib/budget/bufferAbsorb'
+import { findLineView } from '@/lib/budget/planView'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { convertCurrency } from '@/lib/utils/currency'
 import type { BudgetPlanCategory } from '@/lib/store/types'
@@ -24,7 +26,10 @@ export function useBudgetPageActions(view: PlanView | null) {
       if (!planId || !view) return
       const { budgetPlans, exchangeRates } = store.getState()
       const line = budgetPlans.find((p) => p.id === planId)?.categories.find((c) => c.id === lineId)
+      const before = findLineView(view, lineId)?.amount
+      const shrink = patch.amount !== undefined && before !== undefined ? bufferAfterChange(view, patch.amount - before, exchangeRates, lineId) : null
       store.getState().updatePlanCategory(planId, lineId, line ? patchAmountInBase(line, patch, view.base, exchangeRates) : patch)
+      if (shrink) store.getState().updatePlanCategory(planId, shrink.lineId, { amount: shrink.amount })
     },
     [planId, store, view],
   )
@@ -38,9 +43,14 @@ export function useBudgetPageActions(view: PlanView | null) {
 
   const addLine = useCallback(
     (line: Omit<BudgetPlanCategory, 'id' | 'subcategories'>) => {
-      if (planId) store.getState().addPlanCategory(planId, line)
+      if (!planId) return
+      const { exchangeRates } = store.getState()
+      const inBase = view ? (line.currency && line.currency !== view.base ? convertCurrency(line.amount, line.currency, view.base, exchangeRates) : line.amount) : 0
+      const shrink = view ? bufferAfterChange(view, inBase, exchangeRates) : null
+      store.getState().addPlanCategory(planId, line)
+      if (shrink) store.getState().updatePlanCategory(planId, shrink.lineId, { amount: shrink.amount })
     },
-    [planId, store],
+    [planId, store, view],
   )
 
   const syncLive = useCallback(

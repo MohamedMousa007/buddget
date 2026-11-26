@@ -1,5 +1,5 @@
 import { format, parseISO, subMonths } from 'date-fns'
-import { buildOccurrences, isRealizedOccurrence, missedAfterDaysFor, type IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
+import { buildOccurrences, isRealizedOccurrence, type IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
 import { toISODate, type WeekendFirstDay } from '@/lib/utils/paydaySchedule'
 import type { IncomeEvent, IncomeSource } from '@/lib/store/types'
 
@@ -10,11 +10,6 @@ export function overdueDays(occ: IncomeOccurrence, today: Date): number {
   const todayISO = toISODate(today)
   if (occ.eventId || occ.dueDate >= todayISO) return 0
   return Math.round((parseISO(todayISO).getTime() - parseISO(occ.dueDate).getTime()) / DAY)
-}
-
-/** Past its grace with nothing recorded — the "N days late" state. */
-export function isLate(source: IncomeSource, occ: IncomeOccurrence, today: Date): boolean {
-  return overdueDays(occ, today) > missedAfterDaysFor(source)
 }
 
 /** The last `n` paydays up to the end of `month`, oldest first (the timeline on Payday detail). */
@@ -55,4 +50,26 @@ export function monthProgress(source: IncomeSource, events: IncomeEvent[], month
     expected: occ.length * source.amount,
     received: occ.reduce((s, o) => (isRealizedOccurrence(o) ? s + o.amount : s), 0),
   }
+}
+
+/** What one payday says, by one rule everywhere (card, timeline, history). */
+export type PaydayState =
+  | { kind: 'received' }
+  | { kind: 'arrivedLate'; days: number }
+  | { kind: 'partial' }
+  /** Marked missed, or past its grace with nothing recorded (the engine's `pendingStatus`, or skipped over by a later payday). */
+  | { kind: 'missed'; marked: boolean }
+  /** Past due, still inside its grace, nothing recorded. */
+  | { kind: 'late'; days: number }
+  | { kind: 'due' }
+
+export function paydayState(occ: IncomeOccurrence, today: Date): PaydayState {
+  if (occ.eventId) {
+    if (occ.status === 'missed') return { kind: 'missed', marked: true }
+    if (occ.status === 'partial') return { kind: 'partial' }
+    return occ.daysLate ? { kind: 'arrivedLate', days: occ.daysLate } : { kind: 'received' }
+  }
+  if (occ.status === 'missed') return { kind: 'missed', marked: false }
+  const late = overdueDays(occ, today)
+  return late > 0 ? { kind: 'late', days: late } : { kind: 'due' }
 }

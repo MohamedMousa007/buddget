@@ -2,58 +2,73 @@
 
 import { intlTag } from '@/lib/i18n/dateFormat'
 import { useMemo, useState } from 'react'
-import { MoreVertical, Pause, Pencil, Play, Trash2, Trophy } from 'lucide-react'
+import { Check, MoreHorizontal, Pause, Pencil, Play, Repeat, Trash2, Trophy } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { goalCategoryLabelKey } from '@/components/features/goals/goalCategoryLabel'
 import { CheckpointBar, type CheckpointTone } from '@/components/features/goals/CheckpointBar'
+import { FundItSheet, useFundSummary, type FundPlan } from '@/components/features/goals/FundItSheet'
 import { CoachCard } from '@/components/features/goals/detail/CoachCard'
 import { DeleteGoalSheet } from '@/components/features/goals/detail/DeleteGoalSheet'
 import { GoalEditSheet } from '@/components/features/goals/detail/GoalEditSheet'
 import { PlanCard, type PlanRow } from '@/components/features/goals/detail/PlanCard'
-import { PlanEditorSheet, type PlanEditorKind } from '@/components/features/goals/detail/PlanEditorSheet'
+import { PlanEditorSheet } from '@/components/features/goals/detail/PlanEditorSheet'
+import { PocketPickerField } from '@/components/features/savings-v3/MoneySheetParts'
+import type { PocketVM } from '@/components/features/savings-v3/types'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
-import { IconButton } from '@/components/ui/IconButton'
+import { DatePickerField } from '@/components/ui/DatePickerField'
+import { Pill } from '@/components/ui/PillButton'
+import { PickerRow } from '@/components/ui/PickerRow'
 import { useGoalAllocationRuns } from '@/hooks/useGoalAllocationRuns'
 import type { GoalRow } from '@/hooks/useGoalRows'
 import { useLocale, useT } from '@/lib/i18n'
+import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
 import { fundingBasis } from '@/lib/goals/fundingBasis'
-import { checkpointInfo, coachView, goalMonthlyRate, replanPatch } from '@/lib/goals/goalDetail'
+import { checkpointInfo, coachView, finishesLate, goalMonthlyRate, replanPatch } from '@/lib/goals/goalDetail'
+import { defaultSharePct, periodMonths, sharesOverFull } from '@/lib/goals/goalPlan'
 import { debtMonthlyRate, goalLedger } from '@/lib/goals/debtGoal'
-import { goalVisual } from '@/lib/goals/goalVisual'
+import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
+import { relinkGoalPocket } from '@/lib/goals/goalPocket'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { convertCurrency } from '@/lib/utils/currency'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { formatWhole } from '@/lib/utils/formatters'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { navigate } from '@/lib/navigation/navigate'
+import { cn } from '@/lib/utils'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Badge } from '@/components/ui/badge'
 
-const CHIP: Record<string, { dot: string }> = {
-  green: { dot: 'var(--color-brand-green)' },
-  amber: { dot: 'var(--color-brand-amber)' },
-  red: { dot: 'var(--color-brand-red)' },
-  muted: { dot: 'var(--color-brand-text-muted)' },
-}
+const CHIP = { green: 'brand', amber: 'warn', red: 'negative', muted: 'neutral' } as const
 
-/** Goal detail: one number, one bar, the plan, and (when behind) Buddgy's two ways back. */
+const planOf = (g: GoalRow['goal'], otherShare: number): FundPlan => ({
+  mode: g.fundingMode,
+  sharePct: g.sharePct ?? defaultSharePct(otherShare),
+  fixed: g.monthlyContribution ? String(g.monthlyContribution) : '',
+  frequency: g.frequency,
+})
+
+/** Goal detail: one number, one bar with its milestones, the plan, and (when behind) Buddgy's two ways back. */
 export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; onClose: () => void; onAddMoney: () => void }) {
   const { goal, current, percent, status } = row
   const t = useT()
   const d = t.goals.detail
+  const lt = useGoalsLtCopy()
+  const fundSummary = useFundSummary()
   const { locale } = useLocale()
   const runs = useGoalAllocationRuns()[goal.id] ?? []
   const s = useFinanceStore(
     useShallow((st) => ({
       incomeEvents: st.incomeEvents, incomeSources: st.incomeSources, expenses: st.expenses,
       budgetCategories: st.budgetCategories, budgetPlans: st.budgetPlans, activeBudgetPlanId: st.activeBudgetPlanId, exchangeRates: st.exchangeRates,
-      settings: st.settings, savingsAccounts: st.savingsAccounts, savingsTransactions: st.savingsTransactions,
+      settings: st.settings, savingsAccounts: st.savingsAccounts, savingsTransactions: st.savingsTransactions, goals: st.goals,
       updateGoal: st.updateGoal, achieveGoal: st.achieveGoal, debts: st.debts, debtPayments: st.debtPayments,
     })),
   )
   const [menu, setMenu] = useState<DOMRect | null>(null)
-  const [editor, setEditor] = useState<PlanEditorKind | null>(null)
+  const [debtEditor, setDebtEditor] = useState(false)
+  const [fund, setFund] = useState<FundPlan | null>(null)
   const [edit, setEdit] = useState(false)
   const [del, setDel] = useState(false)
 
@@ -64,7 +79,6 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
   const quarterly = goal.frequency === 'quarterly'
   const basis = useMemo(() => fundingBasis(s, now), [s, now])
   const keep = basis.usualKeep === null ? null : convertCurrency(basis.usualKeep, s.settings.baseCurrency, goal.currency, s.exchangeRates)
-  const { icon: Icon, cat } = goalVisual(goal.category)
 
   const monthlyRate = goal.category === 'debt_freedom' ? debtMonthlyRate(goal, s.debts, s.exchangeRates) : goalMonthlyRate(goal, keep)
   const info = useMemo(() => {
@@ -72,30 +86,38 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
     return checkpointInfo({ goal: ledger.goal, current, txs: ledger.txs, monthlyRate, now, toGoal: (a, c) => convertCurrency(a, c, goal.currency, s.exchangeRates) })
   }, [goal, current, s.savingsTransactions, s.debts, s.debtPayments, s.exchangeRates, monthlyRate, now])
   const coach = useMemo(
-    () => coachView({ goal, current, runs, usualKeep: keep, periodSavings: keep === null ? null : keep * (quarterly ? 3 : 1), now }),
-    [goal, current, runs, keep, quarterly, now],
+    () => coachView({ goal, current, runs, usualKeep: keep, periodSavings: keep === null ? null : keep * periodMonths(goal.frequency), now }),
+    [goal, current, runs, keep, now],
+  )
+  const pockets: PocketVM[] = useMemo(
+    // The goal's own pocket is always listed, even one kept inside an account (not a carry target), so the row names it.
+    () => s.savingsAccounts
+      .filter((a) => isEligibleCarryPocket(a) || a.id === goal.linkedSavingsAccountIds[0])
+      .map((account) => ({ account, coverAmount: 0, goalsAmount: 0, goalLabel: '', isAuto: false })),
+    [s.savingsAccounts, goal.linkedSavingsAccountIds],
   )
 
-  const money = (n: number) => formatCurrency(Math.round(n), goal.currency, false)
+  const money = (n: number) => formatWhole(Math.round(n))
   const short = (iso: string | null) =>
     iso ? new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString(intlTag(locale), { month: 'short', year: '2-digit' }) : '—'
   const month = (iso: string) => new Date(`${iso.slice(0, 7)}-01T00:00:00`).toLocaleDateString(intlTag(locale), { month: 'short', year: 'numeric' })
 
+  const late = !isLimit && !isDebt && status.kind !== 'paused' && finishesLate(goal, current, monthlyRate, now)
   const chipKind =
     goal.status === 'achieved' ? 'chipAchieved'
     : status.kind === 'paused' ? 'chipPaused'
     : status.kind === 'over' ? 'chipOver'
-    : status.kind === 'behind' ? 'chipBehind'
+    : status.kind === 'behind' || late ? 'chipBehind'
     : isDebt ? 'chipDebt'
     : goal.fundingMode === 'manual' ? 'chipManual'
     : runs.length < 2 ? 'chipStarting'
     : 'chipOnTrack'
   const chipTone = { chipAchieved: 'green', chipPaused: 'muted', chipOver: 'red', chipBehind: 'amber', chipManual: 'muted', chipDebt: 'green', chipStarting: 'muted', chipOnTrack: 'green' }[chipKind] as keyof typeof CHIP
-  const barTone: CheckpointTone = status.kind === 'over' ? 'over' : status.kind === 'behind' ? 'behind' : status.kind === 'paused' ? 'paused' : 'default'
+  const barTone: CheckpointTone = status.kind === 'over' ? 'over' : status.kind === 'behind' || late ? 'behind' : status.kind === 'paused' ? 'paused' : 'default'
   const basisAmount = isLimit ? goal.monthlySpendingLimit : goal.targetAmount
   const kindLabel = goal.category === 'debt_freedom' ? d.kindDebt : isLimit ? d.kindLimit : d.kindSave
 
-  const pocket = s.savingsAccounts.find((a) => goal.linkedSavingsAccountIds.includes(a.id))
+  const pocket = s.savingsAccounts.find((a) => a.id === goal.linkedSavingsAccountIds[0])
   const debtRows: PlanRow[] = [
     {
       key: 'debts',
@@ -104,18 +126,23 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
     },
     { key: 'finish', label: d.planFinish, value: goal.targetDate ? month(goal.targetDate) : '—', readOnly: true },
   ]
-  const rows: PlanRow[] = isLimit ? [] : isDebt ? debtRows : [
-    { key: 'finish', label: d.planFinish, value: goal.targetDate ? month(goal.targetDate) : '—' },
-    {
-      key: 'funding',
-      label: quarterly ? d.planEachQuarter : d.planEachMonth,
-      value:
-        goal.fundingMode === 'manual' ? d.chipManual
-        : goal.fundingMode === 'fixed' ? d.eachValue(money(goal.monthlyContribution ?? 0), null)
-        : d.eachValue(keep ? money((keep * (goal.sharePct ?? 0)) / 100 * (quarterly ? 3 : 1)) : '—', goal.sharePct),
-    },
-    { key: 'pocket', label: d.planPocket, value: pocket ? d.pocketValue(pocket.name, formatCurrency(pocket.currentBalance, pocket.currency, false)) : d.noPocket },
-  ]
+  const otherShare = s.goals.filter((g) => g.id !== goal.id && g.status === 'active' && g.fundingMode === 'share').reduce((a, g) => a + (g.sharePct ?? 0), 0)
+  const plan = planOf(goal, otherShare)
+
+  const saveFund = () => {
+    if (fund?.mode === 'share' && sharesOverFull(otherShare, fund.sharePct)) return
+    if (fund) {
+      const fixed = Number(fund.fixed)
+      s.updateGoal(goal.id, {
+        fundingMode: fund.mode,
+        sharePct: fund.mode === 'share' ? fund.sharePct : null,
+        monthlyContribution: fund.mode === 'fixed' && fixed > 0 ? fixed : null,
+        frequency: fund.mode === 'fixed' ? fund.frequency : 'monthly',
+        planStart: today,
+      })
+    }
+    setFund(null)
+  }
 
   const doReplan = (choice: 'move' | 'keep') => {
     if (!coach) return
@@ -129,8 +156,8 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
       ? { label: d.menuResume, icon: <Play className="size-4" />, onSelect: () => s.updateGoal(goal.id, { status: 'active' }) }
       : { label: d.menuPause, icon: <Pause className="size-4" />, onSelect: () => s.updateGoal(goal.id, { status: 'paused' }) },
     ...(goal.status === 'achieved' ? [] : [{ label: d.menuAchieve, icon: <Trophy className="size-4" />, onSelect: () => { s.achieveGoal(goal.id); onClose() } }]),
-    { label: d.menuDelete, icon: <Trash2 className="size-4" />, destructive: true, onSelect: () => setDel(true) },
   ]
+  const reachedCount = info.nodes.filter((n) => n.reached).length
 
   return (
     <>
@@ -138,53 +165,52 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
         open
         onBackdropClick={onClose}
         scrollChild
-        panelClassName="h-[calc(100dvh-40px)] max-h-[calc(100dvh-40px)] md:h-[min(46rem,calc(100dvh-4rem))] md:max-h-[calc(100dvh-4rem)] md:w-[min(28rem,calc(100vw-2rem))] md:rounded-3xl"
+        panelClassName="max-h-[calc(100dvh-40px)] md:max-h-[min(46rem,calc(100dvh-4rem))] md:w-[min(28rem,calc(100vw-2rem))] md:rounded-3xl"
       >
         <div className="flex min-h-0 flex-1 flex-col">
           <V3SheetHeader
             onClose={onClose}
-            leading={
-              <span
-                className="flex size-11 shrink-0 items-center justify-center rounded-2xl"
-                style={{ color: `var(--color-cat-${cat})`, background: `color-mix(in srgb, var(--color-cat-${cat}) 16%, var(--color-brand-card))` }}
-                aria-hidden
-              >
-                <Icon className="size-5" />
-              </span>
+            actions={
+              <V3SheetHeader.Action icon={<Trash2 className="size-4" />} label={lt.goals.deleteGoal} tone="danger" onClick={() => setDel(true)} />
             }
           >
             <V3SheetHeader.Title size="compact">{goal.name}</V3SheetHeader.Title>
             <V3SheetHeader.Subtitle>
-              <span className="mb-1 block text-xs font-semibold">{kindLabel} · {t.goals[goalCategoryLabelKey(goal.category)] as string}</span>
-              <Badge tone="ink" size="sm" bordered={false} className="gap-1.5 font-semibold">
-                <span className="size-1.5 rounded-full" style={{ background: CHIP[chipTone].dot }} aria-hidden />
-                {d[chipKind as 'chipOnTrack']}
-              </Badge>
+              <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                <span>{kindLabel} · {t.goals[goalCategoryLabelKey(goal.category)] as string}</span>
+                <Badge tone={CHIP[chipTone]} size="sm" bordered={false} className="uppercase tracking-[0.05em]">
+                  {d[chipKind as 'chipOnTrack']}
+                </Badge>
+              </span>
             </V3SheetHeader.Subtitle>
-            <V3SheetHeader.Extra>
-              <IconButton aria-label={d.more} aria-haspopup="menu" aria-expanded={menu !== null} onClick={(e) => setMenu(e.currentTarget.getBoundingClientRect())}>
-                <MoreVertical />
-              </IconButton>
-            </V3SheetHeader.Extra>
           </V3SheetHeader>
 
-          <div className="native-scroll flex min-h-0 flex-1 flex-col gap-[22px] overflow-y-auto px-5 pb-4 pt-1 md:px-6 [&>*]:shrink-0">
+          <div className="native-scroll flex min-h-0 flex-1 flex-col gap-[22px] overflow-y-auto px-5 pb-4 pt-2 md:px-6 [&>*]:shrink-0">
             <div className="flex flex-col gap-3">
               <div className="flex items-baseline justify-between gap-3 font-mono-numbers">
                 <p className="flex flex-wrap items-baseline gap-x-2">
-                  <span className="whitespace-nowrap text-[40px] font-semibold leading-none tracking-[-0.03em] text-[var(--color-brand-text-primary)]">{money(current)}</span>
-                  {basisAmount ? <span className="whitespace-nowrap text-sm text-[var(--color-brand-text-secondary)]">{t.goals.home.ofTarget(money(basisAmount))}</span> : null}
+                  <span className="whitespace-nowrap text-[40px] font-semibold leading-none tracking-[-0.04em] text-[var(--color-brand-text-primary)]">{money(current)}</span>
+                  {basisAmount ? <span className="whitespace-nowrap text-sm text-[var(--color-brand-text-muted)]">{t.goals.home.ofTarget(money(basisAmount))}</span> : null}
                 </p>
-                <span className="text-lg font-semibold text-[var(--color-brand-text-primary)]">{percent}%</span>
+                <span className="text-base font-semibold text-[var(--color-brand-text-primary)]">{percent}%</span>
               </div>
-              <CheckpointBar percent={percent} tone={barTone} nodes={!isLimit} />
+              <CheckpointBar percent={percent} tone={barTone} nodes={!isLimit} look="marks" size="lg" />
               {!isLimit ? (
                 <>
-                  <div className="grid grid-cols-4">
+                  <div className="grid grid-cols-4 gap-2 text-center" role="list" aria-label={lt.goals.milestonesAria(reachedCount)}>
                     {info.nodes.map((n) => (
-                      <div key={n.pct} className="text-center">
-                        <p className={`font-mono-numbers text-xs font-semibold ${n.reached ? 'text-[var(--color-brand-primary-ink)]' : 'text-[var(--color-brand-text-secondary)]'}`}>{n.pct}%</p>
-                        <p className="font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-secondary)]">{short(n.date)}</p>
+                      <div
+                        key={n.pct}
+                        role="listitem"
+                        className={cn('rounded-xl py-2', n.reached ? 'bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]' : 'bg-[var(--color-brand-elevated)]')}
+                      >
+                        <p className={cn('flex items-center justify-center gap-1 font-mono-numbers text-sm font-semibold', !n.reached && 'text-[var(--color-brand-text-primary)]')}>
+                          {n.reached ? <Check className="size-3.5" strokeWidth={3} aria-hidden /> : null}
+                          {n.pct}%
+                        </p>
+                        <p className={cn('font-mono-numbers text-[0.6875rem]', n.reached ? 'font-semibold' : 'text-[var(--color-brand-text-muted)]')}>
+                          {n.reached ? lt.goals.reached : short(n.date)}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -198,15 +224,60 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
             {coach && goal.targetDate ? (
               <CoachCard
                 coach={coach}
-                currency={goal.currency}
                 targetDate={goal.targetDate}
                 quarterly={quarterly}
+                yearly={goal.frequency === 'yearly'}
                 onMove={() => doReplan('move')}
                 onKeep={() => doReplan('keep')}
               />
             ) : null}
 
-            {rows.length ? <PlanCard rows={rows} onOpen={setEditor} /> : null}
+            {isDebt ? (
+              <PlanCard rows={debtRows} onOpen={() => setDebtEditor(true)} />
+            ) : !isLimit ? (
+              <div>
+                <Card padding="none" divide className="overflow-hidden">
+                  <PickerRow
+                    label={lt.goals.finishLine}
+                    value={
+                      <DatePickerField
+                        look="pill"
+                        mode="month"
+                        value={goal.targetDate?.slice(0, 7) ?? ''}
+                        onChange={(v) => s.updateGoal(goal.id, { targetDate: `${v.slice(0, 7)}-01`, planStart: today })}
+                      />
+                    }
+                  />
+                  <PickerRow
+                    label={lt.frequency.eachLabel[goal.fundingMode === 'fixed' ? goal.frequency : 'monthly']}
+                    onClick={() => setFund(plan)}
+                    chevron={false}
+                    value={<Pill icon={<Repeat />}>{fundSummary(plan, (n) => formatWhole(n))}</Pill>}
+                  />
+                  <PocketPickerField
+                    look="row"
+                    label={lt.goals.pocket}
+                    pockets={pockets}
+                    value={pocket?.id ?? null}
+                    onChange={(id) => s.updateGoal(goal.id, { linkedSavingsAccountIds: relinkGoalPocket(goal.linkedSavingsAccountIds, s.savingsAccounts, id) })}
+                  />
+                </Card>
+                <p className="mt-2 px-1 text-xs text-[var(--color-brand-text-secondary)]">{lt.goals.pocketNote}</p>
+              </div>
+            ) : null}
+
+            {/* Light touch: the header carries only the bin (`lt-v5.js` s_goal); edit, pause and achieve stay one tap away here. */}
+            <Button
+              variant="ghost"
+              size="touch"
+              aria-haspopup="menu"
+              aria-expanded={menu !== null}
+              onClick={(e) => setMenu(e.currentTarget.getBoundingClientRect())}
+              className="-mt-2 self-start gap-1.5 px-1 text-[0.8125rem] font-semibold text-[var(--color-brand-text-secondary)]"
+            >
+              <MoreHorizontal className="size-4" aria-hidden />
+              {d.more}
+            </Button>
           </div>
 
           <div className="sheet-cta flex shrink-0 flex-col gap-2.5 border-t border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-5 pb-6 pt-3 md:px-6">
@@ -221,7 +292,20 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
         </div>
       </ModalShell>
       <CardActionMenu anchor={menu} items={menuItems} onClose={() => setMenu(null)} zClassName="z-[120]" />
-      {editor ? <PlanEditorSheet goal={goal} kind={editor} current={current} onClose={() => setEditor(null)} /> : null}
+      {fund ? (
+        <FundItSheet
+          open
+          onClose={() => setFund(null)}
+          onDone={saveFund}
+          name={goal.name}
+          currency={goal.currency}
+          value={fund}
+          onChange={setFund}
+          usualKeep={keep}
+          otherShare={otherShare}
+        />
+      ) : null}
+      {debtEditor ? <PlanEditorSheet goal={goal} onClose={() => setDebtEditor(false)} /> : null}
       {edit ? <GoalEditSheet goal={goal} onClose={() => setEdit(false)} /> : null}
       {del ? <DeleteGoalSheet goal={goal} onClose={() => setDel(false)} onDeleted={() => { setDel(false); onClose() }} /> : null}
     </>

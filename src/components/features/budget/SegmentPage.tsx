@@ -7,15 +7,15 @@ import { Card } from '@/components/ui/card'
 import { useCategoryLabel } from '@/hooks/useCategoryLabel'
 import { BLOCK_META, BUDGET_BLOCKS } from '@/lib/budget/blocks'
 import { everydayPace, overBudgetLines, type PaceState } from '@/lib/budget/monthSummary'
-import { monthRow } from '@/lib/budget/ledger'
+import { nextDueDate } from '@/lib/budget/nextDue'
 import type { PlanView } from '@/lib/budget/planView.types'
 import { useLocale } from '@/lib/i18n'
+import { formatLocalized } from '@/lib/i18n/dateFormat'
 import type { BudgetSegmentCopy } from '@/lib/i18n/budgetPage/segmentCopy'
 import type { BudgetBlock } from '@/lib/store/types'
-import { formatCurrency } from '@/lib/utils/formatters'
 import { AddRow, FlatCard, LineRow } from './blocks/parts'
 import { formatShare } from './blocks/geometry'
-import { monthKeyLabel } from './chromeFormat'
+import { monthKeyLabel, inlineMoney } from './chromeFormat'
 import { LineIcon } from './LineIcon'
 import { SegmentExtra } from './SegmentExtra'
 import { SegmentRail, type SegmentMark } from './SegmentRail'
@@ -60,7 +60,7 @@ interface Stat { label: string; value: string }
 const sum = (xs: number[]) => xs.reduce((s, x) => s + x, 0)
 
 /** Three facts per segment and view. Everyday in month view leads with pace; the rest with what that segment is about. */
-export function segmentStats(view: PlanView, block: BudgetBlock, t: BudgetSegmentCopy, month: (key: string) => string, money: (n: number) => string, today: number): Stat[] {
+export function segmentStats(view: PlanView, block: BudgetBlock, t: BudgetSegmentCopy, month: (key: string) => string, money: (n: number) => string, now: Date, dueLabel: (d: Date) => string): Stat[] {
   const b = view.blocks[block]
   const s = t.stat
   const tracking = view.mode === 'month'
@@ -75,8 +75,9 @@ export function segmentStats(view: PlanView, block: BudgetBlock, t: BudgetSegmen
     if (p) return [{ label: s.spent, value: money(p.spent) }, { label: s.perDay, value: money(p.perDay) }, { label: s.vsPace, value: `${p.aheadBy >= 0 ? '+' : '-'}${money(Math.abs(p.aheadBy))}` }]
   }
   if (block === 'bills' && tracking) {
-    const r = monthRow(view, 'bills', today).status
-    const next = r.kind === 'progress' && r.nextDay != null ? String(r.nextDay) : none
+    // A due day already passed (or a bill already paid) falls due next month: never "—" while a line has a due day.
+    const due = nextDueDate(b.lines, now)
+    const next = due ? dueLabel(due) : none
     const total = b.lines.filter((l) => l.amount > 0).length
     const done = b.lines.filter((l) => l.amount > 0 && l.paid).length
     return [{ label: s.paid, value: `${done} / ${total}` }, { label: s.nextDue, value: next }, { label: s.left, value: money(Math.max(0, b.total - b.spent)) }]
@@ -122,14 +123,13 @@ export function SegmentPage({ view, block, onBack, onSelect, onOpenLine, onAdd, 
   const meta = BLOCK_META[block]
   const bv = view.blocks[block]
   const month = view.mode === 'month'
-  const money = (n: number) => formatCurrency(n, view.base, false)
-  const today = new Date().getDate()
+  const money = (n: number) => inlineMoney(n, view.base)
   const index = BUDGET_BLOCKS.indexOf(block)
   const name = blocks.blockName[block]
   const pace = block === 'everyday' && month ? everydayPace(view) : null
   const over = block === 'everyday' && month ? overBudgetLines(view).sort((x, y) => y.spent - y.amount - (x.spent - x.amount))[0] : undefined
   const left = bv.total - bv.spent
-  const stats = segmentStats(view, block, t, (k) => monthKeyLabel(k, locale), money, today)
+  const stats = segmentStats(view, block, t, (k) => monthKeyLabel(k, locale), money, new Date(), (d) => formatLocalized(d, 'MMM d', locale))
   const empty = bv.lines.length === 0
   const showEstimate = review != null
   const Icon = pace?.state === 'ok' ? Check : TriangleAlert
