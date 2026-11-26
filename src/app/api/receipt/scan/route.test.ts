@@ -7,6 +7,7 @@ vi.mock('@/lib/supabase/resolveRouteUser', () => ({ resolveRouteIdentity: h.iden
 vi.mock('@/lib/server/ai/quota', () => ({
   reserveAiQuota: async () => ({ allowed: true }),
   settleAiQuota: async () => undefined,
+  releaseAiQuota: async () => undefined,
   quotaDeniedResponse: () => new Response(null, { status: 429 }),
 }))
 
@@ -15,7 +16,12 @@ import { POST } from './route'
 const good = { isReceipt: true, merchant: 'Spinneys', amount: 10, currency: 'EGP', date: '', category: 'Food', taxIncluded: true, confidence: 0.9, items: [{ name: 'Milk', price: 10 }], charges: [], notes: '' }
 const gemini = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status })
 const ok = (obj: unknown) => gemini({ candidates: [{ content: { parts: [{ text: JSON.stringify(obj) }] }, finishReason: 'STOP' }] })
-const file = (type: string, size = 10) => new File([new Uint8Array(size)], 'r', { type })
+const file = (type: string, size = 10) => {
+  const bytes = new Uint8Array(size)
+  if (type === 'image/jpeg') bytes.set([0xff, 0xd8, 0xff])
+  if (type === 'image/png') bytes.set([0x89, 0x50, 0x4e, 0x47])
+  return new File([bytes], 'r', { type })
+}
 const call = (files: File[]) => {
   const form = new FormData()
   files.forEach((f) => form.append('image', f))
