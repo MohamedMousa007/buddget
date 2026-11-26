@@ -10,7 +10,7 @@ async function openSub(page: Page) {
   return dialog(page, /^Netflix/)
 }
 
-test('E subscription add > mark paid > pause > resume > cancel', async ({ page, user }) => {
+test('E subscription add > mark paid > cancel > re-subscribe (light touch has no pause)', async ({ page, user }) => {
   await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: 2000 })
   const qnb = await localWait(page, (s) => s.paymentMethods.find((m: any) => m.name === 'QNB Alahli' && m.openingBalance === 2000))
   await goto(page, '/subscriptions')

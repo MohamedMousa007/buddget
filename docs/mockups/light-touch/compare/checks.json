@@ -23,11 +23,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "page-accounts": {
       "captured": true,
@@ -52,11 +52,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "page-provider": {
       "captured": true,
@@ -83,11 +83,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "page-budget": {
       "captured": true,
@@ -98,25 +98,15 @@
       "checks": {
         "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
-        "hero": {
-          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
-          "borderRadius": "24px",
-          "marginLeft": "0px",
-          "marginRight": "0px",
-          "left": 16,
-          "right": 16,
-          "width": 358,
-          "viewportWidth": 390,
-          "shape": "rounded card"
-        },
+        "hero": null,
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "page-debts": {
       "captured": true,
@@ -141,11 +131,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "page-goals": {
       "captured": true,
@@ -170,11 +160,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "page-insights": {
       "captured": true,
@@ -199,11 +189,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "page-paydays": {
       "captured": true,
@@ -228,11 +218,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "page-subs": {
       "captured": true,
@@ -257,11 +247,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "page-wealth": {
       "captured": true,
@@ -288,11 +278,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-expense": {
       "captured": true,
@@ -319,11 +309,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-income": {
       "captured": true,
@@ -340,11 +330,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-scan": {
       "captured": true,
@@ -371,11 +361,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_held": {
       "captured": false,
@@ -407,11 +397,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-card": {
       "captured": true,
@@ -439,11 +429,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-addaccount": {
       "captured": true,
@@ -470,11 +460,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-addcard": {
       "captured": true,
@@ -503,10 +493,12 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
       "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
+        "Loading chunk app/global-error failed.\n(timeout: http://localhost:3001/_next/static/chunks/app/global-error.js)"
       ]
     },
     "sheet-cashout": {
@@ -537,11 +529,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-setaside": {
       "captured": true,
@@ -571,11 +563,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-cashhand": {
       "captured": true,
@@ -592,11 +584,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "state-cashoff": {
       "captured": true,
@@ -611,10 +603,13 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
       "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
+        "Invalid or unexpected token",
+        "Loading chunk app/(app)/layout failed.\n(missing: http://localhost:3001/_next/static/chunks/app/(app)/layout.js)"
       ]
     },
     "sheet-deposit": {
@@ -643,11 +638,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_withdraw": {
       "captured": true,
@@ -681,11 +676,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_ef": {
       "captured": true,
@@ -702,11 +697,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-efmonth": {
       "captured": true,
@@ -724,11 +719,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_gold": {
       "captured": true,
@@ -760,11 +755,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_zakat": {
       "captured": true,
@@ -782,11 +777,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_goal": {
       "captured": true,
@@ -813,11 +808,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-goal": {
       "captured": true,
@@ -846,11 +841,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-addgoalC": {
       "captured": true,
@@ -877,11 +872,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-celebrate": {
       "captured": true,
@@ -908,11 +903,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_borrow": {
       "captured": true,
@@ -940,11 +935,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_install": {
       "captured": true,
@@ -972,11 +967,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_vault": {
       "captured": true,
@@ -1003,11 +998,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-debtpay": {
       "captured": true,
@@ -1036,11 +1031,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-repaid": {
       "captured": true,
@@ -1068,10 +1063,13 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
       "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
+        "Invalid or unexpected token",
+        "Internal Next.js error: Router action dispatched before initialization."
       ]
     },
     "sheet-received": {
@@ -1099,11 +1097,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_payday": {
       "captured": true,
@@ -1117,15 +1115,25 @@
       "checks": {
         "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
-        "hero": null,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-sub": {
       "captured": true,
@@ -1152,11 +1160,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_subadd": {
       "captured": true,
@@ -1185,11 +1193,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_subcancel": {
       "captured": true,
@@ -1217,11 +1225,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_line": {
       "captured": true,
@@ -1248,11 +1256,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_fixgap": {
       "captured": false,
@@ -1271,11 +1279,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "state-emptyflow": {
       "captured": true,
@@ -1300,11 +1308,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "state-emptysubs": {
       "captured": true,
@@ -1319,11 +1327,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "state-insfree": {
       "captured": true,
@@ -1348,11 +1356,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "state-inslearn": {
       "captured": true,
@@ -1377,11 +1385,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "state-insnoinc": {
       "captured": true,
@@ -1406,11 +1414,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "state-loading": {
       "captured": true,
@@ -1427,11 +1435,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "state-noresults": {
       "captured": true,
@@ -1461,16 +1469,16 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "state-buddgy": {
       "captured": false,
       "reason": "Buddgy quick-add card comes from an AI reply; the AI route needs a signed-in Supabase session and a model key."
     }
   },
-  "generatedAt": "2026-11-26T19:33:19.830Z"
+  "generatedAt": "2026-11-26T21:59:35.166Z"
 }
