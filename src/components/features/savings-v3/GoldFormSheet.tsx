@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { Gem } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { AmountHero } from '@/components/ui/AmountHero'
 import { AmountTextInput } from '@/components/ui/AmountTextInput'
 import { DatePickerField } from '@/components/ui/DatePickerField'
@@ -66,7 +65,7 @@ export function GoldFormSheet({ open, onClose, onDone }: GoldFormSheetProps) {
   const qty = parseFloat(amount) || 0
   const grams = goldToGrams(qty, unit)
   const paidNum = parseFloat(paid) || 0
-  const worth = qty > 0 ? valueGold(grams, karat, lookup, 'EGP').value : null
+  const worth = valueGold(grams, karat, lookup, 'EGP').value
   const outside = effective.kind === 'outside'
   const payCurrency = assetPayCurrency(store, effective)
   const plan = planAssetPurchase(store, { source: effective, paid: paidNum, currency: payCurrency, priced: worth != null })
@@ -86,7 +85,7 @@ export function GoldFormSheet({ open, onClose, onDone }: GoldFormSheetProps) {
 
   if (!open) return null
 
-  const line = qty <= 0 ? '' : worth == null ? g.priceRefreshing : `${unit === 'grams' ? '' : g.gramsLead(fmtNum(grams))}${g.worth(fmtNum(worth))}`
+  const line = worth == null ? g.priceRefreshing : `${unit === 'grams' || qty <= 0 ? '' : g.gramsLead(fmtNum(grams))}${g.worth(fmtNum(worth))}`
   const note = outside ? g.noteOutside : effective.kind === 'pocket' ? g.notePocket : g.noteBudget
   // An empty paid amount only disables the button; every other refusal is said once the amount is typed.
   const alert = qty > 0 && refusal && refusal !== 'no_paid' ? refusals[refusal] : null
@@ -121,37 +120,39 @@ export function GoldFormSheet({ open, onClose, onDone }: GoldFormSheetProps) {
             options={KARATS.map((k) => ({ value: k, label: `${k}k` }))}
           />
 
-          <MoneySourceField
-            value={effective}
-            onChange={setSource}
-            paymentMethods={accounts.map((v) => v.method)}
-            accounts={accounts}
-            pockets={pockets}
-            labels={{ from: g.paidFrom, fromPocket: g.paidFrom, outsideValue: g.outsideValue }}
-          />
-
           <div>
-            <Card padding="none" divide className="overflow-hidden">
-              {!outside ? (
-                <PickerRow
-                  label={g.paid}
-                  value={
-                    <AmountTextInput
-                      aria-label={g.paid}
-                      value={paid}
-                      onChange={setPaid}
-                      currency={payCurrency}
-                      placeholder="0"
-                      className="w-full min-w-0 bg-transparent text-end font-mono-numbers text-[0.9375rem] font-medium text-[var(--color-brand-text-primary)] outline-none placeholder:text-[var(--color-brand-text-muted)]"
+            <MoneySourceField
+              value={effective}
+              onChange={setSource}
+              paymentMethods={accounts.map((v) => v.method)}
+              accounts={accounts}
+              accountLook="row"
+              pockets={pockets}
+              labels={{ from: g.paidFrom, fromPocket: g.paidFrom, outsideValue: g.outsideValue }}
+              after={
+                <>
+                  {!outside ? (
+                    <PickerRow
+                      label={g.paid}
+                      value={
+                        <AmountTextInput
+                          aria-label={g.paid}
+                          value={paid}
+                          onChange={setPaid}
+                          currency={payCurrency}
+                          placeholder="0"
+                          className="w-full min-w-0 bg-transparent text-end font-mono-numbers text-[0.9375rem] font-medium text-[var(--color-brand-text-primary)] outline-none placeholder:text-[var(--color-brand-text-muted)]"
+                        />
+                      }
                     />
-                  }
-                />
-              ) : null}
-              <PickerRow
-                label={g.boughtOn}
-                value={<DatePickerField look="pill" value={date} onChange={setDate} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: true }} />}
-              />
-            </Card>
+                  ) : null}
+                  <PickerRow
+                    label={g.boughtOn}
+                    value={<DatePickerField look="pill" value={date} onChange={setDate} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: true }} />}
+                  />
+                </>
+              }
+            />
             {alert ? (
               <p role="alert" className="mt-2 px-1 text-[0.8125rem] text-[var(--color-brand-amber)]">{alert}</p>
             ) : (
@@ -162,7 +163,7 @@ export function GoldFormSheet({ open, onClose, onDone }: GoldFormSheetProps) {
 
         <SheetFooter safeArea>
           <Button size="cta-block" onClick={submit} disabled={!canSubmit} className="font-semibold">
-            {qty > 0 ? g.cta(amount, g.unitShort[unit], karat) : a.addInvestment}
+            {g.cta(qty > 0 ? amount : '0', g.unitShort[unit], karat)}
           </Button>
         </SheetFooter>
       </div>

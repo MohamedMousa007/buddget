@@ -40,6 +40,10 @@ export interface MoneySourceFieldProps {
   children?: ReactNode
   /** Other words for the caption and the row's name ("Where is it?", "Kept in"); the defaults are unchanged. */
   labels?: { title?: string; from?: string; fromPocket?: string; outsideValue?: string }
+  /** Account tab look: `inline` unfolds the accounts in place (default); `row` is a "From … ›" row that opens a sheet. */
+  accountLook?: 'inline' | 'row'
+  /** Rows shown under the source row, in the same group (e.g. "Paid", "Bought on"). */
+  after?: ReactNode
 }
 
 /**
@@ -47,7 +51,7 @@ export interface MoneySourceFieldProps {
  * opens the payment-method sheet (or the inline account list), Pocket the pocket picker, Outside has nothing to pick.
  * Switching tabs brings back the account or pocket chosen before.
  */
-export function MoneySourceField({ value, onChange, paymentMethods, accounts, pockets, excludePocketIds, onAddPocket, children, labels }: MoneySourceFieldProps) {
+export function MoneySourceField({ value, onChange, paymentMethods, accounts, pockets, excludePocketIds, onAddPocket, children, labels, accountLook = 'inline', after }: MoneySourceFieldProps) {
   const c = { ...useLightTouchCopy().moneySource, ...labels }
   const [last, setLast] = useState<Partial<Record<MoneySourceKind, string>>>(() => (value.id ? { [value.kind]: value.id } : {}))
   const [methodSheet, setMethodSheet] = useState(false)
@@ -63,6 +67,8 @@ export function MoneySourceField({ value, onChange, paymentMethods, accounts, po
     row = <PickerRow label={c.from} value={<span className="text-[0.875rem] font-normal text-[var(--color-brand-text-secondary)]">{c.outsideValue}</span>} />
   } else if (value.kind === 'pocket') {
     row = <PocketPickerField look="row" label={c.fromPocket} pockets={pocketChoices} value={value.id ?? null} onChange={(id) => pick('pocket', id)} onAdd={onAddPocket} />
+  } else if (accounts && accountLook === 'row') {
+    row = <AccountPicker look="row" accounts={accounts} value={value.id ?? ''} onChange={(id) => pick('account', id)} label={c.from} />
   } else if (accounts) {
     row = (
       <div className="px-4">
@@ -108,6 +114,7 @@ export function MoneySourceField({ value, onChange, paymentMethods, accounts, po
       <Card padding="none" divide className="mt-2 overflow-hidden">
         {children}
         {row}
+        {after}
       </Card>
       {!accounts ? (
         <SelectPaymentMethodSheet

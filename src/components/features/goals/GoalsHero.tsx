@@ -9,14 +9,12 @@ import { intlTag } from '@/lib/i18n/dateFormat'
 import { useLocale } from '@/lib/i18n'
 import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
 import { fundingBasis } from '@/lib/goals/fundingBasis'
-import { goalMonthlyRate } from '@/lib/goals/goalDetail'
+import { goalsHeroSum } from '@/lib/goals/goalsHeroSum'
+import { useGoldQuote } from '@/hooks/useGoldQuote'
 import { MASK } from '@/lib/privacy/mask'
 import { useMask } from '@/lib/privacy/useMask'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { convertCurrency } from '@/lib/utils/currency'
 import { formatWhole } from '@/lib/utils/formatters'
-
-const isSave = (r: GoalRow) => r.goal.category !== 'spending_control' && r.goal.category !== 'debt_freedom'
 
 /** Saved for goals: what the running saving goals hold, how far along they are together, the monthly pace and the next finish. */
 export function GoalsHero({ rows }: { rows: GoalRow[] }) {
@@ -31,22 +29,12 @@ export function GoalsHero({ rows }: { rows: GoalRow[] }) {
     })),
   )
   const base = s.settings.baseCurrency
-  const sum = useMemo(() => {
-    const now = new Date()
-    const keep = fundingBasis(s, now).usualKeep
-    const save = rows.filter((r) => isSave(r) && r.goal.status !== 'achieved')
-    const toBase = (n: number, from: string) => convertCurrency(n, from, base, s.exchangeRates)
-    const saved = save.reduce((a, r) => a + toBase(r.current, r.goal.currency), 0)
-    const want = save.reduce((a, r) => a + toBase(r.goal.targetAmount ?? 0, r.goal.currency), 0)
-    const monthly = save
-      .filter((r) => r.goal.status === 'active')
-      .reduce((a, r) => {
-        const keepInGoal = keep === null ? null : convertCurrency(keep, base, r.goal.currency, s.exchangeRates)
-        return a + toBase(goalMonthlyRate(r.goal, keepInGoal) ?? 0, r.goal.currency)
-      }, 0)
-    const next = save.filter((r) => r.goal.status === 'active' && r.goal.targetDate).map((r) => r.goal.targetDate!).sort()[0] ?? null
-    return { saved, want, monthly, next }
-  }, [rows, s, base])
+  const gold = useGoldQuote()
+  const sum = useMemo(
+    () => goalsHeroSum(rows, { base, usualKeep: fundingBasis(s, new Date()).usualKeep, rates: s.exchangeRates, gold }),
+    [rows, s, base, gold],
+  )
+  const monthly = sum.monthly
 
   const pct = sum.want > 0 ? Math.min(100, Math.round((sum.saved / sum.want) * 100)) : 0
   const total = formatWhole(sum.saved)
@@ -78,9 +66,9 @@ export function GoalsHero({ rows }: { rows: GoalRow[] }) {
         </div>
       }
       note={
-        sum.monthly > 0 || next ? (
+        monthly > 0 || next ? (
           <span className="flex flex-wrap gap-x-4 font-mono-numbers">
-            {sum.monthly > 0 ? <span><b className="font-semibold text-[var(--flow-band-fg)]">{hidden ? MASK : c.aMonth(formatWhole(sum.monthly))}</b></span> : null}
+            {monthly > 0 ? <span><b className="font-semibold text-[var(--flow-band-fg)]">{hidden ? MASK : c.aMonth(formatWhole(monthly))}</b></span> : null}
             {next ? <span>{c.nextFinish(next)}</span> : null}
           </span>
         ) : undefined

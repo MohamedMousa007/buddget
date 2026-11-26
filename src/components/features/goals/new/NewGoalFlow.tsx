@@ -112,7 +112,7 @@ function SavedBlock({ form }: { form: Form }) {
               value={form.alreadySaved}
               onChange={form.setAlreadySaved}
               currency={form.currency}
-              placeholder="0"
+              placeholder={c.alreadySavedPlaceholder}
               aria-label={c.alreadySaved}
               className="w-full min-w-0 bg-transparent text-end font-mono-numbers outline-none placeholder:text-[var(--color-brand-text-muted)]"
             />

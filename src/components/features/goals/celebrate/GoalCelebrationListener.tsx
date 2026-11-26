@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { GoalAchievedScreen } from '@/components/features/goals/celebrate/GoalAchievedScreen'
 import { MilestoneCheerSheet } from '@/components/features/goals/celebrate/MilestoneCheerSheet'
 import { buildGoalProgressContext, computeGoalProgress } from '@/lib/goals/computeGoalProgress'
@@ -77,8 +78,15 @@ export function GoalCelebrationListener() {
 
   if (!active) return null
   const close = () => setActive(null)
+  // Portalled as a modal layer: a sheet still open underneath (goal detail under Add money) makes the app root inert,
+  // so in-tree the first tap on X fell through to that sheet's backdrop and only closed it.
   return active.pct >= 100 ? (
-    <GoalAchievedScreen goal={active.goal} current={active.current} onClose={close} />
+    createPortal(
+      <div data-modal-layer>
+        <GoalAchievedScreen goal={active.goal} current={active.current} onClose={close} />
+      </div>,
+      document.body,
+    )
   ) : (
     <MilestoneCheerSheet goal={active.goal} pct={active.pct} current={active.current} onClose={close} />
   )

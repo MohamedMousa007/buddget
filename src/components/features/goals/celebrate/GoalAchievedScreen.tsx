@@ -13,7 +13,7 @@ import { getGoalStatus } from '@/lib/goals/goalStatus'
 import { goalJourney } from '@/lib/goals/achievedFacts'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Goal } from '@/lib/store/types'
-import { formatWhole } from '@/lib/utils/formatters'
+import { formatCurrency } from '@/lib/utils/formatters'
 
 const CONFETTI = Array.from({ length: 16 }, (_, i) => ({
   left: `${(i * 37) % 100}%`,
@@ -60,7 +60,7 @@ export function GoalAchievedScreen({ goal, current, onClose }: { goal: Goal; cur
       <p className="mt-6 text-[0.8125rem] font-bold tracking-[0.12em]">{t.kicker}</p>
       <h2 className="mt-1 text-[38px] font-bold leading-tight">{t.youDidIt}</h2>
       <p className="mt-2 max-w-xs text-sm opacity-90">{t.summary(goal.name, months)}</p>
-      <p className="mt-4 font-mono-numbers text-4xl font-bold">{formatWhole(current)}</p>
+      <p className="mt-4 font-mono-numbers text-4xl font-bold">{formatCurrency(current, goal.currency, false)}</p>
       <div className="mt-6 grid w-full max-w-sm grid-cols-3 gap-2">
         {tiles.map(([label, v]) => (
           <div key={label} className="rounded-[14px] bg-[var(--color-brand-on-primary)]/15 px-2 py-3">

@@ -16,6 +16,9 @@ export interface WealthLtCopy {
   from: (account: string) => string
   to: (account: string) => string
   refreshGold: string
+  boughtGold: (grams: string) => string
+  bought: (asset: string) => string
+  outside: string
 }
 
 export const WEALTH_LT_COPY: Record<Locale, WealthLtCopy> = {
@@ -33,6 +36,9 @@ export const WEALTH_LT_COPY: Record<Locale, WealthLtCopy> = {
     from: (a) => `from ${a}`,
     to: (a) => `to ${a}`,
     refreshGold: 'Refresh gold price',
+    boughtGold: (g) => `Bought gold, ${g} g`,
+    bought: (a) => `Bought ${a}`,
+    outside: 'Outside buddget',
   },
   ar: {
     holdings: 'المقتنيات',
@@ -48,6 +54,9 @@ export const WEALTH_LT_COPY: Record<Locale, WealthLtCopy> = {
     from: (a) => `من ${a}`,
     to: (a) => `إلى ${a}`,
     refreshGold: 'حدّث سعر الذهب',
+    boughtGold: (g) => `شراء ذهب، ${g} جم`,
+    bought: (a) => `شراء ${a}`,
+    outside: 'من خارج buddget',
   },
 }
 

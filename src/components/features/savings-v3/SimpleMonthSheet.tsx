@@ -88,12 +88,7 @@ export function SimpleMonthSheet({ open, onClose, month, currency, initialOwn, d
     >
       <div className="native-scroll -mx-5 min-h-0 flex-1 space-y-3 overflow-y-auto px-5">
         <div className="flex flex-col items-center pb-2 pt-1 text-center">
-          <p
-            className={cn(
-              'font-mono-numbers text-[2.5rem] font-semibold leading-none tracking-[-0.04em]',
-              ownValue > 0 ? 'text-[var(--color-brand-text-muted)] line-through decoration-2' : 'text-[var(--color-brand-text-primary)]',
-            )}
-          >
+          <p className="font-mono-numbers text-[2.5rem] font-semibold leading-none tracking-[-0.04em] text-[var(--color-brand-text-primary)]">
             {fmtNum(sum)}
           </p>
           <p className="mt-2 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">

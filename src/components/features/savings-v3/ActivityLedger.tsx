@@ -1,8 +1,8 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ArrowDownLeft, ArrowUpRight } from 'lucide-react'
-import type { SavingsAccount, SavingsTransaction, Currency } from '@/lib/store/types'
+import { ArrowDownLeft, ArrowUpRight, Gem, TrendingUp } from 'lucide-react'
+import type { InvestmentHolding, SavingsAccount, SavingsTransaction, Currency } from '@/lib/store/types'
 import { tryConvertWithGold } from '@/lib/utils/currency'
 import { useGoldQuote } from '@/hooks/useGoldQuote'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
@@ -10,9 +10,12 @@ import { pocketColor } from '@/lib/savings/pocketIdentity'
 import { SwipeToDelete } from '@/components/expenses/SwipeToDelete'
 import { TransactionRow } from '@/components/transactions/TransactionRow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { rgba } from '@/lib/utils/color'
+import { mix, rgba } from '@/lib/utils/color'
 import { Button } from '@/components/ui/button'
-import { catForAccount, type CatKey } from '@/lib/savings/wealthModel'
+import type { CatKey } from '@/lib/savings/wealthModel'
+import { activityMoves } from '@/lib/savings/activityMoves'
+import { valueInvestmentHolding } from '@/lib/savings/holdingValuation'
+import { useAssetPrices } from '@/hooks/useAssetPrices'
 import { useLocale, useT } from '@/lib/i18n'
 import { formatClock, formatLocalized, type AppLocale } from '@/lib/i18n/dateFormat'
 import { useActionToast } from '@/components/ui/ActionToast'
@@ -67,10 +70,14 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
   const { locale } = useLocale()
   const deleteTx = useFinanceStore((s) => s.deleteSavingsTransaction)
   const showToast = useActionToast()
+  const holdings = useFinanceStore((s) => s.investmentHoldings)
+  const expenses = useFinanceStore((s) => s.expenses)
+  const { lookup } = useAssetPrices()
+  const onDeleteBuy = (h: InvestmentHolding) => showToast(t.deletedToast(h.name), { undo: deleteHoldingWithUndo(h.id), undoLabel: t.deleteUndo })
   const onDelete = (id: string) => {
     // A withdrawal that bought an asset goes with the asset, and Undo brings both back.
     const bought = holdingFundedBy(useFinanceStore.getState().investmentHoldings, id)
-    if (bought) return showToast(t.deletedToast(bought.name), { undo: deleteHoldingWithUndo(bought.id), undoLabel: t.deleteUndo })
+    if (bought) return onDeleteBuy(bought)
     const res = deleteTx(id)
     if (res.ok || res.reason !== 'would_go_negative') return
     const pocket = accounts.find((a) => a.id === res.accountId)
@@ -82,13 +89,10 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
   const [openId, setOpenId] = useState<string | null>(null)
   const acc = (id: string) => accounts.find((a) => a.id === id)
 
-  const rows = useMemo(() => {
-    // Pocket-to-pocket moves, money from outside and a goal's opening money are not cash flow, but they are moves; corrections and openings stay out.
-    let list = [...transactions].filter((t) => t.isCashFlow !== false || t.source === 'carry' || !!t.transferGroupId || t.source === 'goal_opening' || t.source === 'outside')
-    if (filter) list = list.filter((t) => { const a = accounts.find((x) => x.id === t.accountId); return a ? catForAccount(a) === filter : false })
-    list.sort((a, b) => instantOf(b.occurredAt, b.date) - instantOf(a.occurredAt, a.date) || b.date.localeCompare(a.date) || (b.type === 'deposit' ? 1 : 0) - (a.type === 'deposit' ? 1 : 0))
-    return limit ? list.slice(0, limit) : list
-  }, [transactions, accounts, filter, limit])
+  const rows = useMemo(
+    () => activityMoves({ transactions, holdings, expenses, accounts, filter, limit }),
+    [transactions, holdings, expenses, accounts, filter, limit],
+  )
 
   const head = (
     <div className="mb-1 flex min-h-11 items-center justify-between ps-1">
@@ -119,19 +123,51 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
     return tx.notes || ledgerClock(tx, locale)
   }
 
+  /** What a buy cost (paid from an account, so it left that account), else what it is worth today (new money from outside). */
+  const buyAmount = (h: InvestmentHolding, paid: boolean): number | null => {
+    if (paid && h.unitCost != null) return tryConvertWithGold(h.unitCost * h.quantity, h.costBasisCurrency ?? h.currency, baseCurrency, exchangeRates, baseCurrency, gold)
+    const worth = valueInvestmentHolding(h, lookup).value
+    return worth == null ? null : tryConvertWithGold(worth, 'EGP', baseCurrency, exchangeRates, baseCurrency, gold)
+  }
+
   return (
     <div className="px-4 lg:px-0">
       {head}
       <Card padding="none" className="overflow-hidden rounded-2xl">
-        {rows.map((tx, i) => {
+        {rows.map((move, i) => {
+          const divider = i > 0 ? <div aria-hidden className="ms-[82px] h-px bg-[var(--color-brand-border)]" /> : null
+          const day = formatLocalized(new Date(move.at), 'MMM d', locale)
+          if (move.kind === 'buy') {
+            const h = move.holding
+            const paid = !!move.paidFromAccountId
+            const pm = paid ? paymentMethods.find((m) => m.id === move.paidFromAccountId) : undefined
+            const amt = buyAmount(h, paid)
+            const gem = h.assetType === 'gold'
+            return (
+              <SwipeToDelete key={move.id} onDelete={() => onDeleteBuy(h)} openSide={openId === move.id ? 'left' : null} onOpenChange={(side) => setOpenId(side ? move.id : null)} deleteLabel="Delete">
+                <div className="bg-[var(--color-brand-card)]">
+                  {divider}
+                  <TransactionRow
+                    icon={gem ? <Gem className="size-5" /> : <TrendingUp className="size-5" />}
+                    iconBg={gem ? mix('var(--color-brand-gold)', 16) : 'var(--color-brand-elevated)'}
+                    iconFg={gem ? 'var(--color-brand-gold)' : undefined}
+                    title={gem ? lt.boughtGold(h.quantity.toLocaleString('en-US', { maximumFractionDigits: 2 })) : lt.bought(h.name)}
+                    subtitle={`${day} · ${pm ? accountTitle(pm) : lt.outside}`}
+                    amount={amt == null ? '—' : <>{fmtSigned(paid ? -amt : amt)} <span className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{baseCurrency}</span></>}
+                    amountColor={!paid && amt != null ? 'var(--color-brand-green)' : undefined}
+                  />
+                </div>
+              </SwipeToDelete>
+            )
+          }
+          const tx = move.tx
           const a = acc(tx.accountId)
           const tag = tagFor(tx)
           const amtBase = inBase(tx) ?? 0
-          const day = formatLocalized(new Date(instantOf(tx.occurredAt, tx.date)), 'MMM d', locale)
           return (
             <SwipeToDelete key={tx.id} onDelete={() => onDelete(tx.id)} openSide={openId === tx.id ? 'left' : null} onOpenChange={(side) => setOpenId(side ? tx.id : null)} deleteLabel="Delete">
               <div className="bg-[var(--color-brand-card)]">
-                {i > 0 ? <div aria-hidden className="ms-[82px] h-px bg-[var(--color-brand-border)]" /> : null}
+                {divider}
                 <TransactionRow
                   icon={tag.sign > 0 ? <ArrowDownLeft className="size-5" /> : a ? <SavingsAccountIcon account={a} className="h-5 w-5" /> : <ArrowUpRight className="size-5" />}
                   iconBg={tag.sign > 0 ? 'var(--color-brand-green-soft)' : a ? rgba(pocketColor(a), .14) : 'var(--color-brand-elevated)'}
