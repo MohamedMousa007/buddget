@@ -1,15 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- test code reads untyped store and PostgREST JSON */
 import type { Page } from '@playwright/test'
-import { appNav, expect, goto, localState, localWait, signIn, test, tile } from '../../lib/fixtures'
+import { appNav, expect, goto, localState, localWait, signIn, test, tile, moneyIn, netWorth } from '../../lib/fixtures'
 import { rows } from '../../lib/admin'
 import { serverRows } from '../../lib/server'
 import { installApiShim, forceFlags } from '../../lib/apiShim'
-import { addAccount, addBorrow, addExpense, addMoneyIn, blur, dialog, payDebt, pickMethod, pickPocket } from '../../lib/ui'
+import { addAccount, addBorrow, addExpense, addMoneyIn, blur, dialog, payDebt, pickMethod, pickPocket, shown } from '../../lib/ui'
 
 const ERR = /Something went wrong|Application error|Unhandled Runtime Error/i
 const qnbTile = (p: Page) => p.getByRole('button', { name: /QNB Alahli/ }).first()
 async function withQnb(page: Page, bal: number) {
-  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: bal })
+  await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: bal })
   return localWait(page, (s) => s.paymentMethods.find((m: any) => m.name === 'QNB Alahli' && m.openingBalance === bal))
 }
 
@@ -22,9 +22,9 @@ test('R01 money in dated today counts in the balance at once, with an exact inst
   const [row] = await serverRows('income_events', user.id, `id=eq.${ev.id}`, (r: any[]) => r.length === 1)
   expect(Number(row.amount)).toBe(500)
   expect(row.payment_method_id).toBe(qnb.id)
-  expect(await tile(page, 'Net worth')).toBe(1500)
+  expect(await netWorth(page)).toBe(1500)
   await goto(page, '/accounts')
-  await expect(qnbTile(page)).toContainText('1,500.00')
+  await expect(qnbTile(page)).toContainText(shown('1,500'))
 })
 
 test('R02 pocket funding is an internal move: Flow shows no income and no spending, net worth unchanged', async ({ page, user }) => {
@@ -52,8 +52,8 @@ test('R02 pocket funding is an internal move: Flow shows no income and no spendi
   expect(await rows('income_events', user.id, 'deleted_at=is.null')).toHaveLength(0)
   expect((await rows('expenses', user.id, 'deleted_at=is.null')).filter((e: any) => e.category !== 'Savings')).toHaveLength(0)
   await goto(page, '/flow')
-  expect(await tile(page, 'Net worth')).toBe(2000)
-  expect(await tile(page, 'Money in')).toBe(0)
+  expect(await netWorth(page)).toBe(2000)
+  expect(await moneyIn(page)).toBe(0)
   const main = (await page.locator('main').innerText()).replace(/\s+/g, ' ')
   test.info().annotations.push({ type: 'evidence', description: `flow after funding 600: ${main.slice(0, 300)}` })
   expect(main).not.toMatch(/Spent\s*600/)
@@ -79,7 +79,7 @@ test('R03 double tap on Save creates one expense (store and server)', async ({ p
   const st = await localState(page)
   expect(st.expenses.filter((e: any) => e.description === 'QA R03 dup' && !e.deletedAt)).toHaveLength(1)
   await serverRows('expenses', user.id, 'description=eq.QA R03 dup&deleted_at=is.null', (r) => r.length === 1)
-  expect(await tile(page, 'Net worth')).toBe(925)
+  expect(await netWorth(page)).toBe(925)
 })
 
 async function deleteThenUndo(page: Page, userId: string, desc: string, reloadFirst: boolean, waitMs = 0) {
@@ -102,7 +102,7 @@ async function deleteThenUndo(page: Page, userId: string, desc: string, reloadFi
 test('R04a delete an expense then undo within a second: one live row, balance restored, server agrees', async ({ page, user }) => {
   const e = await deleteThenUndo(page, user.id, 'QA R04a del', false)
   await expect(page.locator('main')).toContainText('QA R04a del')
-  expect(await tile(page, 'Net worth')).toBe(800)
+  expect(await netWorth(page)).toBe(800)
   const live = await serverRows('expenses', user.id, 'description=eq.QA R04a del&deleted_at=is.null', (r) => r.length === 1)
   expect(live[0].id).toBe(e.id)
   expect(await rows('expenses', user.id, 'description=eq.QA R04a del')).toHaveLength(1)
@@ -406,7 +406,7 @@ test.describe('two devices', () => {
       await goto(B, '/flow')
       await expect(B.locator('main')).toContainText('QA R14 from A', { timeout: 30_000 })
       // The list can show A's expense a moment before the Net worth tile recomputes: poll the tile.
-      await expect.poll(() => tile(B, 'Net worth'), { timeout: 15_000 }).toBe(2900)
+      await expect.poll(() => netWorth(B), { timeout: 15_000 }).toBe(2900)
 
       // B goes offline, adds an expense and deletes A's.
       await ctxB.setOffline(true)
@@ -441,8 +441,8 @@ test.describe('two devices', () => {
       await expect.poll(async () => { sa = await ids(page); sb = await ids(B); return JSON.stringify([sa, sb]) }, { timeout: 40_000 }).toBe(JSON.stringify([want, want]))
       test.info().annotations.push({ type: 'evidence', description: `converged: A=${sa.join(',')} B=${sb.join(',')} server=${want.join(',')}` })
       await goto(page, '/flow'); await goto(B, '/flow')
-      const nwA = await tile(page, 'Net worth')
-      await expect.poll(() => tile(B, 'Net worth'), { timeout: 15_000 }).toBe(nwA)
+      const nwA = await netWorth(page)
+      await expect.poll(() => netWorth(B), { timeout: 15_000 }).toBe(nwA)
     } finally { await ctxB.close() }
   })
 
@@ -459,7 +459,7 @@ test.describe('two devices', () => {
     await serverRows('expenses', user.id, 'description=like.QA R15*&deleted_at=is.null', (r) => r.length === 2)
     await page.reload({ waitUntil: 'domcontentloaded' })
     await expect(page.locator('main')).toContainText('QA R15 tab2', { timeout: 20_000 })
-    expect(await tile(page, 'Net worth')).toBe(950)
+    expect(await netWorth(page)).toBe(950)
     void appNav
   })
 })

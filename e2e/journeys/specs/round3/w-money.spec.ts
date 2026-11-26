@@ -8,9 +8,9 @@
 import { mkdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { Page } from '@playwright/test'
-import { expect, goto, localState, localWait, money, test, tile } from '../../lib/fixtures'
+import { expect, goto, localState, localWait, money, test, tile, moneyIn } from '../../lib/fixtures'
 import { serverRows } from '../../lib/server'
-import { addExpense, blur, chooseMethod, dialog } from '../../lib/ui'
+import { addExpense, blur, chooseMethod, dialog, shown } from '../../lib/ui'
 import { bank, localMethod, seed } from './seed'
 
 async function openAccount(page: Page, name: RegExp) {
@@ -74,7 +74,7 @@ test('W3 a repayment someone makes you credits the account, Flow marks it Not in
   const [debt] = await seed(page, user.id, 'debts', [{ name: 'QA W3 lend', person: 'Omar', amount: 600, remaining_amount: 600, currency: 'EGP', debt_type: 'personal', direction: 'they_owe', status: 'active' }])
   await localMethod(page, qnb.id)
   await goto(page, '/flow')
-  const moneyIn = await tile(page, 'Money in')
+  const inBefore = await moneyIn(page)
   expect(moneyIn).toBe(0)
 
   await test.step('Log receipt for the QA W3 lend: 200 into QNB', async () => {
@@ -97,12 +97,12 @@ test('W3 a repayment someone makes you credits the account, Flow marks it Not in
 
   await test.step('QNB is 200 higher; Flow shows the repayment as Not income; Money in unchanged', async () => {
     await goto(page, '/accounts')
-    await expect(page.getByRole('button', { name: /QNB Alahli/ }).first()).toContainText('5,200.00')
+    await expect(page.getByRole('button', { name: /QNB Alahli/ }).first()).toContainText(shown('5,200'))
     await goto(page, '/flow')
     const main = page.locator('main')
     await expect(main.getByText('Repaid by Omar').first()).toBeVisible()
     await expect(main.getByText('Not income').first()).toBeVisible()
-    expect(await tile(page, 'Money in')).toBe(moneyIn)
+    expect(await moneyIn(page)).toBe(inBefore)
   })
 })
 
@@ -240,10 +240,10 @@ test('W8 lending from a tracked account takes the money out of it; the repayment
 
   await test.step('CIB and net worth are 5,000 lower; Money in is untouched', async () => {
     await goto(page, '/accounts')
-    await expect(page.getByRole('button', { name: /^CIB/ }).first()).toContainText('15,000.00')
+    await expect(page.getByRole('button', { name: /^CIB/ }).first()).toContainText(shown('15,000'))
     await expect.poll(() => netWorth(page)).toBe(15000)
     await goto(page, '/flow')
-    expect(await tile(page, 'Money in')).toBe(0)
+    expect(await moneyIn(page)).toBe(0)
   })
 
   await test.step('Omar repays 5,000 into CIB: the account and net worth are back where they started', async () => {
@@ -256,7 +256,7 @@ test('W8 lending from a tracked account takes the money out of it; the repayment
     await d.getByRole('button', { name: /^(Mark repaid|Receive [\d,]+ EGP)$/ }).click()
     await expect(d).toBeHidden()
     await goto(page, '/accounts')
-    await expect(page.getByRole('button', { name: /^CIB/ }).first()).toContainText('20,000.00')
+    await expect(page.getByRole('button', { name: /^CIB/ }).first()).toContainText(shown('20,000'))
     await expect.poll(() => netWorth(page)).toBe(20000)
   })
 })
@@ -283,8 +283,8 @@ test('W9 borrowed money that is already a bank deposit: in the CIB balance once,
   await seed(page, user.id, 'income_events', [{ name: 'Bank credit', amount: 3000, currency: 'EGP', source_type: 'other', status: 'confirmed', received_date: today(), payment_method_id: cib.id, occurred_at: new Date().toISOString() }])
   await localMethod(page, cib.id)
   await goto(page, '/flow')
-  await expect.poll(() => tile(page, 'Money in')).toBe(3000)
-  await expect.poll(() => cibRow(page)).toContain('23,000.00')
+  await expect.poll(() => moneyIn(page)).toBe(3000)
+  await expect.poll(() => cibRow(page)).toMatch(shown('23,000'))
 
   const d = await openBorrow(page, { person: 'Ahmed', what: 'QA W9 borrow', amount: 3000 })
   // A credit is linked only on the user's own Yes: the switch starts off.
@@ -299,10 +299,10 @@ test('W9 borrowed money that is already a bank deposit: in the CIB balance once,
   await serverRows('income_events', user.id, 'select=id,linked_debt_id,source_type', (r: any[]) => r.length === 1 && r[0].linked_debt_id === debt.id && r[0].source_type === 'other')
   await serverRows('debts', user.id, `id=eq.${debt.id}`, (r: any[]) => r.length === 1 && r[0].principal_payment_method_id === null)
   // CIB holds the money once (20,000 + 3,000); net worth = 23,000 - 3,000 owed = 20,000.
-  await expect.poll(() => cibRow(page)).toContain('23,000.00')
+  await expect.poll(() => cibRow(page)).toMatch(shown('23,000'))
   await expect.poll(() => netWorth(page)).toBe(20000)
   await goto(page, '/flow')
-  await expect.poll(() => tile(page, 'Money in')).toBe(0)
+  await expect.poll(() => moneyIn(page)).toBe(0)
   const row = page.locator('main').getByRole('button').filter({ hasText: 'Bank credit' }).first()
   await expect(row).toContainText('Not income')
   await shot(row, 'w9-borrowed-not-income-row')
@@ -318,11 +318,11 @@ async function lendThenLateRow(page: Page, userId: string) {
   await expect(d).toBeHidden()
   const debt = await localWait(page, (s) => s.debts.find((x: any) => x.name === 'QA late lend'))
   await serverRows('debts', userId, `id=eq.${debt.id}`, (r: any[]) => Number(r[0]?.principal_amount) === 5000)
-  await expect.poll(() => cibRow(page)).toContain('15,000.00')
+  await expect.poll(() => cibRow(page)).toMatch(shown('15,000'))
   // The transfer as the SMS route books it: an Instapay expense on CIB with its instant, after the debt.
   const [late] = await seed(page, userId, 'expenses', [{ amount: 5000, currency: 'EGP', category: 'Instapay', description: 'Instapay transfer', expense_date: today(), occurred_at: new Date().toISOString(), payment_method_id: cib.id }])
   // Counted twice until the user answers: 20,000 - 5,000 (leg) - 5,000 (row) = 10,000.
-  await expect.poll(() => cibRow(page)).toContain('10,000.00')
+  await expect.poll(() => cibRow(page)).toMatch(shown('10,000'))
   await goto(page, '/flow')
   const prompt = page.getByText(/^Is this the 5,000 EGP you lent Omar\?$/)
   await expect(prompt).toBeVisible()
@@ -339,7 +339,7 @@ test('W10 a late bank row after a lend with a leg: Flow asks "same money?", Yes 
   // One debit: the bank row stays and becomes the principal, the leg goes. 20,000 - 5,000 = 15,000; net worth 15,000.
   await serverRows('debts', user.id, `id=eq.${debt.id}`, (r: any[]) => r[0]?.principal_payment_method_id === null && r[0]?.principal_amount === null)
   await serverRows('expenses', user.id, `id=eq.${late.id}`, (r: any[]) => r[0]?.linked_debt_id === debt.id && r[0]?.spend_exclusion === 'manual')
-  await expect.poll(() => cibRow(page)).toContain('15,000.00')
+  await expect.poll(() => cibRow(page)).toMatch(shown('15,000'))
   await expect.poll(() => netWorth(page)).toBe(15000)
 })
 
@@ -350,7 +350,7 @@ test('W11 a late bank row after a lend with a leg: No keeps both and is not aske
   // Both stay as booked: the leg and the transfer, 20,000 - 5,000 - 5,000 = 10,000.
   await serverRows('debts', user.id, `id=eq.${debt.id}`, (r: any[]) => Number(r[0]?.principal_amount) === 5000)
   await serverRows('expenses', user.id, `id=eq.${late.id}`, (r: any[]) => r[0]?.linked_debt_id === null)
-  await expect.poll(() => cibRow(page)).toContain('10,000.00')
+  await expect.poll(() => cibRow(page)).toMatch(shown('10,000'))
   // The answer is remembered (synced settings): a reload and a fresh visit to Flow do not ask again.
   await page.reload({ waitUntil: 'domcontentloaded' })
   await goto(page, '/flow')

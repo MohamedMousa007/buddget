@@ -82,7 +82,7 @@ test('Q3 Savings opens Add money directly on Wealth, once, and saves', async ({ 
     await page.waitForTimeout(1000)
     await expect(dialog(page, 'Add money')).toBeHidden()
   })
-  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 5000 })
+  await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: 5000 })
   await test.step('with an account: deposit 500 from the + on another screen', async () => {
     await goto(page, '/reports')
     await openTile(page, /^Savings/)
@@ -130,7 +130,7 @@ test('Q4 Pay debt: empty state leads to adding one; with a debt it pays', async 
 test('Q5 Subscription, Receipt and voice work from a page with no add button', async ({ page, user, context }) => {
   void user
   await context.grantPermissions(['microphone', 'camera'])
-  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 3000 })
+  await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: 3000 })
   await test.step('Subscription lands on Subscriptions with the add sheet open, and saves', async () => {
     await goto(page, '/budget-history')
     await openTile(page, /^Subscription/)

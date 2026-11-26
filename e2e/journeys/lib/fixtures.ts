@@ -112,3 +112,45 @@ export function knownBug(id: string, why: string) {
 
 /** The app's tab bar (phone) or sidebar (desktop): the navigation landmark that links to Flow. */
 export const appNav = (page: Page) => page.getByRole('navigation').filter({ has: page.getByRole('link', { name: 'Accounts', exact: true }) }).first()
+
+/** Light touch: net worth sits in the Accounts hero ("5,000 Net worth", one paragraph); Flow's hero shows spending only. */
+export async function netWorth(page: Page): Promise<number> {
+  if (!/\/accounts(\?|$)/.test(page.url())) await goto(page, '/accounts')
+  const p = page.locator('main p').filter({ hasText: /Net worth\s*$/ }).first()
+  await p.waitFor()
+  return money(await p.textContent())
+}
+
+/** Light touch: Flow's hero shows money in as "↓ 3,000 in" or "+5,000 in" (no "Money in" tile). */
+export async function moneyIn(page: Page): Promise<number> {
+  if (!/\/flow(\?|$)/.test(page.url())) await goto(page, '/flow')
+  let txt = ''
+  await expect.poll(async () => {
+    txt = await page.locator('main').evaluate((m) => {
+      for (const el of Array.from(m.querySelectorAll('*'))) {
+        const t = (el.textContent ?? '').replace(/\s+/g, ' ').trim()
+        if (/^[↓+]?\s*[\d,.]+\s*in$/.test(t)) return t
+      }
+      return ''
+    })
+    return txt
+  }, { timeout: 30_000, message: 'Flow hero "… in" figure' }).not.toBe('')
+  return money(txt.replace(/[↓+]/g, ''))
+}
+
+/** Light touch Accounts hero: one note line "3,000 set aside · 14,220 owed on cards"; no set-aside part means 0. */
+export async function setAside(page: Page): Promise<number> {
+  if (!/\/accounts(\?|$)/.test(page.url())) await goto(page, '/accounts')
+  await page.locator('main').getByText('Available now', { exact: true }).first().waitFor()
+  const note = page.locator('main span').filter({ hasText: /^\s*[\d,.]+\s+set aside\s*$/ }).first()
+  return (await note.count()) ? money(await note.textContent()) : 0
+}
+
+/**
+ * What the tracked accounts hold. The light-touch hero no longer has an "In accounts" tile: it shows what is free
+ * ("Available now") and what is set aside, and the accounts hold the two together.
+ */
+export async function inAccounts(page: Page): Promise<number> {
+  if (!/\/accounts(\?|$)/.test(page.url())) await goto(page, '/accounts')
+  return (await tile(page, 'Available now')) + (await setAside(page))
+}

@@ -8,7 +8,7 @@
 import type { Browser, Locator, Page } from '@playwright/test'
 import { computeBalances } from '../../../../src/lib/accounts/balance'
 import { forceFlags, installApiShim } from '../../lib/apiShim'
-import { expect, goto, localState, localWait, money, signIn, test, tile } from '../../lib/fixtures'
+import { expect, goto, localState, localWait, money, signIn, test, tile, inAccounts, setAside } from '../../lib/fixtures'
 import { serverRows } from '../../lib/server'
 import { blur, chooseMethod, dialog, pickPocket } from '../../lib/ui'
 import { bank, localMethod, seed } from './seed'
@@ -26,13 +26,16 @@ async function netWorth(page: Page): Promise<number> {
   return money(await page.locator('main p').filter({ hasText: /Net worth\s*$/ }).first().textContent())
 }
 
-/** "20,000.00" (or "−1,000.00") and "17,000 free" from one account row; the free label only shows while something is set aside. */
+/**
+ * One account row, light touch: "CIB · 1 account · 0 cards · 20,000 EGP · 3,000 set aside" (or "−1,000 EGP"). The
+ * set-aside part only shows while something is set aside; free = balance − set aside, null when nothing is.
+ */
 async function row(page: Page, name: RegExp): Promise<{ balance: number; free: number | null }> {
   const t = ((await page.getByRole('button', { name }).first().textContent()) ?? '').replace(/\s+/g, ' ')
-  const m = t.match(/([−-])?([\d,]+)\.\d\d/)
+  const m = t.match(/([−-])?([\d,]+(?:\.\d+)?) ?EGP/)
   const balance = (m?.[1] ? -1 : 1) * Number(m?.[2].replace(/,/g, ''))
-  const free = t.match(/([\d,]+) free/)?.[1]
-  return { balance, free: free ? Number(free.replace(/,/g, '')) : null }
+  const held = t.match(/([\d,]+(?:\.\d+)?) set aside/)?.[1]
+  return { balance, free: held ? balance - Number(held.replace(/,/g, '')) : null }
 }
 
 /** The Accounts screen shows exactly the expected money. */
@@ -43,8 +46,8 @@ async function checkScreen(page: Page, e: Expected) {
     await expect.poll(() => row(page, name), { message: `row ${name}` }).toEqual({ balance: a[0], free: a[1] > 0 ? free(a) : null })
   }
   await expect.poll(() => tile(page, 'Available now')).toBe(free(e.cib) + free(e.qnb))
-  await expect.poll(() => tile(page, 'In accounts')).toBe(e.cib[0] + e.qnb[0])
-  await expect.poll(() => tile(page, 'Set aside')).toBe(e.cib[1] + e.qnb[1])
+  await expect.poll(() => inAccounts(page)).toBe(e.cib[0] + e.qnb[0])
+  await expect.poll(() => setAside(page)).toBe(e.cib[1] + e.qnb[1])
   await expect.poll(() => netWorth(page)).toBe(e.netWorth)
 }
 

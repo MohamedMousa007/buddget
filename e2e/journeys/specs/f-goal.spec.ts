@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- test code reads untyped store and PostgREST JSON */
 import type { Page } from '@playwright/test'
-import { expect, goto, localWait, test, tile } from '../lib/fixtures'
+import { expect, goto, localWait, test, tile, netWorth } from '../lib/fixtures'
 import { serverRows } from '../lib/server'
-import { addAccount, blur, dialog } from '../lib/ui'
+import { addAccount, blur, dialog, shown } from '../lib/ui'
 
 /** Add goal (version C): one page; Fund it opens its own sheet. */
 async function startGoal(page: Page, name: string, target: number) {
@@ -30,7 +30,7 @@ async function fund(page: Page, goalName: string, amount: number) {
 }
 
 test('F goal > fund > progress > achieve', async ({ page, user }) => {
-  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 3000 })
+  await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: 3000 })
   await localWait(page, (s) => s.paymentMethods.find((m: any) => m.name === 'QNB Alahli' && m.openingBalance === 3000))
 
   const goal = await test.step('create goal QA Trip 1,000, funded by me', async () => {
@@ -52,9 +52,9 @@ test('F goal > fund > progress > achieve', async ({ page, user }) => {
     await localWait(page, (s) => s.savingsAccounts.find((a: any) => a.id === pocketId && a.currentBalance === 250))
     await serverRows('savings_accounts', user.id, `id=eq.${pocketId}`, (r: any[]) => Number(r[0]?.current_balance) === 250)
     await goto(page, '/accounts')
-    await expect(page.getByRole('button', { name: /QNB Alahli/ }).first()).toContainText('2,750.00')
+    await expect(page.getByRole('button', { name: /QNB Alahli/ }).first()).toContainText(shown('2,750'))
     await goto(page, '/flow')
-    expect(await tile(page, 'Net worth')).toBe(3000)
+    expect(await netWorth(page)).toBe(3000)
   })
 
   await test.step('fund the remaining 750: achieved', async () => {
@@ -89,7 +89,7 @@ async function goalWithSaved(page: Page, o: { name: string; saved: number; home:
 }
 
 test('F2 goal "Already saved" in a tracked account: set aside there, net worth and the account unchanged; over available refused [Phase 0.7]', async ({ page, user }) => {
-  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 3000 })
+  await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: 3000 })
   const qnb = await localWait(page, (s) => s.paymentMethods.find((m: any) => m.name === 'QNB Alahli' && m.openingBalance === 3000))
   const pocketId = await goalWithSaved(page, {
     name: 'QA Saved In', saved: 400, home: 'Account',
@@ -98,21 +98,21 @@ test('F2 goal "Already saved" in a tracked account: set aside there, net worth a
   await localWait(page, (s) => s.savingsAccounts.find((a: any) => a.id === pocketId && a.heldInPaymentMethodId === qnb.id && a.currentBalance === 400))
   await serverRows('savings_accounts', user.id, `id=eq.${pocketId}`, (r: any[]) => Number(r[0]?.current_balance) === 400 && r[0]?.held_in_payment_method_id === qnb.id)
   await goto(page, '/accounts')
-  await expect(page.getByRole('button', { name: /QNB Alahli/ }).first()).toContainText('3,000.00')
+  await expect(page.getByRole('button', { name: /QNB Alahli/ }).first()).toContainText(shown('3,000'))
   expect(await tile(page, 'Available now')).toBe(2600)
   await goto(page, '/flow')
-  expect(await tile(page, 'Net worth')).toBe(3000)
+  expect(await netWorth(page)).toBe(3000)
 })
 
 test('F3 goal "Already saved" somewhere else: counted once as new money, accounts untouched [Phase 0.7]', async ({ page, user }) => {
-  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 3000 })
+  await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: 3000 })
   await localWait(page, (s) => s.paymentMethods.find((m: any) => m.name === 'QNB Alahli' && m.openingBalance === 3000))
   const pocketId = await goalWithSaved(page, { name: 'QA Saved Out', saved: 400, home: 'Outside' })
   await localWait(page, (s) => s.savingsAccounts.find((a: any) => a.id === pocketId && !a.heldInPaymentMethodId && a.currentBalance === 400))
   await serverRows('savings_accounts', user.id, `id=eq.${pocketId}`, (r: any[]) => Number(r[0]?.current_balance) === 400 && r[0]?.held_in_payment_method_id === null)
   await goto(page, '/accounts')
-  await expect(page.getByRole('button', { name: /QNB Alahli/ }).first()).toContainText('3,000.00')
+  await expect(page.getByRole('button', { name: /QNB Alahli/ }).first()).toContainText(shown('3,000'))
   expect(await tile(page, 'Available now')).toBe(3000)
   await goto(page, '/flow')
-  expect(await tile(page, 'Net worth')).toBe(3400)
+  expect(await netWorth(page)).toBe(3400)
 })
