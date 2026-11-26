@@ -10,6 +10,7 @@ import { PaymentMethodSetupSheet } from '@/components/features/payments/PaymentM
 import { Last4Tiles, InputRow } from '@/components/features/payments/accountFormParts'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { AmountHero } from '@/components/ui/AmountHero'
 import { PickerRow } from '@/components/ui/PickerRow'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
@@ -45,6 +46,13 @@ interface AddAccountSheetProps {
 }
 
 type Step = 'account' | 'card' | 'done'
+
+/** The balance typed in Add account: an empty field is the 0 its placeholder shows (a new, empty wallet); junk is null. */
+export function typedOpeningBalance(text: string): number | null {
+  if (text.trim() === '') return 0
+  const n = parseFloat(text)
+  return Number.isFinite(n) ? n : null
+}
 
 const COUNTRY: Partial<Record<Currency, 'EG' | 'SA' | 'AE'>> = { EGP: 'EG', SAR: 'SA', AED: 'AE' }
 const BRAND_CURRENCY = { EG: 'EGP', SA: 'SAR', AE: 'AED' } as const
@@ -86,7 +94,8 @@ export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', p
   const provider = brand?.name ?? custom
   const isCash = kind === 'cash'
   const reattribute = useReattribute()
-  const hasBalance = balance.trim() !== '' && Number.isFinite(parseFloat(balance))
+  const opening = typedOpeningBalance(balance)
+  const hasBalance = opening !== null
   const digitsOk = last4 === '' || isSavableTail(last4)
   const canSave = hasBalance && digitsOk && (isCash || provider.trim() !== '')
   const popular = (COUNTRY[base] ? QUICK_ADD[COUNTRY[base]!] : QUICK_ADD_BLEND)
@@ -102,8 +111,8 @@ export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', p
 
   /** Saves the account and returns its id; false when the form is not complete. */
   const save = (): string | false => {
-    if (!canSave) return false
-    const amount = parseFloat(balance)
+    if (!canSave || opening === null) return false
+    const amount = opening
     if (isCash) {
       const id = ensureCashAccount()
       setOpeningBalance(id, amount)
@@ -125,7 +134,11 @@ export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', p
   }
 
   const canCard = pushCardStep ? kind !== 'cash' : kind === 'bank_account' && !!onAddCard
-  const addWithCard = () => {
+  const confirm = useConfirm()
+  // The account is saved before its card can hang under it, so the tap asks first: nothing is written without a yes.
+  const addWithCard = async () => {
+    if (!canSave) return
+    if (!(await confirm({ title: lt.addAccount.saveFirstTitle, body: lt.addAccount.saveFirstBody(provider.trim()), confirmLabel: lt.addAccount.saveFirstCta, cancelLabel: lt.addAccount.notYet }))) return
     const id = save()
     if (!id) return
     if (!pushCardStep) { onAddCard?.(id); return }
@@ -138,7 +151,7 @@ export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', p
       <BrandMark name={provider} color={brand?.colors[0] ?? PAYMENT_TYPE_META[kind].color} size={32} logo={bankLogoForName(provider)} />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{t.accountAdded(provider)}</span>
-        <span className="block truncate font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">{[accountIdentifier(saved), String(saved.currency), hasBalance ? moneyFlex(parseFloat(balance), String(saved.currency)) : null].filter(Boolean).join(' · ')}</span>
+        <span className="block truncate font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">{[accountIdentifier(saved), String(saved.currency), opening !== null ? moneyFlex(opening, String(saved.currency)) : null].filter(Boolean).join(' · ')}</span>
       </span>
     </div>
   ) : null
@@ -179,7 +192,7 @@ export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', p
                 <section>
                   <h3 className="px-5 pb-2 pt-5 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{lt.addAccount.cardsHeading}</h3>
                   <Card padding="none" className="mx-4 overflow-hidden rounded-2xl">
-                    <button type="button" data-raw-button-ok="the dashed Add a card empty state, a whole-row tap target" onClick={addWithCard} disabled={!canSave}
+                    <button type="button" data-raw-button-ok="the dashed Add a card empty state, a whole-row tap target" onClick={() => void addWithCard()} disabled={!canSave}
                       className="flex min-h-11 w-full items-center gap-3 px-3 py-3 text-start disabled:opacity-60">
                       <span aria-hidden className="flex h-14 w-[88px] shrink-0 items-center justify-center rounded-[7px] border-[1.5px] border-dashed border-[var(--color-brand-border-strong)] text-[var(--color-brand-text-muted)]">
                         <Plus className="size-5" />

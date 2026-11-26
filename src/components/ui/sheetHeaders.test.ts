@@ -21,6 +21,7 @@ const EXEMPT: Record<string, { category: Category; reason: string }> = {
   'src/components/receipt/ReceiptScanSheet.tsx': { category: 'flow-chrome', reason: 'a capture and review flow with its own camera and step chrome' },
   'src/components/voice/VoiceRecordSheet.tsx': { category: 'flow-chrome', reason: 'a recording flow with its own record and cancel controls' },
   'src/components/modals/ModalTitle.tsx': { category: 'primitive', reason: 'defines the dialog-name hook the standard header uses' },
+  'src/components/features/savings-v3/useDiscardPrompt.tsx': { category: 'primitive', reason: 'opens no sheet: registers the dismiss guard inside the caller’s ModalShell, whose header is the standard one' },
 }
 
 function walk(dir: string, out: string[] = []): string[] {

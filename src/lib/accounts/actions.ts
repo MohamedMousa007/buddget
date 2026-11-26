@@ -1,5 +1,5 @@
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import type { Currency, FinanceStore, PaymentMethod } from '@/lib/store/types'
+import type { Currency, FinanceStore, PaymentMethod, SavingsAccount } from '@/lib/store/types'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import { computeBalances, type LedgerInput } from './balance'
@@ -65,6 +65,14 @@ export function cashOut(fromId: string, amount: number, currency: PaymentMethod[
     toPaymentMethodId: ensureCashAccount(),
     isRecurring: false,
   })
+}
+
+/**
+ * The pocket Set aside starts on: one held in this account (the money then stays in it and only "free" shrinks), else the
+ * first. A pocket held elsewhere takes the money out of the account, so it is never the silent default.
+ */
+export function defaultSetAsidePocketId(pockets: readonly Pick<SavingsAccount, 'id' | 'heldInPaymentMethodId'>[], accountId: string): string | null {
+  return (pockets.find((p) => p.heldInPaymentMethodId === accountId) ?? pockets[0])?.id ?? null
 }
 
 /** Set aside: a pocket deposit stamped with the account it came from (earmark when the pocket is held in it). */

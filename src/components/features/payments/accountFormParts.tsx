@@ -81,8 +81,8 @@ export function InputRow({ label, value, onChange, placeholder, amountCurrency, 
     <label className="flex min-h-[52px] items-center gap-3 px-4">
       <span className="w-[112px] shrink-0 text-[0.84375rem] text-[var(--color-brand-text-secondary)]">{label}</span>
       {amountCurrency !== undefined ? (
-        <AmountField bare value={value} onChange={onChange} currency={amountCurrency} placeholder={placeholder} aria-label={label}
-          className={cn(field, 'flex justify-end font-mono-numbers')} />
+        <AmountField bare look="row" value={value} onChange={onChange} decimalsFor={amountCurrency} placeholder={placeholder} aria-label={label}
+          className={cn(field, 'flex justify-end font-mono-numbers rtl:justify-start')} />
       ) : (
         <input
           value={value}

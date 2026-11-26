@@ -15,6 +15,7 @@ import { IconPickerSheet } from '@/components/features/goals/IconPickerSheet'
 import { goalCategoryLabelKey } from '@/components/features/goals/goalCategoryLabel'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { MoneySourceField, type MoneySource } from '@/components/features/savings-v3/MoneySourceField'
+import { useDiscardPrompt } from '@/components/features/savings-v3/useDiscardPrompt'
 import type { PocketVM } from '@/components/features/savings-v3/types'
 import { accountTitle } from '@/components/features/accounts/accountDisplay'
 import { AmountHero } from '@/components/ui/AmountHero'
@@ -155,6 +156,10 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
   const [iconOpen, setIconOpen] = useState(false)
   const [costOpen, setCostOpen] = useState(false)
   const [preset, setPreset] = useState<OtherKey | null>(null)
+  // Typed data beyond what the seed filled in (a picked category names the goal for the user); Discard drops the saved draft too.
+  const [seedName] = useState(form.name)
+  const typed = form.name.trim() !== seedName.trim() || [form.targetAmount, form.alreadySaved, form.fixedAmount, form.limit].some((v) => v.trim() !== '')
+  const discard = useDiscardPrompt(typed, () => { form.discard(); onClose() })
 
   if (chat !== null) {
     const leave = () => setChat(null)
@@ -165,10 +170,11 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
             <ChevronLeft className="rtl:rotate-180" />
           </IconButton>
           <p className="flex-1 text-center text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{f.chat.title}</p>
-          <IconButton aria-label={f.close} onClick={onClose}>
+          <IconButton aria-label={f.close} onClick={discard.close}>
             <X />
           </IconButton>
         </div>
+        {discard.prompt}
         <GoalChat key={chat} form={form} firstText={chat || null} onContinue={leave} onManual={leave} />
       </div>
     )
@@ -233,7 +239,8 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <V3SheetHeader onClose={onClose}>
+      {discard.prompt}
+      <V3SheetHeader onClose={discard.close}>
         <V3SheetHeader.Title>{c.newGoalTitle}</V3SheetHeader.Title>
       </V3SheetHeader>
 

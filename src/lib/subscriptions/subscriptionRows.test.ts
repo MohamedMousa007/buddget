@@ -133,3 +133,30 @@ describe('nudges and rail', () => {
     expect(strip.filter((d) => d.due).map((d) => d.date.getDate())).toEqual([19])
   })
 })
+
+describe('dates around today (QA, Nov 26)', () => {
+  const nov26 = new Date(2026, 10, 26, 12)
+  const at = (s: Subscription, e: Expense[] = []) => buildRow(s, e, nov26, 'EGP', {})
+  it('a charge on Dec 10 is Later, not This month', () => {
+    const r = at(sub({ id: 'v', name: 'Vodafone', billingDay: 10, startDate: '2026-01-10' }), [exp('v', '2026-11-10')])
+    expect(r.date).toBe('2026-12-10')
+    expect(r.group).toBe('later')
+  })
+  it('a charge later this month is This month', () => {
+    const r = at(sub({ id: 'm', billingDay: 30, startDate: '2026-01-30' }), [exp('m', '2026-10-30')])
+    expect(r.group).toBe('week')
+    const far = buildRow(sub({ id: 'f', billingDay: 28, startDate: '2026-01-28' }), [exp('f', '2026-10-28')], new Date(2026, 10, 12, 12), 'EGP', {})
+    expect(far.group).toBe('month')
+  })
+  it('an unpaid Nov 18 charge keeps its date for the status, and the next charge rolls to Dec 18', () => {
+    const r = at(sub({ billingDay: 18, startDate: '2026-01-18' }), [exp('s1', '2026-10-18')])
+    expect(r.cycle?.kind).toBe('overdue')
+    expect(r.date).toBe('2026-11-18')
+    expect(r.nextDue).toBe('2026-12-18')
+  })
+  it('a paid cycle’s next charge is its row date', () => {
+    const r = at(sub({ billingDay: 18, startDate: '2026-01-18' }), [exp('s1', '2026-11-18')])
+    expect(r.nextDue).toBe('2026-12-18')
+    expect(r.nextDue).toBe(r.date)
+  })
+})

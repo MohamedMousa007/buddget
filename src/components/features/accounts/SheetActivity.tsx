@@ -1,12 +1,14 @@
 'use client'
 
-import { Plus, Receipt, ShoppingBag } from 'lucide-react'
+import { Plus, Receipt } from 'lucide-react'
+import { CategoryIcon } from '@/components/dashboard/CategoryIcon'
 import { TransactionRow } from '@/components/transactions/TransactionRow'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { instantOf } from '@/lib/accounts/balance'
 import { categoryLabel } from '@/lib/i18n/categoryLabel'
+import { categoryChipColors } from '@/lib/expenses/categoryChip'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { useLocale, useT } from '@/lib/i18n'
 import { MASK } from '@/lib/privacy/mask'
@@ -61,7 +63,8 @@ export function SheetActivity({ title, rows, masked, method, emptyLine, onLeave 
     )
   } else {
     body = rows.map((e) => (
-      <TransactionRow key={e.id} icon={<ShoppingBag className="size-5" aria-hidden />} title={e.description || categoryLabel(all, e.category)}
+      <TransactionRow key={e.id} icon={<CategoryIcon category={e.category} className="size-5" />}
+        iconBg={categoryChipColors(e.category).bg} iconFg={categoryChipColors(e.category).fg} title={e.description || categoryLabel(all, e.category)}
         onClick={() => { onLeave(); setEditingExpenseId(e.id); setActiveModal('editExpense') }}
         subtitle={formatLocalized(new Date(instantOf(e.occurredAt, e.date)), 'MMM d', locale)}
         amount={masked ? MASK : `−${moneyFlex(e.amount, String(e.currency))}`} />

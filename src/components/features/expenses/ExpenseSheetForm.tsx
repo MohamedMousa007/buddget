@@ -582,16 +582,21 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
         </Portal>
       ) : null}
 
-      {/* save / discard: an edit, or a new expense with something typed in. Save on a new one that is not complete
-          yet keeps the sheet open on the cue line. */}
+      {/* save / discard: an edit, or a new expense with something typed in. While it can't be saved yet (no amount,
+          description or category) only Discard and Keep editing show. */}
       <UnsavedChangesDialog
         open={confirmOpen}
-        body={mode === 'edit' ? t.expenseForm.confirmBody : lt.expense.unsavedAddBody}
+        title={submitDisabled ? lt.expense.incompleteTitle : undefined}
+        body={submitDisabled ? lt.expense.incompleteBody : mode === 'edit' ? t.expenseForm.confirmBody : lt.expense.unsavedAddBody}
         saveLabel={mode === 'edit' ? t.expenseForm.saveChanges : t.expenseForm.saveExpense}
-        onSave={() => {
-          setConfirmOpen(false)
-          onSubmit()
-        }}
+        onSave={
+          submitDisabled
+            ? undefined
+            : () => {
+                setConfirmOpen(false)
+                onSubmit()
+              }
+        }
         onDiscard={() => {
           onDiscard?.()
           setConfirmOpen(false)

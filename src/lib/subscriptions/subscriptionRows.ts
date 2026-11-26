@@ -59,8 +59,10 @@ export interface RowModel {
   sub: RowSub
   life: Lifecycle
   cycle: CycleState | null
-  /** ISO date shown on the row; null while paused. */
+  /** ISO date shown on the row; null while paused. An unpaid cycle keeps its past due date here. */
   date: string | null
+  /** The next charge on or after today: an unpaid past cycle rolls forward to the one after it. */
+  nextDue: string | null
   chip: Chip
   /** The derived status badge (the same one the subscription sheet shows). */
   status: SubscriptionDisplayStatus
@@ -95,12 +97,14 @@ function dueChip(c: CycleState): Chip {
   return { key: 'inDays', tone: c.daysUntil <= 3 ? 'amber' : 'neutral', icon: c.daysUntil <= 3 ? 'clock' : undefined, n: c.daysUntil }
 }
 
-export function groupFor(c: CycleState, yearly: boolean): GroupKey {
+const sameMonth = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth()
+
+/** "This month" holds only charges in today's calendar month; a date in next month is Later, however close. */
+export function groupFor(c: CycleState, yearly: boolean, today: Date): GroupKey {
   if (c.kind === 'overdue') return 'overdue'
   if (yearly) return 'yearly'
   if (c.daysUntil <= 7) return 'week'
-  if (c.daysUntil <= 14) return 'month'
-  return 'later'
+  return sameMonth(c.due, today) ? 'month' : 'later'
 }
 
 /** Builds everything a row needs to render from one subscription. Pure; `today` is explicit. */
@@ -166,9 +170,10 @@ export function buildRow(
     life,
     cycle,
     date,
+    nextDue: cycle && (cycle.kind === 'grace' || cycle.kind === 'overdue') ? localIso(cycleWindow(sub, now).end) : date,
     chip,
     status: subscriptionStatus(sub, expenses, now),
-    group: cycle ? groupFor(cycle, yearly) : life === 'trial' ? trialGroup(sub, now, yearly) : null,
+    group: cycle ? groupFor(cycle, yearly, now) : life === 'trial' ? trialGroup(sub, now, yearly) : null,
     struck: life === 'trial' || life === 'paused' || life === 'cancelled' || life === 'ended',
     amount: shownAmount,
     approx,
@@ -179,8 +184,9 @@ export function buildRow(
 
 function trialGroup(sub: RowSub, now: Date, yearly: boolean): GroupKey {
   if (yearly) return 'yearly'
-  const days = sub.trialEnd ? differenceInCalendarDays(parseISO(sub.trialEnd.slice(0, 10)), now) : 0
-  return days <= 7 ? 'week' : days <= 14 ? 'month' : 'later'
+  const end = sub.trialEnd ? parseISO(sub.trialEnd.slice(0, 10)) : now
+  const days = differenceInCalendarDays(end, now)
+  return days <= 7 ? 'week' : sameMonth(end, now) ? 'month' : 'later'
 }
 
 export const GROUP_ORDER: GroupKey[] = ['overdue', 'week', 'month', 'later', 'yearly']

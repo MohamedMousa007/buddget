@@ -34,6 +34,7 @@ import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
 import { manualOccurredAt, mergeDayTime, nowClock } from '@/lib/time/occurredAt'
 import { formatClock } from '@/lib/i18n/dateFormat'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
+import { paydayMethodId } from '@/lib/income/paydayMethod'
 
 /**
  * The payday drift a new payday is written with (days a paycheck may land from its payday
@@ -110,7 +111,8 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
   const [calOpen, setCalOpen] = useState(false)
   const { locale } = useLocale()
   const [assigned, setAssigned] = useState<{ templateId: string; date: string } | null>(null)
-  const [paymentMethodId, setPaymentMethodId] = useState(source?.paymentMethodId ?? defaultPmId)
+  // Edit shows the stored account, the same one the Paydays list names; only a new payday starts on the default.
+  const [paymentMethodId, setPaymentMethodId] = useState(source ? paydayMethodId(source, paymentMethods) : defaultPmId)
   const [notes, setNotes] = useState(source?.notes ?? '')
   const [notesOpen, setNotesOpen] = useState(Boolean(source?.notes))
 

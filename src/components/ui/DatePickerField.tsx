@@ -84,6 +84,7 @@ export function DatePickerField({
         open={open}
         value={mode === 'month' && value ? `${value}-01` : value}
         onConfirm={(iso) => onChange(mode === 'month' ? iso.slice(0, 7) : iso)}
+        monthOnly={mode === 'month'}
         {...(time && mode === 'day' ? {
           time: { value: clock, label: time.label },
           onConfirmDateTime: (iso: string, hm: string) => {

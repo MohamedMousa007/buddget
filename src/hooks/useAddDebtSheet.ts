@@ -14,7 +14,7 @@ import {
   isDebtFullyPaid,
   type DebtBalanceContext,
 } from '@/lib/utils/calculations'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { formatCurrency, formatFlex } from '@/lib/utils/formatters'
 import { isBnplPlan } from '@/lib/debt/bnpl'
 import { isOwedToUser, settlesWithoutExpense } from '@/lib/debts/debtDirection'
 import { parseCardDay, parseCardPercent } from '@/lib/debts/cardTerms'
@@ -42,6 +42,8 @@ import { recurringDueDayFor } from '@/lib/utils/recurringDebtPayments'
 import { settlePrompt } from '@/lib/prompts/settle'
 import { principalDuplicateKey } from '@/lib/debts/principalDuplicate'
 import { debtPayMethodId } from '@/lib/debts/debtPayMethod'
+import { switchBorrowGold, type GoldSwitchMemo } from '@/lib/debts/borrowGold'
+import { BLANK_DEBT_DRAFT, debtDraftDirty, debtDraftMissing, draftOfDebt } from '@/lib/debts/debtDraft'
 import { findPrincipalMatch, linkedExpensePatch, linkedIncomePatch, principalAccount, principalLegFields, principalMovesByDefault } from '@/lib/debts/principalLeg'
 
 type NewDebtPayload = Omit<Debt, 'id' | 'createdAt'>
@@ -77,6 +79,7 @@ export function useAddDebtSheet() {
     settings,
     exchangeRates,
     goldPricePerGram,
+    goldPriceAvailable,
   } = useFinanceStore(
     useShallow((s) => ({
       addDebt: s.addDebt,
@@ -97,6 +100,7 @@ export function useAddDebtSheet() {
       settings: s.settings,
       exchangeRates: s.exchangeRates,
       goldPricePerGram: s.goldPricePerGram,
+      goldPriceAvailable: s.goldPriceAvailable !== false,
     })),
   )
   const {
@@ -121,7 +125,11 @@ export function useAddDebtSheet() {
   const [debtType, setDebtType] = useState<DebtKind>('personal')
   const [name, setName] = useState('')
   const [person, setPerson] = useState('')
-  const [startingBalance, setStartingBalance] = useState('')
+  const [startingBalance, setTypedBalance] = useState('')
+  /** Gold-backed was switched with no live price, so the amount was cleared; the form says so until it is typed again. */
+  const [amountCleared, setAmountCleared] = useState(false)
+  const goldMemo = useRef<GoldSwitchMemo | null>(null)
+  const setStartingBalance = useCallback((v: string) => { setTypedBalance(v); setAmountCleared(false) }, [])
   const [currency, setCurrency] = useState<DebtCurrency>(
     () => useFinanceStore.getState().settings.baseCurrency as DebtCurrency
   )
@@ -217,7 +225,7 @@ export function useAddDebtSheet() {
       setGoalEnabled(true)
     }
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [isOpen, isEditFlow, editingDebt, goalIntent])
+  }, [isOpen, isEditFlow, editingDebt, goalIntent, setStartingBalance])
 
   const debtBalanceCtx: DebtBalanceContext | undefined = useMemo(
     () => ({ expenses, exchangeRates, allDebts: debts }),
@@ -447,7 +455,18 @@ export function useAddDebtSheet() {
     setGoalCadence('monthly')
     setPrincipalMoved(null)
     setPrincipalLinked(null)
-  }, [settings.baseCurrency])
+    setAmountCleared(false)
+    goldMemo.current = null
+  }, [settings.baseCurrency, setStartingBalance])
+
+  // Closing by any route (X, backdrop, back, discard) clears the form, so the next add sheet starts empty.
+  const wasOpen = useRef(false)
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- reset the form when the sheet closes */
+    if (wasOpen.current && !isOpen) resetForm()
+    wasOpen.current = isOpen
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [isOpen, resetForm])
 
   // Did creating this debt move an account? Asked only for a new personal debt through a tracked account of the
   // user's own (never a credit card, BNPL or gold). A ledger row that already is this money is linked instead.
@@ -477,7 +496,7 @@ export function useAddDebtSheet() {
     }
     const total = parseFloat(startingBalance)
     if (!startingBalance || Number.isNaN(total) || total <= 0) return false
-    if (debtType === 'personal') return !!(name.trim() && person.trim())
+    if (debtType === 'personal') return !!person.trim()
     if (debtType === 'installment') {
       const n = parseInt(installmentCount, 10)
       const baseOk = !!(installmentItemName.trim() && !Number.isNaN(n) && n > 0 && n <= MAX_INSTALLMENT_COUNT && total / n >= 0.01 && installmentStartDate)
@@ -754,7 +773,7 @@ export function useAddDebtSheet() {
       },
       {
         date: paymentDate,
-        description: `${selectedDebt.name} — ${bnpl ? 'installment' : 'debt payment'}`,
+        description: `${selectedDebt.name || selectedDebt.personName || selectedDebt.person} — ${bnpl ? 'installment' : 'debt payment'}`,
         category: bnpl ? 'Installment' : 'Debt',
         amount: expenseMoney.amount,
         currency: expenseMoney.currency as Currency,
@@ -795,14 +814,29 @@ export function useAddDebtSheet() {
     submit,
   ])
 
+  // Gold-backed on: the typed money becomes grams of the chosen karat at today's price; off again: back to money.
   const applyDebtReceivedVia = useCallback(
     (rv: DebtReceivedVia) => {
+      const toGold = rv === 'gold'
+      if (toGold !== isGold) {
+        const r = switchBorrowGold(
+          { amount: startingBalance, currency, toGold, memo: goldMemo.current },
+          { pricePerGram24k: goldPricePerGram, priceAvailable: goldPriceAvailable, karat: goldKarat, base: settings.baseCurrency, rates: exchangeRates },
+        )
+        goldMemo.current = r.memo
+        setTypedBalance(r.amount)
+        setAmountCleared(r.cleared)
+        setCurrency(r.currency as DebtCurrency)
+      }
       setReceivedVia(rv)
-      if (rv === 'gold') setCurrency('XAU')
-      else setCurrency(settings.baseCurrency as DebtCurrency)
     },
-    [settings.baseCurrency]
+    [isGold, startingBalance, currency, goldPricePerGram, goldPriceAvailable, goldKarat, settings.baseCurrency, exchangeRates]
   )
+
+  const draft = { amount: startingBalance, person, name, item: installmentItemName }
+  const hasUnsavedDraft = isOpen && !isPayDebtFlow && !debtSheetPaymentOnly
+    && debtDraftDirty(draft, isEditFlow && editingDebt ? draftOfDebt(editingDebt) : BLANK_DEBT_DRAFT)
+  const newDebtMissing = debtType === 'personal' || debtType === 'installment' ? debtDraftMissing(debtType, draft) : null
 
   const selectDebtForPayFlow = useCallback((id: string) => {
     setSelectedDebtId(id)
@@ -829,7 +863,7 @@ export function useAddDebtSheet() {
         exchangeRates,
         goldPricePerGram
       )
-      return `≈ ${gramsViaHelper.toFixed(2)}g of ${selectedDebt.goldKarat || 24}K gold`
+      return `≈ ${formatFlex(gramsViaHelper)}g of ${selectedDebt.goldKarat || 24}K gold`
     }
     if (!selectedDebt.isGold && paymentCurrency !== selectedDebt.currency) {
       const converted = convertPaymentToDebtUnit(
@@ -943,6 +977,9 @@ export function useAddDebtSheet() {
     setInstallmentStartDate,
     installmentPreview,
     canSubmitNewDebt,
+    hasUnsavedDraft,
+    newDebtMissing,
+    amountCleared,
     selectedDebtId,
     setSelectedDebtId,
     paymentAmount,

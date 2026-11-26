@@ -10,6 +10,7 @@ import { useT } from '@/lib/i18n'
 import { useLightTouchCopy } from '@/lib/i18n/lightTouchCopy'
 import { cn } from '@/lib/utils'
 import { HIT_AREA } from '@/lib/ui/hitArea'
+import { groupAmountText } from '@/lib/ui/amountSanitize'
 import type { Currency } from '@/lib/store/types'
 
 const UNIT_CLASS = 'font-mono-numbers text-[1.625rem] font-semibold leading-none tracking-[-0.03em] text-[var(--color-brand-text-muted)]'
@@ -63,7 +64,9 @@ export function AmountHero({
   const { isOpen, openPad, pad } = useNumberPad({ value, onChange, mode, currency: currency || undefined, label: name, dir: 'ltr' })
   const unitText = unit ?? currency
   const openUnit = readOnly ? undefined : onUnitClick ?? (onCurrencyChange ? () => setSheetOpen(true) : undefined)
-  const width = `${Math.max(value.length, 1) + 0.4}ch`
+  // The digits are shown grouped ("50,000") while `value` stays canonical; the box is sized to what it shows.
+  const shown = groupAmountText(value)
+  const width = `${Math.max(shown.length, 1) + 0.4}ch`
   const digits = 'font-mono-numbers text-[2.5rem] font-semibold leading-none tracking-[-0.04em] tabular-nums text-[var(--color-brand-text-primary)]'
 
   return (
@@ -74,7 +77,7 @@ export function AmountHero({
         {readOnly ? (
           <span id={id} className={cn('flex items-baseline', digits)}>
             {sign}
-            <span>{value || '0'}</span>
+            <span>{shown || '0'}</span>
           </span>
         ) : native ? (
           <button
@@ -86,7 +89,7 @@ export function AmountHero({
           >
             {sign}
             <span className={cn(!value && 'text-[var(--color-brand-text-muted)]', isOpen && 'underline decoration-[var(--color-brand-primary)] decoration-2 underline-offset-8')}>
-              {value || '0'}
+              {shown || '0'}
             </span>
           </button>
         ) : (
@@ -98,9 +101,10 @@ export function AmountHero({
               value={value}
               onChange={onChange}
               mode={mode}
+              grouped
               currency={currency || undefined}
               placeholder="0"
-              className="bg-transparent text-center outline-none placeholder:text-[var(--color-brand-text-muted)]"
+              className={cn('bg-transparent outline-none placeholder:text-[var(--color-brand-text-muted)]', sign ? 'text-left' : 'text-center')}
               style={{ width }}
             />
           </label>

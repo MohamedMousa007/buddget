@@ -39,7 +39,7 @@ export interface MoneySourceFieldProps {
   /** Rows shown above the source row, in the same group (e.g. "Into"). */
   children?: ReactNode
   /** Other words for the caption and the row's name ("Where is it?", "Kept in"); the defaults are unchanged. */
-  labels?: { title?: string; from?: string; fromPocket?: string }
+  labels?: { title?: string; from?: string; fromPocket?: string; outsideValue?: string }
 }
 
 /**
@@ -100,9 +100,9 @@ export function MoneySourceField({ value, onChange, paymentMethods, accounts, po
           pick(kind, kind === 'outside' ? undefined : last[kind] ?? fallback)
         }}
         options={[
-          { value: 'account', label: c.tabs.account, icon: <Wallet /> },
-          { value: 'pocket', label: c.tabs.pocket, icon: <Vault /> },
-          { value: 'outside', label: c.tabs.outside, icon: <ArrowLeftRight /> },
+          { value: 'account', label: c.tabs.account, ariaLabel: c.tabNames.account, icon: <Wallet /> },
+          { value: 'pocket', label: c.tabs.pocket, ariaLabel: c.tabNames.pocket, icon: <Vault /> },
+          { value: 'outside', label: c.tabs.outside, ariaLabel: c.tabNames.outside, icon: <ArrowLeftRight /> },
         ]}
       />
       <Card padding="none" divide className="mt-2 overflow-hidden">

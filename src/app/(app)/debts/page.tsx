@@ -2,6 +2,7 @@
 
 import { countedDebts } from '@/lib/spending/exclusion'
 import { PageGrid } from '@/components/layout/PageGrid'
+import { PageHero } from '@/components/layout/PageHero'
 import { DebtGoalPrompt } from '@/components/features/goals/DebtGoalPrompt'
 import { GoalLensList } from '@/components/features/goals/GoalLensList'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -97,7 +98,7 @@ export default function DebtsPage() {
 
   return (
     <div>
-      <div className="px-4 pt-4 lg:px-6">
+      <PageHero inset>
       <DebtPortfolioHero
         owed={data.owed}
         base={data.base}
@@ -106,6 +107,7 @@ export default function DebtsPage() {
         borrowedTotal={data.borrowedTotal}
         activeCount={data.counts.borrow + data.counts.credit_card + data.counts.installment}
         nextPayment={data.nextPayment}
+        overdue={data.overdue}
         dueThisMonth={data.dueThisMonth}
         paidThisMonth={data.paidThisMonth}
         debtFreeDate={data.debtFreeDate}
@@ -114,9 +116,10 @@ export default function DebtsPage() {
         paidOff={data.paidOff}
         clearedCount={clearedCount}
       />
-      </div>
+      </PageHero>
 
       <PageGrid
+          stack
           primary={
             <div className="px-4 pt-4 lg:px-0 lg:pt-0">
                 <DebtGoalPrompt />
@@ -159,7 +162,7 @@ export default function DebtsPage() {
             </div>
           }
           secondary={
-            <div className="px-4 lg:max-h-[calc(100dvh-var(--app-header-h-lg)-2*var(--page-body-pt))] lg:overflow-y-auto lg:px-0 lg:[&>*]:mt-0">
+            <div className="px-4 lg:px-0">
               <DebtPaymentsFeed payments={data.payments} />
               {clearedCount > 0 ? (
                 <Button

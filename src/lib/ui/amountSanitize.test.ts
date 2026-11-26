@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sanitizeAmount } from './amountSanitize'
+import { amountCharsBefore, caretInGrouped, groupAmountText, sanitizeAmount, sanitizeGroupedAmount } from './amountSanitize'
 
 describe('sanitizeAmount', () => {
   it('converts Arabic-Indic digits and decimal separators', () => {
@@ -19,5 +19,37 @@ describe('sanitizeAmount', () => {
     expect(sanitizeAmount('12.5', 'integer')).toBe('125')
     expect(sanitizeAmount('12345', 'pin')).toBe('1234')
     expect(sanitizeAmount('1a2', 'pin')).toBe('12')
+  })
+})
+
+describe('grouped amount entry (AmountHero shows 2,000 while typing)', () => {
+  it('groups the integer part only, keeping a trailing dot and typed decimals', () => {
+    expect(groupAmountText('')).toBe('')
+    expect(groupAmountText('2000')).toBe('2,000')
+    expect(groupAmountText('50000')).toBe('50,000')
+    expect(groupAmountText('1234567.5')).toBe('1,234,567.5')
+    expect(groupAmountText('1000.')).toBe('1,000.')
+    expect(groupAmountText('0.50')).toBe('0.50')
+    expect(groupAmountText('999')).toBe('999')
+  })
+  it('reads the grouped text back as the canonical amount: its commas are thousands marks', () => {
+    expect(sanitizeGroupedAmount('2,0005')).toBe('20005')
+    expect(sanitizeGroupedAmount('2,000.5')).toBe('2000.5')
+    expect(sanitizeGroupedAmount('1,000.')).toBe('1000.')
+    expect(sanitizeGroupedAmount('١٬٢٣٤٫٥')).toBe('1234.5')
+    expect(sanitizeGroupedAmount('٢٠٠٠')).toBe('2000')
+    expect(sanitizeGroupedAmount('1,234.5678', 'decimal', 'KWD')).toBe('1234.567')
+    expect(sanitizeGroupedAmount('12,345', 'integer')).toBe('12345')
+  })
+  it('round-trips: grouping then reading gives the same canonical text', () => {
+    for (const v of ['', '5', '5.', '1000', '1000000.25', '0.5']) expect(sanitizeGroupedAmount(groupAmountText(v))).toBe(v)
+  })
+  it('keeps the caret after the same digit when a separator appears or goes', () => {
+    // "2,000" with "5" typed at the end → "20,005"; caret after 5 digits.
+    expect(caretInGrouped(groupAmountText('20005'), amountCharsBefore('2,0005', 6))).toBe(6)
+    // A digit typed in the middle: "1,0|00" + "5" → "1,05|00" reads 10500 → "10,5|00".
+    expect(caretInGrouped(groupAmountText('10500'), amountCharsBefore('1,0500', 4))).toBe(4)
+    expect(caretInGrouped('1,000', 0)).toBe(0)
+    expect(caretInGrouped('1,000', 9)).toBe(5)
   })
 })

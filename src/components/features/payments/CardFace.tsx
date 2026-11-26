@@ -93,7 +93,7 @@ export function CardFace({
           <div className="min-w-0">
             <span
               className="block truncate font-bold"
-              style={{ fontSize: f.metal ? 12 : 15, letterSpacing: f.metal ? '.16em' : '.01em', textTransform: f.metal ? 'uppercase' : 'none', textShadow: engrave }}
+              style={{ fontSize: f.metal ? 12 : 15, letterSpacing: f.metal ? '.16em' : '.01em', textShadow: engrave }}
             >
               {bank}
             </span>

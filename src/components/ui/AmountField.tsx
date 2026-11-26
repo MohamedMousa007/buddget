@@ -40,6 +40,8 @@ interface AmountFieldProps {
   size?: 'default' | 'compact'
   id?: string
   'aria-label'?: string
+  /** `row`: a grouped-list row's value (Light touch) — at the row's end in either direction, its placeholder muted and regular weight. Default `field`. */
+  look?: 'field' | 'row'
 }
 
 // Mirrors the shared <Input> base so call-site classNames layer on identically.
@@ -61,7 +63,9 @@ export function AmountField({
   size = 'default',
   id,
   'aria-label': ariaLabel,
+  look = 'field',
 }: AmountFieldProps) {
+  const row = look === 'row'
   const native = useIsNativeClient()
   const t = useT()
   const [focused, setFocused] = useState(false)
@@ -138,7 +142,10 @@ export function AmountField({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           dir={dir}
-          className="min-w-0 flex-1 border-0 bg-transparent p-0 text-start outline-none placeholder:opacity-50"
+          className={cn(
+            'min-w-0 flex-1 border-0 bg-transparent p-0 outline-none',
+            row ? 'text-right rtl:text-left placeholder:font-normal placeholder:text-[var(--color-brand-text-muted)] placeholder:opacity-100' : 'text-start placeholder:opacity-50',
+          )}
           style={
             glass
               ? {
@@ -202,7 +209,9 @@ export function AmountField({
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                 }
-              : { flex: '0 1 auto', minWidth: 0, textAlign: 'start', opacity: value ? 1 : 0.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
+              : row
+                ? { flex: '0 1 auto', minWidth: 0, textAlign: 'end', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...(value ? {} : { color: 'var(--color-brand-text-muted)', fontWeight: 400 }) }
+                : { flex: '0 1 auto', minWidth: 0, textAlign: 'start', opacity: value ? 1 : 0.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
           }
         >
           {value ? <>{value}{caret}</> : <>{caret}{ph}</>}

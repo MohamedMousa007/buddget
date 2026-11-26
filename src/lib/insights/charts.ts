@@ -88,12 +88,17 @@ export interface CategorySlice {
 
 const deltaPct = (now: number, before: number) => (before > 0 ? Math.round(((now - before) / before) * 100) : null)
 
-/** The donut's slices: the biggest categories each keep a colour, the long tail is one "Other" slice. */
+/** The expense category named Other: when the tail is folded it joins the "Other" slice, so Other is never listed twice. */
+const OTHER_CATEGORY = 'Other'
+
+/** The donut's slices: the biggest categories each keep a colour, the long tail (with the Other category) is one "Other" slice. */
 export function categorySlices(cats: readonly { name: string; amount: number; last: number }[]): CategorySlice[] {
   const total = cats.reduce((s, c) => s + c.amount, 0)
   if (total <= 0) return []
-  const head = cats.length <= MAX_SLICES ? cats : cats.slice(0, MAX_SLICES - 1)
-  const tail = cats.length <= MAX_SLICES ? [] : cats.slice(MAX_SLICES - 1)
+  const fold = cats.length > MAX_SLICES
+  const named = fold ? cats.filter((c) => c.name !== OTHER_CATEGORY) : cats
+  const head = fold ? named.slice(0, MAX_SLICES - 1) : cats
+  const tail = fold ? [...named.slice(MAX_SLICES - 1), ...cats.filter((c) => c.name === OTHER_CATEGORY)] : []
   const rows = tail.length
     ? [...head, { name: OTHER_SLICE, amount: tail.reduce((s, c) => s + c.amount, 0), last: tail.reduce((s, c) => s + c.last, 0) }]
     : [...head]

@@ -54,7 +54,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   const deckCopy = useBudgetDeckCopy()
   const studioCopy = useBudgetStudioCopy()
   const { locale } = useLocale()
-  const [mode, setMode] = useState<PlanMode>('plan')
+  const [mode, setMode] = useState<PlanMode>('month')
   // Drafts and archived plans are still the user's plans: with no live one, the first plan stands in so the chrome never vanishes.
   const standInPlanId = useFinanceStore((s) => fallbackPlanId(s.budgetPlans, s.activeBudgetPlanId))
   const view = usePlanView(mode, standInPlanId)
@@ -99,7 +99,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
 
   if (!ready) {
     return (
-      <PageBody className="space-y-4">
+      <PageBody narrow className="space-y-4">
         <SkeletonList rows={4} />
       </PageBody>
     )
@@ -201,11 +201,12 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
     onDelete: planActions.remove,
     onCompare: (id: string) => setCompare({ a: view.plan.id, b: id === view.plan.id ? (plans.find((p) => p.id !== id)?.id ?? id) : id }),
   }
+  const applied = view.plan.id === selectActivePlan(plans, activeId)?.id
   const hero = (
     <>
       <PlanBar
         planName={view.plan.name}
-        state={view.plan.id === selectActivePlan(plans, activeId)?.id ? 'active' : view.plan.status === 'draft' ? 'draft' : 'ready'}
+        state={applied ? 'active' : view.plan.status === 'draft' ? 'draft' : 'ready'}
         mode={mode}
         onModeChange={setMode}
         expanded={switcherOpen}
@@ -214,8 +215,8 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
           setSwitcherOpen(true)
         }}
       />
-      {mode === 'plan' && monthClose ? <MonthCloseCard month={closeMonth} onOpen={() => setCloseOpen(true)} /> : null}
-      <FlowStrip view={view} variant="hero" />
+      {monthClose ? <MonthCloseCard month={closeMonth} onOpen={() => setCloseOpen(true)} /> : null}
+      <FlowStrip view={view} variant="hero" onApply={applied ? undefined : () => (view.plan.status === 'draft' ? openBuilder(view.plan.id) : onActivate(view.plan.id))} />
       {view.needsUpgrade && view.plan.categories.length > 0 && !upgradeLater ? (
         <UpgradeBanner lineCount={view.plan.categories.length} onReview={act.groupLegacyLines} onLater={() => setUpgradeLater(true)} />
       ) : null}
@@ -223,7 +224,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
     </>
   )
   return (
-    <PageBody className="space-y-4 lg:pb-6">
+    <PageBody narrow className="space-y-4 lg:pb-6">
       {segment ? (
         <SegmentPage view={view} block={segment} onBack={() => setSegment(null)} onSelect={setSegment} onOpenLine={setLineId} onAdd={setAddBlock} />
       ) : (

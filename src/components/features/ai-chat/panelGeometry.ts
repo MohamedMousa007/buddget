@@ -83,6 +83,17 @@ export function pressGate(apply: () => void) {
   }
 }
 
+/**
+ * The orb's top, kept clear of the fixed header and, on phone, the tab bar plus the home indicator (the safe area);
+ * on desktop, of the bottom-right QuickAdd FAB.
+ */
+export function clampOrbTop(top: number, viewHeight: number, viewWidth: number, safe: Pick<Insets, 'top' | 'bottom'>): number {
+  const desktop = viewWidth >= DESKTOP_BP
+  const min = desktop ? 70 : Math.max(70, safe.top + HEADER_CLEAR + EDGE_GAP)
+  const max = viewHeight - ORB_SIZE - (desktop ? FAB_CLEAR : NAV_CLEAR + safe.bottom)
+  return Math.max(min, Math.min(max, top))
+}
+
 /** Resolved safe-area insets in px (mirrored from CSS env via custom props). */
 export function safeAreaInsets(): Insets {
   if (typeof window === 'undefined') return { top: 0, bottom: 0, left: 0, right: 0 }

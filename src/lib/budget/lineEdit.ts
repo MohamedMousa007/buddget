@@ -53,3 +53,22 @@ export function patchAmountInBase(
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100
+
+export interface LineEditState {
+  amount: number
+  essential: boolean
+  locked: boolean
+  dueDay: number | null
+  categories: string[]
+}
+
+/** True when the line sheet holds something other than what it opened with (Save stays off until then). */
+export function lineEditDirty(from: LineEditState, now: LineEditState, linked: boolean): boolean {
+  return (
+    (!linked && now.amount !== from.amount) ||
+    now.essential !== from.essential ||
+    now.locked !== from.locked ||
+    now.dueDay !== from.dueDay ||
+    now.categories.join('|') !== from.categories.join('|')
+  )
+}

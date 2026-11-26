@@ -68,6 +68,8 @@ export interface UnifiedDatePickerProps {
    */
   time?: { value: string; label: string }
   onConfirmDateTime?: (iso: string, time: string) => void
+  /** Picks a month, not a day: opens on the month grid and a tapped month confirms its 1st and closes. Default off. */
+  monthOnly?: boolean
 }
 
 /**
@@ -76,7 +78,7 @@ export interface UnifiedDatePickerProps {
  * searchable year dropdown. Day-only by default: tapping a day confirms and closes
  * instantly. With `time`, it also edits the time of day and confirms on Done.
  */
-export function UnifiedDatePicker({ open, value, onConfirm, onClose, min, max, time, onConfirmDateTime }: UnifiedDatePickerProps) {
+export function UnifiedDatePicker({ open, value, onConfirm, onClose, min, max, time, onConfirmDateTime, monthOnly = false }: UnifiedDatePickerProps) {
   const { locale } = useLocale()
   const t = useT()
   const ar = locale === 'ar'
@@ -86,11 +88,14 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose, min, max, t
   const [staged, setStaged] = useState<YMD>(seed)
   const [clock, setClock] = useState(time?.value ?? '')
   const [wasOpen, setWasOpen] = useState(false)
+  const [mode, setMode] = useState<'days' | 'months' | 'years'>(monthOnly ? 'months' : 'days')
+  const [view, setView] = useState({ y: seed.y, m: seed.m })
   if (open !== wasOpen) {
     setWasOpen(open)
     if (open) {
       setStaged(seed)
       setClock(time?.value ?? '')
+      if (monthOnly) { setMode('months'); setView({ y: seed.y, m: seed.m }) }
     }
   }
   const sel = withTime ? staged : seed
@@ -98,8 +103,6 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose, min, max, t
   const weekStart = useWeekStart()
   const years = useMemo(() => pickerYears(), [])
   const bounds = useMemo(() => ({ ...pickerBounds(), ...(min ? { min } : {}), ...(max ? { max } : {}) }), [min, max])
-  const [mode, setMode] = useState<'days' | 'months' | 'years'>('days')
-  const [view, setView] = useState({ y: sel.y, m: sel.m })
   const [yearQuery, setYearQuery] = useState('')
   const selYearRef = useRef<HTMLButtonElement>(null)
 
@@ -135,8 +138,9 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose, min, max, t
   const isMonths = mode === 'months'
   const isYears = mode === 'years'
 
+  const rest = monthOnly ? 'months' : 'days'
   const setModeToggle = (next: 'months' | 'years') => {
-    setMode((cur) => (cur === next ? 'days' : next))
+    setMode((cur) => (cur === next ? rest : next))
     setYearQuery('')
   }
   const shiftMonth = (delta: number) => {
@@ -324,6 +328,11 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose, min, max, t
                     key={i}
                     type="button"
                     onClick={() => {
+                      if (monthOnly) {
+                        onConfirm(toISO({ y, m: i, d: 1 }))
+                        onClose()
+                        return
+                      }
                       setView({ y, m: i })
                       setMode('days')
                     }}
@@ -368,7 +377,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose, min, max, t
                       type="button"
                       onClick={() => {
                         setView({ y: yr, m })
-                        setMode('days')
+                        setMode(rest)
                         setYearQuery('')
                       }}
                       className={`h-10 flex items-center justify-center rounded-md cursor-pointer text-sm font-semibold font-mono-numbers border transition-colors ${cls}`}

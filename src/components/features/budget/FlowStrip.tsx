@@ -9,8 +9,7 @@ import { BLOCK_META } from '@/lib/budget/blocks'
 import type { PlanView } from '@/lib/budget/planView.types'
 import type { BudgetBlock } from '@/lib/store/types'
 import { microClassName } from '@/lib/ui/microLabelStyle'
-import { formatCurrency } from '@/lib/utils/formatters'
-import { blockColor, percentText } from './chromeFormat'
+import { blockColor, percentText, inlineMoney } from './chromeFormat'
 import { MonthHero, PlanHero } from './BudgetHero'
 import { LineIcon } from './LineIcon'
 import { useBudgetChromeCopy } from './useBudgetCopy'
@@ -21,20 +20,22 @@ export interface FlowStripProps {
   variant?: 'strip' | 'hero'
   onFix?: () => void
   onJump?: (block: BudgetBlock) => void
+  /** The month hero of a plan that is not applied yet: shows the plan with an "Apply budget" call to action. */
+  onApply?: () => void
 }
 
 /** Income, balanced state, the proportional block strip and its legend. */
-export function FlowStrip({ view, variant = 'strip', onFix, onJump }: FlowStripProps) {
+export function FlowStrip({ view, variant = 'strip', onFix, onJump, onApply }: FlowStripProps) {
   const c = useBudgetChromeCopy()
   const { flow: f } = c
   const month = view.mode === 'month'
-  const money = (n: number) => formatCurrency(n, view.base, false)
+  const money = (n: number) => inlineMoney(n, view.base)
   const assigned = view.flow.reduce((s, x) => s + x.amount, 0)
   const denom = Math.max(view.income, assigned) || 1
   const marker = month && view.daysInCycle > 0 ? Math.min(100, (view.dayOfCycle / view.daysInCycle) * 100) : null
   const over = view.free < 0
 
-  if (variant === 'hero') return view.mode === 'month' ? <MonthHero view={view} /> : <PlanHero view={view} />
+  if (variant === 'hero') return view.mode === 'month' ? <MonthHero view={view} onApply={onApply} /> : <PlanHero view={view} />
 
   return (
     <Card padding="md" className="flex flex-col gap-3">

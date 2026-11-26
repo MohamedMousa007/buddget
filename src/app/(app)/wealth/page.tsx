@@ -13,6 +13,7 @@ import { useAlert, useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { deleteHoldingWithUndo, deletePocketWithUndo } from '@/lib/savings/pocketUndo'
 import { PageGrid } from '@/components/layout/PageGrid'
+import { PageHero } from '@/components/layout/PageHero'
 import { FlowStickyStrip } from '@/components/features/flow/FlowStickyStrip'
 import { useCarryStatus } from '@/hooks/useCarryStatus'
 import { ActivityLedger } from '@/components/features/savings-v3/ActivityLedger'
@@ -45,6 +46,7 @@ import { localTodayISO } from '@/lib/utils/localDate'
 import { buildGoalProgressContext, computeGoalProgress } from '@/lib/goals/computeGoalProgress'
 import { computeEmergencyFund } from '@/lib/savings/emergencyFund'
 import { parseDateOnly } from '@/lib/time/calendarDays'
+import { changePct, formatChangePct } from '@/lib/utils/changePct'
 import { deriveHawl } from '@/lib/savings/hawl'
 import { deriveSimpleMonth } from '@/lib/savings/simpleMonth'
 import { savingsAccountBalanceInBase } from '@/lib/savings/savingsConversions'
@@ -196,7 +198,9 @@ export default function WealthPage() {
   )
 
   const trendRaw = useNetWorthTrend(nw.netWorth, base, dataReady && !model.anyUnpriced && !nw.netWorthIncomplete, netWorthBasisOf(nw))
-  const trend = trendRaw ? { points: trendRaw.points, dir: trendRaw.dir, pct: `${Math.abs(trendRaw.pct).toFixed(1)}%` } : undefined
+  // The chip is capped (">999%") and left out when the first snapshot is near zero: a percent from almost nothing means nothing.
+  const trendPct = trendRaw ? changePct(trendRaw.points[trendRaw.points.length - 1], trendRaw.points[0]) : null
+  const trend = trendRaw && trendPct !== null ? { points: trendRaw.points, dir: trendRaw.dir, pct: formatChangePct(trendPct, 1) } : undefined
 
   const split = useMemo<HeroSplitSegment[]>(() => {
     const pct = (v: number) => (model.total > 0 ? (v / model.total) * 100 : 0)
@@ -273,6 +277,7 @@ export default function WealthPage() {
       <FlowStickyStrip visible={collapsed} primary={totalText} secondary={base} right={[netWorthText]} />
       {goldNisab > 0 ? <ZakatBasisPrompt {...prompt} /> : null}
 
+      <PageHero>
       <SavingsHero
         total={totalText}
         currency={base}
@@ -285,15 +290,18 @@ export default function WealthPage() {
         badges={
           <WealthHeroBadges
             emergency={{ state: efState, months: emergency.monthsCovered.toFixed(1), target: targetMonths }}
-            zakat={hasZakat ? { amount: formatWhole(zakatYear.result.zakat), due: hawl.isPlaceholder ? '—' : formatLocalized(parseDateOnly(hawl.dueDate), 'd MMM', locale) } : undefined}
+            zakat={hasZakat ? { amount: formatWhole(zakatYear.result.zakat), due: hawl.isPlaceholder ? '' : formatLocalized(parseDateOnly(hawl.dueDate), 'd MMM', locale) } : undefined}
             onOpenEmergency={() => guard(() => setEmergencyOpen(true))}
             onOpenZakat={() => guard(() => setZakatOpen(true))}
           />
         }
       />
 
+      </PageHero>
+
       <PageGrid
-          className="pt-4 lg:pt-0"
+          stack
+          className="pt-4"
           primary={
             <div className="space-y-5">
               <div className="grid grid-cols-2 gap-3 px-4 lg:px-0">

@@ -51,6 +51,8 @@ export interface PlanViewInput {
   unassignedSpend: number
   subscriptions: { extras: SubscriptionsExtras; monthly: number }
   debts: DebtExtras[]
+  /** A scheduled debt payment is past its date unpaid: the plan has slipped, so no debt-free month is promised. */
+  debtOverdue?: boolean
   goals: GoalExtras[]
   safety: { liquid: number; essentialsMonthly: number; targetMonths: number }
   /** Segment totals of the plan that governed the previous cycle, when it was a different plan. */
@@ -190,7 +192,7 @@ function extrasOf(i: PlanViewInput, totals: Record<BudgetBlock, number>): PlanEx
       reachedMonth,
     },
     paydayDay: i.paydayDay,
-    debtFreeMonth: debtFreeMonth(i.debts, Math.max(0, totals.debts - minimums), i.now),
+    debtFreeMonth: i.debtOverdue ? null : debtFreeMonth(i.debts, Math.max(0, totals.debts - minimums), i.now),
   }
 }
 

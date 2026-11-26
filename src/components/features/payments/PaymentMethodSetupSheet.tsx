@@ -488,7 +488,7 @@ export function PaymentMethodSetupSheet({
   return (
     <>
       <FloatingCardPreview open={open} z={z.card} {...previewProps} />
-      <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={z.shell} panelClassName="h-[64dvh]">
+      <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={z.shell} panelClassName="h-[64dvh] md:h-[min(88dvh,760px)]">
         {body}
       </ModalShell>
       {picker}

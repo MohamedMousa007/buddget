@@ -12,10 +12,9 @@ import type { PlanView } from '@/lib/budget/planView.types'
 import { useLocale } from '@/lib/i18n'
 import type { BudgetSegmentCopy } from '@/lib/i18n/budgetPage/segmentCopy'
 import type { BudgetBlock } from '@/lib/store/types'
-import { formatCurrency } from '@/lib/utils/formatters'
 import { AddRow, FlatCard, LineRow } from './blocks/parts'
 import { formatShare } from './blocks/geometry'
-import { monthKeyLabel } from './chromeFormat'
+import { monthKeyLabel, inlineMoney } from './chromeFormat'
 import { LineIcon } from './LineIcon'
 import { SegmentExtra } from './SegmentExtra'
 import { SegmentRail, type SegmentMark } from './SegmentRail'
@@ -122,7 +121,7 @@ export function SegmentPage({ view, block, onBack, onSelect, onOpenLine, onAdd, 
   const meta = BLOCK_META[block]
   const bv = view.blocks[block]
   const month = view.mode === 'month'
-  const money = (n: number) => formatCurrency(n, view.base, false)
+  const money = (n: number) => inlineMoney(n, view.base)
   const today = new Date().getDate()
   const index = BUDGET_BLOCKS.indexOf(block)
   const name = blocks.blockName[block]

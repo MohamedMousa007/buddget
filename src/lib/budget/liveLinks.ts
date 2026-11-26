@@ -178,7 +178,7 @@ export function debtExtras(live: LiveDebt, paidThisCycle: number, c: DebtLiveCtx
   const done = installmentPaymentsCompleted(debt, c.debtPayments.filter((p) => p.debtId === debt.id))
   return {
     id: debt.id,
-    name: debt.name,
+    name: debt.name || debt.personName || debt.person,
     kind,
     balance,
     paidPercent,

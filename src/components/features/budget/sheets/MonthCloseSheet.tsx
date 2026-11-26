@@ -10,7 +10,7 @@ import type { MonthCloseState } from '@/hooks/useMonthClose'
 import type { CloseProposal } from '@/lib/budget/monthClose'
 import type { Currency } from '@/lib/store/types'
 import { microClassName } from '@/lib/ui/microLabelStyle'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { inlineMoney } from '@/components/features/budget/chromeFormat'
 import { percentText } from '../chromeFormat'
 import { useBudgetCloseCopy } from '../useCloseCopy'
 
@@ -38,7 +38,7 @@ export function MonthCloseSheet({ open, close, base, month, onApply, onFinish, o
 function CloseBody({ close, base, month, onApply, onFinish, onDismiss }: Omit<MonthCloseSheetProps, 'open' | 'close'> & { close: MonthCloseState }) {
   const c = useBudgetCloseCopy().sheet
   const [applied, setApplied] = useState<ReadonlySet<string>>(new Set())
-  const money = (n: number) => formatCurrency(n, base, false)
+  const money = (n: number) => inlineMoney(n, base)
   const { summary, proposals } = close
   const r = summary.result
   const verdict = !r ? null : r.kind === 'onPlan' ? c.onPlan : r.kind === 'kept' ? c.kept(percentText(r.percent)) : c.over(money(r.amount))

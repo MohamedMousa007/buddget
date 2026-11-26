@@ -13,13 +13,14 @@ import { PaydayActionsCard } from '@/components/features/income/PaydayActionsCar
 import { IncomeTypeIcon } from '@/components/features/income/IncomeTypeIcon'
 import { FlowLedger, type FlowLedgerRow } from '@/components/features/flow/FlowLedger'
 import { FLOW_BAND_BG } from '@/components/features/hero/HeroBand'
-import { methodLabel } from '@/components/features/flow/useFlowLedger'
+import { paydayMethodLabel } from '@/lib/income/paydayMethod'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { overdueDays, recentPaydays } from '@/lib/income/paydaySummary'
+import { paydayState, recentPaydays } from '@/lib/income/paydaySummary'
+import { paydayBadge } from '@/components/features/income/paydayBadge'
 import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { convertCurrency } from '@/lib/utils/currency'
-import { formatCurrency, formatFixed2, formatFlex } from '@/lib/utils/formatters'
+import { formatCurrency, formatFlex } from '@/lib/utils/formatters'
 import { useShortDate } from '@/hooks/useShortDate'
 import { useWeekendFirstDay } from '@/hooks/useWeekStart'
 import { useT } from '@/lib/i18n'
@@ -58,13 +59,9 @@ export function PaydayDetail({ source, onBack }: { source: IncomeSource; onBack:
   const lt = useDebtsSubsLtCopy().payday
   const today = useMemo(() => new Date(), [])
   const weekendFirst = useWeekendFirstDay()
-  // An unanswered payday stays "late" until the user says Received or Missed — "missed"
-  // on the timeline means someone marked it so.
+  // One rule everywhere (`paydayState`): past its grace with nothing recorded reads as missed, inside it as late.
   const all = useMemo(
-    () =>
-      recentPaydays(source, incomeEvents, monthFilter, monthStartDay, HISTORY_LEN, today, weekendFirst).map((o) =>
-        !o.eventId && o.status === 'missed' ? { ...o, status: 'late' as const } : o,
-      ),
+    () => recentPaydays(source, incomeEvents, monthFilter, monthStartDay, HISTORY_LEN, today, weekendFirst),
     [source, incomeEvents, monthFilter, monthStartDay, today, weekendFirst],
   )
   const occ = all.slice(-TIMELINE_LEN)
@@ -74,34 +71,28 @@ export function PaydayDetail({ source, onBack }: { source: IncomeSource; onBack:
   const [picked, setPicked] = useState<string | null>(null)
   const selected = all.find((o) => o.key === picked)
   const toggle = (key: string) => setPicked((k) => (k === key ? null : key))
-  const pm = methodLabel(paymentMethods.find((m) => m.id === source.paymentMethodId))
+  const pm = paydayMethodLabel(source, paymentMethods)
   const typeLabel = incomeSourceTypeLabel(t.income, source.sourceType)
   const monthly = (source.recurringFrequency ?? 'monthly') === 'monthly'
 
-  const bracket = (o: (typeof occ)[number]) =>
-    o.status === 'late' ? t.paydays.bracketLate : o.status === 'missed' ? t.paydays.bracketMissed : ''
+  const bracket = (o: (typeof occ)[number]) => {
+    const k = paydayState(o, today).kind
+    return k === 'late' ? lt.lateChip : k === 'missed' ? lt.missedChip : ''
+  }
 
   // History: every payday, newest first, whatever its state; the selected one is highlighted.
   const history: FlowLedgerRow[] = [...all]
         .reverse()
         .map((o) => {
           const ev = o.eventId ? incomeEvents.find((e) => e.id === o.eventId) : undefined
+          const state = paydayState(o, today)
           const open = !o.eventId
-          const missed = o.status === 'missed'
-          const lateBy = open ? overdueDays(o, today) : 0
-          const amountBase = convertCurrency(o.amount, o.currency, base, rates)
+          const missed = state.kind === 'missed'
+          // Nothing arrived for an open or missed payday: show what was expected, never as money received.
+          const expectedOnly = open || missed
+          const amountBase = convertCurrency(expectedOnly ? source.amount : o.amount, expectedOnly ? source.currency : o.currency, base, rates)
           const arrived = shortDate(ev?.receivedDate ?? o.dueDate)
-          const badge = open
-            ? lateBy > 0
-              ? { v: 'warning' as const, l: t.income.daysLateChip(lateBy) }
-              : { v: 'muted' as const, l: t.paydays.dueOn(shortDate(o.dueDate)) }
-            : missed
-            ? { v: 'muted' as const, l: t.income.statusMissed }
-            : o.status === 'partial'
-              ? { v: 'brand' as const, l: t.income.statusPartial }
-              : o.daysLate
-                ? { v: 'warning' as const, l: t.income.daysLateChip(o.daysLate) }
-                : { v: 'positive' as const, l: t.income.statusReceived }
+          const badge = paydayBadge(state, t, shortDate(o.dueDate))
           return {
             key: o.key,
             selected: o.key === picked,
@@ -113,11 +104,11 @@ export function PaydayDetail({ source, onBack }: { source: IncomeSource; onBack:
               captionColor: 'var(--color-brand-green)',
               onClick: () => toggle(o.key),
               title: t.paydays.paydayTitle(shortDate(o.dueDate)),
-              titleBadge: <Badge variant={badge.v} size="xs" className="shrink-0">{badge.l}</Badge>,
+              titleBadge: <Badge variant={badge.variant} size="xs" className="shrink-0">{badge.label}</Badge>,
               subtitle: (
                 <span className="truncate">
                   {open
-                    ? t.paydays.histOpen(`${formatFixed2(o.amount)} ${o.currency}`)
+                    ? t.paydays.histOpen(`${formatFlex(source.amount)} ${source.currency}`)
                     : missed
                     ? t.paydays.histMarkedMissed(shortDate((ev?.createdAt ?? o.dueDate).slice(0, 10)))
                     : o.status === 'partial'
@@ -127,14 +118,17 @@ export function PaydayDetail({ source, onBack }: { source: IncomeSource; onBack:
                         : t.paydays.histOnTime(arrived)}
                 </span>
               ),
-              amount: (
+              amount: expectedOnly ? (
                 <>
-                  {open ? '' : '+'}
-                  {formatFixed2(amountBase)} <span className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{base}</span>
+                  <span className={missed ? 'line-through' : undefined}>{formatFlex(amountBase)}</span> <span className="text-[0.6875rem]">{base}</span>
+                </>
+              ) : (
+                <>
+                  +{formatFlex(amountBase)} <span className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{base}</span>
                 </>
               ),
-              amountColor: missed || open ? 'var(--color-brand-text-muted)' : 'var(--color-brand-green)',
-              sub: secondary && !open ? `≈ ${formatCurrency(convertCurrency(amountBase, base, secondary, rates), secondary, true)}` : undefined,
+              amountColor: expectedOnly ? 'var(--color-brand-text-muted)' : 'var(--color-brand-green)',
+              sub: expectedOnly ? lt.expected : secondary ? `≈ ${formatCurrency(convertCurrency(amountBase, base, secondary, rates), secondary, true)}` : undefined,
             },
           }
         })
@@ -169,10 +163,10 @@ export function PaydayDetail({ source, onBack }: { source: IncomeSource; onBack:
             <span className="text-[0.6875rem] font-bold uppercase tracking-[0.08em]">
               {typeLabel} · {cadenceLine(source, t)}
             </span>
-            {pm ? <span className="text-xs font-semibold">→ {pm}</span> : null}
+            {pm ? <span dir="auto" className="text-xs font-semibold">→ {pm}</span> : null}
           </div>
           <p className="mt-1.5 flex items-baseline gap-1.5">
-            <span className="font-mono-numbers text-[30px] font-semibold leading-none tracking-[-0.03em]">{formatFixed2(source.amount)}</span>
+            <span className="font-mono-numbers text-[30px] font-semibold leading-none tracking-[-0.03em]">{formatFlex(source.amount)}</span>
             <span className="text-[0.8125rem]">{monthly ? t.paydays.expectedEachMonth(source.currency) : t.paydays.expectedEachPayday(source.currency)}</span>
           </p>
           <p className="mb-0.5 mt-2.5 text-[0.6875rem] font-bold uppercase tracking-[0.08em]">{t.paydays.lastPaydays(occ.length)}</p>
@@ -183,6 +177,7 @@ export function PaydayDetail({ source, onBack }: { source: IncomeSource; onBack:
               statusBracket={bracket}
               selectedKey={picked}
               onSelect={(o) => toggle(o.key)}
+              onBand
             />
           </div>
           <div className="h-3.5" />

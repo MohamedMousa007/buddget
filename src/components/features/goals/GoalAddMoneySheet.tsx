@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { DatePickerField } from '@/components/ui/DatePickerField'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
+import { useDiscardPrompt } from '@/components/features/savings-v3/useDiscardPrompt'
 import { PocketPickerField, SheetBody, SheetFooter, type PocketPickerGoal } from '@/components/features/savings-v3/MoneySheetParts'
 import { MoneySourceField, type MoneySource } from '@/components/features/savings-v3/MoneySourceField'
 import { useLegAccount } from '@/components/features/savings-v3/useLegAccount'
@@ -64,6 +65,7 @@ function GoalMoney({ goal: initial, onClose }: { goal: Goal; onClose: () => void
   const timeLabel = useFlowLtCopy().expense.time
   const [source, setSource] = useState<MoneySource>({ kind: 'account' })
   const value = Number(amount) || 0
+  const discard = useDiscardPrompt(amount.trim() !== '', onClose)
 
   const leg = useLegAccount(pocket, String(goal.currency), true)
   // A goal with no pocket yet gets one outside the accounts.
@@ -111,8 +113,9 @@ function GoalMoney({ goal: initial, onClose }: { goal: Goal; onClose: () => void
 
   return (
     <ModalShell open onBackdropClick={onClose} scrollChild>
+      {discard.prompt}
       <div className="flex min-h-0 flex-1 flex-col">
-        <V3SheetHeader onClose={onClose} leading={<DatePickerField look="pill" value={date} onChange={setDate} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: true }} />}>
+        <V3SheetHeader onClose={discard.close} leading={<DatePickerField look="pill" value={date} onChange={setDate} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: true }} />}>
           <span className="sr-only"><V3SheetHeader.Title>{t.goals.home.addMoneyTitle(goal.name)}</V3SheetHeader.Title></span>
         </V3SheetHeader>
 

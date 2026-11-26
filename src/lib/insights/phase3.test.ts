@@ -56,7 +56,7 @@ describe('buildRecap', () => {
     expect(r!.purchases).toBe(9)
     expect(r!.spent).toBe(1260)
     expect(r!.topCategory).toEqual({ name: 'Food', amount: 1260 - 180 })
-    expect(r!.biggest).toEqual({ description: 'buy 8', amount: 180 })
+    expect(r!.biggest).toEqual({ description: 'buy 8', amount: 180, date: '2026-10-10' })
     expect(r!.days).toBe(31)
     expect(r!.spentBefore).toBeNull()
   })

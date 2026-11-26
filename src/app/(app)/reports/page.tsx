@@ -208,7 +208,8 @@ export default function ReportsPage() {
 
   return (
     <div>
-      <PageBody className="space-y-3 pt-3 pb-6">
+      {/* One centred column on desktop, the width /flow uses. */}
+      <PageBody narrow className="space-y-3 pt-3 pb-6">
         {learning ? (
           <>
             <InsightsLearning progress={learningProgress(input)} />

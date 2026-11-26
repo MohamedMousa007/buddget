@@ -10,8 +10,9 @@ import { AmountHero } from '@/components/ui/AmountHero'
 import { DatePickerField } from '@/components/ui/DatePickerField'
 import { PickerRow } from '@/components/ui/PickerRow'
 import { PocketPickerField } from '@/components/features/savings-v3/MoneySheetParts'
+import { useDiscardPrompt } from '@/components/features/savings-v3/useDiscardPrompt'
 import type { PocketVM } from '@/components/features/savings-v3/types'
-import { cashOut, setAside } from '@/lib/accounts/actions'
+import { cashOut, defaultSetAsidePocketId, setAside } from '@/lib/accounts/actions'
 import type { AccountView } from '@/lib/accounts/useAccounts'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
@@ -72,7 +73,11 @@ export function MoveMoneySheet({ open, onClose, accounts, initialAccountId, init
     () => pocketsAll.filter((p) => p.category === 'savings').map((p) => ({ account: p, coverAmount: 0, goalsAmount: 0, goalLabel: '', isAuto: false })),
     [pocketsAll],
   )
-  const pocket = (pockets.find((p) => p.account.id === pocketId) ?? pockets[0])?.account
+  const pocketsHere = useMemo(() => pockets.map((p) => p.account), [pockets])
+  const shownPocketId = pocketId ?? (account ? defaultSetAsidePocketId(pocketsHere, account.method.id) : null)
+  const pocket = pocketsHere.find((p) => p.id === shownPocketId)
+  // A prefilled amount (the SMS gap) is not typed data; anything the user changed is.
+  const discard = useDiscardPrompt(amount !== initialAmount || pocketId !== null || clock !== '' || date !== localTodayISO(), onClose)
 
   if (!account?.balance) return null
   const cur = String(account.method.currency)
@@ -98,8 +103,9 @@ export function MoveMoneySheet({ open, onClose, accounts, initialAccountId, init
 
   return (
     <ModalShell open={open} onBackdropClick={onClose} scrollChild>
+      {discard.prompt}
       <div className="flex min-h-0 flex-1 flex-col">
-        <V3SheetHeader onClose={onClose}
+        <V3SheetHeader onClose={discard.close}
           leading={<DatePickerField look="pill" value={date} onChange={setDate} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: true }} />}>
           <V3SheetHeader.Title><span className="sr-only">{title}</span></V3SheetHeader.Title>
         </V3SheetHeader>

@@ -176,9 +176,10 @@ export default function FlowPage() {
       <MerchantCategoryPrompt />
       <CarryStalePrompt />
 
-      {/* One centred column on desktop too (the mockup is a single phone column): the narrow page width, not the wide shell. */}
+      {/* One centred column on desktop too (the mockup is a single phone column). The blocks carry their own 16px
+          gutter, so the shell adds 8px to land on the 24px desktop gutter every other page uses. */}
       <PageGrid
-        className="lg:max-w-[var(--page-max)]"
+        className="lg:px-2"
         primary={
           !dataReady ? (
             <FlowSkeleton />

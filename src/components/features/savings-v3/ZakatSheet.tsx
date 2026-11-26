@@ -1,7 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { Coins, Settings } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Coins, Settings, X } from 'lucide-react'
+import { IconButton } from '@/components/ui/IconButton'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -49,6 +51,9 @@ const GROW = '[&>span:first-child]:w-auto [&>span:first-child]:flex-1'
  * inputs are what the app cannot know (worn jewellery, doubtful receivables, trade goods). The one-year rule decides
  * whether the figure is an estimate, due now, or not due yet. The gear holds the nisab basis, stocks and the year start.
  */
+/** The dismissed-banner key of the one-time "year start is rebuilt from your history" note. */
+const ZAKAT_PAST_NOTE_KEY = 'zakat-past-note'
+
 export function ZakatSheet({ open, onClose, sources, year, hawlDate }: ZakatSheetProps) {
   const updateProfile = useFinanceStore((s) => s.updateProfile)
   const cfg = useFinanceStore((s) => s.profile.zakatConfig) ?? undefined
@@ -63,6 +68,10 @@ export function ZakatSheet({ open, onClose, sources, year, hawlDate }: ZakatShee
   const [settings, setSettings] = useState(false)
   const [tradeOpen, setTradeOpen] = useState(false)
   const [tradeDraft, setTradeDraft] = useState('')
+  // "The year start is rebuilt from your history…": shown on the first visit only, and it can be closed then.
+  const dismissBanner = useSettingsStore((s) => s.dismissBanner)
+  const [pastNote, setPastNote] = useState(() => !useSettingsStore.getState().dismissedBanners.includes(ZAKAT_PAST_NOTE_KEY))
+  useEffect(() => { if (pastNote) dismissBanner(ZAKAT_PAST_NOTE_KEY) }, [pastNote, dismissBanner])
 
   const today = localTodayISO()
   const firstDay = useMemo(
@@ -181,9 +190,13 @@ export function ZakatSheet({ open, onClose, sources, year, hawlDate }: ZakatShee
               <PickerRow label={z.zakatable} value={<span className="font-mono-numbers font-semibold">{fmtNum(result.zakatable)}</span>} className={GROW} />
             </Card>
             <p className="mt-2 px-1 text-xs text-[var(--color-brand-text-secondary)]">{z.footnote}</p>
-            <p className="mt-1 px-1 text-xs text-[var(--color-brand-text-muted)]">
-              {zc.pastNote}{year.noHistoryCount > 0 ? ` ${zc.noHistory}` : ''}
-            </p>
+            {pastNote ? (
+              <div className="mt-1 flex items-start gap-2 ps-1">
+                <p className="min-w-0 flex-1 pt-1.5 text-xs text-[var(--color-brand-text-muted)]">{zc.pastNote}</p>
+                <IconButton aria-label={zc.hideNote} variant="ghost" size="sm" onClick={() => setPastNote(false)}><X className="size-3.5" /></IconButton>
+              </div>
+            ) : null}
+            {year.noHistoryCount > 0 ? <p className="mt-1 px-1 text-xs text-[var(--color-brand-text-muted)]">{zc.noHistory}</p> : null}
           </div>
 
           {base.goldHoldings.length > 0 || base.receivableDebts.length > 0 ? (
@@ -229,6 +242,7 @@ export function ZakatSheet({ open, onClose, sources, year, hawlDate }: ZakatShee
         goldNisab={85 * base.gold24kSellPerGram}
         silverNisab={595 * base.silverPerGram}
         unit={unit}
+        derivedStart={year.yearStart}
       />
       <PickerSheet
         open={tradeOpen}

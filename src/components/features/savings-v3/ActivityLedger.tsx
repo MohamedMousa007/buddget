@@ -15,12 +15,18 @@ import { rgba } from '@/lib/utils/color'
 import { Button } from '@/components/ui/button'
 import { catForAccount, type CatKey } from '@/lib/savings/wealthModel'
 import { useLocale, useT } from '@/lib/i18n'
-import { formatClock, formatLocalized } from '@/lib/i18n/dateFormat'
+import { formatClock, formatLocalized, type AppLocale } from '@/lib/i18n/dateFormat'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { Badge } from '@/components/ui/badge'
 import { holdingFundedBy } from '@/lib/savings/assetPurchase'
 import { deleteHoldingWithUndo } from '@/lib/savings/pocketUndo'
+import { instantOf } from '@/lib/accounts/balance'
+
+/** A move's clock time: its stored instant, else noon of its day (rows that predate `occurredAt`). */
+export function ledgerClock(tx: Pick<SavingsTransaction, 'date' | 'occurredAt'>, locale: AppLocale): string {
+  return formatClock(new Date(instantOf(tx.occurredAt, tx.date)), locale)
+}
 
 const fmtSigned = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(Math.round(n)).toLocaleString('en-US')}`
 
@@ -123,7 +129,7 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
             const tag = tagFor(tx)
             const amtBase = inBase(tx) ?? 0
             const usd = tryConvertCurrency(amtBase, baseCurrency, 'USD', exchangeRates) ?? 0
-            const time = formatClock(new Date(tx.date.length > 10 ? tx.date : tx.date + 'T12:00:00'), locale)
+            const time = ledgerClock(tx, locale)
             return (
               <SwipeToDelete key={tx.id} onDelete={() => onDelete(tx.id)} openSide={openId === tx.id ? 'left' : null} onOpenChange={(side) => setOpenId(side ? tx.id : null)} deleteLabel="Delete">
                 <div className="border-t border-[var(--color-brand-border)] bg-[var(--color-brand-bg)] lg:bg-transparent">

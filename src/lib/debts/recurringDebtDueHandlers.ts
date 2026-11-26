@@ -124,7 +124,7 @@ export function confirmRecurringDebtPayment(scheduleId: string): boolean {
     // is non-spend (`Installment`). Bank/other installment plans keep `Debt` spend.
     state.addDebtPaymentWithExpense(paymentPayload, {
       date: paymentDate,
-      description: `${debt.name} — ${bnpl ? 'installment' : 'debt payment'}`,
+      description: `${debt.name || debt.personName || debt.person} — ${bnpl ? 'installment' : 'debt payment'}`,
       category: bnpl ? 'Installment' : 'Debt',
       amount: expenseMoney.amount,
       currency: expenseMoney.currency as Currency,

@@ -27,6 +27,8 @@ import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
 import { useLegAccount } from '@/components/features/savings-v3/useLegAccount'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { localTodayISO } from '@/lib/utils/localDate'
+import { manualOccurredAt } from '@/lib/time/occurredAt'
+import { useDiscardPrompt } from '@/components/features/savings-v3/useDiscardPrompt'
 import { useT } from '@/lib/i18n'
 import { pocketColor, pocketDisplayName } from '@/lib/savings/pocketIdentity'
 import { incomeDestination } from '@/lib/savings/withdrawDestination'
@@ -111,6 +113,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
   const [logExpense, setLogExpense] = useState(false)
   const [awayFromHolder, setAwayFromHolder] = useState(false)
   const [expenseCategory, setExpenseCategory] = useState('Other')
+  const discard = useDiscardPrompt(amount.trim() !== '' || note.trim() !== '', onClose)
 
   const moveOn = purpose === 'move'
   const reason: Reason | null = moveOn ? null : purpose
@@ -157,17 +160,20 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
   // True once the money moved; false when a check refused it, so the guard can re-arm.
   const commit = (from: PocketVM): boolean => {
     const txId = newClientId()
+    // One instant for every row this withdrawal writes (no time pill here: the current time).
+    const day = localTodayISO()
+    const occurredAt = manualOccurredAt(day)
     if (moveOn) {
       if (!moveToId) return false
-      if (!transfer(from.account.id, moveToId, amountInPocket, note.trim() || undefined)) { showToast(t.moveFailed); return false }
+      if (!transfer(from.account.id, moveToId, amountInPocket, note.trim() || undefined, day, occurredAt)) { showToast(t.moveFailed); return false }
     } else if (reason === 'debt') {
       const debt = debts.find((d) => d.id === debtId)
       if (!debt) return false
       const noteTrim = note.trim() || undefined
       const { amountPaid, amountInBase, exceeds } = debtPaymentForWithdrawal({ debt, amount: amountNum, currency, base: baseCurrency, rates: exchangeRates, goldPricePerGram, goldAvailable: goldPriceAvailable !== false, left: debtChips.find((d) => d.id === debt.id)?.left })
       if (!(amountPaid > 0) || exceeds || overpaysDebt(useFinanceStore.getState(), { debtId: debt.id, amountPaid })) { showToast(t.moveFailed); return false }
-      if (!withdraw(from.account.id, amountNum, currency, noteTrim, 'debt', { txId })) { showToast(t.moveFailed); return false }
-      addDebtPayment({ debtId: debt.id, date: localTodayISO(), amountPaid, paymentCurrency: debt.currency, amountInPrimary: amountInBase, notes: noteTrim, fundedFromSavings: true, fundedFromSavingsTxId: txId })
+      if (!withdraw(from.account.id, amountNum, currency, noteTrim, 'debt', { txId, date: day, occurredAt })) { showToast(t.moveFailed); return false }
+      addDebtPayment({ debtId: debt.id, date: day, occurredAt, amountPaid, paymentCurrency: debt.currency, amountInPrimary: amountInBase, notes: noteTrim, fundedFromSavings: true, fundedFromSavingsTxId: txId })
       reconcileDebtSchedule(debt.id, { amount: amountPaid, currency: debt.currency })
     } else if (reason === 'transfer') {
       if (!assetClass) return false
@@ -178,15 +184,15 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
       const qtyAdd = amountEgp / target.unitEgp
       const existing = useFinanceStore.getState().investmentHoldings.find((h) => h.id === target.id)
       if (!existing || qtyAdd <= 0) return false
-      if (!withdraw(from.account.id, amountNum, currency, note.trim() || undefined, 'transfer')) { showToast(t.moveFailed); return false }
+      if (!withdraw(from.account.id, amountNum, currency, note.trim() || undefined, 'transfer', { date: day, occurredAt })) { showToast(t.moveFailed); return false }
       updateHolding(target.id, investTopUpPatch(existing, qtyAdd, amountEgp, 'EGP', exchangeRates))
     } else if (reason) {
       const spendAndLog = reason === 'spend' && logExpense
-      const opts = reason === 'income' ? { toAccountId: incomeDestination(holderName ? from.account : undefined, awayFromHolder ? leg.accountId : null, leg.accountId) } : spendAndLog ? { txId } : undefined
+      const opts = { date: day, occurredAt, ...(reason === 'income' ? { toAccountId: incomeDestination(holderName ? from.account : undefined, awayFromHolder ? leg.accountId : null, leg.accountId) } : spendAndLog ? { txId } : {}) }
       if (!withdraw(from.account.id, amountNum, currency, note.trim() || undefined, reason, opts)) { showToast(t.moveFailed); return false }
       if (spendAndLog) {
         addExpense({
-          date: localTodayISO(), description: note.trim() || pocketDisplayName(from.account, sf.systemNames), category: expenseCategory,
+          date: day, occurredAt, description: note.trim() || pocketDisplayName(from.account, sf.systemNames), category: expenseCategory,
           amount: amountNum, currency, paymentMethodId: DEFAULT_CASH_ID, isRecurring: false, fundedFromSavingsTxId: txId,
         })
       }
@@ -243,8 +249,9 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
 
   return (
     <ModalShell open={open} onBackdropClick={onClose} scrollChild>
+      {discard.prompt}
       <div className="flex min-h-0 flex-1 flex-col">
-        <V3SheetHeader onClose={onClose}>
+        <V3SheetHeader onClose={discard.close}>
           <V3SheetHeader.Title>{t.withdrawTitle}</V3SheetHeader.Title>
           <V3SheetHeader.Subtitle>{t.withdrawSub}</V3SheetHeader.Subtitle>
         </V3SheetHeader>
