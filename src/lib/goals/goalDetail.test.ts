@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { Goal, SavingsTransaction } from '@/lib/store/types'
-import { checkpointInfo, coachView, goalInsight, goalMonthlyRate, normalizeRuns, replanPatch } from './goalDetail'
+import { checkpointInfo, coachView, finishesLate, goalInsight, goalMonthlyRate, normalizeRuns, replanPatch } from './goalDetail'
+import { defaultSharePct, sharesOverFull } from './goalPlan'
 import { getGoalStatus, periodStartMonth } from './goalStatus'
 
 const now = new Date(2026, 9, 18)
@@ -113,5 +114,37 @@ describe('goalInsight', () => {
   it('ignores limit goals', () => {
     const i = goalInsight({ goals: [goal({ category: 'spending_control' })], currentFor: () => 500, ledgerFor: (x) => ({ goal: x, txs: [] }), toGoal: () => (n) => n, rateFor: () => 100, now: year })
     expect(i).toEqual({ milestones: 0, next: null })
+  })
+})
+
+describe('finishesLate (QA W3: a fixed plan whose milestones finish after the finish line is not on track)', () => {
+  it('the QA laptop: 100% lands in 2029 against a Nov 2027 finish line, so it is late', () => {
+    const g = goal({ fundingMode: 'fixed', monthlyContribution: 1000, targetAmount: 40_000, targetDate: '2027-11-01' })
+    expect(finishesLate(g, 0, goalMonthlyRate(g, null), now)).toBe(true)
+    // And it is the same date the 100% milestone shows.
+    const c = checkpointInfo({ goal: g, current: 0, now, monthlyRate: 1000, toGoal: (n) => n, txs: [] })
+    expect(c.nodes[3].date!.slice(0, 7) > '2027-11').toBe(true)
+  })
+  it('a pace that lands on or before the finish line is not late', () => {
+    const g = goal({ fundingMode: 'fixed', monthlyContribution: 1000, targetAmount: 12_000, targetDate: '2027-11-01' })
+    expect(finishesLate(g, 0, goalMonthlyRate(g, null), now)).toBe(false)
+  })
+  it('no date, no pace or nothing left: never late', () => {
+    expect(finishesLate(goal({ targetDate: null }), 0, 100, now)).toBe(false)
+    expect(finishesLate(goal(), 0, null, now)).toBe(false)
+    expect(finishesLate(goal(), 1000, 1, now)).toBe(false)
+  })
+})
+
+describe('Fund it share (QA W3: switching from add-myself defaulted to 100%, 125% in all)', () => {
+  it('offers 20%, or what the other goals leave when that is less, never under 5%', () => {
+    expect(defaultSharePct(0)).toBe(20)
+    expect(defaultSharePct(25)).toBe(20)
+    expect(defaultSharePct(85)).toBe(15)
+    expect(defaultSharePct(100)).toBe(5)
+  })
+  it('more than 100% across goals is over; exactly 100% is fine', () => {
+    expect(sharesOverFull(25, 100)).toBe(true)
+    expect(sharesOverFull(80, 20)).toBe(false)
   })
 })

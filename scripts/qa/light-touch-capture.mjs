@@ -57,7 +57,7 @@ const SCREENS = [
   { name: 'page-debts', route: '/debts' },
   { name: 'page-goals', route: '/goals' },
   { name: 'page-insights', route: '/reports' },
-  { name: 'page-paydays', route: '/paydays', steps: ['Salary · Nexta'] },
+  { name: 'page-paydays', route: '/paydays' },
   { name: 'page-subs', route: '/subscriptions' },
   { name: 'page-wealth', route: '/wealth' },
 
@@ -92,7 +92,7 @@ const SCREENS = [
   { name: 'sheet-debtpay', route: '/debts', steps: ['Installments', 'Car loan', 'Record a payment'] },
   { name: 'sheet-repaid', route: '/debts', steps: ['Owed to you', 'Record a payment'] },
   { name: 'sheet-received', route: '/paydays', steps: ['Upwork', 'Side hustle Nov 18 payday'] },
-  { name: 'sheet-s_payday', route: '/paydays', steps: ['Add'] },
+  { name: 'sheet-s_payday', route: '/paydays', steps: ['Add a payday'] },
 
   { name: 'sheet-sub', route: '/subscriptions', steps: ['Netflix'] },
   { name: 'sheet-s_subadd', route: '/subscriptions', steps: ['Add subscription', 'Netflix EGP'] },

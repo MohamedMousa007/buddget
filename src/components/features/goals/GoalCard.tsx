@@ -9,8 +9,8 @@ import { ACTION_LABEL, goalStatusText } from '@/components/features/goals/goalSt
 import type { GoalRow } from '@/hooks/useGoalRows'
 import type { GoalStatusView } from '@/lib/goals/goalStatus'
 import { goalVisual } from '@/lib/goals/goalVisual'
+import { finishesLate, goalMonthlyRate } from '@/lib/goals/goalDetail'
 import type { Goal } from '@/lib/store/types'
-import { formatCurrency } from '@/lib/utils/formatters'
 import { MASK } from '@/lib/privacy/mask'
 import { useMask } from '@/lib/privacy/useMask'
 import { cn } from '@/lib/utils'
@@ -66,7 +66,7 @@ function LightGoalCard({ row, onOpen }: { row: GoalRow; onOpen: (g: Goal) => voi
   const state: LightState =
     status.kind === 'paused' ? 'paused'
     : status.kind === 'over' ? 'over'
-    : status.kind === 'behind' ? 'behind'
+    : status.kind === 'behind' || (!isLimit && goal.category !== 'debt_freedom' && finishesLate(goal, current, goalMonthlyRate(goal, null), new Date())) ? 'behind'
     : goal.fundingMode === 'manual' && !isLimit && goal.category !== 'debt_freedom' ? 'noPlan'
     : 'onTrack'
   const label = { onTrack: c.statusOnTrack, behind: c.statusBehind, over: c.statusOver, noPlan: c.statusNoPlan, paused: c.statusPaused }[state]
@@ -99,9 +99,9 @@ function LightGoalCard({ row, onOpen }: { row: GoalRow; onOpen: (g: Goal) => voi
       <CheckpointBar percent={percent} tone={TONE[status.kind] ?? 'default'} nodes={!isLimit} look="marks" className="mt-3" />
       <span className="mt-2 flex justify-between gap-3 font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">
         <span>
-          <b className="font-semibold text-[var(--color-brand-text-primary)]">{money(current)}</b> {c.savedWord}
+          <b className="font-semibold text-[var(--color-brand-text-primary)]">{money(current)}</b> {isLimit ? c.spentWord : c.savedWord}
         </span>
-        {basis > 0 ? <span>{c.toGo(money(Math.max(0, basis - current)))}</span> : null}
+        {basis > 0 ? <span>{isLimit ? c.ofLimit(money(basis)) : c.toGo(money(Math.max(0, basis - current)))}</span> : null}
       </span>
     </button>
   )
@@ -162,11 +162,11 @@ function ClassicGoalCard({
 
       <span className="flex h-6 items-baseline gap-1.5 font-mono-numbers leading-6">
         <span className="text-[26px] font-semibold tracking-[-0.02em] text-[var(--color-brand-text-primary)]">
-          {hidden ? MASK : formatCurrency(current, goal.currency, false)}
+          {hidden ? MASK : formatWhole(current)}
         </span>
         {basis ? (
           <span className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
-            {t.ofTarget(hidden ? MASK : formatCurrency(basis, goal.currency, false))}
+            {t.ofTarget(hidden ? MASK : formatWhole(basis))}
           </span>
         ) : null}
       </span>

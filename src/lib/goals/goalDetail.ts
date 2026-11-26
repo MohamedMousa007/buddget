@@ -61,6 +61,16 @@ export function checkpointInfo(input: {
   return { nodes, next, monthsToNext }
 }
 
+/**
+ * True when the goal's own pace reaches 100% after its finish line (the last milestone lands past the date), so a plan
+ * that cannot make it never reads as on track. False with no date, no pace, or nothing left to save.
+ */
+export function finishesLate(goal: Pick<Goal, 'targetAmount' | 'targetDate'>, current: number, monthlyRate: number | null, now: Date): boolean {
+  const remaining = (goal.targetAmount ?? 0) - current
+  if (!goal.targetDate || !monthlyRate || monthlyRate <= 0 || remaining <= 0) return false
+  return addMonthsIso(now, Math.max(1, Math.ceil(remaining / monthlyRate))).slice(0, 7) > goal.targetDate.slice(0, 7)
+}
+
 export interface CoachView {
   behindCount: number
   shortfall: number

@@ -135,7 +135,7 @@ export default function ReportsPage() {
     <>
       {input.debtPlan.monthly > 0 && input.debtPlan.remaining > 0 ? (
         <InsightsFold title={lt.lookingAhead}>
-          <WhatIfCard plan={input.debtPlan} currency={r.settings.baseCurrency} locked={!advanced} onUnlock={() => openLocked()} />
+          <WhatIfCard plan={input.debtPlan} locked={!advanced} onUnlock={() => openLocked()} />
         </InsightsFold>
       ) : null}
 
@@ -225,6 +225,7 @@ export default function ReportsPage() {
               lockedCount={tiles.filter((x) => x.locked).length}
               onSeePro={() => openLocked()}
               onAddIncome={addIncome}
+              onSetBudget={plan.budget > 0 ? undefined : () => navigate('/budget-setup')}
             />
 
             {advanced ? read && <BuddgyReadCard read={read} month={month} /> : <ExplainMonthCard onSeePro={() => openLocked()} />}

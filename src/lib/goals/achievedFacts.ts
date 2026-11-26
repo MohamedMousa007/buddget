@@ -51,3 +51,22 @@ export function achievedFacts(goals: readonly Goal[], txs: readonly SavingsTrans
   const fastestMonths = goals.length ? Math.min(...goals.map(monthsTaken)) : 0
   return { deposits, fastestMonths, bestStreak, depositsByGoal }
 }
+
+/**
+ * "You did it" facts for one goal: whole calendar months since it was made (0 when under a month), and the deposits made
+ * into its pockets since then. Money the pocket held before the goal, and the goal's own opening amount, are not deposits.
+ */
+export function goalJourney(
+  goal: Pick<Goal, 'createdAt' | 'linkedSavingsAccountIds'>,
+  txs: readonly SavingsTransaction[],
+  now: Date,
+): { months: number; deposits: number } {
+  const start = parseISO(goal.createdAt)
+  let months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth())
+  if (now.getDate() < start.getDate()) months -= 1
+  const fromDay = localDay(start)
+  const deposits = depositsInto(goal, txs).filter((t) => t.date.slice(0, 10) >= fromDay && t.source !== 'goal_opening').length
+  return { months: Math.max(0, months), deposits }
+}
+
+const localDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`

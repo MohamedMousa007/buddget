@@ -85,19 +85,21 @@ describe('buildHomeLists', () => {
     row(sub({ id: 'e', status: 'cancelled', endsOn: '2026-09-01' })),
   ]
   const toBase = (r: { amount: number }) => r.amount
-  it('groups Upcoming into overdue / week / month / later with paused and cancelled collapsed', () => {
-    const l = buildHomeLists('upcoming', rows, toBase)
+  it('Upcoming lists the next 30 days, then what was paid this month; cancelled and paused never count there (QA W4)', () => {
+    const paidThisMonth = row(sub({ id: 'm', billingDay: 5, startDate: '2026-01-05' }), [exp('m', '2026-10-05')])
+    const yearly = row(sub({ id: 'y', billingCycle: 'yearly', billingDay: 1, startDate: '2026-03-01' }), [exp('y', '2026-03-01')])
+    const l = buildHomeLists('upcoming', [...rows, paidThisMonth, yearly], toBase, today)
     expect(l.groups.map((g) => [g.key, g.rows.map((r) => r.sub.id)])).toEqual([
-      ['overdue', ['a']], ['week', ['b']], ['month', ['c']], ['later', ['d']],
+      ['next30', ['a', 'b', 'c']], ['paid', ['m', 'd']], ['later', ['y']],
     ])
-    expect(l.groups[0].total).toBe(190)
-    expect(l.paused.map((r) => r.sub.id)).toEqual(['p'])
-    expect(l.cancelled.map((r) => r.sub.id)).toEqual(['x'])
-    expect(l.activeCount).toBe(4)
+    expect(l.groups[0].total).toBe(570)
+    expect(paidThisMonth.paidOn).toBe('2026-10-05')
+    expect(l.activeCount).toBe(6)
+    expect(l.groups.flatMap((g) => g.rows).some((r) => r.sub.status === 'cancelled' || r.sub.status === 'paused')).toBe(false)
   })
-  it('lists everything under All and only archived plans under Ended', () => {
-    expect(buildHomeLists('all', rows, toBase).groups[0].rows).toHaveLength(7)
-    expect(buildHomeLists('ended', rows, toBase).groups[0].rows.map((r) => r.sub.id)).toEqual(['e'])
+  it('lists everything under All, and cancelled (still running or over) and paused plans under Ended', () => {
+    expect(buildHomeLists('all', rows, toBase, today).groups[0].rows).toHaveLength(7)
+    expect(buildHomeLists('ended', rows, toBase, today).groups[0].rows.map((r) => r.sub.id).sort()).toEqual(['e', 'p', 'x'])
   })
 })
 

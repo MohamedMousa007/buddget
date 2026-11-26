@@ -8,7 +8,7 @@ import { OptionChip } from '@/components/ui/OptionChip'
 import { PickerSheet } from '@/components/ui/PickerSheet'
 import { selectableCardVariants } from '@/components/ui/SelectableCard'
 import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
-import { periodMonths } from '@/lib/goals/goalPlan'
+import { periodMonths, sharesOverFull } from '@/lib/goals/goalPlan'
 import type { GoalFrequency, GoalFundingMode } from '@/lib/store/types'
 import { formatWhole } from '@/lib/utils/formatters'
 import { cn } from '@/lib/utils'
@@ -87,6 +87,7 @@ export function FundItSheet({ open, onClose, onDone, name, currency, value, onCh
   const perShare = usualKeep ? Math.round((usualKeep * value.sharePct) / 100) : null
   const fixedPerMonth = num(value.fixed) / periodMonths(value.frequency)
   const [split, setSplit] = useState(false)
+  const overFull = share && sharesOverFull(otherShare, value.sharePct)
 
   return (
     <>
@@ -96,7 +97,7 @@ export function FundItSheet({ open, onClose, onDone, name, currency, value, onCh
       title={c.fundIt}
       subtitle={c.fundSub(name)}
       zIndexClassName="z-[120]"
-      footer={<Button size="cta-block" onClick={onDone ?? onClose}>{c.done}</Button>}
+      footer={<Button size="cta-block" onClick={onDone ?? onClose} disabled={overFull}>{c.done}</Button>}
     >
       <div className="native-scroll -mx-1 flex min-h-0 flex-col gap-3 overflow-y-auto px-1">
         <div role="radiogroup" aria-label={c.fundIt} className="flex flex-col gap-2">
@@ -133,7 +134,12 @@ export function FundItSheet({ open, onClose, onDone, name, currency, value, onCh
             ) : (
               <p className="mt-2 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{c.shareUnknown}</p>
             )}
-            <p className="mt-1 text-xs text-[var(--color-brand-text-muted)]">{c.shareTaken(otherShare + value.sharePct)}</p>
+            <p
+              role={overFull ? 'alert' : undefined}
+              className={cn('mt-1 text-xs', overFull ? 'text-[var(--color-brand-amber)]' : 'text-[var(--color-brand-text-muted)]')}
+            >
+              {overFull ? c.shareOver(otherShare + value.sharePct) : c.shareTaken(otherShare + value.sharePct)}
+            </p>
             {otherShare > 0 ? (
               <OptionChip size="sm" onClick={() => setSplit(true)} className="mt-2 w-fit font-mono-numbers">
                 {otherShare + value.sharePct}%

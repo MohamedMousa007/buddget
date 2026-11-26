@@ -64,7 +64,7 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
           onClick={d.isPayDebtFlow ? d.backToPayDebtList : undefined}
           value={<span dir="auto" className="truncate">{debt?.name || debt?.person}</span>}
         />
-        <MethodPickerRow label={receiving ? c.into : c.paidFrom} value={d.paymentMethodId} onChange={d.setPaymentMethodId} paymentMethods={d.paymentMethods} />
+        <MethodPickerRow label={receiving ? c.into : c.paidFrom} value={d.paymentMethodId} onChange={d.setPaymentMethodId} paymentMethods={d.paymentMethods} accountsOnly={receiving} />
         <SettingsSwitchRow
           label={c.repeat}
           hint={c.repeatHint(ordinal(Number(d.paymentDate.slice(8, 10))))}

@@ -24,6 +24,8 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Currency, SubscriptionBillingCycle } from '@/lib/store/types'
 import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
 import { chargeAmount, markPaidTarget, scheduledDates } from '@/lib/subscriptions/subscriptionForecast'
+import { priceHistoryNewestFirst } from '@/lib/subscriptions/subscriptionPricing'
+import { useSubsPageLtCopy } from '@/lib/i18n/subsPageLtCopy'
 import { buildRow } from '@/lib/subscriptions/subscriptionRows'
 import { SubscriptionStatusBadge } from './SubscriptionStatusBadge'
 import { convertCurrency, tryConvertCurrency } from '@/lib/utils/currency'
@@ -53,6 +55,7 @@ export function SubscriptionDetailSheet({
   const t = useT()
   const ui = t.subscriptions.ui
   const c = useDebtsSubsLtCopy().subs
+  const pageCopy = useSubsPageLtCopy()
   const confirm = useConfirm()
   const toast = useActionToast()
   const { shortDate, monthYear } = useSubscriptionDates()
@@ -151,8 +154,7 @@ export function SubscriptionDetailSheet({
         .map((x) => format(x, 'yyyy-MM-dd'))
   const upcomingAmount = (iso: string) =>
     sub.pendingPlanFrom && sub.pendingAmount != null && iso >= sub.pendingPlanFrom.slice(0, 10) ? sub.pendingAmount : (row.priceChange?.to ?? chargeAmount(sub))
-  const history = [...(sub.priceHistory ?? [])].sort((a, b) => b.from.localeCompare(a.from))
-  const tracking = sub.tracking ?? 'sms'
+  const history = priceHistoryNewestFirst(sub.priceHistory)
 
   // The one contextual action Buddgy's own checks raise: keep after a trial, a new price, a detected plan change, or an unpaid charge.
   const prompt = (() => {
@@ -231,8 +233,23 @@ export function SubscriptionDetailSheet({
           <PickerRow label={c.category} value={t.expenseForm.categoryLabels[category as keyof typeof t.expenseForm.categoryLabels] ?? category} onClick={() => setSheet('category')} />
           <PickerRow label={c.repeatsLabel} value={c.repeats[every]} onClick={() => setSheet('cycle')} />
           <SettingsSwitchRow label={c.remind} hint={c.remindHelp} checked={sub.reminder ?? true} onChange={(v) => s.update(sub.id, { reminder: v })} />
-          <PickerRow label={ui.detail.tracking} value={<span className="truncate text-[0.875rem] font-normal text-[var(--color-brand-text-secondary)]">{ui.tracking[tracking].name}</span>} />
-          <PickerRow label={ui.add.more} onClick={() => onEdit(sub.id)} className="[&>span:first-child]:w-auto [&>span:first-child]:flex-1" />
+        </SheetGroup>
+
+        <SheetGroup label={c.lastCharges}>
+          {lastCharges.length === 0 ? (
+            <p className="flex min-h-11 items-center px-4 text-[0.84375rem] text-[var(--color-brand-text-muted)]">{pageCopy.noCharges}</p>
+          ) : lastCharges.map((e) => (
+            <div key={e.id} className="flex min-h-11 items-center gap-2 ps-4 pe-1.5 text-[0.84375rem]">
+              <span className="flex-1 text-[var(--color-brand-text-secondary)]">{shortDate(e.date.slice(0, 10))}</span>
+              <span dir="ltr" className="font-mono-numbers text-[var(--color-brand-text-primary)]">
+                −{formatFixed2(e.amountInBaseCurrency)} {s.base}
+                {e.currency !== s.base ? <span className="text-[var(--color-brand-text-muted)]"> · {formatFixed2(e.amount)} {e.currency}</span> : null}
+              </span>
+              <IconButton aria-label={ui.detail.unlink} size="sm" onClick={() => s.unlink(e.id)}>
+                <Unlink strokeWidth={1.75} />
+              </IconButton>
+            </div>
+          ))}
         </SheetGroup>
 
         {upcoming.length > 0 ? (
@@ -241,23 +258,6 @@ export function SubscriptionDetailSheet({
               <div key={iso} className="flex min-h-11 items-center justify-between px-4 text-[0.84375rem]">
                 <span className="text-[var(--color-brand-text-secondary)]">{shortDate(iso)}</span>
                 <span dir="ltr" className="font-mono-numbers text-[var(--color-brand-text-primary)]">−{formatFixed2(upcomingAmount(iso))} {sub.currency}</span>
-              </div>
-            ))}
-          </SheetGroup>
-        ) : null}
-
-        {lastCharges.length > 0 ? (
-          <SheetGroup label={c.lastCharges}>
-            {lastCharges.map((e) => (
-              <div key={e.id} className="flex min-h-11 items-center gap-2 ps-4 pe-1.5 text-[0.84375rem]">
-                <span className="flex-1 text-[var(--color-brand-text-secondary)]">{e.smsLogId ? ui.detail.smsCharge(shortDate(e.date.slice(0, 10))) : ui.detail.manualCharge(shortDate(e.date.slice(0, 10)))}</span>
-                <span dir="ltr" className="font-mono-numbers text-[var(--color-brand-text-primary)]">
-                  −{formatFixed2(e.amountInBaseCurrency)} {s.base}
-                  {e.currency !== s.base ? <span className="text-[var(--color-brand-text-muted)]"> · {formatFixed2(e.amount)} {e.currency}</span> : null}
-                </span>
-                <IconButton aria-label={ui.detail.unlink} size="sm" onClick={() => s.unlink(e.id)}>
-                  <Unlink strokeWidth={1.75} />
-                </IconButton>
               </div>
             ))}
           </SheetGroup>
@@ -273,6 +273,10 @@ export function SubscriptionDetailSheet({
             ))}
           </SheetGroup>
         ) : null}
+
+        <Button variant="ghost" size="touch" className="self-center text-[0.8125rem] font-medium text-[var(--color-brand-text-secondary)]" onClick={() => onEdit(sub.id)}>
+          {pageCopy.moreDetails}
+        </Button>
       </SheetFrame>
 
       <OptionSheet

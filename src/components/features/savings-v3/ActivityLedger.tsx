@@ -1,10 +1,9 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { parseISO } from 'date-fns'
-import { ShoppingCart, TrendingUp } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight } from 'lucide-react'
 import type { SavingsAccount, SavingsTransaction, Currency } from '@/lib/store/types'
-import { tryConvertCurrency, tryConvertWithGold } from '@/lib/utils/currency'
+import { tryConvertWithGold } from '@/lib/utils/currency'
 import { useGoldQuote } from '@/hooks/useGoldQuote'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { pocketColor } from '@/lib/savings/pocketIdentity'
@@ -17,8 +16,11 @@ import { catForAccount, type CatKey } from '@/lib/savings/wealthModel'
 import { useLocale, useT } from '@/lib/i18n'
 import { formatClock, formatLocalized, type AppLocale } from '@/lib/i18n/dateFormat'
 import { useActionToast } from '@/components/ui/ActionToast'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { formatWhole } from '@/lib/utils/formatters'
 import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
+import { accountTitle } from '@/lib/accounts/accountTitle'
+import { useWealthLtCopy } from '@/lib/i18n/wealthLtCopy'
 import { holdingFundedBy } from '@/lib/savings/assetPurchase'
 import { deleteHoldingWithUndo } from '@/lib/savings/pocketUndo'
 import { instantOf } from '@/lib/accounts/balance'
@@ -60,6 +62,8 @@ export interface ActivityLedgerProps {
 export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeRates, limit, filter, onSeeAll, staleMonthKeys = [] }: ActivityLedgerProps) {
   const t = useT().wealthPage
   const tagLabel: Record<TagKind, string> = { carry: t.ledgerMonthEnd, moved: t.ledgerMoved, saved: t.ledgerSaved, withdrew: t.ledgerWithdrew }
+  const lt = useWealthLtCopy()
+  const paymentMethods = useFinanceStore((s) => s.paymentMethods)
   const { locale } = useLocale()
   const deleteTx = useFinanceStore((s) => s.deleteSavingsTransaction)
   const showToast = useActionToast()
@@ -70,7 +74,7 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
     const res = deleteTx(id)
     if (res.ok || res.reason !== 'would_go_negative') return
     const pocket = accounts.find((a) => a.id === res.accountId)
-    showToast(t.deleteBlocked(pocket?.name ?? '', formatCurrency(res.shortBy, pocket?.currency ?? baseCurrency)))
+    showToast(t.deleteBlocked(pocket?.name ?? '', `${formatWhole(res.shortBy)} ${pocket?.currency ?? baseCurrency}`))
   }
   const gold = useGoldQuote()
   const inBase = (tx: SavingsTransaction) =>
@@ -78,80 +82,71 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
   const [openId, setOpenId] = useState<string | null>(null)
   const acc = (id: string) => accounts.find((a) => a.id === id)
 
-  const days = useMemo(() => {
-    let rows = [...transactions].filter((t) => t.isCashFlow !== false || t.source === 'carry')
-    if (filter) rows = rows.filter((t) => { const a = accounts.find((x) => x.id === t.accountId); return a ? catForAccount(a) === filter : false })
-    rows.sort((a, b) => parseISO(b.date.slice(0, 10)).getTime() - parseISO(a.date.slice(0, 10)).getTime())
-    if (limit) rows = rows.slice(0, limit)
-    const groups = new Map<string, SavingsTransaction[]>()
-    for (const r of rows) {
-      const day = r.date.slice(0, 10)
-      if (!groups.has(day)) groups.set(day, [])
-      groups.get(day)!.push(r)
-    }
-    return [...groups.entries()]
+  const rows = useMemo(() => {
+    // Pocket-to-pocket moves and a goal's opening money are not cash flow, but they are moves; corrections and openings stay out.
+    let list = [...transactions].filter((t) => t.isCashFlow !== false || t.source === 'carry' || !!t.transferGroupId || t.source === 'goal_opening')
+    if (filter) list = list.filter((t) => { const a = accounts.find((x) => x.id === t.accountId); return a ? catForAccount(a) === filter : false })
+    list.sort((a, b) => instantOf(b.occurredAt, b.date) - instantOf(a.occurredAt, a.date) || b.date.localeCompare(a.date) || (b.type === 'deposit' ? 1 : 0) - (a.type === 'deposit' ? 1 : 0))
+    return limit ? list.slice(0, limit) : list
   }, [transactions, accounts, filter, limit])
 
-  if (days.length === 0) {
+  const head = (
+    <div className="mb-1 flex min-h-11 items-center justify-between ps-1">
+      <h2 className="text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
+        {lt.activity}{filter ? ` · ${t.catLabels[filter]}` : ''}
+      </h2>
+      {onSeeAll ? <Button variant="link" size="touch" onClick={onSeeAll}>{t.seeAll}</Button> : null}
+    </div>
+  )
+
+  if (rows.length === 0) {
     return (
-      <div className="mt-2">
-        <h2 className="mb-2 px-4 text-[17px] lg:px-0 font-bold text-[var(--color-brand-text-primary)]">{t.recentMoves}</h2>
-        <div className="px-1 py-10 text-center">
-          <p className="text-sm text-[var(--color-brand-text-muted)]">{t.nothingHeld}</p>
-        </div>
+      <div className="px-4 lg:px-0">
+        {head}
+        <p className="py-10 text-center text-sm text-[var(--color-brand-text-muted)]">{t.nothingHeld}</p>
       </div>
     )
   }
 
-  const dayTotal = (rows: SavingsTransaction[]) =>
-    rows.reduce((s, r) => {
-      const tag = tagFor(r)
-      return s + tag.sign * (inBase(r) ?? 0)
-    }, 0)
+  const titleOf = (tx: SavingsTransaction, kind: TagKind, name: string) => {
+    if (kind === 'carry') return `${tagLabel.carry} · ${name}`
+    if (kind === 'moved') return tx.type === 'deposit' ? lt.movedTo(name) : lt.movedFrom(name)
+    return tx.type === 'deposit' ? lt.depositTo(name) : lt.withdrewFrom(name)
+  }
+  const whereOf = (tx: SavingsTransaction) => {
+    const pm = tx.paymentMethodId ? paymentMethods.find((m) => m.id === tx.paymentMethodId) : undefined
+    if (pm) return tx.type === 'deposit' ? lt.from(accountTitle(pm)) : lt.to(accountTitle(pm))
+    return tx.notes || ledgerClock(tx, locale)
+  }
 
   return (
-    <div className="mt-2">
-      <div className="mb-2 flex items-center justify-between px-4 lg:px-0">
-        <h2 className="text-[17px] font-bold text-[var(--color-brand-text-primary)]">
-          {t.recentMoves}{filter ? ` · ${t.catLabels[filter]}` : ''}
-        </h2>
-        {onSeeAll ? <Button variant="link" size="touch" onClick={onSeeAll}>{t.seeAll}</Button> : null}
-      </div>
-
-      {days.map(([day, rows]) => (
-        <div key={day} className="mt-3 lg:overflow-hidden lg:rounded-2xl lg:border lg:border-[var(--color-brand-border)] lg:bg-[var(--color-brand-card)]">
-          <div className="flex items-center justify-between px-4 pb-1">
-            <span className="text-sm font-bold text-[var(--color-brand-text-primary)]">{formatLocalized(new Date(day + 'T12:00:00'), 'MMM d', locale)}</span>
-            <span className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{fmtSigned(dayTotal(rows))}.00 {baseCurrency}</span>
-          </div>
-          {rows.map((tx) => {
-            const a = acc(tx.accountId)
-            const tag = tagFor(tx)
-            const amtBase = inBase(tx) ?? 0
-            const usd = tryConvertCurrency(amtBase, baseCurrency, 'USD', exchangeRates) ?? 0
-            const time = ledgerClock(tx, locale)
-            return (
-              <SwipeToDelete key={tx.id} onDelete={() => onDelete(tx.id)} openSide={openId === tx.id ? 'left' : null} onOpenChange={(side) => setOpenId(side ? tx.id : null)} deleteLabel="Delete">
-                <div className="border-t border-[var(--color-brand-border)] bg-[var(--color-brand-bg)] lg:bg-transparent">
-                  <TransactionRow
-                    icon={a ? <SavingsAccountIcon account={a} className="h-5 w-5" /> : tag.kind === 'withdrew' ? <ShoppingCart size={18} /> : <TrendingUp size={18} />}
-                    iconBg={a ? rgba(pocketColor(a), .14) : 'var(--color-brand-elevated)'}
-                    iconFg={a ? pocketColor(a) : undefined}
-                    caption={tagLabel[tag.kind]}
-                    captionColor={tag.color}
-                    title={a?.name ?? 'Savings'}
-                    titleBadge={staleMonthKeys.includes(carryMonth(tx) ?? '') ? <Badge tone="warn" size="xs">{t.carryOutOfDate}</Badge> : undefined}
-                    subtitle={`${time} · ${tx.notes || tx.source || a?.institution || 'Savings'}`}
-                    amount={`${fmtSigned(tag.sign * amtBase)}.00`}
-                    amountColor={tag.sign > 0 ? 'var(--color-brand-green)' : 'var(--color-brand-red)'}
-                    sub={`≈ $${Math.abs(usd).toFixed(2)}`}
-                  />
-                </div>
-              </SwipeToDelete>
-            )
-          })}
-        </div>
-      ))}
+    <div className="px-4 lg:px-0">
+      {head}
+      <Card padding="none" className="overflow-hidden rounded-2xl">
+        {rows.map((tx, i) => {
+          const a = acc(tx.accountId)
+          const tag = tagFor(tx)
+          const amtBase = inBase(tx) ?? 0
+          const day = formatLocalized(new Date(instantOf(tx.occurredAt, tx.date)), 'MMM d', locale)
+          return (
+            <SwipeToDelete key={tx.id} onDelete={() => onDelete(tx.id)} openSide={openId === tx.id ? 'left' : null} onOpenChange={(side) => setOpenId(side ? tx.id : null)} deleteLabel="Delete">
+              <div className="bg-[var(--color-brand-card)]">
+                {i > 0 ? <div aria-hidden className="ms-[82px] h-px bg-[var(--color-brand-border)]" /> : null}
+                <TransactionRow
+                  icon={tag.sign > 0 ? <ArrowDownLeft className="size-5" /> : a ? <SavingsAccountIcon account={a} className="h-5 w-5" /> : <ArrowUpRight className="size-5" />}
+                  iconBg={tag.sign > 0 ? 'var(--color-brand-green-soft)' : a ? rgba(pocketColor(a), .14) : 'var(--color-brand-elevated)'}
+                  iconFg={tag.sign > 0 ? 'var(--color-brand-green)' : a ? pocketColor(a) : undefined}
+                  title={titleOf(tx, tag.kind, a?.name ?? 'Savings')}
+                  titleBadge={staleMonthKeys.includes(carryMonth(tx) ?? '') ? <Badge tone="warn" size="xs">{t.carryOutOfDate}</Badge> : undefined}
+                  subtitle={`${day} · ${whereOf(tx)}`}
+                  amount={<>{fmtSigned(tag.sign * amtBase)} <span className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{baseCurrency}</span></>}
+                  amountColor={tag.sign > 0 ? 'var(--color-brand-green)' : undefined}
+                />
+              </div>
+            </SwipeToDelete>
+          )
+        })}
+      </Card>
     </div>
   )
 }

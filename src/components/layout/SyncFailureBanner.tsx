@@ -1,7 +1,10 @@
 'use client'
 
-import { AlertTriangle, Info } from 'lucide-react'
+import { useEffect, useRef } from 'react'
+import { AlertTriangle } from 'lucide-react'
+import { useActionToast } from '@/components/ui/ActionToast'
 import { useSyncFailures } from '@/lib/store/useSyncFailures'
+import { takeSyncNotice } from '@/lib/store/syncNoticeThrottle'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import { useHiddenStatus } from '@/hooks/useHiddenStatus'
 import { StatusPill } from '@/components/ui/StatusPill'
@@ -25,10 +28,17 @@ export function SyncFailureBanner() {
   const [hidden, hide] = useHiddenStatus('sync')
   const t = useT()
 
-  // A one-off notice (an undo or an edit that lost to another device) shows while nothing is failing; swiping it away ends it.
-  if (failures.length === 0 && setAside.length === 0 && notice) {
-    return <StatusPill icon={<Info strokeWidth={2} />} label={t.syncFailures[notice]} onHide={() => setNotice(null)} />
-  }
+  const toast = useActionToast()
+  const shownAt = useRef(new Map<string, number>())
+  // A one-off notice (an undo or an edit that lost to another device) is a warning toast: it stacks with the other toasts
+  // and clears itself, instead of a pill that stays until swiped away. Sync passes repeat it while the cause lasts, so a
+  // repeat inside a minute is dropped: otherwise a new toast replaces the last one and it seems to stay for minutes.
+  useEffect(() => {
+    if (!notice) return
+    if (takeSyncNotice(shownAt.current, notice, Date.now())) toast(t.syncFailures[notice], { tone: 'warning' })
+    setNotice(null)
+  }, [notice, setNotice, toast, t])
+
   if ((failures.length === 0 && setAside.length === 0) || !online) return null
 
   const label =

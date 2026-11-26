@@ -6,7 +6,7 @@ import { addMonths } from 'date-fns'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { computeCreditCardOutstanding } from '@/lib/debt/computeCreditCardBalance'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { formatFlex } from '@/lib/utils/formatters'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { shouldAskCashOnHand } from '@/lib/accounts/cashOnHand'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
@@ -88,7 +88,7 @@ export function useAddExpenseSheet() {
     if (!cardDebt) return null
     const pays = debtPayments.filter((p) => p.debtId === cardDebt.id)
     const out = computeCreditCardOutstanding(cardDebt, expenses, pays, exchangeRates)
-    return { cardName: cardDebt.name, amountLabel: formatCurrency(out, cardDebt.currency) }
+    return { cardName: cardDebt.name, amountLabel: `${out < 0 ? '−' : ''}${formatFlex(out)} ${cardDebt.currency}` }
   }, [paymentMethodId, paymentMethods, debts, debtPayments, expenses, exchangeRates])
 
   useEffect(() => {

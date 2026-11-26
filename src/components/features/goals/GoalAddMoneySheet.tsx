@@ -28,7 +28,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Goal } from '@/lib/store/types'
 import { MASK } from '@/lib/privacy/mask'
 import { useMask } from '@/lib/privacy/useMask'
-import { formatCurrency, formatWhole } from '@/lib/utils/formatters'
+import { formatWhole } from '@/lib/utils/formatters'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { manualOccurredAt } from '@/lib/time/occurredAt'
 import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
@@ -94,9 +94,12 @@ function GoalMoney({ goal: initial, onClose }: { goal: Goal; onClose: () => void
     if (!method) return ''
     return guard.holder && method.id === guard.holder.id ? c.srcHeld : c.srcAccount(accountTitle(method))
   })()
-  const hint = isSaveGoal(goal) ? goalAddHint(row?.current ?? 0, goal.targetAmount, value) : null
-  const money = (n: number) => (hidden ? MASK : formatCurrency(n, goal.currency, false))
-  const hintText = !hint ? '' : hint.kind === 'exact' ? t.goals.home.addExact : hint.kind === 'left' ? t.goals.home.addLeft(money(hint.amount)) : t.goals.home.addOver(money(hint.amount))
+  const saved = row?.current ?? 0
+  const target = goal.targetAmount ?? 0
+  // Before an amount is typed the line still says how far the goal is from its target.
+  const hint = !isSaveGoal(goal) ? null : value > 0 ? goalAddHint(saved, target, value) : target > saved ? { kind: 'left' as const, amount: target - saved } : null
+  const money = (n: number) => (hidden ? MASK : formatWhole(n))
+  const hintText = !hint ? '' : hint.kind === 'exact' ? t.goals.home.addExact : hint.kind === 'left' ? lt.goals.leftToReach(money(hint.amount), money(target)) : t.goals.home.addOver(money(hint.amount))
 
   const save = () => {
     if (!canSubmit) return

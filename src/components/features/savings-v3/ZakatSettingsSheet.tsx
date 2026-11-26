@@ -58,7 +58,7 @@ export function ZakatSettingsSheet({ open, onClose, goldNisab, silverNisab, unit
             <PickerRow label={z.stocksHeld} value={trading ? z.trading : z.longTerm} onClick={() => setSheet('stocks')} />
             <PickerRow
               label={z.yearStarts}
-              value={<DatePickerField look="pill" value={cfg?.yearStartDate ?? derivedStart} onChange={(v) => save({ yearStartDate: v || null })} />}
+              value={<DatePickerField look="pill" withYear value={cfg?.yearStartDate ?? derivedStart} onChange={(v) => save({ yearStartDate: v || null })} />}
             />
           </Card>
           <p className="mt-2 px-1 text-xs text-[var(--color-brand-text-secondary)]">{z.yearNote}</p>

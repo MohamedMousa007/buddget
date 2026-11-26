@@ -4,15 +4,21 @@ import { ChevronRight } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useCategoryLabel } from '@/hooks/useCategoryLabel'
-import { BLOCK_META, BUDGET_BLOCKS } from '@/lib/budget/blocks'
+import { BUDGET_BLOCKS } from '@/lib/budget/blocks'
 import type { LineView, PlanView } from '@/lib/budget/planView.types'
 import type { BudgetBlock } from '@/lib/store/types'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import { formatWhole } from '@/lib/utils/formatters'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
-import { LineIcon } from './LineIcon'
-import { TintedTile } from './TintedTile'
+import { LineTile } from './LineTile'
 import { useBudgetBlocksCopy } from './useBlocksCopy'
+
+/** Brand teal, amber from 80% of the line, red once it is over (Light touch `page-budget`). */
+function barColor(usedPercent: number): string {
+  if (usedPercent > 100) return 'var(--color-brand-red)'
+  if (usedPercent >= 80) return 'var(--color-brand-amber)'
+  return 'var(--color-brand-primary)'
+}
 
 /** One budget line (Light touch `page-budget`): tile, name, "X left of Y" or "X over", the amount and a thin bar. */
 function LineRow({ lv, month, base, onOpen }: { lv: LineView; month: boolean; base: string; onOpen: () => void }) {
@@ -24,13 +30,13 @@ function LineRow({ lv, month, base, onOpen }: { lv: LineView; month: boolean; ba
   const fill = Math.min(100, Math.max(0, lv.usedPercent))
   return (
     <button type="button" onClick={onOpen} className="flex w-full items-center gap-3 px-4 py-3 text-start transition-colors hover:bg-[var(--color-brand-elevated)]">
-      <TintedTile cat={BLOCK_META[lv.block].cat}><LineIcon name={lv.line.icon} /></TintedTile>
+      <LineTile line={lv.line} block={lv.block} />
       <span className="min-w-0 flex-1">
         <span dir="auto" className="block truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{catLabel(lv.line.name)}</span>
-        <span dir="auto" className="mt-0.5 block truncate text-xs" style={{ color: over ? 'var(--color-brand-amber)' : 'var(--color-brand-text-secondary)' }}>{sub}</span>
+        <span dir="auto" className="mt-0.5 block truncate text-xs" style={{ color: over ? 'var(--color-brand-red-text)' : 'var(--color-brand-text-secondary)' }}>{sub}</span>
         {month ? (
           <span aria-hidden className="mt-2 block h-1 overflow-hidden rounded-full bg-[var(--color-brand-elevated)]">
-            <span className="block h-full rounded-full" style={{ width: `${fill}%`, background: over || fill >= 90 ? 'var(--color-brand-amber)' : 'var(--color-brand-primary)' }} />
+            <span className="block h-full rounded-full" style={{ width: `${fill}%`, background: barColor(lv.usedPercent) }} />
           </span>
         ) : null}
       </span>

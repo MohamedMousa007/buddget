@@ -14,6 +14,8 @@ import { Switch } from '@/components/ui/switch'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { IconButton } from '@/components/ui/IconButton'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
+import { useActionToast } from '@/components/ui/ActionToast'
+import { removeMethodWithUndo } from '@/lib/accounts/methodUndo'
 import { followsAccountCurrency } from '@/lib/accounts/actions'
 import { availableCredit, cardDetails, sheetActivity } from '@/lib/accounts/cardDetails'
 import { cardLook } from '@/lib/payment/cardThemes'
@@ -56,7 +58,7 @@ export function CardDetailSheet({ open, onClose, card, parent, masked, onEdit, o
   const router = useRouter()
   const confirm = useConfirm()
   const updatePaymentMethod = useFinanceStore((s) => s.updatePaymentMethod)
-  const deletePaymentMethod = useFinanceStore((s) => s.deletePaymentMethod)
+  const toast = useActionToast()
   const debts = useFinanceStore((s) => s.debts)
   const expenses = useFinanceStore((s) => s.expenses)
   const payments = useFinanceStore((s) => s.debtPayments)
@@ -78,8 +80,9 @@ export function CardDetailSheet({ open, onClose, card, parent, masked, onEdit, o
       label: all.paymentMethods.delete, icon: <Trash2 size={17} />, destructive: true,
       onSelect: async () => {
         if (!(await confirm({ title: t.deleteCard, body: all.paymentMethods.deleteCardBody, confirmLabel: t.deleteCard, cancelLabel: t.keepCard, destructive: true }))) return
-        deletePaymentMethod(card.id)
+        const undo = removeMethodWithUndo(card.id, 'delete')
         onClose()
+        toast(lt.removed.cardDeleted(name), { undo, undoLabel: all.common.undo })
       },
     },
   ]

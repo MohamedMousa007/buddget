@@ -6,7 +6,7 @@ import { MASK } from '@/lib/privacy/mask'
 import type { PaymentMethod } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
 import { CardFaceChip } from './CardFaceChip'
-import { accountTitle, cardKindLabel, moneyFlex } from './accountDisplay'
+import { accountDisplayName, accountTitle, cardKindLabel, moneyFlex } from './accountDisplay'
 
 interface CardRowProps {
   method: PaymentMethod
@@ -39,8 +39,10 @@ export function CardRow({ method, parent, details, masked, onOpen }: CardRowProp
   } else if (method.type === 'bnpl') {
     sub = [kind, details?.kind === 'bnpl' ? `${details.paid}/${details.count}` : null, t.planInDebts].filter(Boolean).join(' · ')
   } else {
-    sub = [method.label?.trim() || kind, String(method.currency)].filter(Boolean).join(' · ')
+    sub = [kind, String(method.currency)].filter(Boolean).join(' · ')
   }
+  // The card's own Name, else the account's Name (or provider) with the kind, as the card sheet titles it.
+  const title = method.label?.trim() || (parent ? `${accountDisplayName(parent)} ${kind}` : bank)
   return (
     <button type="button" onClick={onOpen} data-raw-button-ok="a whole-row tap target, sized by its content"
       aria-label={[bank, kind, method.last4].filter(Boolean).join(' ')}
@@ -48,7 +50,7 @@ export function CardRow({ method, parent, details, masked, onOpen }: CardRowProp
       <CardFaceChip method={method} parent={parent} />
       <span className="min-w-0 flex-1">
         <span className="flex min-w-0 items-center gap-1.5">
-          <span className="truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{parent ? `${bank} ${kind}` : bank}</span>
+          <span className="truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{title}</span>
           {method.isDefault ? <Badge variant="muted" size="xs">{dict.paymentMethods.default}</Badge> : null}
         </span>
         <span dir="auto" className="mt-0.5 block truncate text-[0.8125rem] text-[var(--color-brand-text-muted)]">{sub}</span>

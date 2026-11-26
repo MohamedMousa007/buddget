@@ -32,7 +32,7 @@ export function useSubscriptionsHome(segment: Segment) {
       today,
       rows,
       hero: heroNumbers(subscriptions, expenses, today, base, rates),
-      lists: buildHomeLists(segment, rows, toBase),
+      lists: buildHomeLists(segment, rows, toBase, today),
       nudge: pickNudge(rows, today, new Set(dismissed)),
       strip: thirtyDayStrip(rows, today),
       insights: railInsights(rows),

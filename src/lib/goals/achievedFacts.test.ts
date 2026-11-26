@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Goal, SavingsTransaction } from '@/lib/store/types'
-import { achievedFacts, monthsTaken } from './achievedFacts'
+import { achievedFacts, goalJourney, monthsTaken } from './achievedFacts'
 
 const goal = (id: string, pockets: string[], createdAt: string, achievedAt: string): Goal => ({
   id, name: id, emoji: '', category: 'vacation', targetAmount: 1000, currency: 'EGP', manualCurrentAmount: 0, targetDate: null,
@@ -37,5 +37,23 @@ describe('achievedFacts', () => {
 
   it('nothing finished reads as zeros', () => {
     expect(achievedFacts([], txs)).toEqual({ deposits: 0, fastestMonths: 0, bestStreak: 0, depositsByGoal: {} })
+  })
+})
+
+describe('goalJourney ("You did it" facts, QA W3)', () => {
+  const made = new Date(2026, 10, 26, 9, 0)
+  const g = { createdAt: made.toISOString(), linkedSavingsAccountIds: ['p'] }
+  it('a goal made and finished the same day: under a month, and only deposits since it was made', () => {
+    const txs = [
+      ...['2026-10-01', '2026-10-05', '2026-10-09', '2026-10-12', '2026-10-20', '2026-11-02'].map((d) => tx('p', d)),
+      { ...tx('p', '2026-11-26'), id: 'opening', source: 'goal_opening' },
+      tx('p', '2026-11-26'),
+    ]
+    expect(goalJourney(g, txs, new Date(2026, 10, 26, 18, 0))).toEqual({ months: 0, deposits: 1 })
+  })
+  it('counts whole months only once the day of the month has come round', () => {
+    expect(goalJourney(g, [], new Date(2026, 11, 25)).months).toBe(0)
+    expect(goalJourney(g, [], new Date(2026, 11, 26)).months).toBe(1)
+    expect(goalJourney(g, [], new Date(2027, 2, 27)).months).toBe(4)
   })
 })

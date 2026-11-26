@@ -69,3 +69,48 @@ These come from the parallel write journeys W1–W5 after PR #51. The owner trea
 - [P3] The "Paying this off instead?" row shows two blank chips.
 - [P3] Zakat "This year ends 15 Oct 2026" when that date has passed: say it ended / is due. The Year starts date has no year.
 - [P3] The goals hero flashes "≈ 1,884,639 a month" before settling.
+
+## Conformance diffs (my review of docs/mockups/light-touch/compare/*.png, phone 390px)
+Re-run `node scripts/qa/light-touch-capture.mjs` against http://localhost:3001 after fixing, and check your screens match.
+
+**C1 Global, Flow, Insights**
+- AmountHero: the gap between the amount and its unit is far too wide (e.g. "−3,250      EGP"), because the input box doesn't shrink to its content. The mockup sits the unit right after the number (about 6px). This shows on every sheet.
+- Flow rows: a text label ("Food", "One-time", "Groceries") sits under each row icon. The mockup has no label.
+- [P1] Insights learning state (few days of data) crashes the whole app with "buddget hit a problem".
+- Font: verify Geist renders on every page (`checks.json` bodyFont).
+
+**C2 Accounts page, Wealth page**
+- The Accounts hero is a full-bleed band with a 3-cell row (In accounts / Set aside / Credit owed). The mockup is a rounded card: label, big number, net worth on the right, a segmented bar with a legend, then ONE note line "15,000 set aside · 14,220 owed on cards", and no cell row.
+- Accounts section heads: "+ Add account" should be a quiet text link, not a pill button.
+- Provider cards: mini cards sit in a stacked/overlapping row, then a "4 cards · Show all ▾" line. The app shows a loose grid with "2 cards".
+- The untracked Cash row title truncates to "Cash on…". It should read "Cash on hand" in full.
+- The Wealth page doesn't match:
+  - The mockup has a rounded hero (What you hold, net worth ▲ % on the right, a legend line "Savings 52% · Gold 31% · Stocks 17%", no cells).
+  - Then Add money (primary) and Withdraw (secondary).
+  - Then HOLDINGS rows (certificate, "Gold 21k · 18 g" with "3,210 a gram · ▲ 8.1% since you bought", stocks).
+  - Then ACTIVITY rows.
+  - Rework the app's band, cells, gold-rate strip, chips and pocket/investment lists into this structure. Keep every function reachable: the gold price goes into the gold holding row; pocket filters and "Add pocket or asset" become a quiet "+ Add" in the Holdings section head.
+
+**C3 Goals and savings sheets**
+- Goal detail: "E£ 15,000 of E£ 50,000" becomes "15,000 of 50,000" (no E£ anywhere). The status goes as a badge in the subtitle ("Save for · Travel [ON TRACK]"), not as a separate chip line. Use the mockup's "Behind for N months" card when the goal is behind.
+
+**C4 Debts, subscriptions, budget, paydays**
+- Budget page:
+  - Month | Plan segment full width at the top.
+  - Line rows use their category icon and tone (house, food, plug…), not a generic lavender wallet tile.
+  - Bars in the brand teal (amber when near the limit, red when over).
+  - The "My budget" plan selector moves above as a quiet row.
+- Budget line sheet: the header tile uses the line's category icon and tone. When data exists, show the "Sized from your last 3 bills" Buddgy note.
+- Paydays page (top level, as in the mockup):
+  - Hero "SALARY · MONTHLY → CIB PAYROLL", "31,500 EGP each month", "Next payday Nov 25 · On time 6 of 6", and a row of 6 month check circles.
+  - "Log a payday" as the primary filled button and Edit payday as secondary.
+  - History rows with the bank logo, "Salary · October", "+31,500 EGP", "Oct 25 · on time".
+  - Today the app shows a detail page with a back header, a line timeline and two secondary buttons.
+- Subscriptions page:
+  - The hero needs the progress bar (Paid X · Y still due this month).
+  - Remove the "November 2026 · 4 active +" header row.
+  - Sections "Next 30 days" / "Paid this month".
+  - Row amounts as "−494 EGP" with the original "$9.99 USD" under it. Today the app shows "≈ 530", "99.00" with no sign or unit.
+- Subscription sheet: remove the read-only "Tracking: Match from SMS" row (not in the mockup). Make sure Last charges shows.
+- Cancel subscription sheet: the logo is blank. Show the service logo as on the sub sheet.
+- Empty Debts: the mockup shows only the empty card, with no 0 hero.

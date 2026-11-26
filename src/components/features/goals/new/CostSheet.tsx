@@ -9,7 +9,7 @@ import { SelectableCard } from '@/components/ui/SelectableCard'
 import { BuddgyStatus } from '@/components/features/goals/new/BuddgyStatus'
 import { useT } from '@/lib/i18n'
 import { estimateGoalCost, type CostEstimate } from '@/lib/goals/goalAi'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { formatWhole } from '@/lib/utils/formatters'
 
 /** Buddgy's typical-cost helper: three priced options, one tap fills the target. Fails to a retry line. */
 export function CostSheet({
@@ -72,7 +72,7 @@ export function CostSheet({
             {est.options.map((o, i) => (
               <SelectableCard key={o.label} selected={picked === i} onClick={() => setPicked(i)} className="min-h-14 justify-between">
                 <span className="text-sm font-semibold">{o.label}</span>
-                <span className="font-mono-numbers text-sm">{formatCurrency(o.amount, currency, false)}</span>
+                <span className="font-mono-numbers text-sm">{formatWhole(o.amount)}</span>
               </SelectableCard>
             ))}
             {est.assumption ? <p className="text-xs text-[var(--color-brand-text-secondary)]">{est.assumption}</p> : null}
@@ -92,7 +92,7 @@ export function CostSheet({
               onClose()
             }}
           >
-            {chosen ? t.use(formatCurrency(chosen.amount, currency, false)) : t.loading}
+            {chosen ? t.use(formatWhole(chosen.amount)) : t.loading}
           </Button>
         )}
       </div>

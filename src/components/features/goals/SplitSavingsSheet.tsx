@@ -14,7 +14,7 @@ import { useT } from '@/lib/i18n'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Goal } from '@/lib/store/types'
 import { convertCurrency } from '@/lib/utils/currency'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { formatWhole } from '@/lib/utils/formatters'
 import { Badge } from '@/components/ui/badge'
 
 function Row({
@@ -53,7 +53,7 @@ function Row({
           <p className="truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{goal.name}</p>
           {keep !== null ? (
             <p className="truncate font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">
-              {t.perMonth(formatCurrency(Math.round((keep * pct) / 100), goal.currency, false))}
+              {t.perMonth(formatWhole(Math.round((keep * pct) / 100)))}
             </p>
           ) : null}
         </div>
@@ -92,7 +92,6 @@ export function SplitSavingsSheet({ onClose }: { onClose: () => void }) {
   const ordered = order.map((id) => byId.get(id)).filter((g): g is Goal => Boolean(g))
   const total = ordered.reduce((sum, g) => sum + (g.sharePct ?? 0), 0)
   const base = useMemo(() => fundingBasis(s, new Date()), [s])
-  const ccy = s.settings.baseCurrency
   const keep = base.usualKeep
 
   const move = (i: number, dir: -1 | 1) =>
@@ -122,7 +121,7 @@ export function SplitSavingsSheet({ onClose }: { onClose: () => void }) {
       {keep !== null ? (
         <div className="flex items-center justify-between gap-3 rounded-2xl bg-[var(--color-brand-elevated)] px-3.5 py-3">
           <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">
-            {t.keep(formatCurrency(Math.round(keep), ccy, false))}
+            {t.keep(formatWhole(Math.round(keep)))}
           </p>
           <Badge tone="card" size="sm" bordered={false} className="text-[var(--color-brand-text-secondary)]">{t.last3}</Badge>
         </div>

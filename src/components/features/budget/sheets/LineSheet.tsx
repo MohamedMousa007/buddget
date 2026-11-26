@@ -2,8 +2,9 @@
 
 import { inlineMoney } from '@/components/features/budget/chromeFormat'
 import { useCategoryLabel } from '@/hooks/useCategoryLabel'
-import { useState } from 'react'
-import { Calendar, RefreshCw, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
+import { Calendar, RefreshCw, Sparkles, Trash2 } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
@@ -16,15 +17,18 @@ import { PickerRow } from '@/components/ui/PickerRow'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { SettingsSwitchRow } from '@/components/features/settings/SettingsSwitchRow'
 import { SheetGroup } from '@/components/features/debts/lt/SheetParts'
-import { LineIcon } from '@/components/features/budget/LineIcon'
-import { TintedTile } from '@/components/features/budget/TintedTile'
+import { LineTile } from '@/components/features/budget/LineTile'
 import { useBudgetSheetsCopy } from '@/components/features/budget/useSheetsCopy'
 import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
-import { BLOCK_META } from '@/lib/budget/blocks'
+import { cycleKeyOf } from '@/lib/budget/activations'
 import { lineEditDirty, lineEditPatch } from '@/lib/budget/lineEdit'
+import { lineHistory } from '@/lib/budget/lineHistory'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useLocale } from '@/lib/i18n'
+import { joinList, useBudgetLtCopy } from '@/lib/i18n/budgetLtCopy'
 import type { LineView, PlanView } from '@/lib/budget/planView.types'
 import type { BudgetPlanCategory } from '@/lib/store/types'
-import { formatFlex } from '@/lib/utils/formatters'
+import { formatFlex, formatWhole } from '@/lib/utils/formatters'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 import { useLightTouchCopy } from '@/lib/i18n/lightTouchCopy'
 
@@ -75,8 +79,14 @@ function LineForm({
   const [dueDay, setDueDay] = useState<number | null>(initialDue)
   const [categories, setCategories] = useState<string[]>(line.expenseCategories ?? [])
   const [sheet, setSheet] = useState<'due' | 'cats' | null>(null)
-
-  const meta = BLOCK_META[lv.block]
+  const sz = useBudgetLtCopy().line
+  const { locale } = useLocale()
+  const { expenses, monthStartDay, rates } = useFinanceStore(useShallow((s) => ({ expenses: s.expenses, monthStartDay: s.settings.monthStartDay, rates: s.exchangeRates })))
+  // Buddgy's sizing note: what the line's categories cost in the last three months, when there is any.
+  const history = useMemo(
+    () => (linked ? null : lineHistory({ name: line.name, expenseCategories: categories }, expenses, cycleKeyOf(new Date(), monthStartDay), monthStartDay, view.base, rates)),
+    [linked, line.name, categories, expenses, monthStartDay, view.base, rates],
+  )
   const parsed = Number(amount)
   const value = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0
   const pct = view.income > 0 ? Math.round((value / view.income) * 100) : 0
@@ -111,7 +121,7 @@ function LineForm({
     <div className="flex min-h-0 flex-1 flex-col">
       <V3SheetHeader
         onClose={onClose}
-        leading={<TintedTile cat={meta.cat}><LineIcon name={line.icon} /></TintedTile>}
+        leading={<LineTile line={{ ...line, expenseCategories: categories }} block={lv.block} />}
         actions={<V3SheetHeader.Action tone="danger" icon={<Trash2 />} label={c.line.deleteLine} onClick={remove} />}
       >
         <V3SheetHeader.Title size="compact">{catLabel(line.name)}</V3SheetHeader.Title>
@@ -145,7 +155,15 @@ function LineForm({
           </Button>
         ) : null}
 
-        {line.rationale ? (
+        {history ? (
+          <div className="flex items-start gap-3 rounded-2xl bg-[var(--color-brand-primary-soft)] p-3" role="note">
+            <Sparkles aria-hidden className="mt-0.5 size-5 shrink-0 text-[var(--color-brand-primary-ink)]" />
+            <p dir="auto" className="min-w-0 flex-1 text-[0.8125rem] leading-snug text-[var(--color-brand-text-primary)]">
+              {sz.sized(history.months.length, lv.block === 'bills' ? 'bills' : 'months', joinList(locale, history.months.map((m) => formatWhole(m))))}
+              <b className="font-semibold"> {history.steady ? sz.high : sz.estimated}</b>
+            </p>
+          </div>
+        ) : line.rationale ? (
           <div className="flex items-start gap-3 rounded-2xl bg-[var(--color-brand-primary-soft)] p-3">
             <BuddgyIcon mood="happy" size={24} className="shrink-0 text-[var(--color-brand-primary-ink)]" />
             <p className="min-w-0 flex-1 text-[0.8125rem] leading-snug text-[var(--color-brand-text-primary)]">

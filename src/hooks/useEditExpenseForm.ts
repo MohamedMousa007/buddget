@@ -14,6 +14,7 @@ import { categorySourceAfterSave } from '@/lib/spending/merchantCategory'
 import { usePlanCategories } from '@/hooks/usePlanCategories'
 import { useSubmitOnce } from '@/hooks/useSubmitOnce'
 import { canonicalAmount, currencyDecimals, parseLocalizedAmount } from '@/lib/ui/amountParse'
+import { amountInputText } from '@/lib/ui/amountSanitize'
 import type { Expense, Currency, SpendExclusion } from '@/lib/store/types'
 import { clockOf, editedOccurredAt } from '@/lib/time/occurredAt'
 
@@ -31,7 +32,7 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
   const savedClock = clockOf(expense.occurredAt, expense.date)
   const [clock, setClock] = useState(savedClock)
   const [description, setDescription] = useState(expense.description)
-  const [amount, setAmount] = useState(expense.amount.toString())
+  const [amount, setAmount] = useState(amountInputText(expense.amount, expense.currency))
   const [currency, setCurrency] = useState<Currency>(expense.currency)
   const [category, setCategory] = useState<string>(expense.category)
   const [subcategory, setSubcategory] = useState<string | undefined>(expense.subcategory)

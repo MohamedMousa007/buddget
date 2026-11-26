@@ -34,7 +34,7 @@ import type {
   GoldKarat,
   InstallmentProvider,
 } from '@/lib/store/types'
-import { goalAmountPerPayment, goalDurationFromTarget, goalTargetDate, type GoalFrequency, type GoalUnit } from '@/lib/debts/borrowGoal'
+import { borrowScheduleStart, goalAmountPerPayment, goalDurationFromTarget, goalTargetDate, type GoalFrequency, type GoalUnit } from '@/lib/debts/borrowGoal'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useT } from '@/lib/i18n'
 import { defaultMethodId, storedMethodId } from '@/lib/accounts/resolve'
@@ -44,7 +44,7 @@ import { principalDuplicateKey } from '@/lib/debts/principalDuplicate'
 import { debtPayMethodId } from '@/lib/debts/debtPayMethod'
 import { switchBorrowGold, type GoldSwitchMemo } from '@/lib/debts/borrowGold'
 import { BLANK_DEBT_DRAFT, debtDraftDirty, debtDraftMissing, draftOfDebt } from '@/lib/debts/debtDraft'
-import { findPrincipalMatch, linkedExpensePatch, linkedIncomePatch, principalAccount, principalLegFields, principalMovesByDefault } from '@/lib/debts/principalLeg'
+import { findPrincipalMatch, linkedExpensePatch, linkedIncomePatch, principalAccount, principalLegAt, principalLegFields, principalMovesByDefault } from '@/lib/debts/principalLeg'
 
 type NewDebtPayload = Omit<Debt, 'id' | 'createdAt'>
 
@@ -216,7 +216,7 @@ export function useAddDebtSheet() {
       setInstallmentPaidWith(dd.defaultPaymentMethodId ?? '')
     }
     if (dd.goal) {
-      const { duration, unit } = goalDurationFromTarget(dd.goal.targetDate)
+      const { duration, unit } = goalDurationFromTarget(dd.goal.targetDate, borrowScheduleStart(dd))
       setGoalEnabled(true)
       setGoalDuration(String(duration))
       setGoalUnit(unit)
@@ -575,7 +575,7 @@ export function useAddDebtSheet() {
       const goalSpan = parseFloat(goalDuration)
       if (goalEnabled && goalSpan > 0 && direction === 'i_owe') {
         payload.goal = {
-          targetDate: goalTargetDate(goalSpan, goalUnit),
+          targetDate: goalTargetDate(goalSpan, goalUnit, borrowScheduleStart({ startDate: installmentStartDate, createdAt: new Date().toISOString() })),
           paymentFrequency: goalCadence,
           calculatedAmount: goalAmountPerPayment(total, goalSpan, goalUnit, goalCadence),
         }
@@ -612,9 +612,11 @@ export function useAddDebtSheet() {
       void _cur; void _gold; void _karat; void _via
       // A borrow or lend whose money moved keeps the picked day and time on that move.
       const savedDay = editingDebt.startDate ?? editingDebt.createdAt.slice(0, 10)
-      const principalAt = debtType === 'personal' && editingDebt.principalPaymentMethodId
+      const legAccount = editingDebt.principalPaymentMethodId ? paymentMethods.find((m) => m.id === editingDebt.principalPaymentMethodId) : undefined
+      const editedAt = debtType === 'personal' && editingDebt.principalPaymentMethodId
         ? editedDayFollowingAt(installmentStartDate, borrowTime, { day: savedDay, clock: clockOf(editingDebt.principalAt, savedDay), at: editingDebt.principalAt })
         : undefined
+      const principalAt = editedAt && legAccount ? principalLegAt(legAccount, editedAt) : editedAt
       updateDebt(editingDebt.id, { ...(currencyLocked ? unlocked : rest), ...(principalAt ? { principalAt } : {}) })
     } else {
       // A borrow or lend moved the money on its picked day and time; other debts book it now.

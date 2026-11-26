@@ -11,7 +11,9 @@ import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { IconButton } from '@/components/ui/IconButton'
 import { Switch } from '@/components/ui/switch'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
-import { cardsToFollow, changeAccountCurrency, closeAccount, ensureCashAccount, followsAccountCurrency, updateBalance } from '@/lib/accounts/actions'
+import { useActionToast } from '@/components/ui/ActionToast'
+import { removeMethodWithUndo } from '@/lib/accounts/methodUndo'
+import { cardsToFollow, changeAccountCurrency, ensureCashAccount, followsAccountCurrency, updateBalance } from '@/lib/accounts/actions'
 import { computeBalances } from '@/lib/accounts/balance'
 import { allowsNegativeBalance, editedBalance } from '@/lib/accounts/balanceEdit'
 import { sheetActivity } from '@/lib/accounts/cardDetails'
@@ -79,6 +81,8 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onA
   const { locale } = useLocale()
   const t = tAll.accountsPage
   const lt = useAccountsLtCopy().account
+  const removedCopy = useAccountsLtCopy().removed
+  const toast = useActionToast()
   const confirm = useConfirm()
   const cashCopy = useCashCurrencyCopy()
   const updatePaymentMethod = useFinanceStore((s) => s.updatePaymentMethod)
@@ -141,8 +145,9 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onA
       label: t.closeAccount, icon: <Trash2 size={17} />, destructive: true,
       onSelect: async () => {
         if (!(await confirm({ title: t.closeAccount, body: t.closeAccountBody(cards.length), confirmLabel: t.closeAccount, cancelLabel: t.keepOpen, destructive: true }))) return
-        closeAccount(method.id)
+        const undo = removeMethodWithUndo(method.id, 'close')
         onClose()
+        toast(removedCopy.accountClosed(method.label?.trim() || accountTitle(method)), { undo, undoLabel: tAll.common.undo })
       },
     }]),
   ]

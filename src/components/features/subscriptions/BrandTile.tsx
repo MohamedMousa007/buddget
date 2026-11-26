@@ -49,6 +49,8 @@ export function BrandTile({
           alt=""
           width={size}
           height={size}
+          // A sheet's big logo must be there when the sheet opens; lazy loading left it blank inside the sliding sheet.
+          loading={size >= 52 ? 'eager' : undefined}
           className={cn('size-full object-contain', s.pad)}
         />
       ) : (

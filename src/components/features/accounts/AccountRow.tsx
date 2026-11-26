@@ -6,7 +6,7 @@ import { BrandMark } from './BrandMark'
 import { bankLogoForName } from '@/lib/payment/bankLogos'
 import { CardStrip } from './CardStrip'
 import { Badge } from '@/components/ui/badge'
-import { accountColor, accountSubtitle, accountTitle, moneyFlex, smartSplit, splitMoney } from './accountDisplay'
+import { accountColor, accountDisplayName, accountSubtitle, accountTitle, moneyFlex, smartSplit, splitMoney } from './accountDisplay'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
 import { createElement } from 'react'
 
@@ -35,24 +35,27 @@ export function AccountRow({ account, masked, gap, shared = false, baseEquivalen
   const hasGap = gap != null && gap !== 0
   const isCash = method.type === 'cash'
   const isPrepaid = method.type === 'prepaid_card'
+  // The user's Name leads; the line under it then carries the digits, never the Name a second time.
+  const title = accountDisplayName(method)
+  const idLine = accountSubtitle({ ...method, label: undefined }, shared)
   const sub = method.excluded
     ? dict.exclusion.reasonMethod
     : hasGap
     ? (gap > 0 ? t.extraFindIt : t.missingFindIt)(splitMoney(Math.abs(gap), cur).int)
     : balance
       ? isCash
-        ? [t.estimateCountedByYou, accountSubtitle(method, shared)].filter(Boolean).join(' · ')
-        : accountSubtitle(method, shared) ?? (method.type === 'wallet' ? t.typeWallet : '')
+        ? [t.estimateCountedByYou, idLine].filter(Boolean).join(' · ')
+        : idLine || (method.type === 'wallet' ? t.typeWallet : '')
       : t.addBalanceToInclude
   return (
     <div>
       <button type="button" onClick={hasGap && onFix ? onFix : onOpen} data-raw-button-ok="a whole-row tap target, sized by its content"
-        className="flex min-h-[72px] w-full items-center gap-3.5 px-4 py-3 text-start" aria-label={accountTitle(method)}>
+        className="flex min-h-[72px] w-full items-center gap-3.5 px-4 py-3 text-start" aria-label={title}>
         <BrandMark name={accountTitle(method)} color={accountColor(method)} alert={hasGap} logo={isCash ? null : bankLogoForName(accountTitle(method))}
           icon={isCash ? createElement(paymentTypeIcon('cash'), { className: 'size-5', 'aria-hidden': true }) : undefined} />
         <span className="min-w-0 flex-1">
           <span className="flex min-w-0 items-center gap-1.5">
-            <span className="truncate text-base font-semibold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{accountTitle(method)}</span>
+            <span className="truncate text-base font-semibold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{title}</span>
             {shared || cur === base ? null : <Badge variant="muted" size="xs" className="font-mono-numbers">{cur}</Badge>}
             {isPrepaid ? <Badge variant="muted" size="xs">{t.typePrepaid}</Badge> : null}
           </span>

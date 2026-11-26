@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { amountCharsBefore, caretInGrouped, groupAmountText, sanitizeAmount, sanitizeGroupedAmount } from './amountSanitize'
+import { amountCharsBefore, amountInputText, caretInGrouped, groupAmountText, sanitizeAmount, sanitizeGroupedAmount } from './amountSanitize'
 
 describe('sanitizeAmount', () => {
   it('converts Arabic-Indic digits and decimal separators', () => {
@@ -51,5 +51,14 @@ describe('grouped amount entry (AmountHero shows 2,000 while typing)', () => {
     expect(caretInGrouped(groupAmountText('10500'), amountCharsBefore('1,0500', 4))).toBe(4)
     expect(caretInGrouped('1,000', 0)).toBe(0)
     expect(caretInGrouped('1,000', 9)).toBe(5)
+  })
+})
+
+describe('amountInputText (W1: an edit sheet shows 85.50, not 85.5)', () => {
+  it('keeps whole amounts whole and pads cents to the currency', () => {
+    expect(amountInputText(245, 'EGP')).toBe('245')
+    expect(amountInputText(85.5, 'EGP')).toBe('85.50')
+    expect(amountInputText(1.5, 'KWD')).toBe('1.500')
+    expect(amountInputText(0.0012, 'BTC')).toBe('0.0012')
   })
 })

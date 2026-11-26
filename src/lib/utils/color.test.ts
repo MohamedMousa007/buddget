@@ -15,7 +15,7 @@ describe('no hard-coded colours in the UIS8 surfaces', () => {
     'components/features/payments/PaymentMethodSetupSheet.tsx',
     'components/voice/VoiceRecordSheet.tsx',
     'components/voice/VoiceRecordOverlay.tsx',
-    'components/features/income/PaydayTimeline.tsx',
+    'components/features/income/PaydaysPage.tsx',
   ]
   it.each(FILES)('%s has no hex or rgb() literal', (file) => {
     const code = readFileSync(resolve(__dirname, '../../', file), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')

@@ -74,6 +74,8 @@ export interface RowModel {
   approx: boolean
   note: AmountNote | null
   priceChange: PriceChange | null
+  /** The day this month's charge was recorded (today's calendar month), else null. */
+  paidOn: string | null
 }
 
 const localIso = (d: Date) =>
@@ -179,7 +181,20 @@ export function buildRow(
     approx,
     note,
     priceChange: pc,
+    paidOn: paidOnThisMonth(sub.id, expenses, now),
   }
+}
+
+/** The latest real charge recorded against the subscription inside today's calendar month. */
+function paidOnThisMonth(subId: string, expenses: RowExpense[], today: Date): string | null {
+  const month = localIso(today).slice(0, 7)
+  let best: string | null = null
+  for (const e of expenses) {
+    if (e.linkedSubscriptionId !== subId || e.refundKind) continue
+    const d = e.date.slice(0, 10)
+    if (d.slice(0, 7) === month && (!best || d > best)) best = d
+  }
+  return best
 }
 
 function trialGroup(sub: RowSub, now: Date, yearly: boolean): GroupKey {
@@ -189,10 +204,14 @@ function trialGroup(sub: RowSub, now: Date, yearly: boolean): GroupKey {
   return days <= 7 ? 'week' : sameMonth(end, now) ? 'month' : 'later'
 }
 
-export const GROUP_ORDER: GroupKey[] = ['overdue', 'week', 'month', 'later', 'yearly']
+/** Upcoming as the Light touch mockup lists it: what is due in the next 30 days, then what was paid this month. */
+export type HomeGroupKey = 'next30' | 'paid' | 'later' | 'all' | 'ended'
+
+/** How far ahead "Next 30 days" looks. */
+export const NEXT_DAYS = 30
 
 export interface RowGroup {
-  key: GroupKey | 'all' | 'ended'
+  key: HomeGroupKey
   rows: RowModel[]
   /** Sum of charging rows, base currency. */
   total: number
@@ -204,35 +223,45 @@ function sortByDate(a: RowModel, b: RowModel): number {
 
 export interface HomeLists {
   groups: RowGroup[]
-  paused: RowModel[]
-  cancelled: RowModel[]
-  /** Subscriptions that count as "active" in the period header. */
+  /** Subscriptions that count as "active". */
   activeCount: number
 }
 
-/** Rows for a segment: Upcoming (grouped timeline), All (flat), Ended (flat). */
+const daysAhead = (r: RowModel, today: Date) => (r.date ? differenceInCalendarDays(parseISO(r.date), startOfDay(today)) : Infinity)
+
+/**
+ * Rows for a segment.
+ * - Upcoming: "Next 30 days" (overdue, due or a trial ending within 30 days), "Paid this month" (charged this calendar
+ *   month; such a plan leaves the timeline until next month), then "Later" for anything further out.
+ * - All: every plan, flat.
+ * - Ended: cancelled plans (still running to their end date or past it) and legacy paused ones; they never sit in Upcoming.
+ */
 export function buildHomeLists(
   segment: Segment,
   rows: RowModel[],
-  toBase: (r: RowModel) => number
+  toBase: (r: RowModel) => number,
+  today: Date = new Date()
 ): HomeLists {
   const total = (list: RowModel[]) => list.filter((r) => r.life === 'active').reduce((a, r) => a + toBase(r), 0)
   const activeCount = rows.filter((r) => r.life === 'active' || r.life === 'trial').length
-  const paused = rows.filter((r) => r.life === 'paused')
-  const cancelled = rows.filter((r) => r.life === 'cancelled')
   if (segment === 'ended') {
-    const list = rows.filter((r) => r.life === 'ended').sort(sortByDate)
-    return { groups: list.length ? [{ key: 'ended', rows: list, total: 0 }] : [], paused: [], cancelled: [], activeCount }
+    const list = rows.filter((r) => r.life === 'cancelled' || r.life === 'ended' || r.life === 'paused').sort(sortByDate)
+    return { groups: list.length ? [{ key: 'ended', rows: list, total: 0 }] : [], activeCount }
   }
   if (segment === 'all') {
     const list = [...rows].sort(sortByDate)
-    return { groups: list.length ? [{ key: 'all', rows: list, total: total(list) }] : [], paused: [], cancelled: [], activeCount }
+    return { groups: list.length ? [{ key: 'all', rows: list, total: total(list) }] : [], activeCount }
   }
-  const live = rows.filter((r) => r.group !== null)
-  const groups = GROUP_ORDER.map((key) => {
-    const list = live.filter((r) => r.group === key).sort(sortByDate)
-    return { key, rows: list, total: total(list) }
-  }).filter((g) => g.rows.length > 0)
-  return { groups, paused, cancelled, activeCount }
+  const live = rows.filter((r) => r.life === 'active' || r.life === 'trial')
+  const paid = live.filter((r) => r.life === 'active' && r.paidOn).sort((a, b) => (b.paidOn ?? '').localeCompare(a.paidOn ?? ''))
+  const paidIds = new Set(paid.map((r) => r.sub.id))
+  const open = live.filter((r) => !paidIds.has(r.sub.id) && r.group !== null)
+  const next30 = open.filter((r) => r.group === 'overdue' || daysAhead(r, today) <= NEXT_DAYS).sort(sortByDate)
+  const later = open.filter((r) => !next30.includes(r)).sort(sortByDate)
+  const groups: RowGroup[] = [
+    { key: 'next30' as const, rows: next30, total: total(next30) },
+    { key: 'paid' as const, rows: paid, total: paid.reduce((a, r) => a + toBase(r), 0) },
+    { key: 'later' as const, rows: later, total: total(later) },
+  ].filter((g) => g.rows.length > 0)
+  return { groups, activeCount }
 }
-

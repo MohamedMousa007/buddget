@@ -116,3 +116,11 @@ export function projectedFinish(remaining: number, perPeriod: number, frequency:
   if (!(perPeriod > 0)) return null
   return addMonthsIso(now, Math.max(1, Math.ceil(remaining / perPeriod)) * step(frequency))
 }
+
+/** The share offered when nothing better is known: 20% of savings, or what the other goals leave when that is less (at least 5%). */
+export function defaultSharePct(otherShare: number): number {
+  return Math.max(5, Math.min(20, Math.floor((100 - otherShare) / 5) * 5))
+}
+
+/** True when this goal's share and the other goals' shares together take more than all of the savings. */
+export const sharesOverFull = (otherShare: number, sharePct: number): boolean => otherShare + sharePct > 100

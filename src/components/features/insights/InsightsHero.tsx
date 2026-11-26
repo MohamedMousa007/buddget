@@ -65,10 +65,29 @@ interface Props {
   lockedCount: number
   onSeePro: () => void
   onAddIncome: () => void
+  /** No budget yet: the status slot becomes Flow's "Set budget" pill. */
+  onSetBudget?: () => void
+}
+
+/** Flow's set-budget pill: a 44px tap box around the band's 26px pill. */
+function SetBudgetPill({ onPress }: { onPress: () => void }) {
+  const t = useT()
+  return (
+    <button
+      data-raw-button-ok="a 44px tap box around the band's 26px pill; the inner span is the visible pill"
+      type="button"
+      onClick={onPress}
+      className="group/pill -my-[11px] -me-2 flex h-11 shrink-0 items-center px-2 outline-none [touch-action:manipulation]"
+    >
+      <span className="inline-flex h-[26px] items-center whitespace-nowrap rounded-full border border-[var(--flow-band-mix)] bg-[var(--flow-band-mix)] px-2.5 text-[0.75rem] font-medium text-[var(--flow-band-fg)] transition-colors group-hover/pill:bg-[color-mix(in_oklab,var(--flow-band-fg)_30%,transparent)] group-focus-visible/pill:ring-3 group-focus-visible/pill:ring-ring group-active/pill:translate-y-px">
+        {t.flow.setBudget}
+      </span>
+    </button>
+  )
 }
 
 /** The analysis hero: how the month ends at this pace, what a day lands it on budget, and the four findings behind it. */
-export function InsightsHero({ verdict, tiles, dayLabel, month, lockedCount, onSeePro, onAddIncome }: Props) {
+export function InsightsHero({ verdict, tiles, dayLabel, month, lockedCount, onSeePro, onAddIncome, onSetBudget }: Props) {
   const t = useT()
   const c = useInsightsLtCopy().hero
   const { locale } = useLocale()
@@ -150,7 +169,7 @@ export function InsightsHero({ verdict, tiles, dayLabel, month, lockedCount, onS
     <InsightsBand>
       <div className="flex items-center justify-between gap-2">
         <span className={`min-w-0 truncate ${BAND_LABEL}`}>{dayLabel}</span>
-        {chip ? <StatusChip tone={chip.tone} label={chip.label} /> : null}
+        {onSetBudget ? <SetBudgetPill onPress={onSetBudget} /> : chip ? <StatusChip tone={chip.tone} label={chip.label} /> : null}
       </div>
       <p className={`mt-2 text-[0.8125rem] ${BAND_FG2}`}>{lead}</p>
       <p className="mt-0.5 flex flex-wrap items-baseline gap-x-2">

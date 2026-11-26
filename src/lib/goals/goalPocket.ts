@@ -28,6 +28,17 @@ export function savedHomeProblem(ledger: LedgerInput, currency: Currency, saved:
   return saved > availableIn(home, ledger) + balanceEpsilon(currency) ? 'over_available' : null
 }
 
+/** Where the user said a new goal's saved money is: in an account, in another pocket, or outside buddget. */
+export type SavedSourceKind = 'account' | 'pocket' | 'outside'
+
+/**
+ * With the Pocket tab chosen, a saved amount needs a picked pocket: it never falls back to an account or to outside
+ * money (that booked the amount twice, QA W3 P1). Null when nothing blocks the pocket answer.
+ */
+export function savedPocketProblem(kind: SavedSourceKind, pocketId: string | null | undefined, saved: number): 'choose_pocket' | null {
+  return kind === 'pocket' && saved > 0 && !pocketId ? 'choose_pocket' : null
+}
+
 type GoalPocketStore = Pick<FinanceStore, 'addSavingsAccount' | 'updateGoal' | 'depositToSavings' | 'paymentMethods'> &
   Partial<Pick<FinanceStore, 'savingsAccounts' | 'transferBetweenPockets'>>
 

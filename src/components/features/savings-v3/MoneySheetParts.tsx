@@ -20,6 +20,7 @@ import type { Currency, SavingsAccount } from '@/lib/store/types'
 import { useLocale, useT } from '@/lib/i18n'
 import { useLightTouchCopy } from '@/lib/i18n/lightTouchCopy'
 import { PickerRow } from '@/components/ui/PickerRow'
+import { bankLogoBg, bankLogoForName } from '@/lib/payment/bankLogos'
 
 /** A translucent wash of a (CSS-variable or hex) colour. */
 export const tint = (color: string, pct: number) => `color-mix(in oklab, ${color} ${pct}%, transparent)`
@@ -27,6 +28,21 @@ export const tint = (color: string, pct: number) => `color-mix(in oklab, ${color
 /** A pocket's own icon on its own tint. */
 export function PocketTile({ account, className, iconClassName = 'size-5' }: { account: SavingsAccount; className: string; iconClassName?: string }) {
   const color = pocketColor(account)
+  // A pocket named for its bank (a CIB certificate) wears that bank's logo, as the bank's accounts do.
+  const named = account.emoji ? null : bankLogoForName(account.name)
+  const [failed, setFailed] = useState<string | null>(null)
+  const logo = named && named !== failed ? named : null
+  if (logo) {
+    return (
+      <span
+        className={`flex shrink-0 items-center justify-center overflow-hidden ring-1 ring-inset ring-[var(--color-brand-border)] ${className}`}
+        style={{ background: bankLogoBg(logo) ?? 'white' }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element -- a bundled bank logo, like BrandMark */}
+        <img src={logo} alt="" draggable={false} onError={() => setFailed(logo)} className="size-[70%] object-contain" />
+      </span>
+    )
+  }
   return (
     <span className={`flex shrink-0 items-center justify-center ${className}`} style={{ background: tint(color, 14), color }}>
       <SavingsAccountIcon account={account} className={iconClassName} />

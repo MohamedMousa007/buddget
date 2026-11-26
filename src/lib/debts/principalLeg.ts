@@ -85,10 +85,20 @@ export function findPrincipalMatch(args: {
   return best ? { kind: best.kind, id: best.id, date: best.date } : null
 }
 
+/**
+ * The instant a principal leg is booked at. The user said the money arrived (or left) and was shown "Adds X", so the
+ * leg must move the balance: a borrow dated before the account's opening balance was read is booked just after that
+ * anchor, since the balance engine treats anything at or before it as already inside the opening balance.
+ */
+export function principalLegAt(account: Pick<PaymentMethod, 'openingAt'>, at: string): string {
+  const anchor = account.openingAt ? new Date(account.openingAt).getTime() : NaN
+  return Number.isFinite(anchor) && new Date(at).getTime() <= anchor ? new Date(anchor + 1).toISOString() : at
+}
+
 /** The fields that give a new debt its principal leg. */
-export function principalLegFields(account: Pick<PaymentMethod, 'id'>, amount: number, currency: Debt['currency'], at: string):
+export function principalLegFields(account: Pick<PaymentMethod, 'id' | 'openingAt'>, amount: number, currency: Debt['currency'], at: string):
   Pick<Debt, 'principalPaymentMethodId' | 'principalAmount' | 'principalCurrency' | 'principalAt'> {
-  return { principalPaymentMethodId: account.id, principalAmount: amount, principalCurrency: currency, principalAt: at }
+  return { principalPaymentMethodId: account.id, principalAmount: amount, principalCurrency: currency, principalAt: principalLegAt(account, at) }
 }
 
 /**

@@ -14,7 +14,7 @@ import { useMask } from '@/lib/privacy/useMask'
 import { track } from '@/lib/analytics/events'
 import type { Insight, InsightKind } from '@/lib/insights/types'
 import { lockedFindings } from '@/lib/insights/analysis'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { formatCurrency, formatWhole } from '@/lib/utils/formatters'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import type { Currency } from '@/lib/store/types'
 import type { LockedFinding } from './LockedFindingSheet'
@@ -68,7 +68,8 @@ export function InsightsFeed({ insights, currency, advanced, onLocked }: Props) 
   const lt = useInsightsLtCopy().changed
   const maskBuddgy = useMask('buddgy')
   const maskLists = useMask('lists')
-  const money = useMemo(() => (n: number) => (maskLists ? MASK : formatCurrency(n, currency, false)), [currency, maskLists])
+  // On the page every figure is a plain grouped number, like the rest of Insights; what Buddgy is sent keeps the currency.
+  const money = useMemo(() => (n: number) => (maskLists ? MASK : formatWhole(n)), [maskLists])
   // What Buddgy is sent follows the privacy setting: with Buddgy masked, no figure leaves the page.
   const seedMoney = useMemo(() => (n: number) => (maskBuddgy ? MASK : formatCurrency(n, currency, false)), [maskBuddgy, currency])
   const locked = lockedFindings(insights, advanced)

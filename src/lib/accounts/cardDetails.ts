@@ -46,8 +46,15 @@ export function cardDetails(
  * The five latest live expenses for the sheet: the selected card's own when a card is selected (even when it has none,
  * so swiping always changes what is shown), the whole account's when the add-card slot or no card is selected.
  */
+/** The receiving leg of a move (a Cash out lands in Cash): money in for that account, listed in its Recent with a plus. */
+export function arrivesIn(e: Pick<Expense, 'toPaymentMethodId'>, accountId: string, methods: readonly PaymentMethod[]): boolean {
+  return Boolean(e.toPaymentMethodId) && resolveAccountId(e.toPaymentMethodId, methods) === accountId
+}
+
 export function sheetActivity(card: PaymentMethod | undefined, accountId: string, expenses: readonly Expense[], methods: readonly PaymentMethod[]): Expense[] {
   const live = expenses.filter((e) => !e.refundedAt)
-  const mine = card ? live.filter((e) => e.paymentMethodId === card.id) : live.filter((e) => resolveAccountId(e.paymentMethodId, methods) === accountId)
+  const mine = card
+    ? live.filter((e) => e.paymentMethodId === card.id)
+    : live.filter((e) => resolveAccountId(e.paymentMethodId, methods) === accountId || arrivesIn(e, accountId, methods))
   return mine.sort((a, b) => instantOf(b.occurredAt, b.date) - instantOf(a.occurredAt, a.date)).slice(0, 5)
 }

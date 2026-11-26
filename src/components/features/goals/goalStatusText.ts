@@ -1,14 +1,14 @@
 import type { Dictionary } from '@/lib/i18n/types'
 import type { Goal } from '@/lib/store/types'
 import type { GoalStatusView } from '@/lib/goals/goalStatus'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { formatWhole } from '@/lib/utils/formatters'
 
 type Home = Dictionary['goals']['home']
 
 export function goalStatusText(v: GoalStatusView, goal: Goal, t: Home): string {
   // Cycles are monthly for every goal, so behind/streak always count months.
   const q = false
-  const money = (n: number) => formatCurrency(n, goal.currency, false)
+  const money = (n: number) => formatWhole(n)
   switch (v.kind) {
     case 'over': return t.statusOver(money(v.params.amount ?? 0))
     case 'underLimit': return t.statusLeft(money(v.params.amount ?? 0))

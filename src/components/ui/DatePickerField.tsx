@@ -30,6 +30,8 @@ export interface DatePickerFieldProps {
    * it '' shows no time (a saved row with no known time). Absent (default): day only.
    */
   time?: { value: string; onChange: (time: string) => void; label: string; defaultNow?: boolean }
+  /** A `day` label that also names the year (a date that is not about this week, such as a zakat year start). Default: off. */
+  withYear?: boolean
 }
 
 /**
@@ -46,6 +48,7 @@ export function DatePickerField({
   mode = 'day',
   look = 'field',
   time,
+  withYear = false,
 }: DatePickerFieldProps) {
   const t = useT()
   const { locale } = useLocale()
@@ -55,7 +58,7 @@ export function DatePickerField({
     ? (placeholder ?? t.common.selectDate)
     : mode === 'month'
       ? `${(locale === 'ar' ? MON_AR : MONS)[Number(value.slice(5, 7)) - 1]} ${value.slice(0, 4)}`
-      : formatDatePillLabel(value, locale, t.expenseForm.today)
+      : `${formatDatePillLabel(value, locale, t.expenseForm.today)}${withYear ? ` ${value.slice(0, 4)}` : ''}`
   const clock = time ? time.value || (time.defaultNow ? nowClock() : '') : ''
   const clockAt = time && mode === 'day' && value ? mergeDayTime(value, clock) : undefined
   const shown = clockAt ? `${label} · ${formatClock(new Date(clockAt), locale)}` : label

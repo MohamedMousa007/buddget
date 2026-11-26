@@ -8,11 +8,11 @@ import { fundingBasis } from '@/lib/goals/fundingBasis'
 import { defaultGoalName } from '@/lib/goals/defaultGoalCopy'
 import { useT } from '@/lib/i18n'
 import type { ParsedGoal } from '@/lib/goals/goalAi'
-import { addMonthsIso, computePace, monthsUntil } from '@/lib/goals/goalPlan'
+import { addMonthsIso, computePace, defaultSharePct, monthsUntil, sharesOverFull } from '@/lib/goals/goalPlan'
 import { averageMonthlySpend, fieldAdvice } from '@/lib/goals/fieldAdvice'
 import { trackedDebtIds } from '@/lib/goals/debtGoal'
 import { clearDraft, loadDraft, saveDraft, type NewGoalDraft } from '@/lib/goals/newGoalDraft'
-import { createGoalPocket, goalHomeAccounts, savedHomeProblem } from '@/lib/goals/goalPocket'
+import { createGoalPocket, ELSEWHERE, goalHomeAccounts, savedHomeProblem, savedPocketProblem, type SavedSourceKind } from '@/lib/goals/goalPocket'
 import { isGoalIconKey, type GoalIconKey } from '@/lib/goals/goalVisual'
 import { balanceEpsilon } from '@/lib/savings/balanceMath'
 import { useLedgerInput } from '@/lib/accounts/useAccounts'
@@ -76,6 +76,7 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
   const [savedHome, setSavedHome] = useState<string | null>(draft?.savedHome ?? null)
   // Add goal (version C): the saved money can also sit in another pocket, and a goal of your own picks its icon.
   const [savedPocketId, setSavedPocketId] = useState<string | null>(draft?.savedPocketId ?? null)
+  const [savedKind, setSavedKind] = useState<SavedSourceKind>(draft?.savedPocketId ? 'pocket' : draft?.savedHome === ELSEWHERE ? 'outside' : 'account')
   const [icon, setIcon] = useState<GoalIconKey | null>(isGoalIconKey(draft?.icon) ? draft.icon : null)
   const [fundingMode, setFundingMode] = useState(draft?.fundingMode ?? 'share')
   const [sharePicked, setSharePicked] = useState<number | null>(draft?.sharePct ?? null)
@@ -95,11 +96,11 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
     return goalHomeAccounts(ledger.paymentMethods, currency).map((method) => ({ method, free: balances.get(method.id)?.free ?? 0 }))
   }, [ledger, currency])
   const savedPocket = savedPocketId ? ledger.savingsAccounts.find((a) => a.id === savedPocketId) : undefined
-  const savedProblem = savedPocketId
+  const savedProblem = savedPocketProblem(savedKind, savedPocketId, num(alreadySaved)) ?? (savedPocketId
     ? num(alreadySaved) > 0 && (!savedPocket || savedPocket.currency !== currency || num(alreadySaved) > savedPocket.currentBalance + balanceEpsilon(currency))
       ? 'over_available' as const
       : null
-    : savedHomeProblem(ledger, currency, num(alreadySaved), savedHome)
+    : savedHomeProblem(ledger, currency, num(alreadySaved), savedHome))
 
   const activeDebts = useMemo(() => s.debts.filter((d) => d.status !== 'cleared'), [s.debts])
   const kind = goalKind(category)
@@ -111,9 +112,10 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
     [target, alreadySaved, targetDate, frequency, usualKeep, now],
   )
 
-  // Until the user moves the slider, suggest the share that lands the goal on its date (100% when unknown).
+  // Until the user moves the slider, suggest the share that lands the goal on its date (a modest default when unknown).
+  const othersShare = s.goals.filter((g) => g.status === 'active' && g.category !== 'spending_control' && g.category !== 'debt_freedom' && g.fundingMode === 'share').reduce((sum, g) => sum + (g.sharePct ?? 0), 0)
   const sharePct =
-    sharePicked ?? (pace.ratio === null ? 100 : Math.min(100, Math.max(5, Math.ceil((pace.ratio * 100) / 5) * 5)))
+    sharePicked ?? (pace.ratio === null ? defaultSharePct(othersShare) : Math.min(Math.max(5, 100 - othersShare), Math.max(5, Math.ceil((pace.ratio * 100) / 5) * 5)))
   const setSharePct = setSharePicked
 
   const debtsOwed = useMemo(() => {
@@ -208,7 +210,7 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
   const otherShare = running.filter((g) => g.fundingMode === 'share').reduce((sum, g) => sum + (g.sharePct ?? 0), 0)
 
   const canNext2 =
-    kind === 'limit' ? num(limit) > 0 : kind === 'debt' ? linkedDebtIds.length > 0 && debtsOwed > 0 : target > 0 && name.trim().length > 0 && !savedProblem
+    kind === 'limit' ? num(limit) > 0 : kind === 'debt' ? linkedDebtIds.length > 0 && debtsOwed > 0 : target > 0 && name.trim().length > 0 && !savedProblem && !(fundingMode === 'share' && sharesOverFull(otherShare, sharePct))
 
   const submit = useCallback(() => {
     if (kind === 'save' && savedProblem) return setStep(2)
@@ -274,7 +276,7 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
     now, step, setStep, category, pickCategory, kind, name, setName, targetAmount, setTargetAmount,
     currency, setCurrency: (c: Currency) => setCurrency(clampFiatToAllowed(s.settings, c)),
     targetDate, setTargetDate, frequency, setFrequency, alreadySaved, setAlreadySaved,
-    savedHome, setSavedHome, homeAccounts, savedProblem, savedPocketId, setSavedPocketId, icon, setIcon, chooseCategory,
+    savedHome, setSavedHome, homeAccounts, savedProblem, savedPocketId, setSavedPocketId, savedKind, setSavedKind, icon, setIcon, chooseCategory,
     fundingMode, setFundingMode, sharePct, setSharePct, fixedAmount, setFixedAmount,
     limit, setLimit, spendingCategory, setSpendingCategory,
     advice, activeDebts, tracked, linkable, linkInstead, linkedDebtIds, toggleDebt, debtsOwed,

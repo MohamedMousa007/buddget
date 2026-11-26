@@ -14,7 +14,7 @@ import { chargeAmount, cycleState } from '@/lib/subscriptions/subscriptionForeca
 import { subscriptionToMonthlyPlannerAmount } from '@/lib/subscriptions/subscriptionRecurring'
 import { convertCurrency } from '@/lib/utils/currency'
 import { localTodayISO } from '@/lib/utils/localDate'
-import { formatFixed2, formatWhole } from '@/lib/utils/formatters'
+import { formatCurrency, formatFlex, formatWhole } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 import { BrandTile } from './BrandTile'
@@ -59,6 +59,9 @@ export function CancelSubscriptionSheet({ subId, onClose }: { subId: string | nu
   const hint = cancelHint(sub.brandKey)
   const price = chargeAmount(sub)
   const monthlyBase = convertCurrency(subscriptionToMonthlyPlannerAmount(price, sub.billingCycle), sub.currency, base, rates)
+  // "$9.99 USD" where the currency has a symbol, "190 EGP" where it does not.
+  const withSymbol = formatCurrency(price, sub.currency, 'smart')
+  const priceText = withSymbol.includes(sub.currency) ? formatFlex(price) : withSymbol
   const priceBase = sub.currency === base ? '' : `${formatWhole(convertCurrency(price, sub.currency, base, rates))} ${base}`
 
   return (
@@ -69,7 +72,7 @@ export function CancelSubscriptionSheet({ subId, onClose }: { subId: string | nu
       footer={
         <>
           <Button
-            variant="destructive"
+            variant="destructive-solid"
             size="cta-block"
             onClick={() => {
               cancel(sub.id, endsOn)
@@ -79,7 +82,7 @@ export function CancelSubscriptionSheet({ subId, onClose }: { subId: string | nu
           >
             {c.cancelCta}
           </Button>
-          <Button variant="ghost" size="cta-block" onClick={onClose}>
+          <Button variant="ghost" size="cta-block" className="text-[var(--color-brand-text-secondary)]" onClick={onClose}>
             {c.keep}
           </Button>
         </>
@@ -89,7 +92,7 @@ export function CancelSubscriptionSheet({ subId, onClose }: { subId: string | nu
         <BrandTile brandKey={sub.brandKey} name={sub.name} size={72} />
         <p dir="auto" className="mt-2.5 text-[1.0625rem] font-semibold text-[var(--color-brand-text-primary)]">{sub.name}</p>
         <p dir="ltr" className="mt-2 flex items-baseline gap-1.5 font-mono-numbers text-[1.75rem] font-semibold tracking-[-0.03em] text-[var(--color-brand-text-primary)]">
-          {formatFixed2(price)}
+          {priceText}
           <span className="text-[1.125rem] text-[var(--color-brand-text-muted)]">{sub.currency}</span>
         </p>
         <p className="mt-1 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{c.cancelLine(sub.planName ?? '', c.repeats[sub.billingCycle].toLowerCase(), priceBase)}</p>

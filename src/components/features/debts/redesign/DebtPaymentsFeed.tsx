@@ -3,13 +3,14 @@
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { format, isWithinInterval, parseISO } from 'date-fns'
-import { ArrowLeftRight, CalendarClock, CreditCard, Landmark, Plus, Smartphone } from 'lucide-react'
+import { ArrowLeftRight, CalendarClock, CreditCard, Landmark, Plus, Smartphone, Trash2 } from 'lucide-react'
 import { SwipeToDelete, type SwipeSide } from '@/components/expenses/SwipeToDelete'
 import { DateRangeField, Divider, FilterSheet, SectionHead } from '@/components/expenses/ExpenseFilters'
 import { FlowChipRow, type FlowChip } from '@/components/features/flow/FlowChipRow'
 import { TransactionRow } from '@/components/transactions/TransactionRow'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { IconButton } from '@/components/ui/IconButton'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { useLinkedDelete } from '@/hooks/useLinkedDelete'
@@ -21,7 +22,7 @@ import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { microClassName } from '@/lib/ui/microLabelStyle'
-import { formatWhole } from '@/lib/utils/formatters'
+import { formatFlex, formatWhole } from '@/lib/utils/formatters'
 import { useLocale, useT } from '@/lib/i18n'
 import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
@@ -44,6 +45,8 @@ interface Move {
   name: string
   method?: string
   amount: number
+  /** Grams for a gold debt's Added row (its balance is stored in grams). */
+  grams?: boolean
   date: string
 }
 
@@ -64,7 +67,7 @@ const NO_FILTERS: MoveFilters = { kind: 'paid', family: null, debtId: null, rang
  * family, one debt, a date range). Swipe a payment left to delete it: the paired expense goes with it, what is owed goes
  * back up, and Undo restores both (`deleteDebtPayment` / `restoreDebtPayment` via useLinkedDelete).
  */
-export function DebtPaymentsFeed({ payments }: { payments: PaymentVM[] }) {
+export function DebtPaymentsFeed({ payments, family }: { payments: PaymentVM[]; family?: DebtFamily }) {
   const t = useT()
   const lt = useFlowLtCopy()
   const c = useDebtsSubsLtCopy().debts
@@ -89,9 +92,10 @@ export function DebtPaymentsFeed({ payments }: { payments: PaymentVM[] }) {
   const moves = useMemo<Move[]>(() => {
     const debtOf = new Map(debtPayments.map((p) => [p.id, p.debtId]))
     const paid: Move[] = payments.map((p) => ({ id: p.id, kind: 'paid', family: p.family, debtId: debtOf.get(p.id) ?? '', name: p.name, method: p.method, amount: p.amount, date: p.date }))
-    const added: Move[] = debts.map((d) => ({ id: `added-${d.id}`, kind: 'added', family: debtFamily(d), debtId: d.id, name: d.name || d.person, amount: d.startingBalance, date: d.createdAt }))
-    return [...paid, ...added].sort((a, b) => b.date.localeCompare(a.date))
-  }, [payments, debts, debtPayments])
+    const added: Move[] = debts.map((d) => ({ id: `added-${d.id}`, kind: 'added', family: debtFamily(d), debtId: d.id, name: d.name || d.person, amount: d.startingBalance, grams: d.isGold, date: d.createdAt }))
+    // The page's tab (Borrowed · Installments · Cards) scopes the list: a borrow tab never lists installment payments.
+    return [...paid, ...added].filter((m) => !family || m.family === family).sort((a, b) => b.date.localeCompare(a.date))
+  }, [payments, debts, debtPayments, family])
 
   const shown = useMemo(() => {
     const bounds = filters.range === 'any'
@@ -111,7 +115,7 @@ export function DebtPaymentsFeed({ payments }: { payments: PaymentVM[] }) {
   const patch = (p: Partial<MoveFilters>) => setFilters((f) => ({ ...f, ...p }))
   const rangeLabel: Partial<Record<RangeKey, string>> = { any: tm.anyTime, all: tm.anyTime, today: t.common.today, yesterday: t.common.yesterday, week: tm.thisWeek, month: tm.thisMonth, custom: tm.custom }
   const debtName = (id: string) => { const d = debts.find((x) => x.id === id); return d?.name || d?.person || '' }
-  const narrowed = [filters.family, filters.debtId, filters.range !== 'any'].filter(Boolean).length
+  const narrowed = [filters.kind === 'added', filters.family, filters.debtId, filters.range !== 'any'].filter(Boolean).length
   const chips = [
     { key: 'kind', label: tm.moveAdded, selected: filters.kind === 'added', onPress: () => patch({ kind: filters.kind === 'added' ? 'paid' : 'added' }) },
     filters.family && { key: 'family', label: familyLabel[filters.family], selected: true, onPress: () => patch({ family: null, debtId: null }) },
@@ -119,7 +123,7 @@ export function DebtPaymentsFeed({ payments }: { payments: PaymentVM[] }) {
     filters.range !== 'any' && { key: 'range', label: rangeLabel[filters.range] ?? tm.custom, selected: true, onPress: () => patch({ range: 'any', from: '', to: '' }) },
   ].filter(Boolean) as FlowChip[]
   const todayIso = format(new Date(), 'yyyy-MM-dd')
-  const familyDebts = debts.filter((d) => !filters.family || debtFamily(d) === filters.family)
+  const familyDebts = debts.filter((d) => (!family || debtFamily(d) === family) && (!filters.family || debtFamily(d) === filters.family))
   const day = (iso: string) => parseISO(iso.slice(0, 10))
 
   return (
@@ -133,7 +137,7 @@ export function DebtPaymentsFeed({ payments }: { payments: PaymentVM[] }) {
       </div>
       {shown.length === 0 ? (
         <p className="py-8 text-center text-sm text-[var(--color-brand-text-secondary)]">
-          {payments.length === 0 && filters.kind === 'paid' && narrowed === 0 ? c.noPayments : tm.noMatch}
+          {filters.kind === 'paid' && narrowed === 0 ? c.noPayments : tm.noMatch}
         </p>
       ) : (
         <Card padding="none" divide className="mt-2 overflow-hidden">
@@ -148,7 +152,7 @@ export function DebtPaymentsFeed({ payments }: { payments: PaymentVM[] }) {
                 subtitle={m.kind === 'added'
                   ? `${tm.added} · ${familyLabel[m.family]} · ${formatLocalized(day(m.date), 'MMM d', locale)}`
                   : [formatLocalized(day(m.date), 'MMM d', locale), m.method].filter(Boolean).join(' · ')}
-                amount={m.kind === 'paid' ? `−${formatWhole(m.amount)}` : formatWhole(m.amount)}
+                amount={m.kind === 'paid' ? `−${formatWhole(m.amount)}` : m.grams ? `${formatFlex(m.amount)} g` : formatWhole(m.amount)}
                 amountColor={m.kind === 'added' ? 'var(--color-brand-text-secondary)' : undefined}
               />
             )
@@ -163,7 +167,19 @@ export function DebtPaymentsFeed({ payments }: { payments: PaymentVM[] }) {
                 }}
                 deleteLabel={t.common.delete}
               >
-                {row}
+                {/* A mouse cannot swipe: devices with a fine pointer get a bin beside the row. */}
+                <div className="flex items-center">
+                  <div className="min-w-0 flex-1">{row}</div>
+                  <IconButton
+                    variant="danger"
+                    size="md"
+                    aria-label={`${t.common.delete}: ${c.paymentTitle(m.name, formatLocalized(day(m.date), 'MMMM', locale))}`}
+                    className="me-2 hidden shrink-0 [@media(pointer:fine)]:inline-flex"
+                    onClick={() => void removeDebtPayment(m.id)}
+                  >
+                    <Trash2 />
+                  </IconButton>
+                </div>
               </SwipeToDelete>
             ) : (
               <div key={m.id}>{row}</div>

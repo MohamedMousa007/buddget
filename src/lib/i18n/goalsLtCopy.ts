@@ -45,6 +45,9 @@ const EN = {
     newGoal: 'New goal',
     savedWord: 'saved',
     toGo: (amount: string) => `${amount} to go`,
+    leftToReach: (left: string, target: string) => `${left} left to reach ${target}`,
+    spentWord: 'spent',
+    ofLimit: (amount: string) => `of ${amount} limit`,
     byDate: (plan: string, date: string) => `${plan} · by ${date}`,
     shareOfSavings: (pct: number) => `${pct}% of savings`,
     addItMyself: 'I add it myself',
@@ -96,6 +99,7 @@ const EN = {
     shareUnknown: 'After your first month I will show what this share comes to.',
     shareResult: (amount: string) => `≈ ${amount} a month`,
     shareTaken: (pct: number) => `With your other goals, ${pct}% of savings is taken`,
+    shareOver: (pct: number) => `With your other goals that is ${pct}% of savings. Lower this share or another goal's to 100% or less.`,
     shareAria: 'Share of savings',
     fixedTitle: 'A fixed amount',
     fixedSub: 'The same amount each time',
@@ -169,6 +173,8 @@ const EN = {
   // en:zakat
   zakat: {
     yearEnds: (date: string) => `This year ends ${date}`,
+    yearEnded: (date: string) => `This year ended ${date}`,
+    yearEndedDue: (date: string) => `This year ended ${date} · zakat is due`,
     settings: 'Zakat settings',
     due: (unit: string) => `${unit} due`,
     notDue: 'Not due',
@@ -269,6 +275,9 @@ const AR: GoalsLtCopy = {
     newGoal: 'هدف جديد',
     savedWord: 'مدخر',
     toGo: (amount) => `${amount} متبقٍ`,
+    leftToReach: (left, target) => `${left} متبقٍ للوصول إلى ${target}`,
+    spentWord: 'مصروف',
+    ofLimit: (amount) => `من حد ${amount}`,
     byDate: (plan, date) => `${plan} · بحلول ${date}`,
     shareOfSavings: (pct) => `${pct}% من المدخرات`,
     addItMyself: 'أضيفه بنفسي',
@@ -315,6 +324,7 @@ const AR: GoalsLtCopy = {
     shareUnknown: 'بعد شهرك الأول سأريك كم تساوي هذه النسبة.',
     shareResult: (amount) => `≈ ${amount} في الشهر`,
     shareTaken: (pct) => `مع أهدافك الأخرى، تُستخدم ${pct}% من المدخرات`,
+    shareOver: (pct) => `مع أهدافك الأخرى يصبح المجموع ${pct}% من المدخرات. اخفض هذه النسبة أو نسبة هدف آخر إلى 100% أو أقل.`,
     shareAria: 'نسبة المدخرات',
     fixedTitle: 'مبلغ ثابت',
     fixedSub: 'المبلغ نفسه كل مرة',
@@ -387,6 +397,8 @@ const AR: GoalsLtCopy = {
   // ar:zakat
   zakat: {
     yearEnds: (date) => `تنتهي هذه السنة ${date}`,
+    yearEnded: (date) => `انتهت هذه السنة ${date}`,
+    yearEndedDue: (date) => `انتهت هذه السنة ${date} · الزكاة مستحقة`,
     settings: 'إعدادات الزكاة',
     due: (unit) => `${unit} مستحقة`,
     notDue: 'غير مستحقة',
