@@ -5,6 +5,7 @@ import type { CardDetails } from '@/lib/accounts/cardDetails'
 import { MASK } from '@/lib/privacy/mask'
 import type { PaymentMethod } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
+import { useAccountsLtCopy } from '@/lib/i18n/accountsLtCopy'
 import { CardFaceChip } from './CardFaceChip'
 import { accountDisplayName, accountTitle, cardKindLabel, moneyFlex } from './accountDisplay'
 
@@ -24,6 +25,7 @@ interface CardRowProps {
 export function CardRow({ method, parent, details, masked, onOpen }: CardRowProps) {
   const dict = useT()
   const t = dict.accountsPage
+  const dueDayLabel = useAccountsLtCopy().addCard.dueDay
   const kind = cardKindLabel(method.type, t)
   const bank = accountTitle(parent ?? method)
   const fmt = (n: number, cur: string) => (masked ? MASK : `${moneyFlex(n, cur)} ${cur}`)
@@ -31,7 +33,7 @@ export function CardRow({ method, parent, details, masked, onOpen }: CardRowProp
   if (details?.kind === 'credit') {
     const owed = details.outstanding ?? 0
     const limit = details.limit != null ? `${t.cardLimit} ${fmt(details.limit, details.currency)}` : null
-    const due = details.dueDay != null ? `${dict.moneyFlows.ccDueDay} ${details.dueDay}` : null
+    const due = details.dueDay != null ? `${dueDayLabel} ${details.dueDay}` : null
     const rest = [limit, due].filter(Boolean).join(' · ')
     sub = owed > 0
       ? <>{t.owed} <b className="font-mono-numbers font-semibold text-[var(--color-brand-amber)]">{fmt(owed, details.currency)}</b>{rest ? ` · ${rest}` : ''}</>

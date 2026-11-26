@@ -77,7 +77,7 @@ export { accountDisplayName, accountTitle }
 export function accountIdentifier(m: Pick<PaymentMethod, 'label' | 'last4'>): string | null {
   const label = m.label?.trim()
   if (label) return label
-  return m.last4 ? `\u2022\u2022 ${m.last4}` : null
+  return m.last4 ? `\u2022\u2022${m.last4}` : null
 }
 
 /** True when another open account shares this one's provider ("HSBC" USD and "HSBC" EGP): the row then has to say which. */
@@ -93,6 +93,6 @@ export function sharesProvider(m: PaymentMethod, all: readonly PaymentMethod[]):
 export function accountSubtitle(m: Pick<PaymentMethod, 'label' | 'last4' | 'currency'>, shared: boolean): string | null {
   if (!shared) return accountIdentifier(m)
   const label = m.label?.trim()
-  const digits = m.last4 ? `\u2022\u2022 ${m.last4}` : null
+  const digits = m.last4 ? `\u2022\u2022${m.last4}` : null
   return [String(m.currency), label, digits].filter(Boolean).join(' \u00b7 ')
 }

@@ -45,7 +45,8 @@ export function AccountRow({ account, masked, gap, shared = false, baseEquivalen
     : balance
       ? isCash
         ? [t.estimateCountedByYou, idLine].filter(Boolean).join(' · ')
-        : idLine || (method.type === 'wallet' ? t.typeWallet : '')
+        // "••1234 · EGP" as the mockup's account rows read; a shared provider's line already leads with the currency.
+        : (shared ? idLine : [idLine, cur].filter(Boolean).join(' · ')) || (method.type === 'wallet' ? t.typeWallet : '')
       : t.addBalanceToInclude
   return (
     <div>
@@ -65,7 +66,7 @@ export function AccountRow({ account, masked, gap, shared = false, baseEquivalen
           {money ? (
             <>
               <span className="block font-mono-numbers text-base font-medium tracking-[-0.02em] text-[var(--color-brand-text-primary)]">
-                {masked ? MASK : <>{money.int}<span className="opacity-60">{money.dec}</span></>}
+                {masked ? MASK : money.int + money.dec}
               </span>
               {!masked && balance && balance.held > 0 ? (
                 <span dir="auto" className="mt-0.5 block font-mono-numbers text-[0.71875rem] font-semibold text-[var(--color-brand-primary-ink)]">{t.freeLabel(moneyFlex(balance.free, cur))}</span>

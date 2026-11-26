@@ -1,7 +1,7 @@
 'use client'
 
 import { fitBigNumber } from '@/components/features/hero/fitText'
-import { Eye, EyeOff } from 'lucide-react'
+import { EyeOff } from 'lucide-react'
 import { BAND_FG2, BAND_MIX, BandScale, HeroBand } from '@/components/features/hero/HeroBand'
 import { IconButton } from '@/components/ui/IconButton'
 import { MASK } from '@/lib/privacy/mask'
@@ -10,7 +10,10 @@ import type { AccountsModel } from '@/lib/accounts/useAccounts'
 import { useAccountsLtCopy } from '@/lib/i18n/accountsLtCopy'
 import { moneyFlex, smartSplit } from './accountDisplay'
 
+/** Legend squares, as the mockup draws them: band ink, gold, then ink at 62%. */
 const TONES = ['var(--flow-band-fg)', 'var(--color-brand-gold)', 'color-mix(in oklab, var(--flow-band-fg) 62%, transparent)', 'color-mix(in oklab, var(--flow-band-fg) 40%, transparent)']
+/** Bar segments, as the mockup draws them: band ink, separated by lighter tones toward the rest (opacity 1, 1, .62, .4). */
+const BAR_OPACITY = [1, 1, 0.62, 0.4]
 
 /** One provider (or Cash) in the split bar, in the base currency. */
 export interface HeroSegment {
@@ -55,11 +58,13 @@ export function AccountsHero({ model, currency, netWorth, creditOwed, segments, 
     <HeroBand
       contained
       label={t.availableNow}
-      aside={
-        <IconButton onClick={onToggleHidden} aria-label={hidden ? t.showBalances : t.hideBalances} variant="onBand" size="sm">
-          {hidden ? <EyeOff className="size-4" aria-hidden /> : <Eye className="size-4" aria-hidden />}
+      // The mockup's hero has no eye. Hiding balances lives in Settings > Privacy; while they are hidden, the eye stays
+      // here so they can be shown again where they were masked.
+      aside={hidden ? (
+        <IconButton onClick={onToggleHidden} aria-label={t.showBalances} aria-pressed variant="onBand" size="sm">
+          <EyeOff className="size-4" aria-hidden />
         </IconButton>
-      }
+      ) : undefined}
       numbers={
         <>
           <p className="flex min-w-0 items-baseline gap-1.5">
@@ -78,15 +83,15 @@ export function AccountsHero({ model, currency, netWorth, creditOwed, segments, 
       bar={
         <>
           <div className="flex h-1.5 gap-[3px]" style={total > 0 ? undefined : { background: BAND_MIX, borderRadius: 9999 }}>
-            {bars.map((s, i) => <span key={s.key} className="h-full rounded-full" style={{ width: `${pct(s.value)}%`, background: TONES[s.key === 'rest' ? 3 : i] }} />)}
+            {bars.map((s, i) => <span key={s.key} className="h-full rounded-full bg-[var(--flow-band-fg)]" style={{ width: `${pct(s.value)}%`, opacity: BAR_OPACITY[s.key === 'rest' ? 3 : i] }} />)}
           </div>
           <BandScale>
-            <span className="flex min-w-0 items-center gap-3 overflow-hidden">
+            {/* Names are never cut ("CIB 44%"): a legend entry that does not fit wraps onto a hidden second line. */}
+            <span className="flex h-[15.75px] min-w-0 flex-wrap items-center gap-x-3 overflow-hidden">
               {shown.map((s, i) => (
-                <span key={s.key} className="inline-flex min-w-0 items-center gap-1.5">
+                <span key={s.key} className="inline-flex h-[15.75px] shrink-0 items-center gap-1.5 whitespace-nowrap">
                   <span className="size-2 shrink-0 rounded-[2px]" style={{ background: TONES[i] }} aria-hidden />
-                  <span className="truncate">{s.label}</span>
-                  <span className="shrink-0">{Math.round(pct(s.value))}%</span>
+                  {s.label} {Math.round(pct(s.value))}%
                 </span>
               ))}
             </span>

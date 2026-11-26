@@ -26,7 +26,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { useAccountsLtCopy } from '@/lib/i18n/accountsLtCopy'
 import { useLightTouchCopy } from '@/lib/i18n/lightTouchCopy'
-import { accountTitle, cardKindLabel, moneyFlex } from './accountDisplay'
+import { accountDisplayName, accountTitle, cardKindLabel, moneyFlex } from './accountDisplay'
 import { AccountNameValue } from './AccountPicker'
 import { SheetActivity } from './SheetActivity'
 
@@ -70,7 +70,8 @@ export function CardDetailSheet({ open, onClose, card, parent, masked, onEdit, o
   const activity = useMemo(() => sheetActivity(card, parent?.id ?? card.id, expenses, methods), [card, parent, expenses, methods])
   const kind = cardKindLabel(card.type, t)
   const bank = accountTitle(parent ?? card)
-  const name = card.label?.trim() || `${bank} ${kind}`
+  // The card's own Name, else the account's Name (or provider) with the kind, as the card rows title it.
+  const name = card.label?.trim() || `${parent ? accountDisplayName(parent) : bank} ${kind}`
   const look = cardLook(card)
   const money = (n: number, cur: string) => (masked ? MASK : moneyFlex(n, cur))
 
@@ -92,10 +93,15 @@ export function CardDetailSheet({ open, onClose, card, parent, masked, onEdit, o
     const owed = details.outstanding ?? 0
     const available = availableCredit(details.limit, details.outstanding)
     const pct = details.limit ? Math.max(0, Math.min(100, Math.round((owed / details.limit) * 100))) : null
-    const facts = [
-      available !== null && details.limit !== null ? lt.card.availableOf(money(available, details.currency), money(details.limit, details.currency)) : null,
-      details.dueDay !== null ? lt.card.dueOn(ordinal(details.dueDay)) : null,
-    ].filter(Boolean).join(' \u00b7 ')
+    // "<b>21,580</b> available of 30,000 · due on the 15th": the available figure leads in bold, as in the mockup.
+    const SLOT = '\u0000'
+    const [availBefore, availAfter] = available !== null && details.limit !== null
+      ? lt.card.availableOf(SLOT, money(details.limit, details.currency)).split(SLOT)
+      : [null, null]
+    const due = details.dueDay !== null ? lt.card.dueOn(ordinal(details.dueDay)) : null
+    const facts = availBefore !== null && available !== null ? (
+      <>{availBefore}<b className="font-mono-numbers font-semibold text-[var(--color-brand-text-primary)]">{money(available, details.currency)}</b>{availAfter}{due ? ` \u00b7 ${due}` : ''}</>
+    ) : due
     detail = (
       <Card padding="none" className="mx-4 rounded-2xl p-4">
         <div className="flex items-baseline justify-between gap-3">

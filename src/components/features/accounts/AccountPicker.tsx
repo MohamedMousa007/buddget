@@ -9,7 +9,7 @@ import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { BrandMark } from './BrandMark'
 import { bankLogoForName } from '@/lib/payment/bankLogos'
-import { accountColor, accountSubtitle, accountTitle, moneyFlex, sharesProvider } from './accountDisplay'
+import { accountColor, accountDisplayName, accountSubtitle, accountTitle, moneyFlex, sharesProvider } from './accountDisplay'
 
 interface AccountPickerProps {
   accounts: AccountView[]
@@ -31,7 +31,7 @@ interface AccountPickerProps {
 
 /** The account's name and its digits, apart, as a row value shows them ("CIB Current ••1234"). */
 export function AccountNameValue({ method }: { method: AccountView['method'] }) {
-  const name = method.label?.trim() || accountTitle(method)
+  const name = accountDisplayName(method)
   return (
     <>
       <BrandMark name={accountTitle(method)} color={accountColor(method)} size={24} logo={bankLogoForName(accountTitle(method))} />
@@ -57,8 +57,8 @@ function AccountPickerRow({ accounts, value, onChange, label, noneLabel, showBal
     ...(noneLabel !== undefined ? [{ id: NONE, name: noneLabel, glyph: <BrandMark name="" color="var(--color-brand-sunken)" size={38} icon={<CreditCard className="size-4 text-[var(--color-brand-text-muted)]" aria-hidden />} /> }] : []),
     ...accounts.map((a) => ({
       id: a.method.id,
-      name: a.method.label?.trim() || accountTitle(a.method),
-      subtitle: accountSubtitle(a.method, sharesProvider(a.method, methods)) ?? String(a.method.currency),
+      name: accountDisplayName(a.method),
+      subtitle: accountSubtitle({ ...a.method, label: undefined }, sharesProvider(a.method, methods)) ?? String(a.method.currency),
       glyph: <BrandMark name={accountTitle(a.method)} color={accountColor(a.method)} size={38} logo={bankLogoForName(accountTitle(a.method))} />,
       trailing: showBalance && a.balance ? <span className="font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{moneyFlex(a.balance.free, String(a.method.currency))}</span> : undefined,
     })),
@@ -81,7 +81,8 @@ function AccountPickerInline({ accounts, value, onChange, label, noneLabel, show
   if (!current && noneLabel === undefined) return null
   const methods = accounts.map((a) => a.method)
   const freeText = (a: AccountView) => (a.balance ? t.freeLabel(`${moneyFlex(a.balance.free, String(a.method.currency))} ${String(a.method.currency)}`) : t.setBalance)
-  const subtitle = (a: AccountView) => accountSubtitle(a.method, sharesProvider(a.method, methods)) ?? String(a.method.currency)
+  // The user's Name leads (as on Accounts); the line under it carries the digits, never the Name a second time.
+  const subtitle = (a: AccountView) => accountSubtitle({ ...a.method, label: undefined }, sharesProvider(a.method, methods)) ?? String(a.method.currency)
   const noneMark = <BrandMark name="" color="var(--color-brand-sunken)" size={36} icon={<CreditCard className="size-4 text-[var(--color-brand-text-muted)]" aria-hidden />} />
   return (
     <div>
@@ -90,7 +91,7 @@ function AccountPickerInline({ accounts, value, onChange, label, noneLabel, show
         {current ? <BrandMark name={accountTitle(current.method)} color={accountColor(current.method)} size={36} logo={bankLogoForName(accountTitle(current.method))} /> : noneMark}
         <span className="min-w-0 flex-1">
           <span className="block text-xs text-[var(--color-brand-text-muted)]">{label ?? t.from}</span>
-          <span className="block truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{current ? accountTitle(current.method) : noneLabel}</span>
+          <span className="block truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{current ? accountDisplayName(current.method) : noneLabel}</span>
           {current && !showBalance ? <span dir="ltr" className="block truncate text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{subtitle(current)}</span> : null}
         </span>
         {current && showBalance ? <span className="font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{freeText(current)}</span> : null}
@@ -113,7 +114,7 @@ function AccountPickerInline({ accounts, value, onChange, label, noneLabel, show
               className="flex min-h-14 w-full items-center gap-3 px-3.5 text-start">
               <BrandMark name={accountTitle(a.method)} color={accountColor(a.method)} size={32} logo={bankLogoForName(accountTitle(a.method))} />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{accountTitle(a.method)}</span>
+                <span className="block truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{accountDisplayName(a.method)}</span>
                 <span dir="ltr" className="block truncate text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{subtitle(a)}</span>
               </span>
               {showBalance ? <span className="font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{freeText(a)}</span> : null}

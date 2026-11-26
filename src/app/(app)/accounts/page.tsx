@@ -216,13 +216,14 @@ export default function AccountsPage() {
   // Untracked Cash can still be the default payment (BUD-87): its menu sits beside the row's tap target, not inside it.
   // Light touch: a dimmed "Cash on hand · Not tracked" row whose Start tracking asks how much cash there is.
   const cashRow = model.needsCash ? (
-          <div className="flex min-h-[72px] w-full items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] py-3 pe-2 ps-4">
+          <div className={`flex min-h-[72px] w-full items-center rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] py-3 ps-4 ${cashIsDefault ? 'gap-3.5 pe-4' : 'gap-3 pe-0'}`}>
             <span className="opacity-50"><CashOnHandMark size={44} /></span>
             <span className="min-w-0 flex-1">
-              <span className="block text-base font-semibold leading-tight tracking-[-0.01em] text-[var(--color-brand-text-secondary)]">{ltCash.title}</span>
+              <span className="block truncate text-base font-semibold tracking-[-0.01em] text-[var(--color-brand-text-secondary)]">{ltCash.title}</span>
               <span className="mt-0.5 block truncate text-[0.8125rem] text-[var(--color-brand-text-muted)]">{ltCash.notTracked}</span>
             </span>
-            <Button variant="outline" size="touch" className="shrink-0 rounded-full font-semibold text-[var(--color-brand-primary-ink)]" onClick={() => setActiveModal('askCashOnHand')}>{ltCash.startTracking}</Button>
+            {/* The mockup's quiet 36px option pill; its ::after keeps the 44px touch target. */}
+            <Button variant="outline" className="relative h-9 shrink-0 rounded-full px-3 text-[0.8125rem] font-semibold text-[var(--color-brand-primary-ink)] after:absolute after:left-1/2 after:top-1/2 after:min-h-11 after:min-w-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']" onClick={() => setActiveModal('askCashOnHand')}>{ltCash.startTracking}</Button>
             {cashIsDefault ? null : (
               <IconButton aria-label={all.common.moreActions} aria-haspopup="menu" aria-expanded={cashMenu !== null} onClick={(e) => setCashMenu(e.currentTarget.getBoundingClientRect())}>
                 <MoreVertical size={18} />

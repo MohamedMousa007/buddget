@@ -16,6 +16,8 @@ import { MASK } from '@/lib/privacy/mask'
 import type { Expense, PaymentMethod } from '@/lib/store/types'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { clockOf } from '@/lib/time/occurredAt'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { moneyFlex } from './accountDisplay'
 
 interface SheetActivityProps {
@@ -41,6 +43,18 @@ export function SheetActivity({ title, rows, masked, method, emptyLine, onLeave 
   const setEditingExpenseId = useSettingsStore((s) => s.setEditingExpenseId)
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
   const openAddExpenseWithPrefill = useSettingsStore((s) => s.openAddExpenseWithPrefill)
+
+  // "Today · 20:42", "Yesterday · 08:15", "Nov 16 · 13:05": the day, then the clock time when the row has one.
+  const now = new Date()
+  const today = localTodayISO(now)
+  const yesterday = localTodayISO(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1))
+  const when = (e: Expense) => {
+    const at = new Date(instantOf(e.occurredAt, e.date))
+    const day = localTodayISO(at)
+    const label = day === today ? all.common.today : day === yesterday ? all.common.yesterday : formatLocalized(at, 'MMM d', locale)
+    const clock = clockOf(e.occurredAt, day)
+    return clock ? `${label} \u00b7 ${clock}` : label
+  }
 
   let body
   if (!ready) {
@@ -68,8 +82,8 @@ export function SheetActivity({ title, rows, masked, method, emptyLine, onLeave 
       <TransactionRow key={e.id} icon={<CategoryIcon category={e.category} className="size-5" />}
         iconBg={categoryChipColors(e.category).bg} iconFg={categoryChipColors(e.category).fg} title={e.description || categoryLabel(all, e.category)}
         onClick={() => { onLeave(); setEditingExpenseId(e.id); setActiveModal('editExpense') }}
-        subtitle={formatLocalized(new Date(instantOf(e.occurredAt, e.date)), 'MMM d', locale)}
-        amount={masked ? MASK : `${arrivesIn(e, method.id, methods) ? '+' : '−'}${moneyFlex(e.amount, String(e.currency))}`}
+        subtitle={when(e)}
+        amount={masked ? MASK : <>{arrivesIn(e, method.id, methods) ? '+' : '−'}{moneyFlex(e.amount, String(e.currency))} <span className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{String(e.currency)}</span></>}
         amountColor={arrivesIn(e, method.id, methods) ? 'var(--color-brand-green)' : undefined} />
     ))
   }

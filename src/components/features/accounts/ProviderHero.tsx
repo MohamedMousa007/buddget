@@ -1,7 +1,7 @@
 'use client'
 
 import type { CSSProperties } from 'react'
-import { ChevronLeft, Eye, EyeOff } from 'lucide-react'
+import { ChevronLeft, EyeOff } from 'lucide-react'
 import { fitBigNumber } from '@/components/features/hero/fitText'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
@@ -55,9 +55,12 @@ export function ProviderHero({ group, base, hidden, onToggleHidden, onBack }: Pr
             <h2 className="truncate text-[1.0625rem] font-bold">{group.name}</h2>
             {full && full !== group.name ? <span className={`block truncate text-[0.78125rem] ${FG2}`}>{full}</span> : null}
           </div>
-          <IconButton onClick={onToggleHidden} aria-label={hidden ? t.showBalances : t.hideBalances} aria-pressed={hidden} variant="onBand" size="sm">
-            {hidden ? <EyeOff className="size-4" aria-hidden /> : <Eye className="size-4" aria-hidden />}
-          </IconButton>
+          {/* No eye in the mockup: hiding lives in Settings > Privacy; while hidden, this one shows the balances again. */}
+          {hidden ? (
+            <IconButton onClick={onToggleHidden} aria-label={t.showBalances} aria-pressed variant="onBand" size="sm">
+              <EyeOff className="size-4" aria-hidden />
+            </IconButton>
+          ) : null}
         </div>
         <p className={`mt-4 text-xs font-semibold ${FG2}`}>{t.totalHere}</p>
         <p className="flex min-w-0 items-baseline gap-1.5">

@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/card'
 import { AmountHero } from '@/components/ui/AmountHero'
 import { DatePickerField } from '@/components/ui/DatePickerField'
 import { PickerRow } from '@/components/ui/PickerRow'
-import { PocketPickerField } from '@/components/features/savings-v3/MoneySheetParts'
+import { PocketPickerField, PocketTile } from '@/components/features/savings-v3/MoneySheetParts'
 import { useDiscardPrompt } from '@/components/features/savings-v3/useDiscardPrompt'
 import type { PocketVM } from '@/components/features/savings-v3/types'
 import { cashOut, defaultSetAsidePocketId, setAside } from '@/lib/accounts/actions'
@@ -111,7 +111,9 @@ export function MoveMoneySheet({ open, onClose, accounts, initialAccountId, init
         </V3SheetHeader>
         <div className="min-h-0 flex-1 overflow-y-auto pb-3">
           <AmountHero value={amount} onChange={setAmount} currency={cur} aria-label={title}
-            top={<MoveIconTile>{mode === 'cash' ? <Banknote /> : <Landmark />}</MoveIconTile>}
+            top={mode === 'set' && pocket
+              ? <span aria-hidden><PocketTile account={pocket} className="size-[52px] rounded-2xl" iconClassName="size-6" /></span>
+              : <MoveIconTile>{mode === 'cash' ? <Banknote /> : <Landmark />}</MoveIconTile>}
             line={(
               <>
                 <span dir="auto" className="mt-3 block text-base font-semibold text-[var(--color-brand-text-primary)]">{title}</span>
