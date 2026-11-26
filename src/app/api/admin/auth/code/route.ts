@@ -38,11 +38,14 @@ export async function POST(req: Request) {
     await hashPassword(password)
     return bad(SIGN_IN_ERROR, 401)
   }
-  if (isLocked(cred)) return bad('Too many failed attempts. Try again in 15 minutes.', 429)
+  if (isLocked(cred)) {
+    await hashPassword(password)
+    return bad(SIGN_IN_ERROR, 401)
+  }
   if (!(await verifyPassword(password, cred.password_hash))) {
     const { locked } = await recordFailure(ctx.service, cred)
     await ctx.audit('auth.login_failed', { metadata: { locked, step: 'password' } })
-    return bad(locked ? 'Too many failed attempts. Locked for 15 minutes.' : SIGN_IN_ERROR, 401)
+    return bad(SIGN_IN_ERROR, 401)
   }
   return send(ctx)
 }

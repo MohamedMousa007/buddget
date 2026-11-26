@@ -47,11 +47,15 @@ export async function clearFailures(service: ServiceClient, userId: string): Pro
   await service.from('admin_credentials').update({ failed_attempts: 0, locked_until: null }).eq('user_id', userId)
 }
 
-export async function allowAttempt(service: ServiceClient, key: string, windowSeconds: number, max: number): Promise<boolean> {
+export async function rateHitState(service: ServiceClient, key: string, windowSeconds: number, max: number): Promise<'allowed' | 'limited' | 'error'> {
   const { data, error } = await service.rpc('admin_rate_hit', { p_key: key, p_window_seconds: windowSeconds, p_max_hits: max })
   if (error) {
     console.error('[admin/auth] rate-limit rpc failed', error.message)
-    return false
+    return 'error'
   }
-  return data !== false
+  return data === false ? 'limited' : 'allowed'
+}
+
+export async function allowAttempt(service: ServiceClient, key: string, windowSeconds: number, max: number): Promise<boolean> {
+  return (await rateHitState(service, key, windowSeconds, max)) === 'allowed'
 }

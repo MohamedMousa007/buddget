@@ -96,7 +96,16 @@ const SINGLETON_TABLES: ReadonlySet<TableName> = new Set<TableName>(['profiles',
 type PgError = { message: string; code?: string } | null
 type Writes = Array<() => Promise<unknown>>
 
-class OpRunner {
+const UPSERT_CHUNK = 500
+const ID_CHUNK = 100
+
+function chunked<T>(list: readonly T[], size: number): T[][] {
+  const out: T[][] = []
+  for (let i = 0; i < list.length; i += size) out.push(list.slice(i, i + size))
+  return out
+}
+
+export class OpRunner {
   errors: string[] = []
   adopted: string[] = []
   writes = 0
@@ -162,7 +171,7 @@ class OpRunner {
       const id = String((row as { id: string }).id)
       this.parked.push({ table, id, rootId: rootOf ? rootOf(row) : id, code: res.error.code ?? '' })
     }
-    this.ops.push(() => write(rows))
+    for (const part of chunked(rows, UPSERT_CHUNK)) this.ops.push(() => write(part))
   }
 
   /** Another device already wrote this (template, payday): keep its row id, carry our newer edit onto it. */
@@ -187,17 +196,19 @@ class OpRunner {
 
   delete(table: TableName, ids: readonly string[], label: string) {
     if (ids.length === 0) return
-    this.removals.push(() =>
-      (this.client.from(table) as never as {
-        delete: () => { in: (col: string, vals: readonly string[]) => Promise<{ error: { message: string } | null }> }
-      })
-        .delete()
-        .in('id', ids)
-        .then((res) => {
-        this.writes++
-        if (res.error) this.errors.push(`${label}: ${res.error.message}`)
-      })
-    )
+    for (const part of chunked(ids, ID_CHUNK)) {
+      this.removals.push(() =>
+        (this.client.from(table) as never as {
+          delete: () => { in: (col: string, vals: readonly string[]) => Promise<{ error: { message: string } | null }> }
+        })
+          .delete()
+          .in('id', part)
+          .then((res) => {
+          this.writes++
+          if (res.error) this.errors.push(`${label}: ${res.error.message}`)
+        })
+      )
+    }
   }
 
   /**
@@ -216,19 +227,21 @@ class OpRunner {
       byTime.set(at, [...(byTime.get(at) ?? []), id])
     }
     for (const [at, group] of byTime) {
-      this.removals.push(() =>
-        (this.client.from(table) as never as {
-          update: (patch: { deleted_at: string }) => {
-            in: (col: string, vals: readonly string[]) => Promise<{ error: { message: string } | null }>
-          }
-        })
-          .update({ deleted_at: toServerTime(at) })
-          .in('id', group)
-          .then((res) => {
-          this.writes++
-          if (res.error) this.errors.push(`${label}: ${res.error.message}`)
-        })
-      )
+      for (const part of chunked(group, ID_CHUNK)) {
+        this.removals.push(() =>
+          (this.client.from(table) as never as {
+            update: (patch: { deleted_at: string }) => {
+              in: (col: string, vals: readonly string[]) => Promise<{ error: { message: string } | null }>
+            }
+          })
+            .update({ deleted_at: toServerTime(at) })
+            .in('id', part)
+            .then((res) => {
+            this.writes++
+            if (res.error) this.errors.push(`${label}: ${res.error.message}`)
+          })
+        )
+      }
     }
   }
 

@@ -15,6 +15,7 @@ export async function GET(request: Request) {
     .select('number, subject, status, kind, created_at, updated_at, first_response_at, last_message_at, last_message_from, last_message_preview, user_last_read_at')
     .eq('user_id', uid)
     .order('last_message_at', { ascending: false, nullsFirst: false })
+    .order('id', { ascending: false })
     .limit(50)
   if (error) return NextResponse.json({ error: 'Could not load your requests' }, { status: 500 })
   const tickets = (data ?? []).map(({ user_last_read_at, ...t }) => {

@@ -6368,6 +6368,7 @@ export type Database = {
           p_plan?: string
           p_search?: string
           p_state?: string
+          p_with_total?: boolean
         }
         Returns: Json
       }

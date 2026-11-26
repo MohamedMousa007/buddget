@@ -22,7 +22,7 @@ export async function POST(req: Request) {
 
   const cred = await loadCredentials(ctx.service, ctx.user.id)
   if (!cred?.setup_completed_at) return bad('Finish security setup first.', 409)
-  if (isLocked(cred)) return bad('Locked after failed attempts. Use your password and emailed code.', 429)
+  if (isLocked(cred)) return bad('Biometric unlock is not set up on this device.', 401)
   if (!(await allowAttempt(ctx.service, `admin-bio:${ctx.user.id}`, 900, 12))) return bad('Too many attempts.', 429)
 
   const provided = createHash('sha256').update(secret).digest()

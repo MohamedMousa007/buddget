@@ -242,8 +242,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!welcomeUserId) return
     const flag = `bdg-welcome-asked:${welcomeUserId}`
+    const retryKey = `bdg-welcome-retry:${welcomeUserId}`
+    const WELCOME_RETRY_MS = 60 * 60 * 1000
+    const WELCOME_MAX_FAILURES = 5
+    let failures = 0
     try {
       if (localStorage.getItem(flag)) return
+      const [lastAt, count] = (localStorage.getItem(retryKey) ?? '').split(':').map(Number)
+      failures = count || 0
+      if (failures >= WELCOME_MAX_FAILURES) return
+      if (lastAt && Date.now() - lastAt < WELCOME_RETRY_MS) return
     } catch {
       return
     }
@@ -251,6 +259,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .then(({ apiFetchAuth }) => apiFetchAuth('/api/auth/welcome', { method: 'POST' }))
       .then((res) => {
         if (res.ok) localStorage.setItem(flag, '1')
+        else localStorage.setItem(retryKey, `${Date.now()}:${failures + 1}`)
       })
       .catch(() => undefined)
   }, [welcomeUserId])

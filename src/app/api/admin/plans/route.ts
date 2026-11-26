@@ -1,6 +1,7 @@
 import { FEATURE_CATALOG, LIMIT_CATALOG, isFeatureKey, isLimitKey } from '@/lib/entitlements/limits'
 import { can } from '@/lib/admin/permissions'
 import { bad, guardAdmin, json, readJson } from '@/lib/server/admin/guard'
+import { invalidatePlatformSettings } from '@/lib/server/platformCache'
 import type { Json } from '@/lib/supabase/database.types'
 
 const KEY_RE = /^[a-z][a-z0-9_]{1,31}$/
@@ -87,6 +88,7 @@ export async function POST(req: Request) {
     })
     if (error) return bad('Could not save the plan.', 500)
     const { data: after } = await ctx.service.from('plans').select('*').eq('key', p.key).maybeSingle()
+    invalidatePlatformSettings()
     await ctx.audit('billing.plan_upsert', { targetType: 'plan', targetId: p.key, summary: `${existing ? 'Edited' : 'Created'} plan ${p.key}`, metadata: { before: (existing ?? null) as Json, after: (after ?? null) as Json } })
     return json({ ok: true })
   }
@@ -96,6 +98,7 @@ export async function POST(req: Request) {
     if (!plan || plan.status !== 'active') return bad('Only an active plan can be the default.')
     await ctx.service.from('plans').update({ is_default: false }).eq('is_default', true)
     await ctx.service.from('plans').update({ is_default: true }).eq('key', body.key)
+    invalidatePlatformSettings()
     await ctx.audit('billing.default_plan', { targetType: 'plan', targetId: body.key, summary: `Made ${body.key} the default plan` })
     return json({ ok: true })
   }
@@ -108,6 +111,7 @@ export async function POST(req: Request) {
     const { count } = await ctx.service.from('user_entitlements').select('user_id', { count: 'exact', head: true }).eq('plan_key', body.key)
     if (count) return bad(`${count} member(s) are on this plan. Archive it instead.`)
     await ctx.service.from('plans').delete().eq('key', body.key)
+    invalidatePlatformSettings()
     await ctx.audit('billing.plan_delete', { targetType: 'plan', targetId: body.key, summary: `Deleted plan ${body.key}` })
     return json({ ok: true })
   }

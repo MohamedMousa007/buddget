@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const rpc = vi.fn()
 vi.mock('@/lib/supabase/service', () => ({ createServiceRoleClient: () => ({ rpc }) }))
 
-import { memoryRateLimitOk, publicApiRateLimitOk, resetMemoryRateLimit } from '@/lib/server/publicApiRateLimit'
+import { memoryGateOk, memoryRateLimitOk, publicApiRateLimitOk, resetMemoryGate, resetMemoryRateLimit, tooManyRequests } from '@/lib/server/publicApiRateLimit'
 
 describe('memoryRateLimitOk', () => {
   it('allows 240 hits per minute then blocks, and recovers after the window', () => {
@@ -43,5 +43,23 @@ describe('publicApiRateLimitOk', () => {
     rpc.mockResolvedValue({ data: true, error: null })
     for (let i = 0; i < 240; i++) await publicApiRateLimitOk('5.5.5.5')
     expect(await publicApiRateLimitOk('5.5.5.5')).toBe(false)
+  })
+})
+
+describe('memoryGateOk', () => {
+  beforeEach(() => resetMemoryGate())
+
+  it('refuses past the cap per key within the window and recovers after it', () => {
+    const t = 5_000_000
+    for (let i = 0; i < 3; i++) expect(memoryGateOk('a', 3, 60, t)).toBe(true)
+    expect(memoryGateOk('a', 3, 60, t)).toBe(false)
+    expect(memoryGateOk('b', 3, 60, t)).toBe(true)
+    expect(memoryGateOk('a', 3, 60, t + 61_000)).toBe(true)
+  })
+
+  it('answers 429 with Retry-After', () => {
+    const res = tooManyRequests(60)
+    expect(res.status).toBe(429)
+    expect(res.headers.get('Retry-After')).toBe('60')
   })
 })

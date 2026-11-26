@@ -85,6 +85,11 @@ const remember = (path: string, data: unknown) => {
 // Nothing from a locked session may outlive it.
 if (typeof window !== 'undefined') window.addEventListener(ADMIN_LOCKED_EVENT, () => { responseCache.clear(); inflight.clear() })
 
+/** Drops cached responses whose path starts with `prefix`, so the next read after a write is not served from the 15 s cache. */
+export function invalidate(prefix: string): void {
+  for (const path of [...responseCache.keys()]) if (path.startsWith(prefix)) responseCache.delete(path)
+}
+
 /** One request per path at a time: identical concurrent GETs share the same promise. */
 function fetchOnce<T>(path: string): Promise<T> {
   let p = inflight.get(path) as Promise<T> | undefined

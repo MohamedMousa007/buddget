@@ -26,7 +26,10 @@ export async function POST(req: Request) {
     await hashPassword(body.password)
     return bad(SIGN_IN_ERROR, 401)
   }
-  if (isLocked(cred)) return bad('Too many failed attempts. Try again in 15 minutes.', 429)
+  if (isLocked(cred)) {
+    await hashPassword(body.password)
+    return bad(SIGN_IN_ERROR, 401)
+  }
   if (!(await allowAttempt(ctx.service, `admin-login:${ctx.user.id}`, 900, 12))) return bad('Too many attempts. Try again later.', 429)
 
   // Both factors are always evaluated so a wrong password and a wrong code are indistinguishable.
@@ -35,7 +38,7 @@ export async function POST(req: Request) {
   if (!passwordOk || !codeOk) {
     const { locked } = await recordFailure(ctx.service, cred)
     await ctx.audit('auth.login_failed', { metadata: { locked } })
-    return bad(locked ? 'Too many failed attempts. Locked for 15 minutes.' : SIGN_IN_ERROR, 401)
+    return bad(SIGN_IN_ERROR, 401)
   }
 
   await clearFailures(ctx.service, ctx.user.id)

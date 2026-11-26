@@ -1,4 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
+
+const afterTasks: Array<() => Promise<void>> = []
+vi.mock('next/server', () => ({ after: (fn: () => Promise<void>) => afterTasks.push(fn) }))
+
 import type { ServiceClient } from '@/lib/supabase/service'
 import { METRIC_MAX_AGE_MS, METRIC_REFRESH_AFTER_MS, adminMetrics } from './metrics'
 
@@ -22,19 +26,21 @@ describe('adminMetrics refresh on view', () => {
     expect(rpc).not.toHaveBeenCalled()
   })
 
-  it('refreshes once when older than 15 minutes, then serves the new rows', async () => {
-    const stale = [{ key: 'overview', value: 'old', computed_at: ago(METRIC_REFRESH_AFTER_MS + 1000) }]
-    const fresh = [{ key: 'overview', value: 'new', computed_at: ago(1000) }]
-    const { service, rpc } = fakeService([stale, fresh], true)
-    expect(await adminMetrics(service, ['overview'], NOW)).toEqual({ overview: 'new' })
-    expect(rpc).toHaveBeenCalledTimes(1)
+  it('serves a 15-45 minute old value at once and refreshes after the response', async () => {
+    afterTasks.length = 0
+    const { service, rpc } = fakeService([[{ key: 'overview', value: 'old', computed_at: ago(METRIC_REFRESH_AFTER_MS + 1000) }]], true)
+    expect(await adminMetrics(service, ['overview'], NOW)).toEqual({ overview: 'old' })
+    expect(rpc).not.toHaveBeenCalled()
+    expect(afterTasks).toHaveLength(1)
+    await afterTasks[0]!()
     expect(rpc).toHaveBeenCalledWith('admin_refresh_metrics_if_stale', { p_max_age: '15 minutes' })
   })
 
-  it('while another admin holds the lock, a 15-45 minute old value is still served', async () => {
-    const { service, rpc } = fakeService([[{ key: 'overview', value: 'old', computed_at: ago(METRIC_REFRESH_AFTER_MS + 1000) }]], false)
-    expect(await adminMetrics(service, ['overview'], NOW)).toEqual({ overview: 'old' })
-    expect(rpc).toHaveBeenCalledTimes(1)
+  it('waits for the refresh when a key is missing, then serves the new rows', async () => {
+    const fresh = [{ key: 'overview', value: 'new', computed_at: ago(1000) }]
+    const { service, rpc } = fakeService([[], fresh], true)
+    expect(await adminMetrics(service, ['overview'], NOW)).toEqual({ overview: 'new' })
+    expect(rpc).toHaveBeenCalledWith('admin_refresh_metrics_if_stale', { p_max_age: '15 minutes' })
   })
 
   it('computes live when the value is missing or older than 45 minutes', async () => {

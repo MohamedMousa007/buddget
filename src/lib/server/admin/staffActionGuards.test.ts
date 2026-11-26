@@ -1,13 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const allowAttempt = vi.fn()
-vi.mock('./credentials', () => ({ allowAttempt: (...a: unknown[]) => allowAttempt(...a) }))
+const rateHitState = vi.fn()
+vi.mock('./credentials', () => ({ allowAttempt: (...a: unknown[]) => allowAttempt(...a), rateHitState: (...a: unknown[]) => rateHitState(...a) }))
 
 import { allowUserAction, auditPiiRead, holdsAllPermissions, USER_ACTION_LIMITS } from './staffActionGuards'
 
 const ctx = { service: {} as never, staff: { id: 's1' } as never }
 
-beforeEach(() => allowAttempt.mockReset())
+beforeEach(() => {
+  allowAttempt.mockReset()
+  rateHitState.mockReset()
+})
 
 describe('allowUserAction', () => {
   it('limits per staff member and per target', async () => {
@@ -47,8 +51,14 @@ describe('auditPiiRead', () => {
 
   beforeEach(() => audit.mockReset())
 
+  it('still writes the audit row when the rate-limit check errors', async () => {
+    rateHitState.mockResolvedValue('error')
+    await auditPiiRead(full(true), 'user_view', 'user', 'u1')
+    expect(audit).toHaveBeenCalledTimes(1)
+  })
+
   it('audits once per window when the reader sees unmasked data', async () => {
-    allowAttempt.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
+    rateHitState.mockResolvedValueOnce('allowed').mockResolvedValueOnce('limited')
     await auditPiiRead(full(true), 'user_view', 'user', 'u1')
     await auditPiiRead(full(true), 'user_view', 'user', 'u1')
     expect(audit).toHaveBeenCalledTimes(1)
@@ -58,7 +68,7 @@ describe('auditPiiRead', () => {
   it('skips masked readers unless asked', async () => {
     await auditPiiRead(full(false), 'user_list', 'user', null)
     expect(audit).not.toHaveBeenCalled()
-    allowAttempt.mockResolvedValue(true)
+    rateHitState.mockResolvedValue('allowed')
     await auditPiiRead(full(false), 'user_activity', 'user', 'u1', { onlyWithPii: false })
     expect(audit).toHaveBeenCalledTimes(1)
   })

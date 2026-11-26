@@ -16,6 +16,8 @@ vi.mock('@/lib/server/admin/guard', async () => {
   const actual = await vi.importActual<typeof import('@/lib/server/admin/guard')>('@/lib/server/admin/guard')
   return { ...actual, guardAdmin: async () => state.guard }
 })
+const stepUp = vi.hoisted(() => vi.fn())
+vi.mock('@/lib/server/admin/stepUp', () => ({ STEP_UP_ERROR: 'step', stepUp }))
 const invalidate = vi.hoisted(() => vi.fn())
 vi.mock('@/lib/sms/curatedDbCache', () => ({ invalidateCuratedDbCache: invalidate }))
 vi.mock('@/lib/sms/replayLoader', () => ({ loadReplayCases: async () => state.cases }))
@@ -51,6 +53,7 @@ beforeEach(() => {
   state.report = { ok: true, checked: 0, regressions: [] }
   invalidate.mockReset()
   audit.mockReset()
+  stepUp.mockReset().mockResolvedValue(true)
 })
 
 describe('list', () => {
@@ -139,6 +142,17 @@ describe('candidates', () => {
 })
 
 describe('bulk_toggle (N11b)', () => {
+  it('needs a step-up and changes nothing without one', async () => {
+    stepUp.mockResolvedValue(false)
+    expect((await POST(post({ op: 'bulk_toggle', patch: { ai_enabled: false } }))).status).toBe(401)
+    expect(state.updates).toHaveLength(0)
+    expect(audit).not.toHaveBeenCalled()
+  })
+  it('records the affected count in the audit row', async () => {
+    state.list = [{ id: 'a' }, { id: 'b' }]
+    await POST(post({ op: 'bulk_toggle', patch: { ai_enabled: false } }))
+    expect(audit).toHaveBeenCalledWith('sms.template_bulk_toggle', expect.objectContaining({ metadata: expect.objectContaining({ count: expect.any(Number) }) }))
+  })
   it('enabling touches only active templates and busts the cache', async () => {
     await POST(post({ op: 'bulk_toggle', patch: { ai_enabled: true } }))
     expect(state.filters).toContainEqual(['eq', ['status', 'active']])

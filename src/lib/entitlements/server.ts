@@ -1,14 +1,26 @@
 import 'server-only'
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient, type ServiceClient } from '@/lib/supabase/service'
+import { cachedSetting } from '@/lib/server/platformCache'
 import { PAID_FEATURES } from './limits'
 import { decideFeature, resolveEntitlements, type EntitlementRecord, type PlanRecord, type ResolvedEntitlements } from './resolve'
 
+const PLANS_TTL_SECONDS = 300
+
+export async function loadPlans(service: ServiceClient) {
+  return cachedSetting(['plans'], async () => {
+    const { data, error } = await service.from('plans').select('key, name, limits, features, trial_days, is_default')
+    if (error) throw error
+    return data ?? []
+  }, PLANS_TTL_SECONDS)
+}
+
 async function loadEntitlements(service: ServiceClient, userId: string) {
-  const [{ data: plans, error: plansError }, { data: entitlement, error: entitlementError }] = await Promise.all([
-    service.from('plans').select('key, name, limits, features, trial_days, is_default'),
+  const [plansResult, { data: entitlement, error: entitlementError }] = await Promise.all([
+    loadPlans(service).then((data) => ({ data, error: null }), () => ({ data: null, error: true })),
     service.from('user_entitlements').select('plan_key, status, trial_ends_at, current_period_end, limit_overrides, feature_overrides').eq('user_id', userId).maybeSingle(),
   ])
+  const { data: plans, error: plansError } = plansResult
   const records = new Map<string, PlanRecord>()
   for (const p of plans ?? []) {
     records.set(p.key, { key: p.key, name: p.name, limits: (p.limits ?? {}) as Record<string, unknown>, features: p.features, trial_days: p.trial_days })

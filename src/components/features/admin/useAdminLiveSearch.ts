@@ -29,7 +29,7 @@ export function useAdminLiveSearch(query: string, canUsers: boolean, canTickets:
     const timer = setTimeout(async () => {
       const q = encodeURIComponent(term)
       const [users, tickets] = await Promise.allSettled([
-        canUsers ? adminFetch<{ rows: Array<{ id: string; email: string | null; name: string | null }> }>(`/api/admin/users?limit=${PER_SOURCE}&q=${q}`, { signal: ctl.signal }) : null,
+        canUsers ? adminFetch<{ rows: Array<{ id: string; email: string | null; name: string | null }> }>(`/api/admin/users?limit=${PER_SOURCE}&total=0&q=${q}`, { signal: ctl.signal }) : null,
         canTickets ? adminFetch<{ tickets: Array<{ id: string; number: number; subject: string; requester_email: string | null }> }>(`/api/admin/support/tickets?view=all&q=${q}`, { signal: ctl.signal }) : null,
       ])
       if (ctl.signal.aborted) return

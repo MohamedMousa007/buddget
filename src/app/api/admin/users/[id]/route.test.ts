@@ -39,6 +39,8 @@ vi.mock('@/lib/server/admin/guard', () => {
 })
 vi.mock('@/lib/admin/permissions', async (orig) => ({ ...(await orig<object>()), can: () => true }))
 
+import { deleteUserCompletely } from '@/lib/server/deleteAccount'
+import { wipeUserData } from '@/lib/server/userData'
 import { POST } from './route'
 
 const ID = '11111111-1111-4111-8111-111111111111'
@@ -47,8 +49,26 @@ const meta = () => (h.audit.mock.calls.at(-1)![1] as { metadata: Record<string, 
 
 beforeEach(() => {
   h.audit.mockReset()
+  vi.mocked(deleteUserCompletely).mockClear()
+  vi.mocked(wipeUserData).mockClear()
   h.entitlement = { user_id: ID, plan_key: 'pro', status: 'active', limit_overrides: { ai_chat_per_day: 5 }, feature_overrides: {} }
   h.banned = null
+})
+
+describe('F-08 audit before an irreversible action', () => {
+  it.each(['delete', 'reset_data'])('%s is refused with 500 and does nothing when the audit row cannot be written', async (op) => {
+    h.audit.mockResolvedValue(false)
+    expect((await post({ op })).status).toBe(500)
+    expect(deleteUserCompletely).not.toHaveBeenCalled()
+    expect(wipeUserData).not.toHaveBeenCalled()
+  })
+  it('delete writes its intent row before deleting', async () => {
+    h.audit.mockResolvedValue(true)
+    vi.mocked(deleteUserCompletely).mockResolvedValue({ ok: true, partialErrors: [], keptStaffAccess: false } as never)
+    await post({ op: 'delete' })
+    expect(h.audit.mock.calls[0]![0]).toBe('user.delete_intent')
+    expect(h.audit.mock.invocationCallOrder[0]!).toBeLessThan(vi.mocked(deleteUserCompletely).mock.invocationCallOrder[0]!)
+  })
 })
 
 describe('ADS-2 audit rows keep the before-state', () => {

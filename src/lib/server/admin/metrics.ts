@@ -1,3 +1,4 @@
+import { after } from 'next/server'
 import type { ServiceClient } from '@/lib/supabase/service'
 
 /** The heavy admin aggregates are computed when an admin opens a page and the cache is older than 15 minutes (no schedule), into `admin_metrics_cache`. */
@@ -22,17 +23,22 @@ async function live(service: ServiceClient, key: MetricKey): Promise<{ data: unk
   }
 }
 
-/** Fresh cached values, falling back to computing live for anything missing or stale (never wrong, only slower). */
+/** Cached values: stale ones are served at once and refreshed after the response; only a missing or ancient value waits for the refresh or is computed live. */
 export async function adminMetrics(service: ServiceClient, keys: readonly MetricKey[], now = Date.now()): Promise<Record<MetricKey, unknown>> {
   const read = async () => (await service.from('admin_metrics_cache').select('key, value, computed_at').in('key', [...keys])).data ?? []
   let data = await read()
-  const needsRefresh = keys.some((k) => {
+  const ageOf = (k: MetricKey) => {
     const row = data.find((r) => r.key === k)
-    return !row || now - new Date(row.computed_at).getTime() >= METRIC_REFRESH_AFTER_MS
-  })
-  if (needsRefresh) {
-    const { data: refreshed } = await service.rpc('admin_refresh_metrics_if_stale', { p_max_age: '15 minutes' })
+    return row ? now - new Date(row.computed_at).getTime() : Infinity
+  }
+  const refresh = () => service.rpc('admin_refresh_metrics_if_stale', { p_max_age: '15 minutes' })
+  if (keys.some((k) => ageOf(k) >= METRIC_MAX_AGE_MS)) {
+    const { data: refreshed } = await refresh()
     if (refreshed) data = await read()
+  } else if (keys.some((k) => ageOf(k) >= METRIC_REFRESH_AFTER_MS)) {
+    after(async () => {
+      await refresh()
+    })
   }
   const fresh = new Map<string, unknown>()
   for (const row of data) if (now - new Date(row.computed_at).getTime() < METRIC_MAX_AGE_MS) fresh.set(row.key, row.value)

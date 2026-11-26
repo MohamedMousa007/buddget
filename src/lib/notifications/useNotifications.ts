@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { apiFetchAuth } from '@/lib/apiBase'
+import { sharedFetch } from '@/lib/query/sharedFetch'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
@@ -90,37 +91,40 @@ export function useNotifications() {
   const [readIds, setReadIds] = useState<Set<string>>(() => loadReadIds())
   const [serverNotifications, setServerNotifications] = useState<ServerNotificationRow[]>([])
 
+  const userId = user?.id
+  const loadServerNotifications = useCallback(
+    (ttlMs: number) =>
+      userId
+        ? sharedFetch(`notifications:${userId}`, ttlMs, async () => {
+            const res = await apiFetchAuth('/api/notifications')
+            if (!res.ok) throw new Error(`notifications ${res.status}`)
+            return ((await res.json()) as { notifications?: ServerNotificationRow[] }).notifications ?? []
+          })
+        : Promise.resolve([] as ServerNotificationRow[]),
+    [userId],
+  )
+
   const fetchServerNotifications = useCallback(async () => {
     try {
-      const res = await apiFetchAuth('/api/notifications')
-      if (!res.ok) return
-      const data = (await res.json()) as { notifications?: ServerNotificationRow[] }
-      setServerNotifications(data.notifications ?? [])
+      setServerNotifications(await loadServerNotifications(0))
     } catch {
       /* ignore */
     }
-  }, [])
+  }, [loadServerNotifications])
 
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       queueMicrotask(() => setServerNotifications([]))
       return
     }
     let cancelled = false
-    void (async () => {
-      try {
-        const res = await apiFetchAuth('/api/notifications')
-        if (!res.ok || cancelled) return
-        const data = (await res.json()) as { notifications?: ServerNotificationRow[] }
-        if (!cancelled) setServerNotifications(data.notifications ?? [])
-      } catch {
-        /* ignore */
-      }
-    })()
+    loadServerNotifications(30_000)
+      .then((list) => { if (!cancelled) setServerNotifications(list) })
+      .catch(() => undefined)
     return () => {
       cancelled = true
     }
-  }, [user])
+  }, [userId, loadServerNotifications])
 
   const notifications = useMemo(() => {
     const list: AppNotification[] = []
