@@ -9,7 +9,7 @@ import { exclusivePockets } from '@/lib/goals/exclusivePockets'
 import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Goal } from '@/lib/store/types'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { formatWhole } from '@/lib/utils/formatters'
 
 /** Asks where the pocket money goes: leave the pocket in Wealth, or move it to another pocket. */
 export function DeleteGoalSheet({ goal, onClose, onDeleted }: { goal: Goal; onClose: () => void; onDeleted: () => void }) {
@@ -69,7 +69,7 @@ export function DeleteGoalSheet({ goal, onClose, onDeleted }: { goal: Goal; onCl
               {others.map((a) => (
                 <SelectableCard key={a.id} selected={dest === a.id} onClick={() => setDest(a.id)} className="min-h-12 justify-between">
                   <span className="truncate text-sm font-semibold">{a.name}</span>
-                  <span className="font-mono-numbers text-xs">{formatCurrency(a.currentBalance, a.currency, false)}</span>
+                  <span className="font-mono-numbers text-xs">{formatWhole(a.currentBalance)}</span>
                 </SelectableCard>
               ))}
             </div>

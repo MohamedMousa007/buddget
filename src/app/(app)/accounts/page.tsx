@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Archive, Landmark, MoreVertical, Plus, Star } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
@@ -17,7 +16,7 @@ import { CardRow } from '@/components/features/accounts/CardRow'
 import { ProviderCard } from '@/components/features/accounts/ProviderCard'
 import { ProviderHero } from '@/components/features/accounts/ProviderHero'
 import { RateAlert } from '@/components/features/accounts/RateAlert'
-import { sharesProvider, splitMoney } from '@/components/features/accounts/accountDisplay'
+import { accountTitle, sharesProvider, splitMoney } from '@/components/features/accounts/accountDisplay'
 import { AccountDetailSheet } from '@/components/features/accounts/AccountDetailSheet'
 import { AddAccountSheet } from '@/components/features/accounts/AddAccountSheet'
 import { CashCurrencySheet } from '@/components/features/accounts/CashCurrencySheet'
@@ -76,10 +75,14 @@ type Sheet =
 /** The Wealth and Debts header row: title, count, and the page's add action at the end. */
 function SectionHeader({ title, count, onAdd, addLabel }: { title: string; count: number; onAdd?: () => void; addLabel?: string }) {
   return (
-    <div className="mb-2 flex items-center gap-2 px-1">
+    <div className="mb-2 flex min-h-11 items-center gap-2 px-1">
       <h2 className="text-[17px] font-bold text-[var(--color-brand-text-primary)]">{title}</h2>
-      <Badge variant="muted" className="min-w-[21px] px-1.5 font-mono-numbers text-[0.6875rem] font-semibold">{count}</Badge>
-      {onAdd ? <Button variant="secondary" size="touch" className="ms-auto" onClick={onAdd}><Plus aria-hidden />{addLabel}</Button> : null}
+      <span className="font-mono-numbers text-[0.8125rem] font-semibold text-[var(--color-brand-text-muted)]">{count}</span>
+      {onAdd ? (
+        <Button variant="ghost" size="touch" className="ms-auto gap-1 px-1 text-[0.875rem] font-semibold text-[var(--color-brand-primary-ink)] hover:text-[var(--color-brand-primary-ink)] [&_svg:not([class*='size-'])]:size-4" onClick={onAdd}>
+          <Plus aria-hidden />{addLabel}
+        </Button>
+      ) : null}
     </div>
   )
 }
@@ -130,6 +133,14 @@ export default function AccountsPage() {
   const missingRates = [...new Set(model.accounts.filter((a) => a.balance && !a.method.excluded).map((a) => String(a.method.currency)))].filter(noRate).sort()
   // The ≈ stays on every total that includes a currency with no live rate, even while the fallback table converts it.
   const approxGroup = (g: ProviderGroup): ProviderGroup => (!g.approx && g.accounts.some((a) => a.balance && missingRates.includes(String(a.method.currency))) ? { ...g, approx: true } : g)
+
+  const heroSegments = useMemo(() => [
+    ...[...groups.banks, ...groups.wallets].map((g) => ({ key: g.key, label: g.name, value: g.totalInBase })),
+    ...groups.cash.filter((a) => a.balance).map((a) => ({
+      key: a.method.id, label: accountTitle(a.method),
+      value: tryConvertCurrency(a.balance!.balance, String(a.method.currency), base, exchangeRates) ?? 0,
+    })),
+  ], [groups, base, exchangeRates])
 
   const unplaced = useMemo(() => unplacedSmsExpenses(expenses), [expenses])
   const provider = providerKey ? [...groups.banks, ...groups.wallets].find((g) => g.key === providerKey) : undefined
@@ -208,7 +219,7 @@ export default function AccountsPage() {
           <div className="flex min-h-[72px] w-full items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] py-3 pe-2 ps-4">
             <span className="opacity-50"><CashOnHandMark size={44} /></span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-base font-semibold tracking-[-0.01em] text-[var(--color-brand-text-secondary)]">{ltCash.title}</span>
+              <span className="block text-base font-semibold leading-tight tracking-[-0.01em] text-[var(--color-brand-text-secondary)]">{ltCash.title}</span>
               <span className="mt-0.5 block truncate text-[0.8125rem] text-[var(--color-brand-text-muted)]">{ltCash.notTracked}</span>
             </span>
             <Button variant="outline" size="touch" className="shrink-0 rounded-full font-semibold text-[var(--color-brand-primary-ink)]" onClick={() => setActiveModal('askCashOnHand')}>{ltCash.startTracking}</Button>
@@ -238,8 +249,9 @@ export default function AccountsPage() {
   const walletCount = groups.wallets.length + groups.cash.length
   const home = (
     <>
-      <PageHero>
-        <AccountsHero model={missingRates.length > 0 && !model.approx ? { ...model, approx: true } : model} currency={base} netWorth={nw.netWorth} creditOwed={owed} hidden={heroMasked} onToggleHidden={toggle} />
+      <PageHero inset>
+        <AccountsHero model={missingRates.length > 0 && !model.approx ? { ...model, approx: true } : model} currency={base} netWorth={nw.netWorth} creditOwed={owed}
+          segments={heroSegments} hidden={heroMasked} onToggleHidden={toggle} />
       </PageHero>
       <PageGrid stack primary={<div className="space-y-5 px-4 py-4 lg:px-0 lg:pt-0">
         {rateDismissed ? null : <RateAlert currencies={missingRates} onDismiss={() => setRateDismissed(true)} />}
@@ -292,7 +304,7 @@ export default function AccountsPage() {
     const prepaid = group.accounts.filter((a) => a.method.type === 'prepaid_card')
     return (
       <>
-        <PageHero>
+        <PageHero inset className="pt-2">
           <ProviderHero group={approxGroup(group)} base={base} hidden={heroMasked} onToggleHidden={toggle} onBack={() => setProviderKey(null)} />
         </PageHero>
         <PageGrid stack primary={<div className="space-y-5 px-4 py-4 lg:px-0 lg:pt-0">

@@ -28,7 +28,8 @@ export const catalogCopyEn: CatalogCopy = {
     custom: 'My Goal',
   },
   creditCardGoalName: 'Credit card',
-  goalPocketName: (n) => `${n} pocket`,
+  // A goal already named "… pocket" keeps its name: never "QA phone pocket pocket".
+  goalPocketName: (n) => (/\bpocket$/i.test(n.trim()) ? n.trim() : `${n} pocket`),
 }
 
 export const catalogCopyAr: CatalogCopy = {
@@ -52,5 +53,5 @@ export const catalogCopyAr: CatalogCopy = {
     custom: 'هدفي',
   },
   creditCardGoalName: 'بطاقة ائتمان',
-  goalPocketName: (n) => `جيب ${n}`,
+  goalPocketName: (n) => (/^جيب\s/.test(n.trim()) ? n.trim() : `جيب ${n}`),
 }

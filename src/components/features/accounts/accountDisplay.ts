@@ -1,7 +1,7 @@
 import type { PaymentMethod } from '@/lib/store/types'
 import type { Dictionary } from '@/lib/i18n/types'
 import { inkFor } from '@/lib/ui/contrast'
-import { accountTitle } from '@/lib/accounts/accountTitle'
+import { accountDisplayName, accountTitle } from '@/lib/accounts/accountTitle'
 import { PAYMENT_TYPE_META, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 
 /** "CIB" stays "CIB"; "Vodafone Cash" becomes "VC". */
@@ -71,7 +71,7 @@ export function smartSplit(n: number, currency: string): { int: string; dec: str
   return /^\.0+$/.test(s.dec) ? { int: s.int, dec: '' } : s
 }
 
-export { accountTitle }
+export { accountDisplayName, accountTitle }
 
 /** What identifies the account beside its name: the user's label, else the last four digits, else nothing. */
 export function accountIdentifier(m: Pick<PaymentMethod, 'label' | 'last4'>): string | null {

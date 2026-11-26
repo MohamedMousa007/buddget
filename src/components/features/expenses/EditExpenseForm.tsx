@@ -16,6 +16,7 @@ import { expenseAmountInBase, getMonthRange } from '@/lib/utils/calculations'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { format } from 'date-fns'
 import { isNonSpendExpense } from '@/lib/constants/categoryMeta'
+import { amountInputText } from '@/lib/ui/amountSanitize'
 
 export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClose: () => void }) {
   const f = useEditExpenseForm(expense, onClose)
@@ -46,7 +47,7 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
     f.date !== expense.date ||
     f.clock !== f.savedClock ||
     f.description !== expense.description ||
-    f.amount !== expense.amount.toString() ||
+    f.amount !== amountInputText(expense.amount, expense.currency) ||
     f.currency !== expense.currency ||
     f.category !== expense.category ||
     f.paymentMethodId !== expense.paymentMethodId ||
@@ -58,7 +59,7 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
     f.setDate(expense.date)
     f.setClock(f.savedClock)
     f.setDescription(expense.description)
-    f.setAmount(expense.amount.toString())
+    f.setAmount(amountInputText(expense.amount, expense.currency))
     f.setCurrency(expense.currency)
     f.setCategory(expense.category)
     f.setPaymentMethodId(expense.paymentMethodId)

@@ -7,6 +7,7 @@ import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { adoptedPaydayAccount, paydayLogMethodId } from '@/lib/income/paydayHero'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT, useLocale } from '@/lib/i18n'
 import { useActionToast } from '@/components/ui/ActionToast'
@@ -14,7 +15,7 @@ import { buildOccurrences, expectedPerPayday } from '@/lib/utils/incomeOccurrenc
 import { DatePickerField } from '@/components/ui/DatePickerField'
 import { AmountHero } from '@/components/ui/AmountHero'
 import { PickerRow } from '@/components/ui/PickerRow'
-import { Briefcase } from 'lucide-react'
+import { IncomeTypeIcon } from '@/components/features/income/IncomeTypeIcon'
 import { parseISO } from 'date-fns'
 import { MethodPickerRow } from '@/components/features/debts/lt/MethodPickerRow'
 import { SheetGroup, TxTile } from '@/components/features/debts/lt/SheetParts'
@@ -40,12 +41,13 @@ const todayISO = () => localTodayISO()
  */
 export function AmountReceivedSheet() {
   const showToast = useActionToast()
-  const { incomeSources, incomeEvents, addIncomeEvent, updateIncomeEvent, paymentMethods } = useFinanceStore(
+  const { incomeSources, incomeEvents, addIncomeEvent, updateIncomeEvent, updateIncomeSource, paymentMethods } = useFinanceStore(
     useShallow((s) => ({
       incomeSources: s.incomeSources,
       incomeEvents: s.incomeEvents,
       addIncomeEvent: s.addIncomeEvent,
       updateIncomeEvent: s.updateIncomeEvent,
+      updateIncomeSource: s.updateIncomeSource,
       paymentMethods: s.paymentMethods,
     })),
   )
@@ -103,11 +105,12 @@ export function AmountReceivedSheet() {
       // already logged keeps the date it was logged with.
       setReceivedDate(currentReceivedDate ?? todayISO())
       setClock(savedClock)
-      setMethodId(source?.paymentMethodId ?? '')
+      // A logged payday reopens on the account it landed in; a new one on the payday's own account.
+      setMethodId(paydayLogMethodId(saved, source, paymentMethods))
     }
     prevOpen.current = isOpen
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [isOpen, current, currentReceivedDate, savedClock, source?.paymentMethodId])
+  }, [isOpen, current, currentReceivedDate, savedClock, saved, source, paymentMethods])
 
   const close = () => setActiveModal(null)
   useEscapeClose(isOpen, close)
@@ -161,6 +164,8 @@ export function AmountReceivedSheet() {
         ...(methodId ? { paymentMethodId: methodId } : {}),
       })
     }
+    const adopted = adoptedPaydayAccount(source, methodId, paymentMethods)
+    if (adopted) updateIncomeSource(source.id, { paymentMethodId: adopted })
     showToast(t.common.toastIncomeAdded)
     close()
   }
@@ -188,7 +193,7 @@ export function AmountReceivedSheet() {
             currency={currency}
             sign="+"
             aria-label={t.income.amountReceivedLabel}
-            top={<TxTile tone="var(--color-brand-green)"><Briefcase /></TxTile>}
+            top={<TxTile tone="var(--color-brand-green)"><IncomeTypeIcon type={source.sourceType} /></TxTile>}
             className="px-0 pb-0"
           />
           <div className="-mt-2 flex flex-col items-center gap-3 text-center">
@@ -207,7 +212,7 @@ export function AmountReceivedSheet() {
           </div>
           <SheetGroup>
             {paymentMethods.length > 0 ? (
-              <MethodPickerRow label={lt.receivedIn} value={methodId} onChange={setMethodId} paymentMethods={paymentMethods} />
+              <MethodPickerRow label={lt.receivedIn} value={methodId} onChange={setMethodId} paymentMethods={paymentMethods} accountsOnly />
             ) : null}
             <PickerRow label={lt.payday} value={<span dir="auto" className="truncate">{`${source.name} · ${freq.toLowerCase()}`}</span>} />
           </SheetGroup>

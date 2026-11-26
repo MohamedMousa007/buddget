@@ -1,8 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { ArrowDown, ArrowUp } from 'lucide-react'
-import { BAND_FG2, BAND_MIX, BandScale, HeroBand, type HeroBandCell } from '@/components/features/hero/HeroBand'
+import { BAND_FG2, BAND_MIX, HeroBand } from '@/components/features/hero/HeroBand'
 import { fitBigNumber } from '@/components/features/hero/fitText'
 import { MASK } from '@/lib/privacy/mask'
 import { useMask } from '@/lib/privacy/useMask'
@@ -28,7 +27,6 @@ export interface SavingsHeroProps {
   netWorthPrefix?: '≈' | 'At least'
   split: HeroSplitSegment[]
   netWorthTrend?: { points: number[]; pct: string; dir: 'up' | 'down' }
-  savingsRate?: number
   badges: ReactNode
 }
 
@@ -39,19 +37,20 @@ const TONES = [
   'color-mix(in oklab, var(--flow-band-fg) 55%, transparent)',
 ]
 
-/** The Wealth band, same height for every user: total, split bar, net worth with its 30-day trend. */
+/**
+ * The Wealth hero (Light touch): a rounded card with what you hold, net worth and its trend, the split bar, and one legend
+ * line ("Savings 52% · Gold 31%"). No stat cells: the values are in the Holdings list right below.
+ */
 export function SavingsHero({
-  total, currency, totalPrefix, netWorth, netWorthPrefix, split, netWorthTrend, savingsRate, badges,
+  total, currency, totalPrefix, netWorth, netWorthPrefix, split, netWorthTrend, badges,
 }: SavingsHeroProps) {
   const t = useT().wealthPage
   const hidden = useMask('hero')
   const prefix = (p?: '≈' | 'At least') => (p === 'At least' ? '≥ ' : p ? `${p} ` : '')
-  const cell = (i: number): HeroBandCell => {
-    const s = split[i]
-    return s ? { label: s.label, value: hidden ? MASK : s.ret ? `${s.value}  ▲${s.ret}` : s.value } : { label: '', value: '' }
-  }
+  const shown = split.filter((s) => s.pct > 0)
   return (
     <HeroBand
+      contained
       label={t.holdLabel}
       aside={badges}
       numbers={
@@ -64,37 +63,24 @@ export function SavingsHero({
           <p className={`shrink-0 text-end text-[0.71875rem] leading-[1.3] ${BAND_FG2}`}>
             <b className="block font-mono-numbers text-[0.9375rem] text-[var(--flow-band-fg)]">{hidden ? MASK : `${prefix(netWorthPrefix)}${netWorth}`}</b>
             {t.netWorth}
-            {netWorthTrend ? (
-              <span className={`ms-1.5 inline-flex h-[15px] items-center gap-0.5 rounded-full bg-[var(--flow-band-fg)] px-1.5 align-top font-mono-numbers text-[0.65625rem] font-bold leading-none ${netWorthTrend.dir === 'up' ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'}`}>
-                {netWorthTrend.dir === 'up' ? <ArrowUp className="size-2.5" strokeWidth={3} aria-hidden /> : <ArrowDown className="size-2.5" strokeWidth={3} aria-hidden />}
-                {netWorthTrend.pct}
-              </span>
-            ) : null}
+            {netWorthTrend ? <span className="font-mono-numbers"> {netWorthTrend.dir === 'up' ? '▲' : '▼'} {netWorthTrend.pct}</span> : null}
           </p>
         </>
       }
       bar={
-        <>
-          <div className="flex h-1.5 gap-px overflow-hidden rounded-full" style={{ background: BAND_MIX }}>
-            {split.map((s, i) => (
-              <span key={s.key} className="h-full" style={{ width: `${Math.max(0, s.pct)}%`, background: TONES[i % TONES.length] }} />
-            ))}
-          </div>
-          <BandScale>
-            <span className="flex min-w-0 items-center gap-3">
-              {split.map((s, i) => (
-                <span key={s.key} className="inline-flex shrink-0 items-center gap-1">
-                  <span className="size-2 rounded-[2px]" style={{ background: TONES[i % TONES.length] }} aria-hidden />
-                  {Math.round(s.pct)}%
-                </span>
-              ))}
-            </span>
-            {savingsRate != null ? <span dir="auto" className="min-w-0 truncate whitespace-nowrap">{t.savesPct(savingsRate)}</span> : null}
-          </BandScale>
-        </>
+        <div className="flex h-1.5 gap-[3px]" style={shown.length ? undefined : { background: BAND_MIX, borderRadius: 9999 }}>
+          {shown.map((s, i) => (
+            <span key={s.key} className="h-full rounded-full" style={{ width: `${s.pct}%`, background: TONES[i % TONES.length] }} />
+          ))}
+        </div>
       }
-      cells={[cell(0), cell(1), cell(2)]}
-      fitCells
+      note={shown.length > 0 ? (
+        <span className="flex flex-wrap gap-x-3 gap-y-1">
+          {shown.map((s) => (
+            <span key={s.key} dir="auto">{s.label} <b className="font-mono-numbers font-semibold text-[var(--flow-band-fg)]">{Math.round(s.pct)}%</b></span>
+          ))}
+        </span>
+      ) : undefined}
     />
   )
 }

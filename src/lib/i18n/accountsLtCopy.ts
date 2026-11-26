@@ -75,6 +75,14 @@ export interface AccountsLtCopy {
     notTracked: string
     startTracking: string
   }
+  hero: {
+    setAside: string
+    owedOnCards: string
+  }
+  removed: {
+    cardDeleted: (name: string) => string
+    accountClosed: (name: string) => string
+  }
 }
 
 export const ACCOUNTS_LT_COPY: Record<Locale, AccountsLtCopy> = {
@@ -151,6 +159,14 @@ export const ACCOUNTS_LT_COPY: Record<Locale, AccountsLtCopy> = {
       notTracked: 'Not tracked',
       startTracking: 'Start tracking',
     },
+    hero: {
+      setAside: 'set aside',
+      owedOnCards: 'owed on cards',
+    },
+    removed: {
+      cardDeleted: (n) => `${n} deleted`,
+      accountClosed: (n) => `${n} closed`,
+    },
   },
   ar: {
     account: {
@@ -224,6 +240,14 @@ export const ACCOUNTS_LT_COPY: Record<Locale, AccountsLtCopy> = {
       sub: 'التقريب كافٍ. الكاش يبقى تقديرياً حسب ما تسجّله.',
       notTracked: 'غير متتبَّع',
       startTracking: 'ابدأ التتبع',
+    },
+    hero: {
+      setAside: 'مجنَّب',
+      owedOnCards: 'مستحق على البطاقات',
+    },
+    removed: {
+      cardDeleted: (n) => `تم حذف ${n}`,
+      accountClosed: (n) => `تم إغلاق ${n}`,
     },
   },
 }

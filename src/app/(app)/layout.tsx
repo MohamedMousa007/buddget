@@ -20,12 +20,12 @@ import { CrashReporter } from '@/lib/crash/CrashReporter'
 // One variable-weight file serves body and headings.
 const geist = Geist({
   subsets: ['latin'],
-  variable: '--font-sans',
+  variable: '--font-geist',
 })
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
-  variable: '--font-mono',
+  variable: '--font-jetbrains',
   weight: ['400', '500', '600'],
 })
 

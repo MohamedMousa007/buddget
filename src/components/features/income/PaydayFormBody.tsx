@@ -102,7 +102,7 @@ export function PaydayFormBody(p: PaydayFormBodyProps) {
         {p.frequency === 'monthly' ? (
           <PickerRow label={c.payday} chevron={false} onClick={() => setSheet('day')} value={<Pill icon={<Calendar />}>{day.everyMonth(p.paydays[0] ?? 1)}</Pill>} />
         ) : null}
-        <MethodPickerRow label={c.receivedIn} value={p.paymentMethodId} onChange={p.onPaymentMethod} paymentMethods={p.paymentMethods} />
+        <MethodPickerRow label={c.receivedIn} value={p.paymentMethodId} onChange={p.onPaymentMethod} paymentMethods={p.paymentMethods} accountsOnly />
       </SheetGroup>
 
       {p.frequency !== 'monthly' ? (

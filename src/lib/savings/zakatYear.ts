@@ -78,6 +78,8 @@ export function zakatYearState(p: { today: string; zakatDate: string; start: Zak
 export interface ZakatYear {
   state: ZakatYearState
   yearStart: string
+  /** The zakat date has come (today is on or after it). */
+  ended: boolean
   /** The lines behind `result`. */
   base: ZakatBase
   /** The figure to show: today's estimate before the zakat date, the zakat date's own wealth on or after it. */
@@ -94,6 +96,7 @@ export function evaluateZakatYear(src: ZakatSources, cfg: ZakatConfig | null | u
   return {
     state: zakatYearState({ today, zakatDate, start: start.result, end: end.result }),
     yearStart,
+    ended: today >= zakatDate,
     base: end.base,
     result: end.result,
     noHistoryCount: Math.max(start.base.noHistoryCount, end.base.noHistoryCount),

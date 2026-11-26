@@ -27,29 +27,25 @@ import type { GoalRow } from '@/hooks/useGoalRows'
 import { useLocale, useT } from '@/lib/i18n'
 import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
 import { fundingBasis } from '@/lib/goals/fundingBasis'
-import { checkpointInfo, coachView, goalMonthlyRate, replanPatch } from '@/lib/goals/goalDetail'
-import { periodMonths } from '@/lib/goals/goalPlan'
+import { checkpointInfo, coachView, finishesLate, goalMonthlyRate, replanPatch } from '@/lib/goals/goalDetail'
+import { defaultSharePct, periodMonths, sharesOverFull } from '@/lib/goals/goalPlan'
 import { debtMonthlyRate, goalLedger } from '@/lib/goals/debtGoal'
 import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
+import { relinkGoalPocket } from '@/lib/goals/goalPocket'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { convertCurrency } from '@/lib/utils/currency'
-import { formatCurrency, formatWhole } from '@/lib/utils/formatters'
+import { formatWhole } from '@/lib/utils/formatters'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { navigate } from '@/lib/navigation/navigate'
 import { cn } from '@/lib/utils'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Badge } from '@/components/ui/badge'
 
-const CHIP: Record<string, { dot: string }> = {
-  green: { dot: 'var(--color-brand-green)' },
-  amber: { dot: 'var(--color-brand-amber)' },
-  red: { dot: 'var(--color-brand-red)' },
-  muted: { dot: 'var(--color-brand-text-muted)' },
-}
+const CHIP = { green: 'brand', amber: 'warn', red: 'negative', muted: 'neutral' } as const
 
-const planOf = (g: GoalRow['goal']): FundPlan => ({
+const planOf = (g: GoalRow['goal'], otherShare: number): FundPlan => ({
   mode: g.fundingMode,
-  sharePct: g.sharePct ?? 100,
+  sharePct: g.sharePct ?? defaultSharePct(otherShare),
   fixed: g.monthlyContribution ? String(g.monthlyContribution) : '',
   frequency: g.frequency,
 })
@@ -99,26 +95,27 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
     [s.savingsAccounts],
   )
 
-  const money = (n: number) => formatCurrency(Math.round(n), goal.currency, false)
+  const money = (n: number) => formatWhole(Math.round(n))
   const short = (iso: string | null) =>
     iso ? new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString(intlTag(locale), { month: 'short', year: '2-digit' }) : '—'
   const month = (iso: string) => new Date(`${iso.slice(0, 7)}-01T00:00:00`).toLocaleDateString(intlTag(locale), { month: 'short', year: 'numeric' })
 
+  const late = !isLimit && !isDebt && status.kind !== 'paused' && finishesLate(goal, current, monthlyRate, now)
   const chipKind =
     goal.status === 'achieved' ? 'chipAchieved'
     : status.kind === 'paused' ? 'chipPaused'
     : status.kind === 'over' ? 'chipOver'
-    : status.kind === 'behind' ? 'chipBehind'
+    : status.kind === 'behind' || late ? 'chipBehind'
     : isDebt ? 'chipDebt'
     : goal.fundingMode === 'manual' ? 'chipManual'
     : runs.length < 2 ? 'chipStarting'
     : 'chipOnTrack'
   const chipTone = { chipAchieved: 'green', chipPaused: 'muted', chipOver: 'red', chipBehind: 'amber', chipManual: 'muted', chipDebt: 'green', chipStarting: 'muted', chipOnTrack: 'green' }[chipKind] as keyof typeof CHIP
-  const barTone: CheckpointTone = status.kind === 'over' ? 'over' : status.kind === 'behind' ? 'behind' : status.kind === 'paused' ? 'paused' : 'default'
+  const barTone: CheckpointTone = status.kind === 'over' ? 'over' : status.kind === 'behind' || late ? 'behind' : status.kind === 'paused' ? 'paused' : 'default'
   const basisAmount = isLimit ? goal.monthlySpendingLimit : goal.targetAmount
   const kindLabel = goal.category === 'debt_freedom' ? d.kindDebt : isLimit ? d.kindLimit : d.kindSave
 
-  const pocket = s.savingsAccounts.find((a) => goal.linkedSavingsAccountIds.includes(a.id))
+  const pocket = s.savingsAccounts.find((a) => a.id === goal.linkedSavingsAccountIds[0])
   const debtRows: PlanRow[] = [
     {
       key: 'debts',
@@ -127,10 +124,11 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
     },
     { key: 'finish', label: d.planFinish, value: goal.targetDate ? month(goal.targetDate) : '—', readOnly: true },
   ]
-  const plan = planOf(goal)
   const otherShare = s.goals.filter((g) => g.id !== goal.id && g.status === 'active' && g.fundingMode === 'share').reduce((a, g) => a + (g.sharePct ?? 0), 0)
+  const plan = planOf(goal, otherShare)
 
   const saveFund = () => {
+    if (fund?.mode === 'share' && sharesOverFull(otherShare, fund.sharePct)) return
     if (fund) {
       const fixed = Number(fund.fixed)
       s.updateGoal(goal.id, {
@@ -181,10 +179,9 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
           >
             <V3SheetHeader.Title size="compact">{goal.name}</V3SheetHeader.Title>
             <V3SheetHeader.Subtitle>
-              <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
                 <span>{kindLabel} · {t.goals[goalCategoryLabelKey(goal.category)] as string}</span>
-                <Badge tone="ink" size="sm" bordered={false} className="gap-1.5 font-semibold">
-                  <span className="size-1.5 rounded-full" style={{ background: CHIP[chipTone].dot }} aria-hidden />
+                <Badge tone={CHIP[chipTone]} size="sm" bordered={false} className="uppercase tracking-[0.05em]">
                   {d[chipKind as 'chipOnTrack']}
                 </Badge>
               </span>
@@ -230,7 +227,6 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
             {coach && goal.targetDate ? (
               <CoachCard
                 coach={coach}
-                currency={goal.currency}
                 targetDate={goal.targetDate}
                 quarterly={quarterly}
                 yearly={goal.frequency === 'yearly'}
@@ -266,7 +262,7 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
                     label={lt.goals.pocket}
                     pockets={pockets}
                     value={pocket?.id ?? null}
-                    onChange={(id) => s.updateGoal(goal.id, { linkedSavingsAccountIds: [id] })}
+                    onChange={(id) => s.updateGoal(goal.id, { linkedSavingsAccountIds: relinkGoalPocket(goal.linkedSavingsAccountIds, s.savingsAccounts, id) })}
                   />
                 </Card>
                 <p className="mt-2 px-1 text-xs text-[var(--color-brand-text-secondary)]">{lt.goals.pocketNote}</p>

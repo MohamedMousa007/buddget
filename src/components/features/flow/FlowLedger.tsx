@@ -109,7 +109,7 @@ export function DayGroup({
       <div
         className={cn(
           'border-[var(--color-brand-border)] bg-[var(--color-brand-card)]',
-          card ? 'mx-4 overflow-hidden rounded-2xl border' : 'border-y lg:overflow-hidden lg:rounded-2xl lg:border',
+          card ? 'mx-4 overflow-hidden rounded-2xl border shadow-[var(--shadow-sm)]' : 'border-y lg:overflow-hidden lg:rounded-2xl lg:border',
         )}
       >
         {group.rows.map((r, i) => {
@@ -123,7 +123,7 @@ export function DayGroup({
               {r.selected ? (
                 <span aria-hidden className="absolute inset-y-0 start-0 z-[2] w-[3px] bg-[var(--color-brand-primary)]" />
               ) : null}
-              {i > 0 ? <div className="ms-[82px] h-px bg-[var(--color-brand-border)]" /> : null}
+              {i > 0 ? <div className={cn('h-px bg-[var(--color-brand-border)]', card ? 'ms-[68px]' : 'ms-[82px]')} /> : null}
               {r.isIn ? (
                 <span
                   aria-hidden

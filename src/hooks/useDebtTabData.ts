@@ -6,8 +6,8 @@ import { useLocale, useT } from '@/lib/i18n'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { useShallow } from 'zustand/react/shallow'
 import { currentCycle } from '@/lib/settings/payCycle'
-import { parseISO, addMonths, differenceInCalendarMonths, isWithinInterval } from 'date-fns'
-import { addCalendarWeeks, weeksElapsed } from '@/lib/time/calendarDays'
+import { parseISO, isWithinInterval } from 'date-fns'
+import { borrowGoalSchedule, borrowScheduleStart } from '@/lib/debts/borrowGoal'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { debtFamily, type DebtFamily } from '@/lib/debts/debtFamily'
@@ -203,18 +203,7 @@ export function useDebtTabData() {
           accent: d.isGold ? 'var(--color-brand-gold)' : d.direction === 'they_owe' ? 'var(--color-brand-green)' : 'var(--color-brand-primary)',
           gold: d.isGold && d.goldKarat ? { grams: remaining, karat: d.goldKarat } : undefined,
           goal: g ? ((): BorrowVM['goal'] => {
-            const start = parseISO(d.createdAt)
-            const now = new Date()
-            const monthsPer = g.paymentFrequency === 'quarterly' ? 3 : g.paymentFrequency === 'annually' ? 12 : 1
-            let elapsed: number
-            let nextDate: Date
-            if (g.paymentFrequency === 'weekly') {
-              elapsed = weeksElapsed(now, start)
-              nextDate = addCalendarWeeks(start, elapsed + 1)
-            } else {
-              elapsed = Math.floor(Math.max(0, differenceInCalendarMonths(now, start)) / monthsPer)
-              nextDate = addMonths(start, (elapsed + 1) * monthsPer)
-            }
+            const { elapsed, next: nextDate } = borrowGoalSchedule(borrowScheduleStart(d), g.paymentFrequency)
             // On track = paid at least what the schedule expects by now (capped at total).
             const expected = Math.min(g.calculatedAmount * elapsed, d.startingBalance)
             return {

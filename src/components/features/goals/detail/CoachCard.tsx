@@ -1,21 +1,17 @@
 'use client'
 
 import { intlTag } from '@/lib/i18n/dateFormat'
-import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { Button } from '@/components/ui/button'
 import { useLocale, useT } from '@/lib/i18n'
 import type { CoachView } from '@/lib/goals/goalDetail'
 import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { formatWhole } from '@/lib/utils/formatters'
 
-function CoachRow({ title, sub, cta, variant, onPress }: { title: string; sub: string; cta: string; variant: 'default' | 'outline'; onPress: () => void }) {
+function CoachRow({ title, cta, onPress }: { title: string; cta: string; onPress: () => void }) {
   return (
-    <div className="flex items-center gap-3 rounded-[14px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-3 py-2.5">
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
-        <p className="text-xs text-[var(--color-brand-text-secondary)]">{sub}</p>
-      </div>
-      <Button size="touch" variant={variant} onClick={onPress} className="w-[104px] shrink-0">
+    <div className="flex items-center gap-3">
+      <p className="min-w-0 flex-1 text-[0.9375rem] text-[var(--color-brand-text-primary)]">{title}</p>
+      <Button size="touch" variant="outline" onClick={onPress} className="shrink-0 rounded-full bg-[var(--color-brand-elevated)]">
         {cta}
       </Button>
     </div>
@@ -25,7 +21,6 @@ function CoachRow({ title, sub, cta, variant, onPress }: { title: string; sub: s
 /** Behind-only card: what went missing and the two ways back. Deterministic, works offline. */
 export function CoachCard({
   coach,
-  currency,
   targetDate,
   quarterly,
   yearly = false,
@@ -33,7 +28,6 @@ export function CoachCard({
   onKeep,
 }: {
   coach: CoachView
-  currency: string
   targetDate: string
   quarterly: boolean
   /** A yearly plan: counted and worded in years. */
@@ -46,38 +40,19 @@ export function CoachCard({
   const { locale } = useLocale()
   const month = (iso: string) =>
     new Date(`${iso.slice(0, 7)}-01T00:00:00`).toLocaleDateString(intlTag(locale), { month: 'short', year: 'numeric' })
-  const sinceLabel = new Date(`${coach.since.slice(0, 7)}-01T00:00:00`).toLocaleDateString(intlTag(locale), { month: 'long' })
-  const money = (n: number) => formatCurrency(Math.round(n), currency, false)
-  const { moveDate, keepDate } = coach.options
+  const sinceLabel = new Date(`${coach.since.slice(0, 7)}-01T00:00:00`).toLocaleDateString(intlTag(locale), { month: 'short' })
+  const money = (n: number) => formatWhole(Math.round(n))
+  const title = yearly ? fq.coachTitleYears(coach.behindCount) : t.coachTitle(coach.behindCount, quarterly)
+  const { moveDate } = coach.options
 
   return (
-    <section
-      className="flex flex-col gap-3 rounded-[20px] border border-[var(--color-brand-border)] p-3.5"
-      style={{ background: 'color-mix(in srgb, var(--color-brand-amber) 10%, var(--color-brand-card))' }}
-    >
-      <div className="flex items-start gap-2.5">
-        <BuddgyIcon size={24} mood="worried" />
-        <div>
-          <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{yearly ? fq.coachTitleYears(coach.behindCount) : t.coachTitle(coach.behindCount, quarterly)}</p>
-          <p className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{t.coachShort(money(coach.shortfall), sinceLabel)}</p>
-        </div>
+    <section aria-label={title} className="flex flex-col gap-2.5 rounded-[20px] border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-3.5">
+      <div>
+        <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
+        <p className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{t.coachShort(money(coach.shortfall), sinceLabel)}</p>
       </div>
-      {moveDate ? (
-        <CoachRow
-          title={t.moveTitle(month(moveDate.targetDate))}
-          sub={yearly ? fq.moveSubYear(money(moveDate.perPeriod)) : t.moveSub(money(moveDate.perPeriod), quarterly)}
-          cta={t.moveCta}
-          variant="default"
-          onPress={onMove}
-        />
-      ) : null}
-      <CoachRow
-        title={t.keepTitle(month(targetDate))}
-        sub={yearly ? fq.keepSubYear(money(keepDate.perPeriod), keepDate.sharePct) : t.keepSub(money(keepDate.perPeriod), keepDate.sharePct, quarterly)}
-        cta={t.keepCta}
-        variant={moveDate ? 'outline' : 'default'}
-        onPress={onKeep}
-      />
+      {moveDate ? <CoachRow title={t.moveTitle(month(moveDate.targetDate))} cta={t.moveCta} onPress={onMove} /> : null}
+      <CoachRow title={t.keepTitle(month(targetDate))} cta={t.keepCta} onPress={onKeep} />
     </section>
   )
 }

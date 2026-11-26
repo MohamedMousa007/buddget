@@ -25,10 +25,10 @@ import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
 import { applyPocketDeposit } from '@/lib/savings/moneySourceDeposit'
 import { pocketDisplayName } from '@/lib/savings/pocketIdentity'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import type { Goal } from '@/lib/store/types'
+import type { Currency, Goal } from '@/lib/store/types'
 import { MASK } from '@/lib/privacy/mask'
 import { useMask } from '@/lib/privacy/useMask'
-import { formatCurrency, formatWhole } from '@/lib/utils/formatters'
+import { formatWhole } from '@/lib/utils/formatters'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { manualOccurredAt } from '@/lib/time/occurredAt'
 import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
@@ -53,13 +53,16 @@ function GoalMoney({ goal: initial, onClose }: { goal: Goal; onClose: () => void
   const hidden = useMask('lists')
   const showToast = useActionToast()
   const rows = useGoalRows()
-  const { savingsAccounts } = useFinanceStore(useShallow((s) => ({ savingsAccounts: s.savingsAccounts })))
+  const { savingsAccounts, baseCurrency } = useFinanceStore(useShallow((s) => ({ savingsAccounts: s.savingsAccounts, baseCurrency: s.settings.baseCurrency })))
 
   const [goalId, setGoalId] = useState(initial.id)
   const row = rows.find((r) => r.goal.id === goalId)
   const goal = row?.goal ?? initial
-  const pocket = savingsAccounts.find((a) => goal.linkedSavingsAccountIds.includes(a.id) && isEligibleCarryPocket(a))
+  // New money goes to the goal's current pocket: the first linked one (an older pocket can stay linked for what it holds).
+  const pocket = goal.linkedSavingsAccountIds.map((id) => savingsAccounts.find((a) => a.id === id)).find((a) => !!a && isEligibleCarryPocket(a))
   const [amount, setAmount] = useState('')
+  // The amount can be typed in another currency; it lands in the goal's pocket converted, as on Add money.
+  const [currency, setCurrency] = useState<string>(String(initial.currency))
   const [date, setDate] = useState(() => localTodayISO())
   const [clock, setClock] = useState('')
   const timeLabel = useFlowLtCopy().expense.time
@@ -83,8 +86,8 @@ function GoalMoney({ goal: initial, onClose }: { goal: Goal; onClose: () => void
 
   const refusal = effective.kind === 'pocket'
     ? null
-    : guard.refusalFor({ amount: value, currency: String(goal.currency), mode: effective.kind === 'outside' ? 'declare' : 'allocate', fromAccountId: effective.id ?? null })
-  const pocketShort = !!fromPocket && fromPocket.currency === goal.currency && value > fromPocket.currentBalance
+    : guard.refusalFor({ amount: value, currency, mode: effective.kind === 'outside' ? 'declare' : 'allocate', fromAccountId: effective.id ?? null })
+  const pocketShort = !!fromPocket && fromPocket.currency === currency && value > fromPocket.currentBalance
   const canSubmit = value > 0 && !refusal && !pocketShort && (effective.kind !== 'pocket' || !!fromPocket)
 
   const sourceLine = (() => {
@@ -94,15 +97,18 @@ function GoalMoney({ goal: initial, onClose }: { goal: Goal; onClose: () => void
     if (!method) return ''
     return guard.holder && method.id === guard.holder.id ? c.srcHeld : c.srcAccount(accountTitle(method))
   })()
-  const hint = isSaveGoal(goal) ? goalAddHint(row?.current ?? 0, goal.targetAmount, value) : null
-  const money = (n: number) => (hidden ? MASK : formatCurrency(n, goal.currency, false))
-  const hintText = !hint ? '' : hint.kind === 'exact' ? t.goals.home.addExact : hint.kind === 'left' ? t.goals.home.addLeft(money(hint.amount)) : t.goals.home.addOver(money(hint.amount))
+  const saved = row?.current ?? 0
+  const target = goal.targetAmount ?? 0
+  // Before an amount is typed the line still says how far the goal is from its target.
+  const hint = !isSaveGoal(goal) || currency !== String(goal.currency) ? null : value > 0 ? goalAddHint(saved, target, value) : target > saved ? { kind: 'left' as const, amount: target - saved } : null
+  const money = (n: number) => (hidden ? MASK : formatWhole(n))
+  const hintText = !hint ? '' : hint.kind === 'exact' ? t.goals.home.addExact : hint.kind === 'left' ? lt.goals.leftToReach(money(hint.amount), money(target)) : t.goals.home.addOver(money(hint.amount))
 
   const save = () => {
     if (!canSubmit) return
     const ok = depositIntoGoal(useFinanceStore.getState(), goal, pocket?.id, t.catalogs.goalPocketName(goal.name), (pocketId) =>
       applyPocketDeposit(useFinanceStore.getState(), {
-        pocketId, amount: value, currency: goal.currency, source: effective, note: goal.name,
+        pocketId, amount: value, currency: currency as Currency, source: effective, note: goal.name,
         date: date !== localTodayISO() ? date : undefined,
         occurredAt: manualOccurredAt(date, clock),
       }),
@@ -123,7 +129,9 @@ function GoalMoney({ goal: initial, onClose }: { goal: Goal; onClose: () => void
           <AmountHero
             value={amount}
             onChange={setAmount}
-            currency={String(goal.currency)}
+            currency={currency}
+            onCurrencyChange={setCurrency}
+            base={baseCurrency}
             sign="+"
             aria-label={t.goals.home.addMoneyAmount}
             top={<GoalGlyph goal={goal} size={52} />}
@@ -154,7 +162,7 @@ function GoalMoney({ goal: initial, onClose }: { goal: Goal; onClose: () => void
               pockets={[]}
               goals={goals}
               value={goal.id}
-              onChange={(id) => { setGoalId(id); setSource({ kind: 'account' }) }}
+              onChange={(id) => { setGoalId(id); setSource({ kind: 'account' }); setCurrency(String(rows.find((r) => r.goal.id === id)?.goal.currency ?? currency)) }}
             />
           </MoneySourceField>
 

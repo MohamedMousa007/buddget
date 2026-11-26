@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { instantOf } from '@/lib/accounts/balance'
+import { arrivesIn } from '@/lib/accounts/cardDetails'
 import { categoryLabel } from '@/lib/i18n/categoryLabel'
 import { categoryChipColors } from '@/lib/expenses/categoryChip'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
@@ -36,6 +37,7 @@ export function SheetActivity({ title, rows, masked, method, emptyLine, onLeave 
   const all = useT()
   const { locale } = useLocale()
   const ready = useFinanceStore((s) => s.dataReady)
+  const methods = useFinanceStore((s) => s.paymentMethods)
   const setEditingExpenseId = useSettingsStore((s) => s.setEditingExpenseId)
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
   const openAddExpenseWithPrefill = useSettingsStore((s) => s.openAddExpenseWithPrefill)
@@ -67,7 +69,8 @@ export function SheetActivity({ title, rows, masked, method, emptyLine, onLeave 
         iconBg={categoryChipColors(e.category).bg} iconFg={categoryChipColors(e.category).fg} title={e.description || categoryLabel(all, e.category)}
         onClick={() => { onLeave(); setEditingExpenseId(e.id); setActiveModal('editExpense') }}
         subtitle={formatLocalized(new Date(instantOf(e.occurredAt, e.date)), 'MMM d', locale)}
-        amount={masked ? MASK : `−${moneyFlex(e.amount, String(e.currency))}`} />
+        amount={masked ? MASK : `${arrivesIn(e, method.id, methods) ? '+' : '−'}${moneyFlex(e.amount, String(e.currency))}`}
+        amountColor={arrivesIn(e, method.id, methods) ? 'var(--color-brand-green)' : undefined} />
     ))
   }
   return (

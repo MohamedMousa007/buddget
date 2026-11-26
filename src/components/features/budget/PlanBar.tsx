@@ -2,8 +2,8 @@
 
 import { ChevronDown } from 'lucide-react'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
-import { SelectableCard } from '@/components/ui/SelectableCard'
 import type { PlanMode } from '@/lib/budget/planView.types'
+import { useBudgetLtCopy } from '@/lib/i18n/budgetLtCopy'
 import { useBudgetChromeCopy } from './useBudgetCopy'
 
 export interface PlanBarProps {
@@ -17,29 +17,28 @@ export interface PlanBarProps {
   expanded: boolean
 }
 
-/** Plan chip (the one entry to every plan action) and the Plan | Month switch. */
+/**
+ * Light touch `page-budget`: the plan picker as a quiet row (the one entry to every plan action), then the Month | Plan
+ * switch across the full width.
+ */
 export function PlanBar({ planName, state, mode, onModeChange, onOpenPlans, expanded }: PlanBarProps) {
   const c = useBudgetChromeCopy().planBar
+  const lt = useBudgetLtCopy()
   return (
-    <div className="flex items-center gap-2">
-        <SelectableCard
-          as="action"
-          layout="row"
-          surface="card"
-          onClick={onOpenPlans}
-          aria-label={`${c.switchPlan}: ${planName}`}
-          aria-expanded={expanded}
-          className="h-14 min-w-0 flex-1 gap-2.5 px-3 py-0"
-        >
-          <span className={`size-2.5 shrink-0 rounded-full ${state === 'active' ? 'bg-[var(--color-brand-primary-bright)]' : 'bg-[var(--color-brand-text-muted)]'}`} aria-hidden />
-          <span className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate text-[0.9375rem] font-semibold leading-tight text-[var(--color-brand-text-primary)]">{planName}</span>
-            <span className="truncate text-xs text-[var(--color-brand-text-secondary)]">{c[`${state}Sub`]}</span>
-          </span>
-          <ChevronDown className={`size-4 shrink-0 text-[var(--color-brand-text-muted)] transition-transform ${expanded ? 'rotate-180' : ''}`} aria-hidden />
-        </SelectableCard>
+    <div className="flex flex-col gap-2">
+      <button
+        type="button"
+        onClick={onOpenPlans}
+        aria-label={`${c.switchPlan}: ${planName}`}
+        aria-expanded={expanded}
+        className="-mx-1 flex min-h-11 items-center gap-2 self-start rounded-xl px-1 text-start transition-colors hover:bg-[var(--color-brand-elevated)]"
+      >
+        <span className={`size-2 shrink-0 rounded-full ${state === 'active' ? 'bg-[var(--color-brand-primary-bright)]' : 'bg-[var(--color-brand-text-muted)]'}`} aria-hidden />
+        <span dir="auto" className="min-w-0 truncate text-[0.875rem] font-semibold text-[var(--color-brand-text-primary)]">{planName}</span>
+        <span className="shrink-0 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">· {lt.planState[state]}</span>
+        <ChevronDown className={`size-4 shrink-0 text-[var(--color-brand-text-muted)] transition-transform ${expanded ? 'rotate-180' : ''}`} aria-hidden />
+      </button>
       <SegmentedControl
-        fill={false}
         ariaLabel={c.modeLabel}
         value={mode}
         onChange={onModeChange}

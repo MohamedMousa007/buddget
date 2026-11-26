@@ -17,11 +17,10 @@ import { convertCurrency, tryConvertWithGold } from '@/lib/utils/currency'
 import { debtPaymentForWithdrawal } from '@/lib/debts/withdrawalPayment'
 import { investTopUpPatch } from '@/lib/savings/investTopUp'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
-import { LabeledBlock, NoteRow, PocketPickerField, SheetBody, SheetFooter, tint } from '@/components/features/savings-v3/MoneySheetParts'
+import { LabeledBlock, NoteRow, PocketPickerField, PocketTile, SheetBody, SheetFooter } from '@/components/features/savings-v3/MoneySheetParts'
 import { AmountHero } from '@/components/ui/AmountHero'
 import { PickerRow } from '@/components/ui/PickerRow'
 import { OptionSheet, type OptionSheetOption } from '@/components/ui/OptionSheet'
-import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { accountTitle } from '@/components/features/accounts/accountDisplay'
 import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
 import { useLegAccount } from '@/components/features/savings-v3/useLegAccount'
@@ -30,7 +29,7 @@ import { localTodayISO } from '@/lib/utils/localDate'
 import { manualOccurredAt } from '@/lib/time/occurredAt'
 import { useDiscardPrompt } from '@/components/features/savings-v3/useDiscardPrompt'
 import { useT } from '@/lib/i18n'
-import { pocketColor, pocketDisplayName } from '@/lib/savings/pocketIdentity'
+import { pocketDisplayName } from '@/lib/savings/pocketIdentity'
 import { incomeDestination } from '@/lib/savings/withdrawDestination'
 import { isTracked } from '@/lib/accounts/kinds'
 import { useActionToast } from '@/components/ui/ActionToast'
@@ -202,7 +201,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
   }
 
   const submit = () => {
-    if (!from || amountNum <= 0 || !submitOnce.claim()) return
+    if (!from || !canSubmit || !submitOnce.claim()) return
     if (!commit(from)) submitOnce.release()
   }
 
@@ -211,11 +210,12 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
     return !!debt && debtPaymentForWithdrawal({ debt, amount: amountNum, currency, base: baseCurrency, rates: exchangeRates, goldPricePerGram, goldAvailable: goldPriceAvailable !== false, left: debtChips.find((d) => d.id === debt.id)?.left }).exceeds
   })()
 
+  const overPocket = !!from && amountNum > 0 && free + balanceEpsilon(from.account.currency) < amountInPocket
   const canSubmit =
     !debtOverpay &&
     !!from &&
     amountNum > 0 &&
-    free + balanceEpsilon(from.account.currency) >= amountInPocket &&
+    !overPocket &&
     (moveOn
       ? !!moveToId
       : reason === 'debt'
@@ -252,7 +252,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
       {discard.prompt}
       <div className="flex min-h-0 flex-1 flex-col">
         <V3SheetHeader onClose={discard.close}>
-          <V3SheetHeader.Title>{t.withdrawTitle}</V3SheetHeader.Title>
+          <V3SheetHeader.Title size="compact">{t.withdrawTitle}</V3SheetHeader.Title>
           <V3SheetHeader.Subtitle>{t.withdrawSub}</V3SheetHeader.Subtitle>
         </V3SheetHeader>
 
@@ -264,11 +264,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
             onCurrencyChange={(c) => setCurrency(c as Currency)}
             base={baseCurrency}
             aria-label={t.amount}
-            top={from ? (
-              <span aria-hidden className="flex size-[52px] items-center justify-center rounded-2xl" style={{ background: tint(pocketColor(from.account), 14), color: pocketColor(from.account) }}>
-                <SavingsAccountIcon account={from.account} className="size-6" />
-              </span>
-            ) : undefined}
+            top={from ? <PocketTile account={from.account} className="size-[52px] rounded-2xl" iconClassName="size-6" /> : undefined}
             line={from && after !== null ? w.goesFrom(fromName, fmtNum(from.account.currentBalance), fmtNum(after)) : ''}
           />
 
@@ -312,6 +308,12 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
               )}
             </>
           )}
+
+          {overPocket && from ? (
+            <p role="alert" className="text-[0.8125rem] text-[var(--color-brand-amber)]">
+              {lt.money.overPocket(fromName, fmtNum(from.account.currentBalance))}
+            </p>
+          ) : null}
 
           <NoteRow value={note} onChange={setNote} placeholder={w.addNote} />
         </SheetBody>

@@ -73,11 +73,11 @@ export async function addMoneyIn(page: Page, o: { amount: number; name: string; 
   await d.getByRole('textbox', { name: 'Amount' }).fill(String(o.amount))
   await d.getByRole('textbox', { name: 'Name' }).fill(o.name)
   if (o.method) {
-    await d.getByRole('button', { name: /EGP$/ }).last().click()
+    await d.getByRole('button', { name: /^Received in/ }).click()
     await pickMethod(page, o.method)
   }
   await blur(page)
-  await d.getByRole('button', { name: 'Save', exact: true }).click()
+  await d.getByRole('button', { name: 'Save income', exact: true }).click()
   await expect(d).toBeHidden()
 }
 

@@ -1,4 +1,4 @@
-import { format, parseISO, subMonths } from 'date-fns'
+import { addMonths, format, parseISO, subMonths } from 'date-fns'
 import { cycleKeyFor } from '@/lib/settings/payCycle'
 import { convertCurrency } from '@/lib/utils/currency'
 import { buildOccurrences, missedAfterDaysFor, type IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
@@ -49,16 +49,21 @@ function daysBetween(a: string, b: string): number {
   return Math.round(Math.abs(parseISO(a).getTime() - parseISO(b).getTime()) / DAY)
 }
 
-/** Recurring paydays with nothing recorded against them, this cycle and last (a late one spans cycles). */
+/**
+ * Recurring paydays with nothing recorded against them, this cycle and last (a late one spans cycles). With `around`
+ * (a credit's day), the cycles around that day instead, next one included: a payday can arrive a few days early.
+ */
 export function openPaydays(
   sources: IncomeSource[],
   events: IncomeEvent[],
   monthStartDay: number,
   today: Date,
   weekendFirst?: WeekendFirstDay,
+  around?: Date,
 ): OpenPayday[] {
-  const key = cycleKeyFor(today, monthStartDay)
-  const months = [format(subMonths(parseISO(`${key}-01`), 1), 'yyyy-MM'), key]
+  const key = cycleKeyFor(around ?? today, monthStartDay)
+  const start = parseISO(`${key}-01`)
+  const months = [subMonths(start, 1), start, ...(around ? [addMonths(start, 1)] : [])].map((d) => format(d, 'yyyy-MM'))
   const out: OpenPayday[] = []
   const seen = new Set<string>()
   for (const source of sources) {
@@ -104,7 +109,7 @@ export function paydayCandidates(
   today: Date,
   weekendFirst?: WeekendFirstDay,
 ): PaydayCandidate[] {
-  return openPaydays(sources, events, monthStartDay, today, weekendFirst)
+  return openPaydays(sources, events, monthStartDay, today, weekendFirst, parseISO(credit.receivedDate))
     .map((p) => {
       const inSource = convertCurrency(credit.amount, credit.currency, p.source.currency, rates)
       const diff = p.occ.amount > 0 ? Math.abs(inSource - p.occ.amount) / p.occ.amount : Infinity

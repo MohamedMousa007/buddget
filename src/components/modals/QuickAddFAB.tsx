@@ -36,6 +36,8 @@ export function QuickAddFAB() {
   const isOpen = activeModal === 'quickAdd'
   const voiceOpen = activeModal === 'voiceExpense'
   const scanOpen = activeModal === 'scanReceipt'
+  // Buddgy's chat owns the bottom corner on desktop: the + would sit on its Send button.
+  const chatOpen = activeModal === 'aiChat'
 
   // Under the "Add" title every tile is a noun, so each reads as "Add …". Ordered by how often people reach for them;
   // the odd last tile (voice) spans the row. Payment methods are not here: every method picker has its own "Add method".
@@ -130,7 +132,7 @@ export function QuickAddFAB() {
         {...handlers}
         // Keyboard and screen-reader activation is a click with no pointer (detail 0); the hold gesture never sees it.
         onClick={(e) => { if (e.detail === 0) setActiveModal(isOpen ? null : 'quickAdd') }}
-        className={`hidden lg:flex fixed bottom-8 end-8 ${isOpen ? 'z-[110]' : 'z-50'} items-center justify-center h-[54px] w-[54px] rounded-[18px] bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] shadow-[0_8px_20px_-6px_color-mix(in_srgb,var(--color-brand-primary)_60%,transparent)] transition-all duration-200 active:scale-95 cursor-pointer touch-none select-none`}
+        className={`hidden ${chatOpen ? '' : 'lg:flex'} fixed bottom-8 end-8 ${isOpen ? 'z-[110]' : 'z-50'} items-center justify-center h-[54px] w-[54px] rounded-[18px] bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] shadow-[0_8px_20px_-6px_color-mix(in_srgb,var(--color-brand-primary)_60%,transparent)] transition-all duration-200 active:scale-95 cursor-pointer touch-none select-none`}
         aria-label={isOpen ? t.common.close : t.nav.quickAdd}
         aria-expanded={isOpen}
       >

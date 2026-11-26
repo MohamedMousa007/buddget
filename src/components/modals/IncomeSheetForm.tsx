@@ -226,6 +226,8 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
   const handleDelete = async () => {
     if (!source || !(await confirm({ title: t.income.confirmDelete, destructive: true }))) return
     deleteIncomeSource(source.id)
+    // Like an expense delete: the toast can bring it back.
+    showToast(t.moneyFlows.incomeDeleted, { undo: () => useFinanceStore.getState().restoreIncomeSource(source), undoLabel: t.common.undo })
     onClose()
   }
 

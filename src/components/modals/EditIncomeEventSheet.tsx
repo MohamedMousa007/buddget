@@ -25,7 +25,8 @@ import { MethodValue } from '@/components/features/expenses/MethodValue'
 import { UnsavedChangesDialog } from '@/components/features/expenses/UnsavedChangesDialog'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
-import { IncomeTypeIcon, incomeTypeColors } from '@/components/features/income/IncomeTypeIcon'
+import { IncomeTypeIcon } from '@/components/features/income/IncomeTypeIcon'
+import { amountInputText } from '@/lib/ui/amountSanitize'
 import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { MANUAL_INCOME_SOURCE_TYPES } from '@/lib/constants/incomeSourceTypes'
 import { incomeTypeGridItem } from '@/lib/constants/categoryGrid'
@@ -123,7 +124,7 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
   const typeLocked = Boolean(event.linkedSavingsAccountId || event.linkedDebtId)
 
   const [name, setName] = useState(event.name)
-  const [amount, setAmount] = useState(String(event.amount))
+  const [amount, setAmount] = useState(amountInputText(event.amount, event.currency))
   const [currency, setCurrency] = useState<Currency>(event.currency)
   const [sourceType, setSourceType] = useState<IncomeSourceType>(event.sourceType ?? 'other')
   const [receivedDate, setReceivedDate] = useState(event.receivedDate)
@@ -160,7 +161,6 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
       : recurring
         ? daysLate ? lt.income.lineLate(monthOf(payday), daysLate) : lt.income.lineOnTime(monthOf(payday))
         : lt.income.lineOneTime
-  const colors = incomeTypeColors(sourceType)
   const statusText: Record<IncomeEventStatus, string> = {
     confirmed: t.income.statusReceived,
     late: t.income.statusLate,
@@ -173,7 +173,7 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
   const valid = name.trim().length > 0 && !Number.isNaN(amt) && amt > 0
   const isDirty =
     name !== event.name ||
-    amount !== String(event.amount) ||
+    amount !== amountInputText(event.amount, event.currency) ||
     currency !== event.currency ||
     sourceType !== (event.sourceType ?? 'other') ||
     receivedDate !== event.receivedDate ||
@@ -268,7 +268,7 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
           base={settings.baseCurrency}
           sign="+"
           top={
-            <span aria-hidden className="flex size-[52px] items-center justify-center rounded-[16px]" style={{ background: colors.bg, color: colors.fg }}>
+            <span aria-hidden className="flex size-[52px] items-center justify-center rounded-[16px]" style={{ background: 'var(--color-brand-green-soft)', color: 'var(--color-brand-green)' }}>
               <IncomeTypeIcon type={sourceType} className="size-6" />
             </span>
           }

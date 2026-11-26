@@ -5,7 +5,8 @@ import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { CategoryGlyph } from '@/components/dashboard/CategoryIcon'
 import { SelectField } from '@/components/ui/SelectField'
 import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
-import { ArrowUp, ChevronLeft, Coins, Pencil, Sparkles, X } from 'lucide-react'
+import { ArrowUp, ChevronLeft, Coins, MoonStar, Pencil, Sparkles, X } from 'lucide-react'
+import { defaultGoalName } from '@/lib/goals/defaultGoalCopy'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { GoalChat } from '@/components/features/goals/new/GoalChat'
 import { CostSheet } from '@/components/features/goals/new/CostSheet'
@@ -33,13 +34,13 @@ import { useLocale, useT } from '@/lib/i18n'
 import { intlTag } from '@/lib/i18n/dateFormat'
 import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
 import { ELSEWHERE } from '@/lib/goals/goalPocket'
-import { monthsUntil } from '@/lib/goals/goalPlan'
+import { monthsUntil, sharesOverFull } from '@/lib/goals/goalPlan'
 import { GOAL_ICON_SET, goalVisual } from '@/lib/goals/goalVisual'
 import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
 import { pocketDisplayName } from '@/lib/savings/pocketIdentity'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Currency, GoalCategory } from '@/lib/store/types'
-import { formatCurrency, formatWhole } from '@/lib/utils/formatters'
+import { formatWhole } from '@/lib/utils/formatters'
 
 /** The categories Add goal offers as chips: every saving goal, Other last. */
 const SAVE: GoalCategory[] = [
@@ -63,7 +64,7 @@ function SavedBlock({ form }: { form: Form }) {
   const t = useT()
   const sf = t.savingsForms
   const accounts = useFinanceStore((s) => s.savingsAccounts)
-  const [kind, setKind] = useState<MoneySource['kind']>(form.savedPocketId ? 'pocket' : form.savedHome === ELSEWHERE ? 'outside' : 'account')
+  const kind = form.savedKind
   const pockets: PocketVM[] = useMemo(
     () => accounts.filter((a) => isEligibleCarryPocket(a) && a.currency === form.currency).map((account) => ({ account, coverAmount: 0, goalsAmount: 0, goalLabel: '', isAuto: false })),
     [accounts, form.currency],
@@ -72,9 +73,11 @@ function SavedBlock({ form }: { form: Form }) {
   const value: MoneySource =
     kind === 'outside' ? { kind } : kind === 'pocket' ? { kind, id: form.savedPocketId ?? undefined } : { kind, id: accountId }
   const pick = (next: MoneySource) => {
-    setKind(next.kind)
+    form.setSavedKind(next.kind)
     if (next.kind === 'pocket') {
+      // No account fallback: until a pocket is picked the saved amount has no home, so it can never be set aside in an account.
       form.setSavedPocketId(next.id ?? null)
+      form.setSavedHome(null)
       return
     }
     form.setSavedPocketId(null)
@@ -102,6 +105,7 @@ function SavedBlock({ form }: { form: Form }) {
         paymentMethods={form.homeAccounts.map((h) => h.method)}
         pockets={pockets}
         labels={{ title: c.whereIsIt, from: c.keptIn, fromPocket: c.keptIn }}
+        look="grouped"
       >
         <PickerRow
           label={c.alreadySaved}
@@ -110,7 +114,7 @@ function SavedBlock({ form }: { form: Form }) {
               value={form.alreadySaved}
               onChange={form.setAlreadySaved}
               currency={form.currency}
-              placeholder="0"
+              placeholder={c.alreadySavedPlaceholder}
               aria-label={c.alreadySaved}
               className="w-full min-w-0 bg-transparent text-end font-mono-numbers outline-none placeholder:text-[var(--color-brand-text-muted)]"
             />
@@ -123,6 +127,8 @@ function SavedBlock({ form }: { form: Form }) {
             ? lt.money.overPocket(pocketDisplayName(pocket, sf.systemNames), formatWhole(pocket.currentBalance))
             : account ? t.wealthSheets.money.overAvailable(`${formatWhole(home?.free ?? 0)} ${form.currency}`, accountTitle(account)) : null}
         </p>
+      ) : form.savedProblem === 'choose_pocket' ? (
+        <p role="alert" className="mt-2 px-1 text-[0.8125rem] text-[var(--color-brand-amber)]">{lt.money.choosePocket}</p>
       ) : note && num(form.alreadySaved) > 0 ? (
         <p className="mt-2 px-1 text-xs text-[var(--color-brand-text-secondary)]">{note}</p>
       ) : null}
@@ -198,10 +204,23 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
   const summary = fundSummary(plan, money)
   const name = form.name.trim() || c.namePlaceholder
   const canCreate = form.canNext2
+  const hajj = custom && form.icon === 'moon-star'
   const pickSave = (k: GoalCategory) => {
     setPreset(null)
+    if (hajj) {
+      if (k === 'custom') form.setIcon(null)
+      if (form.name === c.hajjChip) form.setName('')
+    }
     if (form.kind === 'save') form.chooseCategory(k)
     else form.pickCategory(k)
+  }
+  const pickHajj = () => {
+    setPreset(null)
+    const named = form.name.trim() && form.name !== defaultGoalName(form.category, t.catalogs.goalNames)
+    if (form.kind === 'save') form.chooseCategory('custom')
+    else form.pickCategory('custom')
+    form.setIcon('moon-star')
+    if (!named) form.setName(c.hajjChip)
   }
   const pickOther = (key: OtherKey) => {
     setPreset(key)
@@ -275,13 +294,21 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
 
         <div role="group" aria-label={f.s1.groupSave} className="hide-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
           {SAVE.map((k) => {
-            const Icon = k === 'custom' && customIcon ? customIcon : goalVisual(k).icon
-            return (
-              <OptionChip key={k} selected={form.kind === 'save' && form.category === k} onClick={() => pickSave(k)} className="shrink-0">
+            const Icon = k === 'custom' && customIcon && !hajj ? customIcon : goalVisual(k).icon
+            const chip = (
+              <OptionChip key={k} selected={form.kind === 'save' && form.category === k && !hajj} onClick={() => pickSave(k)} className="shrink-0">
                 <Icon aria-hidden />
                 {t.goals[goalCategoryLabelKey(k)] as string}
               </OptionChip>
             )
+            // Hajj & Umrah has no category of its own: a goal of your own wearing the moon-star icon.
+            return k !== 'phone_device' ? chip : [
+              chip,
+              <OptionChip key="hajj" selected={form.kind === 'save' && hajj} onClick={pickHajj} className="shrink-0">
+                <MoonStar aria-hidden />
+                {c.hajjChip}
+              </OptionChip>,
+            ]
           })}
         </div>
         <div role="group" aria-label={`${f.s1.groupPay} · ${f.s1.groupControl}`} className="hide-scrollbar -mx-5 -mt-1 flex items-center gap-2 overflow-x-auto px-5 pb-1">
@@ -319,7 +346,7 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
               <p className="flex items-center gap-2 rounded-xl bg-[var(--color-brand-primary-soft)] px-3 py-2 text-[0.8125rem] text-[var(--color-brand-text-primary)]">
                 <BuddgyIcon size={20} className="shrink-0" />
                 <span className="min-w-0 flex-1">
-                  {form.advice.kind === 'covered' ? f.advice.covered : f.advice.emergency(formatCurrency(form.advice.amount, form.currency, false))}
+                  {form.advice.kind === 'covered' ? f.advice.covered : f.advice.emergency(formatWhole(form.advice.amount))}
                 </span>
                 {form.advice.kind === 'emergency' ? (
                   <OptionChip size="sm" onClick={() => form.setTargetAmount(String((form.advice as { amount: number }).amount))}>
@@ -328,16 +355,19 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
                 ) : null}
               </p>
             ) : null}
-            {DEBT_LIKE.has(form.category) && form.linkable.length > 0 ? (
+            {DEBT_LIKE.has(form.category) && form.linkable.some((d) => d.name?.trim() || d.personName?.trim() || d.person?.trim()) ? (
               <div className="flex flex-col gap-2 rounded-2xl border border-[var(--color-brand-border)] p-3">
                 <p className="text-[0.8125rem] font-semibold text-[var(--color-brand-text-primary)]">{f.s2.linkLead}</p>
                 <p className="text-xs text-[var(--color-brand-text-secondary)]">{f.s2.linkSub}</p>
                 <div className="flex flex-wrap gap-2">
-                  {form.linkable.slice(0, 4).map((d) => (
-                    <OptionChip key={d.id} size="sm" onClick={() => { setPreset('debt'); form.linkInstead(d.id, d.name) }}>
-                      {d.name}
-                    </OptionChip>
-                  ))}
+                  {form.linkable.slice(0, 4).map((d) => {
+                    const label = d.name?.trim() || d.personName?.trim() || d.person?.trim()
+                    return label ? (
+                      <OptionChip key={d.id} size="sm" onClick={() => { setPreset('debt'); form.linkInstead(d.id, label) }}>
+                        {label}
+                      </OptionChip>
+                    ) : null
+                  })}
                 </div>
               </div>
             ) : null}
@@ -349,10 +379,18 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
               />
               <PickerRow
                 label={c.fundIt}
-                onClick={() => setFundOpen(true)}
+                onClick={() => {
+                  // iOS leaves focus in the name or amount field when a row is tapped; Fund it would hand focus back to it
+                  // on close, raising the keyboard and hiding Create goal under the first tap.
+                  if (document.activeElement instanceof HTMLInputElement) document.activeElement.blur()
+                  setFundOpen(true)
+                }}
                 value={<span className="truncate font-mono-numbers">{saved > 0 ? c.fundSummarySaved(summary, money(saved)) : summary}</span>}
               />
             </Card>
+            {form.fundingMode === 'share' && sharesOverFull(form.otherShare, form.sharePct) ? (
+              <p role="alert" className="px-1 text-[0.8125rem] text-[var(--color-brand-amber)]">{c.shareOver(form.otherShare + form.sharePct)}</p>
+            ) : null}
             <PocketNote name={name} />
           </>
         ) : form.kind === 'limit' ? (
@@ -410,7 +448,7 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
                 })}
               </div>
               <p className="text-xs text-[var(--color-brand-text-secondary)]">
-                {f.s2.debtsTotal}: <b className="font-mono-numbers">{formatCurrency(form.debtsOwed, form.baseCurrency, false)}</b>
+                {f.s2.debtsTotal}: <b className="font-mono-numbers">{formatWhole(form.debtsOwed)}</b>
               </p>
             </div>
           </>

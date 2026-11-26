@@ -10,6 +10,7 @@ import { useDismissable } from '@/hooks/useDismissable'
 import { useDialogFocus } from '@/hooks/useDialogFocus'
 import { navigate } from '@/lib/navigation/navigate'
 import { getGoalStatus } from '@/lib/goals/goalStatus'
+import { goalJourney } from '@/lib/goals/achievedFacts'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Goal } from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
@@ -27,11 +28,9 @@ export function GoalAchievedScreen({ goal, current, onClose }: { goal: Goal; cur
   const panelRef = useRef<HTMLDivElement>(null)
   useDialogFocus(true, panelRef)
   const runs = useGoalAllocationRuns()[goal.id] ?? []
-  const deposits = useFinanceStore((s) =>
-    s.savingsTransactions.filter((x) => goal.linkedSavingsAccountIds.includes(x.accountId) && x.type === 'deposit').length,
-  )
+  const txs = useFinanceStore((s) => s.savingsTransactions)
   const [now] = useState(() => new Date())
-  const months = Math.max(1, Math.round((now.getTime() - new Date(goal.createdAt).getTime()) / (30.4 * 86_400_000)))
+  const { months, deposits } = goalJourney(goal, txs, now)
   const streak = getGoalStatus({ goal: { ...goal, status: 'active', fundingMode: goal.fundingMode === 'manual' ? 'fixed' : goal.fundingMode }, current: 0, runs, now })
   const streakCount = streak.kind === 'streak' ? (streak.params.count ?? 0) : 0
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'

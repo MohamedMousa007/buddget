@@ -96,8 +96,12 @@ export default function DebtsPage() {
   const clearedCount = data.cleared.length
   const clearedTotal = data.cleared.reduce((s, x) => s + x.original, 0)
 
+  // The empty page is the empty card alone (mockup state-emptydebts): no zero hero above it.
+  const empty = noneActive && clearedCount === 0
+
   return (
     <div>
+      {empty ? null : (
       <PageHero inset>
       <DebtPortfolioHero
         owed={data.owed}
@@ -117,6 +121,7 @@ export default function DebtsPage() {
         clearedCount={clearedCount}
       />
       </PageHero>
+      )}
 
       <PageGrid
           stack
@@ -125,7 +130,7 @@ export default function DebtsPage() {
                 <DebtGoalPrompt />
                 <GoalLensList categories={['debt_freedom']} />
 
-                {noneActive && clearedCount === 0 ? (
+                {empty ? (
                   <EmptyState
                     variant="card"
                     className="mt-5"
@@ -163,7 +168,7 @@ export default function DebtsPage() {
           }
           secondary={
             <div className="px-4 lg:px-0">
-              <DebtPaymentsFeed payments={data.payments} />
+              <DebtPaymentsFeed payments={data.payments} family={empty ? undefined : tab} />
               {clearedCount > 0 ? (
                 <Button
                   variant="outline"

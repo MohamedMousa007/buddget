@@ -12,6 +12,7 @@ import { useBudgetPageActions } from '@/hooks/useBudgetPageActions'
 import { usePlanActions } from '@/hooks/usePlanActions'
 import { History } from 'lucide-react'
 import { summarizePlan } from '@/lib/budget/planSummary'
+import { everydayPace } from '@/lib/budget/monthSummary'
 import { fallbackPlanId, selectActivePlan } from '@/lib/budget/activePlan'
 import { useLocale } from '@/lib/i18n'
 import { usePlanView } from '@/hooks/usePlanView'
@@ -202,6 +203,8 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
     onCompare: (id: string) => setCompare({ a: view.plan.id, b: id === view.plan.id ? (plans.find((p) => p.id !== id)?.id ?? id) : id }),
   }
   const applied = view.plan.id === selectActivePlan(plans, activeId)?.id
+  // The month hero carries the Close chip itself (Light touch `page-budget`); elsewhere the close card stays.
+  const heroHasClose = mode === 'month' && applied && !view.learning && everydayPace(view) != null
   const hero = (
     <>
       <PlanBar
@@ -215,8 +218,13 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
           setSwitcherOpen(true)
         }}
       />
-      {monthClose ? <MonthCloseCard month={closeMonth} onOpen={() => setCloseOpen(true)} /> : null}
-      <FlowStrip view={view} variant="hero" onApply={applied ? undefined : () => (view.plan.status === 'draft' ? openBuilder(view.plan.id) : onActivate(view.plan.id))} />
+      {monthClose && !heroHasClose ? <MonthCloseCard month={closeMonth} onOpen={() => setCloseOpen(true)} /> : null}
+      <FlowStrip
+        view={view}
+        variant="hero"
+        onApply={applied ? undefined : () => (view.plan.status === 'draft' ? openBuilder(view.plan.id) : onActivate(view.plan.id))}
+        onCloseMonth={monthClose && heroHasClose ? () => setCloseOpen(true) : undefined}
+      />
       {view.needsUpgrade && view.plan.categories.length > 0 && !upgradeLater ? (
         <UpgradeBanner lineCount={view.plan.categories.length} onReview={act.groupLegacyLines} onLater={() => setUpgradeLater(true)} />
       ) : null}

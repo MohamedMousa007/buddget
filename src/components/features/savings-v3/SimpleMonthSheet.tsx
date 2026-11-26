@@ -11,7 +11,7 @@ import { PickerSheet } from '@/components/ui/PickerSheet'
 import { useT } from '@/lib/i18n'
 import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
 import { estimateEmergencyFund } from '@/lib/savings/estimateEmergencyFund'
-import { SIMPLE_MONTH_LINES, simpleMonthSum, type SimpleMonth, type SimpleMonthLine } from '@/lib/savings/simpleMonth'
+import { SIMPLE_MONTH_DEFAULT_OFF, SIMPLE_MONTH_LINES, simpleMonthSum, type SimpleMonth, type SimpleMonthLine } from '@/lib/savings/simpleMonth'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { cn } from '@/lib/utils'
 
@@ -44,7 +44,7 @@ export interface SimpleMonthSheetProps {
 export function SimpleMonthSheet({ open, onClose, month, currency, initialOwn, debtsLine, onUse }: SimpleMonthSheetProps) {
   const ef = useT().wealthSheets.ef
   const c = useGoalsLtCopy().ef
-  const [off, setOff] = useState<ReadonlySet<SimpleMonthLine>>(new Set())
+  const [off, setOff] = useState<ReadonlySet<SimpleMonthLine>>(SIMPLE_MONTH_DEFAULT_OFF)
   const [own, setOwn] = useState(initialOwn)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
@@ -88,12 +88,7 @@ export function SimpleMonthSheet({ open, onClose, month, currency, initialOwn, d
     >
       <div className="native-scroll -mx-5 min-h-0 flex-1 space-y-3 overflow-y-auto px-5">
         <div className="flex flex-col items-center pb-2 pt-1 text-center">
-          <p
-            className={cn(
-              'font-mono-numbers text-[2.5rem] font-semibold leading-none tracking-[-0.04em]',
-              ownValue > 0 ? 'text-[var(--color-brand-text-muted)] line-through decoration-2' : 'text-[var(--color-brand-text-primary)]',
-            )}
-          >
+          <p className="font-mono-numbers text-[2.5rem] font-semibold leading-none tracking-[-0.04em] text-[var(--color-brand-text-primary)]">
             {fmtNum(sum)}
           </p>
           <p className="mt-2 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">

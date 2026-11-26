@@ -4,7 +4,7 @@ import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
 import { selectActivePlan } from '@/lib/budget/activePlan'
 import { useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { ArrowDownLeft, ArrowUpRight, Pencil, Plus, Star, Trash2, TriangleAlert } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Pencil, Plus, RefreshCw, Star, Trash2, TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { SkeletonList } from '@/components/ui/SkeletonList'
@@ -20,7 +20,6 @@ import { ActivityLedger } from '@/components/features/savings-v3/ActivityLedger'
 import { AddHoldingSheet } from '@/components/features/savings-v3/AddHoldingSheet'
 import { AddSavingsSheetV3 } from '@/components/features/savings-v3/AddSavingsSheetV3'
 import { EmergencyFundSheet } from '@/components/features/savings-v3/EmergencyFundSheet'
-import { GoldPriceStrip } from '@/components/features/savings-v3/GoldPriceStrip'
 import { SavingsHero, type HeroSplitSegment } from '@/components/features/savings-v3/SavingsHero'
 import { WealthHeroBadges } from '@/components/features/savings-v3/WealthHeroBadges'
 import { WealthList } from '@/components/features/savings-v3/WealthList'
@@ -41,6 +40,7 @@ import { canDeletePocket } from '@/lib/savings/canDeletePocket'
 import { pocketDeleteEffect } from '@/lib/savings/pocketDeleteEffect'
 import { accountTitle } from '@/components/features/accounts/accountDisplay'
 import { useLocale, useT } from '@/lib/i18n'
+import { useWealthLtCopy } from '@/lib/i18n/wealthLtCopy'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { buildGoalProgressContext, computeGoalProgress } from '@/lib/goals/computeGoalProgress'
@@ -50,7 +50,7 @@ import { changePct, formatChangePct } from '@/lib/utils/changePct'
 import { deriveHawl } from '@/lib/savings/hawl'
 import { deriveSimpleMonth } from '@/lib/savings/simpleMonth'
 import { savingsAccountBalanceInBase } from '@/lib/savings/savingsConversions'
-import { buildWealth, emergencyState, plannedSavingsRatePct, type CatKey, type WealthRowVM } from '@/lib/savings/wealthModel'
+import { buildWealth, emergencyState, type WealthRowVM } from '@/lib/savings/wealthModel'
 import { computeZakat } from '@/lib/savings/zakat'
 import { toZakatInput } from '@/lib/savings/zakatInputs'
 import { evaluateZakatYear, zakatBaseAt, type ZakatSources } from '@/lib/savings/zakatYear'
@@ -75,7 +75,8 @@ export default function WealthPage() {
   const nw = useNetWorth()
   const stats = useMonthlyStats()
   const monthFilter = useSettingsStore((s) => s.monthFilter)
-  const { lookup } = useAssetPrices()
+  const { lookup, refresh: refreshPrices } = useAssetPrices()
+  const wl = useWealthLtCopy()
   const {
     savingsAccounts, savingsTransactions, investmentHoldings, goals, profile, settings, exchangeRates,
     budgetPlans, activeBudgetPlanId, debts, goldPricePerGram, goldPriceAvailable, expenses, debtPayments,
@@ -113,7 +114,6 @@ export default function WealthPage() {
   // the store until the sheet closes; it is never cleared in an unmount cleanup, which StrictMode runs on mount (Q3).
   const wealthAddRequested = useSettingsStore((s) => s.wealthAddRequested)
   const showAdd = addOpen || wealthAddRequested
-  const [filter, setFilter] = useState<CatKey | null>(null)
   const [collapsed, setCollapsed] = useState(false)
   const [feedHidden, hideFeed] = useHiddenStatus('gold-prices')
 
@@ -235,7 +235,6 @@ export default function WealthPage() {
   const totalText = formatWhole(model.total)
   const netWorthText = formatSignedFlex(nw.netWorth)
   const hasZakat = (zakatYear.state === 'estimate' || zakatYear.state === 'dueNow') && zakatYear.result.nisab > 0
-  const rate = plannedSavingsRatePct(stats)
 
   /** The warning follows what the delete does to net worth, not the kind of pocket. */
   const deleteBodyFor = (a: SavingsAccount) => {
@@ -277,7 +276,7 @@ export default function WealthPage() {
       <FlowStickyStrip visible={collapsed} primary={totalText} secondary={base} right={[netWorthText]} />
       {goldNisab > 0 ? <ZakatBasisPrompt {...prompt} /> : null}
 
-      <PageHero>
+      <PageHero inset>
       <SavingsHero
         total={totalText}
         currency={base}
@@ -286,7 +285,6 @@ export default function WealthPage() {
         netWorthPrefix={nw.netWorthIncomplete ? 'At least' : undefined}
         split={split}
         netWorthTrend={model.anyUnpriced ? undefined : trend}
-        savingsRate={rate ?? undefined}
         badges={
           <WealthHeroBadges
             emergency={{ state: efState, months: emergency.monthsCovered.toFixed(1), target: targetMonths }}
@@ -296,35 +294,30 @@ export default function WealthPage() {
           />
         }
       />
-
       </PageHero>
 
       <PageGrid
           stack
           className="pt-4"
           primary={
-            <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-3 px-4 lg:px-0">
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-2 px-4 lg:px-0">
                 {brandNew ? (
                   <>
-                    <Button size="cta" onClick={() => openHolding()}><Plus />{t.addHolding}</Button>
-                    <Button size="cta" variant="outline" onClick={() => openAdd(null)}><ArrowDownLeft />{t.addMoney}</Button>
+                    <Button size="touch" onClick={() => openHolding()}><Plus />{t.addHolding}</Button>
+                    <Button size="touch" variant="secondary" onClick={() => openAdd(null)}><ArrowDownLeft />{t.addMoney}</Button>
                   </>
                 ) : (
                   <>
-                    <Button size="cta" onClick={() => openAdd(null)}><ArrowDownLeft />{t.addMoney}</Button>
-                    <Button size="cta" variant="outline" onClick={() => openWithdraw(null)}><ArrowUpRight />{t.withdraw}</Button>
+                    <Button size="touch" onClick={() => openAdd(null)}><Plus />{t.addMoney}</Button>
+                    <Button size="touch" variant="secondary" onClick={() => openWithdraw(null)}><ArrowUpRight />{t.withdraw}</Button>
                   </>
                 )}
               </div>
 
-              <GoldPriceStrip />
-
               <WealthList
                 rows={model.rows}
-                categories={model.categories}
-                filter={filter}
-                onFilter={setFilter}
+                currency={base}
                 onRowPress={(row, anchor) => setMenu({ row, anchor })}
                 onAdd={() => openHolding()}
                 goalLines={goalLines}
@@ -332,8 +325,8 @@ export default function WealthPage() {
             </div>
           }
           secondary={
-            <div className="mt-1 lg:mt-0">
-              <ActivityLedger transactions={savingsTransactions} accounts={savingsAccounts} baseCurrency={base} exchangeRates={exchangeRates} limit={3} filter={filter} staleMonthKeys={staleCarryMonths} />
+            <div className="mt-2 lg:mt-0">
+              <ActivityLedger transactions={savingsTransactions} accounts={savingsAccounts} baseCurrency={base} exchangeRates={exchangeRates} limit={3} staleMonthKeys={staleCarryMonths} />
             </div>
           }
         />
@@ -354,6 +347,7 @@ export default function WealthPage() {
                   ]
                 : []),
               ...(a ? [{ label: t.menuEdit, icon: <Pencil size={17} />, onSelect: () => setEditAcc(a) }] : []),
+              ...(row.cat === 'gold' ? [{ label: wl.refreshGold, icon: <RefreshCw size={17} />, onSelect: () => void refreshPrices() }] : []),
               ...(a && a.category === 'savings' && profile.defaultCarryPocketId !== a.id
                 ? [{ label: t.menuMakeDefault, icon: <Star size={17} />, onSelect: () => useFinanceStore.getState().updateProfile({ defaultCarryPocketId: a.id }) }]
                 : []),

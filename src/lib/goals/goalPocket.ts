@@ -2,7 +2,7 @@ import type { LedgerInput } from '@/lib/accounts/balance'
 import { DEFAULT_CASH_ID, isTracked } from '@/lib/accounts/kinds'
 import { balanceEpsilon } from '@/lib/savings/balanceMath'
 import { availableIn } from '@/lib/savings/pocketHome'
-import type { Currency, FinanceStore, Goal, PaymentMethod } from '@/lib/store/types'
+import type { Currency, FinanceStore, Goal, PaymentMethod, SavingsAccount } from '@/lib/store/types'
 
 /** "Somewhere else (not tracked here)": the saved money is outside every tracked account. */
 export const ELSEWHERE = 'elsewhere'
@@ -26,6 +26,17 @@ export function savedHomeProblem(ledger: LedgerInput, currency: Currency, saved:
   if (accounts.length === 0 || home === ELSEWHERE) return null
   if (!home || !accounts.some((a) => a.id === home)) return 'choose_home'
   return saved > availableIn(home, ledger) + balanceEpsilon(currency) ? 'over_available' : null
+}
+
+/** Where the user said a new goal's saved money is: in an account, in another pocket, or outside buddget. */
+export type SavedSourceKind = 'account' | 'pocket' | 'outside'
+
+/**
+ * With the Pocket tab chosen, a saved amount needs a picked pocket: it never falls back to an account or to outside
+ * money (that booked the amount twice, QA W3 P1). Null when nothing blocks the pocket answer.
+ */
+export function savedPocketProblem(kind: SavedSourceKind, pocketId: string | null | undefined, saved: number): 'choose_pocket' | null {
+  return kind === 'pocket' && saved > 0 && !pocketId ? 'choose_pocket' : null
 }
 
 type GoalPocketStore = Pick<FinanceStore, 'addSavingsAccount' | 'updateGoal' | 'depositToSavings' | 'paymentMethods'> &
@@ -83,4 +94,18 @@ export function depositIntoGoal(
   if (write(created)) return true
   s.deleteSavingsAccount(created)
   return false
+}
+
+/**
+ * The goal's pockets after the user picks `pocketId` on its detail sheet. No money moves ("keeps every amount where it
+ * is"), so a pocket that still holds money for the goal stays linked and counted; the picked pocket comes first, as the
+ * one new money goes to. An empty old pocket is let go.
+ */
+export function relinkGoalPocket(
+  linked: readonly string[],
+  pockets: readonly Pick<SavingsAccount, 'id' | 'currentBalance'>[],
+  pocketId: string,
+): string[] {
+  const holding = linked.filter((id) => id !== pocketId && (pockets.find((p) => p.id === id)?.currentBalance ?? 0) > 0)
+  return [pocketId, ...holding]
 }

@@ -1,19 +1,22 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { Check, Info, TriangleAlert } from 'lucide-react'
+import { Check, Clock, Info, TriangleAlert } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { BAND_FG2, BAND_MIX, HeroBand } from '@/components/features/hero/HeroBand'
 import { useCategoryLabel } from '@/hooks/useCategoryLabel'
-import { everydayPace, overBudgetLines, stillToPay, topCategory } from '@/lib/budget/monthSummary'
+import { everydayPace, overBudgetLines, plannedTotal, stillToPay, topCategory } from '@/lib/budget/monthSummary'
+import { roundedShares } from '@/lib/budget/shares'
 import { planSplit } from '@/lib/budget/ledger'
 import type { PlanView } from '@/lib/budget/planView.types'
 import { useLocale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { formatWhole } from '@/lib/utils/formatters'
 import { useBudgetDraftCopy } from '@/lib/i18n/budgetDraftCopy'
+import { useBudgetLtCopy } from '@/lib/i18n/budgetLtCopy'
+import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { monthKeyLabel, percentText, inlineMoney } from './chromeFormat'
 import { useOverviewCopy } from './useOverviewCopy'
 
@@ -29,13 +32,25 @@ function Stat({ label, children, color }: { label: string; children: ReactNode; 
 }
 
 
+/** The cycle's first and last day, from where today sits in it. */
+function cycleBounds(view: PlanView, today = new Date()): { start: Date; end: Date } {
+  const day = Math.max(1, view.dayOfCycle)
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (day - 1))
+  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + Math.max(1, view.daysInCycle) - 1)
+  return { start, end }
+}
+
 /**
- * The month hero: everyday money left, the pace against an even line, and three facts. With `onApply` (the plan is
- * not applied yet) it shows the plan's everyday total and an "Apply budget" call to action instead.
+ * The month hero (Light touch `page-budget`): everyday money left "of" the plan, per day until the cycle ends, the
+ * spend bar with today's tick over a start · spent · end scale, and one note line. With `onApply` (the plan is not
+ * applied yet) it shows everything the plan sets aside and an "Apply budget" call to action instead. With
+ * `onCloseMonth` the month-close entry sits in the corner as the mockup's Close chip.
  */
-export function MonthHero({ view, onApply }: { view: PlanView; onApply?: () => void }) {
+export function MonthHero({ view, onApply, onCloseMonth }: { view: PlanView; onApply?: () => void; onCloseMonth?: () => void }) {
   const c = useOverviewCopy().hero
   const d = useBudgetDraftCopy()
+  const lt = useBudgetLtCopy()
+  const { locale } = useLocale()
   const catLabel = useCategoryLabel()
   const money = (n: number) => inlineMoney(n, view.base)
   const pace = everydayPace(view)
@@ -44,13 +59,13 @@ export function MonthHero({ view, onApply }: { view: PlanView; onApply?: () => v
   if (onApply) {
     return (
       <HeroBand
-        label={d.label}
+        label={lt.draft.label}
         contained
         numbers={
           <>
             <p className="flex min-w-0 items-baseline gap-1.5">
-              <span className="font-mono-numbers whitespace-nowrap text-[32px] font-semibold leading-none tracking-[-0.03em]">{money(view.blocks.everyday.total)}</span>
-              <span className={`text-[0.8125rem] ${BAND_FG2}`}>{d.planned}</span>
+              <span className="font-mono-numbers whitespace-nowrap text-[32px] font-semibold leading-none tracking-[-0.03em]">{formatWhole(plannedTotal(view))}</span>
+              <span className={`text-[0.8125rem] ${BAND_FG2}`}>{view.base} {d.planned}</span>
             </p>
             <p className={`shrink-0 text-end text-[0.71875rem] leading-[1.3] ${BAND_FG2}`}>
               <span dir="auto">{c.daysLeft(Math.max(0, view.daysInCycle - view.dayOfCycle))}</span>
@@ -92,43 +107,68 @@ export function MonthHero({ view, onApply }: { view: PlanView; onApply?: () => v
   }
 
   const top = topCategory(view)
-  const over = overBudgetLines(view).length
+  const overLines = overBudgetLines(view)
   const owed = stillToPay(view)
   const Icon = pace.state === 'ok' ? Check : TriangleAlert
   const fill = Math.max(0, Math.min(100, (pace.spent / pace.planned) * 100))
-  // Light touch `page-budget`: the rounded teal band; the three facts collapse into one line under the bar.
+  const { start, end } = cycleBounds(view)
+  const short = (dt: Date) => formatLocalized(dt, 'MMM d', locale)
+  const B = 'font-semibold text-[var(--flow-band-fg)]'
+  const lead = overLines.length === 1
+    ? <><b className={B}>{catLabel(overLines[0].line.name)}</b> {lt.hero.overTail}</>
+    : overLines.length > 1
+      ? lt.hero.areOver(overLines.length)
+      : top ? lt.hero.topIs(catLabel(top.name)) : null
   return (
     <HeroBand
-      label={c.leftLabel}
+      label={lt.hero.leftIn(formatLocalized(start, 'MMMM', locale))}
       contained
       aside={
-        <Badge tone={pace.state === 'ok' ? 'positive' : pace.state === 'ahead' ? 'warn' : 'negative'} size="md">
-          <Icon aria-hidden />
-          {c.pace[pace.state]}
-        </Badge>
+        onCloseMonth ? (
+          <Button variant="onBand" size="sm" className="h-7 gap-1 rounded-full px-2.5 text-xs font-semibold" onClick={onCloseMonth}>
+            <Clock aria-hidden className="size-3.5" />
+            {lt.hero.close}
+          </Button>
+        ) : (
+          <Badge tone={pace.state === 'ok' ? 'positive' : pace.state === 'ahead' ? 'warn' : 'negative'} size="md">
+            <Icon aria-hidden />
+            {c.pace[pace.state]}
+          </Badge>
+        )
       }
       numbers={
         <>
           <p className="flex min-w-0 items-baseline gap-1.5">
-            <span className="font-mono-numbers whitespace-nowrap text-[32px] font-semibold leading-none tracking-[-0.03em]">{money(pace.left)}</span>
+            <span className="font-mono-numbers whitespace-nowrap text-[32px] font-semibold leading-none tracking-[-0.03em]">{formatWhole(pace.left)}</span>
+            <span dir="auto" className={`truncate text-[0.8125rem] ${BAND_FG2}`}>{view.base} {lt.hero.of(formatWhole(pace.planned))}</span>
           </p>
           <p className={`shrink-0 text-end text-[0.71875rem] leading-[1.3] ${BAND_FG2}`}>
-            <b dir="auto" className="block font-mono-numbers text-[0.9375rem] text-[var(--flow-band-fg)]">{c.perDay(money(pace.perDay))}</b>
-            <span dir="auto">{c.daysLeft(pace.daysLeft)}</span>
+            <b dir="auto" className="block font-mono-numbers text-[0.9375rem] text-[var(--flow-band-fg)]">{lt.hero.perDay(formatWhole(pace.perDay))}</b>
+            <span dir="auto">{lt.hero.until(short(end))}</span>
           </p>
         </>
       }
       bar={
-        <div role="img" aria-label={c.paceLabel} className="relative h-1.5 rounded-full" style={{ background: BAND_MIX }}>
-          <div className="h-full rounded-full bg-[var(--flow-band-fg)]" style={{ width: `${fill}%` }} />
-          {tick !== null ? <span aria-hidden className="absolute -top-1 h-3.5 w-0.5 rounded bg-[var(--flow-band-fg)]" style={{ insetInlineStart: `${tick}%` }} /> : null}
-        </div>
+        <>
+          <div role="img" aria-label={c.paceLabel} className="relative h-1.5 rounded-full" style={{ background: BAND_MIX }}>
+            <div className="h-full rounded-full bg-[var(--flow-band-fg)]" style={{ width: `${fill}%` }} />
+            {tick !== null ? <span aria-hidden className="absolute -top-1 h-3.5 w-0.5 rounded bg-[var(--flow-band-fg)]" style={{ insetInlineStart: `${tick}%` }} /> : null}
+          </div>
+          <div className={`mt-[5px] flex h-[15.75px] items-center justify-between font-mono-numbers text-[0.6875rem] font-semibold ${BAND_FG2}`}>
+            <span>{short(start)}</span>
+            <span dir="auto">{lt.hero.spent(formatWhole(pace.spent))}</span>
+            <span>{short(end)}</span>
+          </div>
+        </>
       }
       note={
-        <span dir="auto">
-          {top ? <>{c.topCategory} <b className="font-semibold text-[var(--flow-band-fg)]">{catLabel(top.name)}</b></> : null}
-          {over > 0 ? <> · {c.overBudget} <b className="font-semibold text-[var(--flow-band-fg)]">{c.overCount(over)}</b></> : null}
-          {' · '}{c.stillToPay} <b className="font-mono-numbers font-semibold text-[var(--flow-band-fg)]">{owed.amount > 0 ? money(owed.amount) : c.allPaid}</b>
+        <span dir="auto" className="flex flex-wrap gap-x-4">
+          {lead ? <span>{lead}</span> : null}
+          <span>
+            {owed.amount > 0
+              ? <><b className={`font-mono-numbers ${B}`}>{formatWhole(owed.amount)}</b> {lt.hero.toPayTail}</>
+              : lt.hero.allPaid}
+          </span>
         </span>
       }
     />
@@ -146,7 +186,9 @@ export function SplitBar({ view }: { view: PlanView }) {
   const c = useOverviewCopy().hero
   const s = planSplit(view)
   const denom = Math.max(view.income, s.spending + s.debt + s.saving) || 1
-  const parts = (['spending', 'debt', 'saving'] as const).map((k) => ({ k, amount: s[k], pct: s[`${k}Pct` as 'spendingPct'] }))
+  // Rounded together so a balanced plan reads 100%, never 100.3%.
+  const pcts = roundedShares([s.spending, s.debt, s.saving], view.income)
+  const parts = (['spending', 'debt', 'saving'] as const).map((k, i) => ({ k, amount: s[k], pct: pcts[i] }))
   return (
     <>
       <div role="img" aria-label={c.splitLabel} className="flex h-3 gap-0.5 overflow-hidden rounded-md bg-[var(--color-brand-elevated)]">

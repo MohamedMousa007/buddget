@@ -28,6 +28,8 @@ const W = 320
 const H = 118
 /** Below this share of the width, two axis labels would touch: the edge label gives way to "Today". */
 const LABEL_GAP = 0.18
+/** Within this share of an edge, "Today" ends (or starts) at the dot rather than centring on it. */
+const EDGE = 0.07
 
 /** Cumulative spend against the plan line, today marked, the rest projected. One axis (days); tap or hover for the day's figures. */
 export function PaceChart({ cumulative, totalDays, start, budget, projected }: Props) {
@@ -115,9 +117,13 @@ export function PaceChart({ cumulative, totalDays, start, budget, projected }: P
         <div dir="ltr" aria-hidden className="relative mt-1 h-3.5 text-[0.625rem] leading-[0.875rem] text-[var(--color-brand-text-muted)]">
           {showStart ? <span className="absolute" style={{ left: pct(8) }}>{day(1)}</span> : null}
           {today > 0 ? (
+            // Under the today dot; close to an edge it lines up with the dot instead of spilling past the chart.
             <span
-              className={cn('absolute whitespace-nowrap font-semibold text-[var(--color-brand-text-secondary)]', showStart && showEnd && '-translate-x-1/2')}
-              style={!showStart ? { left: pct(8) } : !showEnd ? { right: pct(8) } : { left: pct(x(today)) }}
+              className={cn(
+                'absolute whitespace-nowrap font-semibold text-[var(--color-brand-text-secondary)]',
+                todayAt > 1 - EDGE ? '-translate-x-[calc(100%-6px)]' : todayAt < EDGE ? '-translate-x-[6px]' : '-translate-x-1/2',
+              )}
+              style={{ left: pct(x(today)) }}
             >
               {c.today}
             </span>

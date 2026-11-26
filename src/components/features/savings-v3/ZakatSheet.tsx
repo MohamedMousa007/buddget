@@ -143,7 +143,7 @@ export function ZakatSheet({ open, onClose, sources, year, hawlDate }: ZakatShee
           actions={<V3SheetHeader.Action icon={<Settings size={16} />} label={z.settings} onClick={() => setSettings(true)} />}
         >
           <V3SheetHeader.Title>{sf.title}</V3SheetHeader.Title>
-          <V3SheetHeader.Subtitle>{z.yearEnds(hawlDate)}</V3SheetHeader.Subtitle>
+          <V3SheetHeader.Subtitle>{!year.ended ? z.yearEnds(hawlDate) : year.state === 'dueNow' ? z.yearEndedDue(hawlDate) : z.yearEnded(hawlDate)}</V3SheetHeader.Subtitle>
         </V3SheetHeader>
 
         <SheetBody className="space-y-3 pt-0">

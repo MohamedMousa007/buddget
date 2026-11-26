@@ -5,7 +5,7 @@ import { computeBalances } from '@/lib/accounts/balance'
 import { computeNetWorth } from '@/lib/savings/netWorth'
 import { ledgerOf } from '@/lib/savings/pocketHome'
 import { computeGoalProgress, buildGoalProgressContext } from '@/lib/goals/computeGoalProgress'
-import { createGoalPocket, depositIntoGoal, ELSEWHERE, goalHomeAccounts, savedHomeProblem } from './goalPocket'
+import { createGoalPocket, depositIntoGoal, ELSEWHERE, goalHomeAccounts, savedHomeProblem, savedPocketProblem, relinkGoalPocket } from './goalPocket'
 import type { PaymentMethod } from '@/lib/store/types'
 import { TOOLS } from '@/lib/buddgy/tools/exec'
 import { refOf } from '@/lib/buddgy/tools/refs'
@@ -332,6 +332,19 @@ describe('a new goal’s saved money can come from another pocket', () => {
     expect(netWorth()).toBe(before)
   })
 
+  it('a pocket source wins over an account answer: the money leaves the pocket, no account is touched, net worth holds (QA W3 P1)', () => {
+    seedPocket()
+    const before = netWorth()
+    const cib = acct('CIB').free
+    const made = createGoalPocket(S(), { goalId: newGoal(), pocketName: 'Car pocket', goalName: 'Car', currency: 'EGP', saved: 1500, home: 'CIB', fromPocketId: 'trip' })
+    expect(made.savedRecorded).toBe(true)
+    expect(S().savingsAccounts.find((a) => a.id === 'trip')!.currentBalance).toBe(3500)
+    expect(S().savingsAccounts.find((a) => a.id === made.pocketId)!.heldInPaymentMethodId).toBeUndefined()
+    expect(S().savingsTransactions.some((t) => t.source === 'goal_opening' || t.paymentMethodId)).toBe(false)
+    expect(acct('CIB').free).toBe(cib)
+    expect(netWorth()).toBe(before)
+  })
+
   it('the new pocket is kept where the source pocket is (set aside in the same account)', () => {
     seedPocket({ heldInPaymentMethodId: 'CIB' })
     const made = fromPocket(1000)
@@ -360,5 +373,30 @@ describe('depositIntoGoal', () => {
     expect(depositIntoGoal(S(), goalOf(id), undefined, 'Car pocket', (p) => ((into = p), true))).toBe(true)
     expect(goalOf(id).linkedSavingsAccountIds).toEqual([into])
     expect(S().savingsAccounts.some((a) => a.id === into)).toBe(true)
+  })
+})
+
+describe('savedPocketProblem (QA W3 P1: Pocket tab with no pocket picked fell back to an account or outside)', () => {
+  it('a saved amount on the Pocket tab needs a picked pocket, even with no account that could hold it', () => {
+    expect(savedPocketProblem('pocket', null, 1500)).toBe('choose_pocket')
+    expect(savedPocketProblem('pocket', 'trip', 1500)).toBeNull()
+  })
+  it('nothing saved, or another tab: no pocket is asked for', () => {
+    expect(savedPocketProblem('pocket', null, 0)).toBeNull()
+    expect(savedPocketProblem('account', null, 1500)).toBeNull()
+    expect(savedPocketProblem('outside', null, 1500)).toBeNull()
+  })
+})
+
+describe('relinkGoalPocket (QA W3 P2: changing the pocket dropped the saved amount, 500 → 350)', () => {
+  const pockets = [{ id: 'old', currentBalance: 500 }, { id: 'new', currentBalance: 350 }, { id: 'empty', currentBalance: 0 }]
+  it('the money already in the old pocket stays counted: the goal now shows both, the picked pocket first', () => {
+    const linked = relinkGoalPocket(['old'], pockets, 'new')
+    expect(linked).toEqual(['new', 'old'])
+    expect(linked.reduce((sum, id) => sum + pockets.find((p) => p.id === id)!.currentBalance, 0)).toBe(850)
+  })
+  it('an empty old pocket is let go, and picking the same pocket changes nothing', () => {
+    expect(relinkGoalPocket(['empty'], pockets, 'new')).toEqual(['new'])
+    expect(relinkGoalPocket(['old'], pockets, 'old')).toEqual(['old'])
   })
 })

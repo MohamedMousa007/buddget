@@ -1,8 +1,8 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { StatTile } from '@/components/ui/StatTile'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useLocale, useT } from '@/lib/i18n'
 import { recapShareText, shareRecapImage } from '@/lib/insights/shareRecap'
@@ -24,8 +24,16 @@ interface Props {
   onUnlock: () => void
 }
 
-/** Recap cells: the compact KPI tile on the elevated fill, centred like the mockup. */
-const CELL = 'border-transparent bg-[var(--color-brand-elevated)] text-center'
+/** One recap cell: a quiet label and one line that truncates ("IKEA 3,400"), never wraps. */
+function RecapCell({ label, value, sub, title }: { label: string; value: string; sub?: ReactNode; title?: string }) {
+  return (
+    <div className="min-w-0 rounded-xl bg-[var(--color-brand-elevated)] px-2 py-2.5" title={title}>
+      <p className="text-[0.6875rem] font-semibold text-[var(--color-brand-text-muted)]">{label}</p>
+      <p dir="auto" className="mt-0.5 truncate font-mono-numbers text-[0.875rem] font-semibold text-[var(--color-brand-text-primary)]">{value}</p>
+      {sub ? <p className="mt-0.5">{sub}</p> : null}
+    </div>
+  )
+}
 
 /** The last closed cycle in one look: spent (with the change on the cycle before), kept, and the biggest buy. Pro. */
 export function RecapCards({ recap, month, locked, onUnlock }: Props) {
@@ -55,15 +63,14 @@ export function RecapCards({ recap, month, locked, onUnlock }: Props) {
   }
   return (
     <InsightsSection title={c.title(month)}>
-      <div className="mt-3 grid grid-cols-3 gap-2">
-        <StatTile compact className={CELL} label={c.spent} value={money(recap.spent)} sub={delta !== null ? <DeltaChip pct={delta} /> : undefined} />
-        {keptShare !== null ? <StatTile compact className={CELL} label={kept >= 0 ? c.kept : c.over} value={hidden ? MASK : `${keptShare}%`} /> : null}
+      <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+        <RecapCell label={c.spent} value={money(recap.spent)} sub={delta !== null ? <DeltaChip pct={delta} /> : undefined} />
+        {keptShare !== null ? <RecapCell label={kept >= 0 ? c.kept : c.over} value={hidden ? MASK : `${keptShare}%`} /> : null}
         {recap.biggest ? (
-          <StatTile
-            compact
-            className={CELL}
+          <RecapCell
             label={c.biggest}
-            value={[recap.biggest.description.trim(), formatLocalized(parseDateOnly(recap.biggest.date), 'd MMM', locale), money(recap.biggest.amount)].filter(Boolean).join(' · ')}
+            value={[recap.biggest.description.trim(), money(recap.biggest.amount)].filter(Boolean).join(' ')}
+            title={formatLocalized(parseDateOnly(recap.biggest.date), 'd MMM', locale)}
           />
         ) : null}
       </div>

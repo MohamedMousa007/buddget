@@ -36,9 +36,9 @@ const VIEW_KEY = 'goals-view'
 function readView(): View {
   try {
     const v = sessionStorage.getItem(VIEW_KEY)
-    return v === 'all' || v === 'paused' || v === 'achieved' ? v : 'active'
+    return v === 'active' || v === 'paused' || v === 'achieved' ? v : 'all'
   } catch {
-    return 'active'
+    return 'all'
   }
 }
 
@@ -128,7 +128,7 @@ export default function GoalsPage() {
                     ]}
                     className="flex-1"
                   />
-                  <TrophyChip count={achieved.length} pressed={view === 'achieved'} onClick={() => setView(view === 'achieved' ? 'active' : 'achieved')} />
+                  <TrophyChip count={achieved.length} pressed={view === 'achieved'} onClick={() => setView(view === 'achieved' ? 'all' : 'achieved')} />
                 </div>
 
                 {view !== 'achieved' && worstBehind && bannerOff !== worstBehind.goal.id ? (

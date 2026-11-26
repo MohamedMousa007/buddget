@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils'
 import { CurrencyMark } from '@/components/ui/CurrencyMark'
 import { useIsNativeClient } from '@/lib/native/useIsNativeClient'
 import { AmountTextInput } from '@/components/ui/AmountTextInput'
+import { groupAmountText } from '@/lib/ui/amountSanitize'
 import { useNumberPad } from '@/components/ui/useNumberPad'
 import type { NumberPadMode } from '@/components/ui/NumberPad'
 import { useT } from '@/lib/i18n'
@@ -42,6 +43,8 @@ interface AmountFieldProps {
   'aria-label'?: string
   /** `row`: a grouped-list row's value (Light touch) — at the row's end in either direction, its placeholder muted and regular weight. Default `field`. */
   look?: 'field' | 'row'
+  /** Thousands separators in the shown figure ("30,000"); `value` stays canonical. Off by default. */
+  grouped?: boolean
 }
 
 // Mirrors the shared <Input> base so call-site classNames layer on identically.
@@ -64,6 +67,7 @@ export function AmountField({
   id,
   'aria-label': ariaLabel,
   look = 'field',
+  grouped = false,
 }: AmountFieldProps) {
   const row = look === 'row'
   const native = useIsNativeClient()
@@ -142,6 +146,7 @@ export function AmountField({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           dir={dir}
+          grouped={grouped}
           className={cn(
             'min-w-0 flex-1 border-0 bg-transparent p-0 outline-none',
             row ? 'text-right rtl:text-left placeholder:font-normal placeholder:text-[var(--color-brand-text-muted)] placeholder:opacity-100' : 'text-start placeholder:opacity-50',
@@ -214,7 +219,7 @@ export function AmountField({
                 : { flex: '0 1 auto', minWidth: 0, textAlign: 'start', opacity: value ? 1 : 0.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
           }
         >
-          {value ? <>{value}{caret}</> : <>{caret}{ph}</>}
+          {value ? <>{grouped && mode !== 'pin' ? groupAmountText(value) : value}{caret}</> : <>{caret}{ph}</>}
         </span>
         {showPrefix && glass && unit}
       </button>

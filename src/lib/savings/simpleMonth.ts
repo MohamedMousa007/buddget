@@ -64,6 +64,9 @@ export function deriveSimpleMonth(params: {
 export type SimpleMonthLine = Exclude<keyof SimpleMonth, 'total'>
 export const SIMPLE_MONTH_LINES: readonly SimpleMonthLine[] = ['rent', 'food', 'transport', 'bills', 'debtMinimums']
 
+/** Lines left out until the user ticks them: a lean month still pays rent, food, transport and bills; debt minimums are opt-in. */
+export const SIMPLE_MONTH_DEFAULT_OFF: ReadonlySet<SimpleMonthLine> = new Set<SimpleMonthLine>(['debtMinimums'])
+
 /** The simple month with the lines in `off` left out. */
 export function simpleMonthSum(month: SimpleMonth, off: ReadonlySet<SimpleMonthLine>): number {
   return SIMPLE_MONTH_LINES.reduce((sum, k) => (off.has(k) ? sum : sum + month[k]), 0)

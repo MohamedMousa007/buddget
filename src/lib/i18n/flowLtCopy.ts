@@ -96,6 +96,8 @@ export interface FlowLtCopy {
     deleteAria: string
     typePickTitle: string
     unsavedBody: string
+    unsavedAddBody: string
+    saveIncome: string
   }
   held: {
     title: string
@@ -195,6 +197,8 @@ export const FLOW_LT_COPY: Record<Locale, FlowLtCopy> = {
       deleteAria: 'Delete income',
       typePickTitle: 'Income type',
       unsavedBody: 'You’ve edited this income. Save your changes, or discard them and keep the original.',
+      unsavedAddBody: 'This income isn’t saved yet. Save it, or discard it.',
+      saveIncome: 'Save income',
     },
     held: {
       title: 'Bank messages',
@@ -291,6 +295,8 @@ export const FLOW_LT_COPY: Record<Locale, FlowLtCopy> = {
       deleteAria: 'احذف الدخل',
       typePickTitle: 'نوع الدخل',
       unsavedBody: 'عدّلت هذا الدخل. احفظ التغييرات، أو تجاهلها واحتفظ بالأصل.',
+      unsavedAddBody: 'هذا الدخل لم يُحفظ بعد. احفظه أو تجاهله.',
+      saveIncome: 'حفظ الدخل',
     },
     held: {
       title: 'رسائل البنك',

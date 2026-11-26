@@ -138,7 +138,7 @@ export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', p
   // The account is saved before its card can hang under it, so the tap asks first: nothing is written without a yes.
   const addWithCard = async () => {
     if (!canSave) return
-    if (!(await confirm({ title: lt.addAccount.saveFirstTitle, body: lt.addAccount.saveFirstBody(provider.trim()), confirmLabel: lt.addAccount.saveFirstCta, cancelLabel: lt.addAccount.notYet }))) return
+    if (!(await confirm({ title: lt.addAccount.saveFirstTitle, body: lt.addAccount.saveFirstBody(label.trim() || provider.trim()), confirmLabel: lt.addAccount.saveFirstCta, cancelLabel: lt.addAccount.notYet }))) return
     const id = save()
     if (!id) return
     if (!pushCardStep) { onAddCard?.(id); return }

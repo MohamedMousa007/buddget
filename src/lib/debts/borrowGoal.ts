@@ -1,5 +1,6 @@
 import { addMonths, differenceInCalendarMonths, format, parseISO } from 'date-fns'
-import type { DebtGoal } from '@/lib/store/types'
+import type { Debt, DebtGoal } from '@/lib/store/types'
+import { addCalendarWeeks, weeksElapsed } from '@/lib/time/calendarDays'
 
 export type GoalFrequency = DebtGoal['paymentFrequency']
 export type GoalUnit = 'months' | 'years'
@@ -31,4 +32,20 @@ export function goalTargetDate(duration: number, unit: GoalUnit, from: Date = ne
 export function goalDurationFromTarget(targetDate: string, from: Date = new Date()): { duration: number; unit: GoalUnit } {
   const months = Math.max(1, differenceInCalendarMonths(parseISO(targetDate), from))
   return months % 12 === 0 ? { duration: months / 12, unit: 'years' } : { duration: months, unit: 'months' }
+}
+
+/** The day a borrow's pay-off schedule counts from: the borrow date the user picked, else the day it was added. */
+export function borrowScheduleStart(debt: Pick<Debt, 'startDate' | 'createdAt'>): Date {
+  return parseISO((debt.startDate || debt.createdAt).slice(0, 10))
+}
+
+/** Payments the schedule expects by `now`, and the next payment's day: one period after the borrow date, then on. */
+export function borrowGoalSchedule(start: Date, frequency: GoalFrequency, now: Date = new Date()): { elapsed: number; next: Date } {
+  if (frequency === 'weekly') {
+    const elapsed = Math.max(0, weeksElapsed(now, start))
+    return { elapsed, next: addCalendarWeeks(start, elapsed + 1) }
+  }
+  const per = MONTHS_PER_PERIOD[frequency]
+  const elapsed = Math.floor(Math.max(0, differenceInCalendarMonths(now, start)) / per)
+  return { elapsed, next: addMonths(start, (elapsed + 1) * per) }
 }

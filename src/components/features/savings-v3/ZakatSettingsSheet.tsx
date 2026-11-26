@@ -7,6 +7,7 @@ import { DatePickerField } from '@/components/ui/DatePickerField'
 import { OptionSheet } from '@/components/ui/OptionSheet'
 import { PickerRow } from '@/components/ui/PickerRow'
 import { PickerSheet } from '@/components/ui/PickerSheet'
+import { PillButton } from '@/components/ui/PillButton'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { effectiveNisabBasis, withNisabBasis } from '@/lib/savings/zakatBasis'
 import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
@@ -54,11 +55,17 @@ export function ZakatSettingsSheet({ open, onClose, goldNisab, silverNisab, unit
       >
         <div>
           <Card padding="none" divide className="overflow-hidden">
-            <PickerRow label={z.nisabBasis} value={basis === 'gold' ? z.goldOpt : z.silverOpt} onClick={() => setSheet('basis')} />
-            <PickerRow label={z.stocksHeld} value={trading ? z.trading : z.longTerm} onClick={() => setSheet('stocks')} />
+            <PickerRow
+              label={z.nisabBasis}
+              value={<PillButton aria-label={`${z.nisabBasis}: ${basis === 'gold' ? z.goldOpt : z.silverOpt}`} onClick={() => setSheet('basis')}>{basis === 'gold' ? z.goldOpt : z.silverOpt}</PillButton>}
+            />
+            <PickerRow
+              label={z.stocksHeld}
+              value={<PillButton aria-label={`${z.stocksHeld}: ${trading ? z.trading : z.longTerm}`} onClick={() => setSheet('stocks')}>{trading ? z.trading : z.longTerm}</PillButton>}
+            />
             <PickerRow
               label={z.yearStarts}
-              value={<DatePickerField look="pill" value={cfg?.yearStartDate ?? derivedStart} onChange={(v) => save({ yearStartDate: v || null })} />}
+              value={<DatePickerField look="pill" withYear value={cfg?.yearStartDate ?? derivedStart} onChange={(v) => save({ yearStartDate: v || null })} />}
             />
           </Card>
           <p className="mt-2 px-1 text-xs text-[var(--color-brand-text-secondary)]">{z.yearNote}</p>
@@ -84,8 +91,8 @@ export function ZakatSettingsSheet({ open, onClose, goldNisab, silverNisab, unit
         title={z.stocksTitle}
         zIndexClassName="z-[120]"
         options={[
-          { value: 'long', title: z.longTerm, subtitle: z.longTermSub },
-          { value: 'trade', title: z.trading, subtitle: z.tradingSub },
+          { value: 'long', title: z.longTermOpt, subtitle: z.longTermSub },
+          { value: 'trade', title: z.tradingOpt, subtitle: z.tradingSub },
         ]}
         value={trading ? 'trade' : 'long'}
         onChange={(v) => save({ holdsForTrading: v === 'trade' })}

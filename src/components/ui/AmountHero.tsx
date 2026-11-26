@@ -64,9 +64,8 @@ export function AmountHero({
   const { isOpen, openPad, pad } = useNumberPad({ value, onChange, mode, currency: currency || undefined, label: name, dir: 'ltr' })
   const unitText = unit ?? currency
   const openUnit = readOnly ? undefined : onUnitClick ?? (onCurrencyChange ? () => setSheetOpen(true) : undefined)
-  // The digits are shown grouped ("50,000") while `value` stays canonical; the box is sized to what it shows.
+  // The digits are shown grouped ("50,000") while `value` stays canonical.
   const shown = groupAmountText(value)
-  const width = `${Math.max(shown.length, 1) + 0.4}ch`
   const digits = 'font-mono-numbers text-[2.5rem] font-semibold leading-none tracking-[-0.04em] tabular-nums text-[var(--color-brand-text-primary)]'
 
   return (
@@ -95,18 +94,21 @@ export function AmountHero({
         ) : (
           <label className={cn('flex items-baseline', digits)}>
             {sign}
-            <AmountTextInput
-              id={id}
-              aria-label={name}
-              value={value}
-              onChange={onChange}
-              mode={mode}
-              grouped
-              currency={currency || undefined}
-              placeholder="0"
-              className={cn('bg-transparent outline-none placeholder:text-[var(--color-brand-text-muted)]', sign ? 'text-left' : 'text-center')}
-              style={{ width }}
-            />
+            {/* An invisible copy of the digits sizes the box, so the unit sits right after the number. */}
+            <span className="relative inline-block">
+              <span aria-hidden className="invisible whitespace-pre">{shown || '0'}</span>
+              <AmountTextInput
+                id={id}
+                aria-label={name}
+                value={value}
+                onChange={onChange}
+                mode={mode}
+                grouped
+                currency={currency || undefined}
+                placeholder="0"
+                className={cn('absolute inset-0 w-full min-w-0 bg-transparent outline-none placeholder:text-[var(--color-brand-text-muted)]', sign ? 'text-left' : 'text-center')}
+              />
+            </span>
           </label>
         )}
         {openUnit ? (

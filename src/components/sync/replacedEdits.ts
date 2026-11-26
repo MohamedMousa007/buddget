@@ -22,11 +22,14 @@ const SAME_EDIT_MS = 2_000
 
 /**
  * How many of those rows now hold someone else's newer edit (newest edit wins), or are gone: the edits this device
- * made that did not survive. A row that came back with the edit time it was sent with is this device's own.
+ * made that did not survive. A row that came back with the edit time it was sent with is this device's own. `local` is
+ * the store right before the pull: a row this device deleted or edited again since the flush was changed here, not
+ * replaced elsewhere.
  */
-export function countReplaced(sent: SentRows, now: Snapshot): number {
+export function countReplaced(sent: SentRows, now: Snapshot, local?: Snapshot): number {
   let n = 0
   for (const { slice, row } of sent.values()) {
+    if (local && (local[slice] as unknown as Row[]).find((r) => r.id === row.id) !== row) continue
     const current = (now[slice] as unknown as Row[]).find((r) => r.id === row.id)
     if (current === row) continue
     const mine = serverInstant(row.updatedAt)

@@ -12,6 +12,15 @@ export function sanitizeAmount(raw: string, mode: AmountSanitizeMode = 'decimal'
   return digits.slice(0, mode === 'pin' ? PIN_LENGTH : MAX_DIGITS)
 }
 
+/** A stored amount as the text an amount field starts from: whole stays whole ("245"), else the currency's decimals ("85.50"). */
+export function amountInputText(n: number, currency?: string): string {
+  if (!Number.isFinite(n)) return ''
+  if (Number.isInteger(n)) return String(n)
+  const digits = currencyDecimals(currency)
+  // Crypto keeps only the digits it has ("0.0012", not "0.00120000").
+  return digits > 3 ? String(Number(n.toFixed(digits))) : n.toFixed(digits)
+}
+
 /** Canonical amount text ("2000.5") with its integer part grouped for display ("2,000.5"); a trailing "." or "0.50" stays as typed. */
 export function groupAmountText(canonical: string): string {
   if (!canonical) return ''

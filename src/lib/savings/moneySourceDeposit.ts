@@ -16,12 +16,13 @@ export type DepositSource =
  */
 export type PocketDepositPlan =
   | { action: 'deposit'; opts: { mode: 'allocate'; fromAccountId: string | null } }
-  | { action: 'deposit'; opts: { mode: 'declare' } }
+  | { action: 'deposit'; opts: { mode: 'declare'; source: 'outside' } }
   | { action: 'transfer'; fromPocketId: string }
   | { action: 'none'; reason: 'no_pocket_source' | 'same_pocket' }
 
 export function planPocketDeposit(source: DepositSource, intoPocketId: string): PocketDepositPlan {
-  if (source.kind === 'outside') return { action: 'deposit', opts: { mode: 'declare' } }
+  // Marked, so the money from outside shows in Recent moves (an opening balance or a correction is not a move).
+  if (source.kind === 'outside') return { action: 'deposit', opts: { mode: 'declare', source: 'outside' } }
   if (source.kind === 'pocket') {
     if (!source.id) return { action: 'none', reason: 'no_pocket_source' }
     if (source.id === intoPocketId) return { action: 'none', reason: 'same_pocket' }

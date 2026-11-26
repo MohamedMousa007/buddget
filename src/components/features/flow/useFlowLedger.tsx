@@ -19,10 +19,11 @@ import { amountInRange, amountIsFiltered, ONE_TIME_INCOME, useExpenseFilterStore
 import { resolveRange, type ResolvedRange } from '@/lib/expenses/dateRange'
 import { categoryChipColors } from '@/lib/expenses/categoryChip'
 import { isInternalMoveCategory, isNonSpendExpense } from '@/lib/constants/categoryMeta'
+import { isCashOut } from '@/lib/accounts/cashOutRow'
 import { expenseAmountInBase } from '@/lib/utils/calculations'
 import { convertCurrency } from '@/lib/utils/currency'
 import { eventDaysLate } from '@/lib/utils/incomeOccurrences'
-import { formatCurrency, formatFixed2, formatSigned } from '@/lib/utils/formatters'
+import { formatCurrency, formatFlex, formatSignedAuto } from '@/lib/utils/formatters'
 import { useShortDate } from '@/hooks/useShortDate'
 import { decomposePaymentMethodName, methodDisplayName } from '@/lib/payment/paymentMethodDefaults'
 import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
@@ -172,13 +173,19 @@ export function useFlowLedger() {
     const pmById = new Map(paymentMethods.map((m) => [m.id, m]))
     const sourceById = new Map(incomeSources.map((s) => [s.id, s]))
     const unmatched = new Set(matches.map((m) => m.event.id))
-    const sub = (amountBase: number, sign: string) =>
-      secondary ? `≈ ${sign}${formatCurrency(convertCurrency(amountBase, base, secondary, rates), secondary, true)}` : undefined
+    // Under the amount: the original amount when it was not in the base currency ("$9.99 USD"), else the ≈ second currency.
+    const sub = (amountBase: number, sign: string, original?: { amount: number; currency: string }) => {
+      if (original && original.currency !== base) {
+        const text = formatCurrency(original.amount, original.currency, true)
+        return text.includes(original.currency) ? text : `${text} ${original.currency}`
+      }
+      return secondary ? `≈ ${sign}${formatCurrency(convertCurrency(amountBase, base, secondary, rates), secondary, true)}` : undefined
+    }
     const amountNode = (sign: string, v: number, struck: boolean) => (
       <>
         <span className={struck ? 'line-through' : undefined}>
           {sign}
-          {formatFixed2(v)}
+          {formatFlex(v)}
         </span>{' '}
         <span className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{base}</span>
       </>
@@ -203,7 +210,7 @@ export function useFlowLedger() {
     for (const e of expenses) {
       const date = e.date.slice(0, 10)
       if (!inRange(date, resolved)) continue
-      if (!e.refundKind && isInternalMoveCategory(e.category)) continue
+      if (!e.refundKind && isInternalMoveCategory(e.category) && !isCashOut(e)) continue
       items.push(expenseItem(e, date))
     }
 
@@ -221,7 +228,8 @@ export function useFlowLedger() {
         at: instantOf(e.occurredAt, date),
         amountBase: gross,
         counted: !dim && !nonSpend,
-        facet: e.category,
+        // A cash-out row is a transfer, never a spending category, so it adds no category filter option.
+        facet: isCashOut(e) ? '' : e.category,
         methodId: e.paymentMethodId,
         row: {
           key: `x-${e.id}`,
@@ -229,8 +237,6 @@ export function useFlowLedger() {
             icon: <CategoryIcon category={e.category} className="h-5 w-5" />,
             iconBg: colors.bg,
             iconFg: colors.fg,
-            caption: categoryLabel(t, e.category),
-            captionColor: 'var(--color-brand-text-secondary)',
             dimmed: dim,
             onClick: () => {
               setEditingExpenseId(e.id)
@@ -262,11 +268,11 @@ export function useFlowLedger() {
               ) : e.refundKind === 'declined' ? (
                 <span className="font-semibold">{t.flow.blockedNotCounted}</span>
               ) : (
-                <span className="truncate">{pmLabel}</span>
+                <span className="truncate">{isCashOut(e) ? `${pmLabel} → ${methodLabel(pmById.get(e.toPaymentMethodId ?? ''), t.accountsPage.typeCash) ?? t.accountsPage.typeCash}` : `${categoryLabel(t, e.category)} · ${pmLabel}`}</span>
               ),
             amount: amountNode('−', gross, dim),
             amountColor: dim || nonSpend ? 'var(--color-brand-text-muted)' : 'var(--color-brand-text-primary)',
-            sub: dim ? undefined : sub(gross, '−'),
+            sub: dim ? undefined : sub(gross, '−', e),
           },
           swipe: {
             deleteLabel: t.expenses.swipeDelete,
@@ -369,8 +375,6 @@ export function useFlowLedger() {
             icon: <IncomeTypeIcon type={inc.sourceType} className="h-5 w-5" />,
             iconBg: 'var(--color-brand-green-soft)',
             iconFg: 'var(--color-brand-green)',
-            caption: recurring ? incomeSourceTypeLabel(t.income, inc.sourceType) : t.flow.oneTimeCaption,
-            captionColor: 'var(--color-brand-green)',
             // A credit that is probably a payday opens the link sheet: linking needs a visible route.
             onClick: notLinked ? link : open,
             title: inc.name,
@@ -388,7 +392,10 @@ export function useFlowLedger() {
             ) : notLinked ? (
               <Badge variant="muted" size="xs" className="shrink-0">{t.income.notLinked}</Badge>
             ) : (
-              <Badge variant="muted" size="xs" className="shrink-0">{t.income.oneTimeLabel}</Badge>
+              // One-time money names the type picked for it (Side hustle, Gift); "One-time" only when it has none.
+              <Badge variant="muted" size="xs" className="shrink-0">
+                {inc.sourceType && inc.sourceType !== 'other' ? incomeSourceTypeLabel(t.income, inc.sourceType) : t.income.oneTimeLabel}
+              </Badge>
             )),
             subtitle:
               daysLate && inc.event?.occurrenceDate ? (
@@ -403,7 +410,7 @@ export function useFlowLedger() {
               ),
             amount: amountNode('+', amountBase, false),
             amountColor: notIncome ? 'var(--color-brand-text-muted)' : 'var(--color-brand-green)',
-            sub: sub(amountBase, ''),
+            sub: sub(amountBase, '', inc),
           },
           swipe: {
             deleteLabel: t.income.swipeDelete,
@@ -447,8 +454,6 @@ export function useFlowLedger() {
             icon: <HandCoins className="h-5 w-5" aria-hidden />,
             iconBg: 'var(--color-brand-green-soft)',
             iconFg: 'var(--color-brand-green)',
-            caption: t.flow.repaymentCaption,
-            captionColor: 'var(--color-brand-green)',
             title: t.flow.repaymentReceived(r.person),
             badgeWrap: true,
             titleBadge: <Badge variant="muted" size="xs" className="shrink-0">{t.flow.repaymentNotIncome}</Badge>,
@@ -493,8 +498,6 @@ export function useFlowLedger() {
             icon: category ? <CategoryIcon category={category} className="h-5 w-5" /> : <MessageSquare className="h-5 w-5" />,
             iconBg: colors?.bg,
             iconFg: colors?.fg ?? 'var(--color-brand-text-muted)',
-            caption: category ?? undefined,
-            captionColor: 'var(--color-brand-text-secondary)',
             dimmed: true,
             // Tapping a waiting message retries every waiting message now instead of waiting for the schedule.
             onClick: () => { void import('@/lib/native/smsTracker').then((m) => m.retrySmsNow()) },
@@ -553,7 +556,7 @@ export function useFlowLedger() {
         key: day,
         label: day === today ? t.common.today : day === yesterday ? t.common.yesterday : weekday.format(parseISO(day)),
         date: shortDate(day),
-        net: formatSigned(net, 2),
+        net: formatSignedAuto(net),
         monthHead: head ? { label: monthLabel.format(parseISO(`${head.month}-01`)), count: lt.page.monthCount(head.count) } : undefined,
         rows: list.map((i) => i.row),
       }

@@ -3197,8 +3197,6 @@ export interface Dictionary {
     suggestedCategory: string
     passThrough: string
     returnedOn: (d: string) => string
-    oneTimeCaption: string
-    repaymentCaption: string
     repaymentReceived: (person: string) => string
     repaymentNotIncome: string
     askBuddgy: string

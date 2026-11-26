@@ -16,7 +16,7 @@ describe('Arabic number and unit ordering (QA-27)', () => {
     const debts = read('components/features/debts/redesign/DebtPortfolioHero.tsx')
     expect(debts).toMatch(/<b dir="auto" className="block font-mono-numbers/)
     expect(debts).toMatch(/<span dir="auto"[^>]*>\{progressing \? t\.heroBorrowedTotal/)
-    expect(read('components/features/savings-v3/SavingsHero.tsx')).toMatch(/<span dir="auto"[^>]*>\{t\.savesPct/)
+    expect(read('components/features/savings-v3/SavingsHero.tsx')).toMatch(/<span key=\{s\.key\} dir="auto">\{s\.label\}/)
   })
   it('the Debts band (Light touch) is a rounded card whose facts ride one auto-direction line under the bar', () => {
     const debts = read('components/features/debts/redesign/DebtPortfolioHero.tsx')

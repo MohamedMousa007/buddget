@@ -102,7 +102,7 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
         <TextRow label={c.forLabel} value={d.name} onChange={d.setName} placeholder={c.forPh} />
         <PickerRow label={c.date} value={<DatePickerField look="pill" value={d.installmentStartDate} onChange={d.setInstallmentStartDate} time={{ value: d.borrowTime, onChange: d.setBorrowTime, label: timeLabel, defaultNow: !d.isEditFlow }} />} />
         {!isGold ? (
-          <MethodPickerRow label={owe ? c.receivedIn : c.paidFrom} value={d.paymentMethodId} onChange={d.setPaymentMethodId} paymentMethods={d.paymentMethods} />
+          <MethodPickerRow label={owe ? c.receivedIn : c.paidFrom} value={d.paymentMethodId} onChange={d.setPaymentMethodId} paymentMethods={d.paymentMethods} accountsOnly={owe} />
         ) : null}
         {!isGold && d.principalAccount && matchDate ? (
           <SettingsSwitchRow
