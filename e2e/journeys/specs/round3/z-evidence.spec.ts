@@ -20,8 +20,8 @@ const hourAgo = () => new Date(Date.now() - 3_600_000).toISOString()
 const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' })
 
 const COPY = {
-  en: { addMoney: 'Add money', del: 'Delete', from: 'From', transfer: 'Transfer from QNB Alahli to CIB', over: /Only 1,000(\.00)? EGP is available in QNB Alahli/, stays: 'stays in CIB', leaves: 'will leave your net worth', notIncome: 'Not income' },
-  ar: { addMoney: 'إضافة مال', del: 'حذف', from: 'من', transfer: 'تحويل من QNB Alahli إلى CIB', over: /المتاح في QNB Alahli هو/, stays: 'في CIB ويعود متاحًا', leaves: 'من صافي ثروتك', notIncome: 'ليس دخلًا' },
+  en: { addMoney: 'Add money', del: 'Delete', from: 'From', transfer: 'From QNB Alahli', over: /Only 1,000(\.00)? EGP is available in QNB Alahli/, stays: 'stays in CIB', leaves: 'will leave your net worth', notIncome: 'Not income' },
+  ar: { addMoney: 'إضافة مال', del: 'حذف', from: 'من', transfer: 'من QNB Alahli', over: /المتاح في QNB Alahli هو/, stays: 'في CIB ويعود متاحًا', leaves: 'من صافي ثروتك', notIncome: 'ليس دخلًا' },
 }
 type Lang = keyof typeof COPY
 

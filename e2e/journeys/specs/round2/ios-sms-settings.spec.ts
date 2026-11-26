@@ -9,7 +9,7 @@ import { env } from '../../lib/env'
  * - never set up here: a "Set up" button, no switch
  * - setup claimed: the switch, "View guide" beside it, "Waiting for your first text"
  * - a Shortcut run seen: the switch, "Working · no bank text yet"
- * - the guide's guard: "I already know the steps" asks before it marks this phone set up
+ * - the guide's guard: "I already know the steps" opens the last step; nothing marks the phone set up before its Finish
  */
 
 const SMS_METHODS = ['checkPermission', 'requestPermission', 'saveToken', 'setEnabled', 'setSetupCompleted', 'setForwardMode', 'clearCredentials', 'clearState', 'setDeviceSecret', 'getDeviceSecret', 'removeDeviceSecret', 'setSecureItem', 'getSecureItem', 'removeSecureItem', 'getStatus', 'healthCheck', 'peekPendingQueue', 'removePending']
@@ -108,13 +108,15 @@ test.describe('iPhone SMS tracking on Settings (BDG-008)', () => {
     await expect(smsRow(page)).toContainText('Working · no bank text yet')
   })
 
-  test('"Set up" opens the guide, and "I already know the steps" asks before it marks this phone set up', async ({ page }) => {
+  test('"Set up" opens the guide, and "I already know the steps" goes to the last step without marking this phone set up', async ({ page }) => {
     await asIphone(page, { setupCompleted: false, enabled: false }, auth.session, auth.storageKey)
     await page.goto('/settings')
     await page.getByTestId('sms-setup-button').click({ timeout: 90_000 })
     await expect(page).toHaveURL(/\/settings\/sms/)
+    // Light touch guide: the link jumps to the last step instead of skipping; only that step's Finish claims the phone.
     await page.getByText('I already know the steps').click()
-    await expect(page.getByRole('alertdialog').or(page.getByRole('dialog').filter({ hasText: /skip|already/i })).first()).toBeVisible()
+    await expect(page.getByText('Step 5 of 5')).toBeVisible()
+    await page.waitForTimeout(1000)
     expect(await page.evaluate(() => (window as any).__sms.setupCompleted)).toBe(false)
   })
 })

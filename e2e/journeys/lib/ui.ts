@@ -3,15 +3,16 @@ import { expect, type Locator, type Page } from '@playwright/test'
 export const dialog = (page: Page, name: string | RegExp) => page.getByRole('dialog', { name })
 
 /** BDG-026-028: a money sheet's Into/From pocket is one field that opens the provider-style picker over the pockets. */
-export async function pickPocket(page: Page, sheet: Locator, leg: 'Into' | 'From', name: RegExp) {
-  const field = sheet.getByRole('button', { name: new RegExp(`^${leg}`) })
+export async function pickPocket(page: Page, sheet: Locator, leg: 'Into' | 'From' | 'To', name: RegExp) {
+  // "Into: Monthly Savings" once chosen; just "Into" while it still says Choose a pocket.
+  const field = sheet.getByRole('button', { name: new RegExp(`^${leg}(:|$)`) })
   if (name.test((await field.getAttribute('aria-label')) ?? '')) return
   await field.click()
   // Light touch: "Which pocket?" (grouped by purpose); older builds titled it "Choose a pocket".
   const picker = dialog(page, /^(Which pocket\?|Choose a pocket)$/)
   await picker.getByRole('radio', { name }).click()
   await expect(picker).toBeHidden()
-  await expect(field).toHaveAttribute('aria-label', new RegExp(`^${leg}: ${name.source}`))
+  await expect(field).toHaveAttribute('aria-label', new RegExp(`^${leg}: ${name.source.replace(/^\^/, '').replace(/\$$/, '')}`))
 }
 
 /** Wealth > Withdraw: the purpose is a "For" field that opens "What is it for?" (Spending, Pay a debt, Income: Back into this month, …). */

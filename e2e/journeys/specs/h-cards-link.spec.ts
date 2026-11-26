@@ -31,6 +31,18 @@ test('H1 card added from an account: linked to it, provider switch re-links, lan
   const qnb = await localWait(page, (s) => s.paymentMethods.find((m: any) => m.name === 'QNB Alahli' && m.openingBalance === 5000))
   const cib = await localWait(page, (s) => s.paymentMethods.find((m: any) => m.name === 'CIB' && m.openingBalance === 3000))
 
+  await test.step('the bank page offers an "Add a card" tile while it has no card; it opens Add a card for that bank', async () => {
+    await goto(page, '/accounts')
+    await page.getByRole('button', { name: /^QNB Alahli/ }).first().click()
+    await expect(page.locator('main')).toContainText('Total here')
+    await page.locator('main').getByRole('button', { name: 'Add a card' }).click()
+    const sheet = cardSheet(page)
+    await expect(sheet.getByRole('button', { name: /^Bank or wallet/ })).toContainText('QNB Alahli')
+    await expect(linkedField(sheet)).toContainText('QNB Alahli')
+    await sheet.getByRole('button', { name: 'Close' }).first().click()
+    await expect(sheet).toBeHidden()
+  })
+
   const card = await test.step('Add a card from QNB: linked to QNB; CIB re-links to CIB; Banque Misr (no account) to None', async () => {
     const detail = await openAccount(page, /QNB Alahli/)
     await detail.getByRole('button', { name: 'Add a card' }).click()

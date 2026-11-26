@@ -100,11 +100,13 @@ async function newPocket(page: Page, o: { kind: RegExp; name: string; amount: nu
 
 /** An account field ("From", "To"; light touch: "From: CIB") that opens the method carousel: choose the account unless it is already chosen. */
 async function pickAccount(sheet: Locator, label: string, name: string) {
-  const field = sheet.getByRole('button', { name: new RegExp(`^${label}:`) })
-  if (((await field.getAttribute('aria-label')) ?? '') === `${label}: ${name}`) return
+  // "From: CIB" carries an aria-label; Withdraw's "To CIB" is named by its text.
+  const field = sheet.getByRole('button', { name: new RegExp(`^${label}:? `) })
+  const now = async () => ((await field.getAttribute('aria-label')) ?? (await field.textContent()) ?? '').replace(/\s+/g, ' ').replace(`${label}:`, label)
+  if ((await now()) === `${label} ${name}` || (await now()) === `${label}${name}`) return
   await field.click()
   await pickMethod(sheet.page(), new RegExp(`^${name}`))
-  await expect(field).toHaveAttribute('aria-label', `${label}: ${name}`)
+  await expect.poll(now).toMatch(new RegExp(`^${label} ?${name}$`))
 }
 
 /** Fund it > "Where is it?" Account: the account the saved money sits in (an account field, or chips when the sheet lists them). */
@@ -146,7 +148,8 @@ async function withdraw(page: Page, o: { from: string; amount: number; purpose: 
   await pickPocket(page, d, 'From', new RegExp(o.from))
   await d.getByRole('textbox', { name: 'Amount' }).fill(String(o.amount))
   await withdrawFor(page, d, o.purpose)
-  if (o.moveTo) await d.getByRole('button', { name: o.moveTo, exact: true }).click()
+  // Light touch: "Move to a pocket" adds an "Into" pocket field with the provider-style pocket picker.
+  if (o.moveTo) await pickPocket(page, d, 'Into', new RegExp(`^${o.moveTo}`))
   if (o.toAccount) await pickAccount(d, 'To', o.toAccount)
   await blur(page)
   await expect(d.getByRole('alert')).toHaveCount(0)
@@ -163,7 +166,7 @@ async function openSetAside(page: Page, account: RegExp, pocket: string, amount:
   const detail = await openAccount(page, account)
   await detail.getByRole('button', { name: 'Set aside', exact: true }).click()
   const d = page.getByRole('dialog', { name: /^Set aside in / }).last()
-  await pickPocket(page, d, 'Into', new RegExp(`^${pocket}$`))
+  await pickPocket(page, d, 'Into', new RegExp(`^${pocket}`))
   await expect(d).toContainText(/Stays in CIB/)
   await d.getByRole('textbox', { name: /^Set aside in / }).fill(String(amount))
   await blur(page)
