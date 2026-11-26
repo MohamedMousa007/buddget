@@ -2,6 +2,7 @@
 
 import { Plus, Receipt, ShoppingBag } from 'lucide-react'
 import { TransactionRow } from '@/components/transactions/TransactionRow'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { instantOf } from '@/lib/accounts/balance'
@@ -12,7 +13,7 @@ import { MASK } from '@/lib/privacy/mask'
 import type { Expense, PaymentMethod } from '@/lib/store/types'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { splitMoney } from './accountDisplay'
+import { moneyFlex } from './accountDisplay'
 
 interface SheetActivityProps {
   title: string
@@ -63,13 +64,13 @@ export function SheetActivity({ title, rows, masked, method, emptyLine, onLeave 
       <TransactionRow key={e.id} icon={<ShoppingBag className="size-5" aria-hidden />} title={e.description || categoryLabel(all, e.category)}
         onClick={() => { onLeave(); setEditingExpenseId(e.id); setActiveModal('editExpense') }}
         subtitle={formatLocalized(new Date(instantOf(e.occurredAt, e.date)), 'MMM d', locale)}
-        amount={masked ? MASK : `−${splitMoney(e.amount, String(e.currency)).int}`} />
+        amount={masked ? MASK : `−${moneyFlex(e.amount, String(e.currency))}`} />
     ))
   }
   return (
     <section>
-      <h3 className="mb-1 px-5 text-[0.8125rem] font-bold text-[var(--color-brand-text-secondary)]">{title}</h3>
-      {body}
+      <h3 className="px-5 pb-2 pt-2 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{title}</h3>
+      {ready && rows.length > 0 ? <Card padding="none" divide className="mx-4 overflow-hidden rounded-2xl">{body}</Card> : body}
     </section>
   )
 }

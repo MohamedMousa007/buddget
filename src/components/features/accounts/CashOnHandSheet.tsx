@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
-import { SheetBody, SheetFooter } from '@/components/features/savings-v3/MoneySheetParts'
+import { Banknote, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { AmountField } from '@/components/ui/AmountField'
+import { AmountHero } from '@/components/ui/AmountHero'
+import { Pill } from '@/components/ui/PillButton'
 import { ensureCashAccount, setOpeningBalance } from '@/lib/accounts/actions'
 import { CASH_ASK_KEY } from '@/lib/accounts/cashOnHand'
 import { cashCurrency } from '@/lib/accounts/resolve'
@@ -13,11 +14,16 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useT } from '@/lib/i18n'
+import { useAccountsLtCopy } from '@/lib/i18n/accountsLtCopy'
+import { MoveIconTile } from './MoveMoneySheet'
 
-/** Asked once, after the first cash expense: the answer starts Cash's balance, kept from then on as an estimate. */
+/**
+ * How much cash is on hand: asked once after the first cash expense, or from "Start tracking" on Accounts. The answer
+ * starts Cash's balance, kept from then on as an estimate.
+ */
 export function CashOnHandSheet() {
   const dict = useT()
-  const t = dict.accountsPage
+  const c = useAccountsLtCopy().cash
   const open = useSettingsStore((s) => s.activeModal === 'askCashOnHand')
   // The answer is stored in Cash's own currency, so it is asked in that currency.
   const currency = useFinanceStore((s) => cashCurrency(s.paymentMethods, s.settings.baseCurrency))
@@ -41,19 +47,22 @@ export function CashOnHandSheet() {
   return (
     <ModalShell open={open} onBackdropClick={close} scrollChild>
       <div className="flex min-h-0 flex-1 flex-col">
-        <V3SheetHeader onClose={close}>
-          <V3SheetHeader.Title>{t.cashAskTitle}</V3SheetHeader.Title>
-          <V3SheetHeader.Subtitle>{t.cashAskSub}</V3SheetHeader.Subtitle>
+        <V3SheetHeader onClose={close} leading={<Pill icon={<Calendar />}>{c.countedToday}</Pill>}>
+          <V3SheetHeader.Title><span className="sr-only">{c.title}</span></V3SheetHeader.Title>
         </V3SheetHeader>
-        <SheetBody className="space-y-3 pt-3">
-          <AmountField value={value} onChange={setValue} currency={String(currency)} placeholder="0" />
-        </SheetBody>
-        <SheetFooter safeArea>
-          <div className="flex flex-col gap-2">
-            <Button size="cta-block" onClick={save} disabled={!valid} className="font-semibold">{dict.common.save}</Button>
-            <Button size="cta-block" variant="outline" onClick={close}>{t.cashAskSkip}</Button>
-          </div>
-        </SheetFooter>
+        <div className="min-h-0 flex-1 overflow-y-auto pb-3">
+          <AmountHero value={value} onChange={setValue} currency={String(currency)} aria-label={c.title}
+            top={<MoveIconTile><Banknote /></MoveIconTile>}
+            line={(
+              <>
+                <span dir="auto" className="mt-3 block text-base font-semibold text-[var(--color-brand-text-primary)]">{c.title}</span>
+                <span dir="auto" className="mt-1.5 block text-xs text-[var(--color-brand-text-secondary)] [text-wrap:pretty]">{c.sub}</span>
+              </>
+            )} />
+        </div>
+        <div className="shrink-0 border-t border-[var(--color-brand-border)] px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3">
+          <Button size="cta-block" onClick={save} disabled={!valid} className="font-semibold">{dict.common.save}</Button>
+        </div>
       </div>
     </ModalShell>
   )

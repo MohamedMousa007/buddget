@@ -2,12 +2,14 @@
 
 import { useState } from 'react'
 import { Check, ChevronDown, CreditCard } from 'lucide-react'
+import { PickerRow } from '@/components/ui/PickerRow'
+import { ProviderPickerSheet, type ProviderPickerItem } from '@/components/features/payments/ProviderPickerSheet'
 import type { AccountView } from '@/lib/accounts/useAccounts'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { BrandMark } from './BrandMark'
 import { bankLogoForName } from '@/lib/payment/bankLogos'
-import { accountColor, accountSubtitle, accountTitle, sharesProvider, splitMoney } from './accountDisplay'
+import { accountColor, accountSubtitle, accountTitle, moneyFlex, sharesProvider } from './accountDisplay'
 
 interface AccountPickerProps {
   accounts: AccountView[]
@@ -19,17 +21,66 @@ interface AccountPickerProps {
   noneLabel?: string
   /** Free-balance column on each row. Default on. */
   showBalance?: boolean
+  /** `row` (Light touch): a `PickerRow` in a grouped list that opens a searchable sheet of the accounts. Default `inline`. */
+  look?: 'inline' | 'row'
+  /** Row look: the sheet's title (defaults to the label). */
+  title?: string
+  /** Row look: stacked over another nested sheet. */
+  zIndexClassName?: string
+}
+
+/** The account's name and its digits, apart, as a row value shows them ("CIB Current ••1234"). */
+export function AccountNameValue({ method }: { method: AccountView['method'] }) {
+  const name = method.label?.trim() || accountTitle(method)
+  return (
+    <>
+      <BrandMark name={accountTitle(method)} color={accountColor(method)} size={24} logo={bankLogoForName(accountTitle(method))} />
+      <span dir="auto" className="truncate">{name}</span>
+      {method.last4 ? <span dir="ltr" className="shrink-0 font-mono-numbers text-[var(--color-brand-text-muted)]">{'\u2022\u2022'}{method.last4}</span> : null}
+    </>
+  )
 }
 
 /** "From": the chosen account on one row; tap to unfold the rest in place (no second sheet). */
-export function AccountPicker({ accounts, value, onChange, label, noneLabel, showBalance = true }: AccountPickerProps) {
+export function AccountPicker(props: AccountPickerProps) {
+  return props.look === 'row' ? <AccountPickerRow {...props} /> : <AccountPickerInline {...props} />
+}
+
+const NONE = '__none'
+
+function AccountPickerRow({ accounts, value, onChange, label, noneLabel, showBalance = true, title, zIndexClassName }: AccountPickerProps) {
+  const t = useT().accountsPage
+  const [open, setOpen] = useState(false)
+  const current = accounts.find((a) => a.method.id === value) ?? (noneLabel !== undefined ? undefined : accounts[0])
+  const methods = accounts.map((a) => a.method)
+  const items: ProviderPickerItem[] = [
+    ...(noneLabel !== undefined ? [{ id: NONE, name: noneLabel, glyph: <BrandMark name="" color="var(--color-brand-sunken)" size={38} icon={<CreditCard className="size-4 text-[var(--color-brand-text-muted)]" aria-hidden />} /> }] : []),
+    ...accounts.map((a) => ({
+      id: a.method.id,
+      name: a.method.label?.trim() || accountTitle(a.method),
+      subtitle: accountSubtitle(a.method, sharesProvider(a.method, methods)) ?? String(a.method.currency),
+      glyph: <BrandMark name={accountTitle(a.method)} color={accountColor(a.method)} size={38} logo={bankLogoForName(accountTitle(a.method))} />,
+      trailing: showBalance && a.balance ? <span className="font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{moneyFlex(a.balance.free, String(a.method.currency))}</span> : undefined,
+    })),
+  ]
+  return (
+    <>
+      <PickerRow label={label ?? t.from} onClick={() => setOpen(true)}
+        value={current ? <AccountNameValue method={current.method} /> : <span className="text-[var(--color-brand-text-muted)]">{noneLabel}</span>} />
+      <ProviderPickerSheet open={open} selectedId={current?.method.id ?? NONE} items={items} title={title ?? label ?? t.from} zIndexClassName={zIndexClassName}
+        onPick={(id) => { onChange(id === NONE ? '' : id); setOpen(false) }} onClose={() => setOpen(false)} />
+    </>
+  )
+}
+
+function AccountPickerInline({ accounts, value, onChange, label, noneLabel, showBalance = true }: AccountPickerProps) {
   const t = useT().accountsPage
   const [open, setOpen] = useState(false)
   const found = accounts.find((a) => a.method.id === value)
   const current = found ?? (noneLabel !== undefined ? null : accounts[0])
   if (!current && noneLabel === undefined) return null
   const methods = accounts.map((a) => a.method)
-  const freeText = (a: AccountView) => (a.balance ? t.freeLabel(`${splitMoney(a.balance.free, String(a.method.currency)).int} ${String(a.method.currency)}`) : t.setBalance)
+  const freeText = (a: AccountView) => (a.balance ? t.freeLabel(`${moneyFlex(a.balance.free, String(a.method.currency))} ${String(a.method.currency)}`) : t.setBalance)
   const subtitle = (a: AccountView) => accountSubtitle(a.method, sharesProvider(a.method, methods)) ?? String(a.method.currency)
   const noneMark = <BrandMark name="" color="var(--color-brand-sunken)" size={36} icon={<CreditCard className="size-4 text-[var(--color-brand-text-muted)]" aria-hidden />} />
   return (

@@ -7,7 +7,7 @@ import { IconButton } from '@/components/ui/IconButton'
 import { MASK } from '@/lib/privacy/mask'
 import { useT } from '@/lib/i18n'
 import type { AccountsModel } from '@/lib/accounts/useAccounts'
-import { moneyFlex, splitMoney } from './accountDisplay'
+import { moneyFlex, smartSplit } from './accountDisplay'
 
 const TONES = ['var(--flow-band-fg)', 'var(--color-brand-gold)', 'color-mix(in oklab, var(--flow-band-fg) 62%, transparent)', 'color-mix(in oklab, var(--flow-band-fg) 40%, transparent)']
 
@@ -25,7 +25,7 @@ export function AccountsHero({ model, currency, netWorth, creditOwed, hidden, on
   const t = useT().accountsPage
   const free = model.freeInBase
   const fmt = (n: number) => (hidden ? MASK : moneyFlex(n, currency))
-  const big = splitMoney(free, currency)
+  const big = smartSplit(free, currency)
   const tracked = model.accounts.filter((a) => a.balance)
   const segs = tracked
     .map((a) => ({ key: a.method.id, label: a.method.name, value: a.balance!.balance }))

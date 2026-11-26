@@ -6,7 +6,7 @@ import { BrandMark } from './BrandMark'
 import { bankLogoForName } from '@/lib/payment/bankLogos'
 import { CardStrip } from './CardStrip'
 import { Badge } from '@/components/ui/badge'
-import { accountColor, accountSubtitle, accountTitle, splitMoney } from './accountDisplay'
+import { accountColor, accountSubtitle, accountTitle, moneyFlex, smartSplit, splitMoney } from './accountDisplay'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
 import { createElement } from 'react'
 
@@ -31,7 +31,7 @@ export function AccountRow({ account, masked, gap, shared = false, baseEquivalen
   const base = useFinanceStore((s) => String(s.settings.baseCurrency))
   const { method, balance, cards } = account
   const cur = String(method.currency)
-  const money = balance ? splitMoney(balance.balance, cur) : null
+  const money = balance ? smartSplit(balance.balance, cur) : null
   const hasGap = gap != null && gap !== 0
   const isCash = method.type === 'cash'
   const isPrepaid = method.type === 'prepaid_card'
@@ -65,7 +65,7 @@ export function AccountRow({ account, masked, gap, shared = false, baseEquivalen
                 {masked ? MASK : <>{money.int}<span className="opacity-60">{money.dec}</span></>}
               </span>
               {!masked && balance && balance.held > 0 ? (
-                <span dir="auto" className="mt-0.5 block font-mono-numbers text-[0.71875rem] font-semibold text-[var(--color-brand-primary-ink)]">{t.freeLabel(splitMoney(balance.free, cur).int)}</span>
+                <span dir="auto" className="mt-0.5 block font-mono-numbers text-[0.71875rem] font-semibold text-[var(--color-brand-primary-ink)]">{t.freeLabel(moneyFlex(balance.free, cur))}</span>
               ) : null}
               {!masked && baseEquivalent ? (
                 <span dir="auto" className="mt-0.5 block whitespace-nowrap font-mono-numbers text-[0.71875rem] text-[var(--color-brand-text-muted)]">{baseEquivalent}</span>

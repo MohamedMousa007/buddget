@@ -20,7 +20,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { useT } from '@/lib/i18n'
 import { GapTimeline, type TimelineStep } from './GapTimeline'
-import { splitMoney } from './accountDisplay'
+import { moneyFlex } from './accountDisplay'
 
 type Choice = 'cash' | 'spent' | 'set' | 'unsure' | 'attach' | SurplusAnswer
 
@@ -43,7 +43,7 @@ export function FixGapSheet({ open, onClose, account, gap, onSetAside, onResolve
   const updateExpense = useFinanceStore((s) => s.updateExpense)
   const [picked, setPicked] = useState<Choice | null>(null)
   const cur = String(account.method.currency)
-  const money = (n: number) => splitMoney(n, cur).int + splitMoney(n, cur).dec
+  const money = (n: number) => moneyFlex(n, cur)
   const missing = Math.abs(gap.amount)
   const surplus = gap.amount > 0
   const { accounts } = useAccounts()

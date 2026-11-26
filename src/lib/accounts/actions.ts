@@ -106,8 +106,14 @@ const ledgerOf = (s: FinanceStore): LedgerInput => ({
  * relabelled, so the balance ends at exactly that amount (the same adjustment path as Update balance).
  */
 export function changeCashCurrency(id: string, to: Currency, amountInNew: number): void {
+  if (store().paymentMethods.find((m) => m.id === id)?.type !== 'cash') return
+  changeAccountCurrency(id, to, amountInNew)
+}
+
+/** Any account moves to another currency, its balance ending at `amountInNew` (the Cash rule above, for a bank or wallet too). */
+export function changeAccountCurrency(id: string, to: Currency, amountInNew: number): void {
   const before = store().paymentMethods.find((m) => m.id === id)
-  if (!before || before.type !== 'cash' || before.currency === to) return
+  if (!before || before.currency === to) return
   store().updatePaymentMethod(id, { currency: to })
   if (!isTracked(before)) return
   const current = computeBalances(ledgerOf(store())).get(id)?.balance ?? 0

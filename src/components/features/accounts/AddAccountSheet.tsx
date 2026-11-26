@@ -2,24 +2,24 @@
 
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { Check } from 'lucide-react'
+import { Check, Plus } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { ProviderPickerSheet } from '@/components/features/payments/ProviderPickerSheet'
 import { PaymentMethodSetupSheet } from '@/components/features/payments/PaymentMethodSetupSheet'
-import { ACCOUNT_CURRENCY_FIELD_CLASS, AccountIdentifierField, type Identifier } from '@/components/features/payments/accountFormParts'
+import { Last4Tiles, InputRow } from '@/components/features/payments/accountFormParts'
 import { Button } from '@/components/ui/button'
-import { AmountField } from '@/components/ui/AmountField'
-import { CurrencyField } from '@/components/ui/CurrencyField'
-import { FieldButton } from '@/components/ui/FieldButton'
+import { Card } from '@/components/ui/card'
+import { AmountHero } from '@/components/ui/AmountHero'
+import { PickerRow } from '@/components/ui/PickerRow'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { ensureCashAccount, setOpeningBalance } from '@/lib/accounts/actions'
 import { cashCurrency } from '@/lib/accounts/resolve'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
-import { PAYMENT_BRANDS, QUICK_ADD, QUICK_ADD_BLEND, PAYMENT_TYPE_META, composePaymentMethodName, resolvePaymentBrandKey } from '@/lib/payment/paymentMethodDefaults'
-import { microClassName } from '@/lib/ui/microLabelStyle'
-import type { Currency, PaymentMethodType } from '@/lib/store/types'
+import { useAccountsLtCopy } from '@/lib/i18n/accountsLtCopy'
+import { PAYMENT_BRANDS, QUICK_ADD, QUICK_ADD_BLEND, PAYMENT_TYPE_META, brandIssuesType, composePaymentMethodName, resolvePaymentBrandKey } from '@/lib/payment/paymentMethodDefaults'
+import type { Currency } from '@/lib/store/types'
 import { isSavableTail } from '@/lib/accounts/identity/accountRef'
 import { useReattribute } from '@/lib/accounts/useReattribute'
 import type { AccountPrefill } from '@/lib/store/useSettingsStore'
@@ -45,17 +45,18 @@ interface AddAccountSheetProps {
 }
 
 type Step = 'account' | 'card' | 'done'
-/** Account step: only the account kinds this sheet adds. Cards, pay-later and network brands go through the card form. */
-const NOT_ACCOUNTS: PaymentMethodType[] = ['debit_card', 'credit_card', 'prepaid_card', 'bnpl', 'other', 'cash']
 
 const COUNTRY: Partial<Record<Currency, 'EG' | 'SA' | 'AE'>> = { EGP: 'EG', SAR: 'SA', AED: 'AE' }
 const BRAND_CURRENCY = { EG: 'EGP', SA: 'SAR', AE: 'AED' } as const
 
-/** Add an account by hand: who it is with, how it is told apart, its currency and what it holds today. */
+/**
+ * Add an account by hand (Light touch): Bank | Wallet, what it holds today with its currency inline, who it is with,
+ * its last 4 and an optional Name (the `label` column; empty shows "Provider ••1234"), then its first card.
+ */
 export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', prefill, onAddCard, pushCardStep = false, onOnlyCard }: AddAccountSheetProps) {
   const t = useT().accountsPage
-  const tp = useT().paymentMethods
   const tc = useT().common
+  const lt = useAccountsLtCopy()
   const base = useFinanceStore((s) => s.settings.baseCurrency)
   // Cash's balance is stored in Cash's own currency, so it is asked in that currency too.
   const cashCur = useFinanceStore((s) => cashCurrency(s.paymentMethods, s.settings.baseCurrency))
@@ -65,7 +66,6 @@ export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', p
   const [brandId, setBrandId] = useState<string | null>(prefillBrand)
   const [custom, setCustom] = useState(prefill && !prefillBrand ? prefill.provider : '')
   const [balance, setBalance] = useState('')
-  const [idMode, setIdMode] = useState<Identifier>(prefill ? 'last4' : 'none')
   const [last4, setLast4] = useState(prefill?.last4 ?? '')
   const [label, setLabel] = useState('')
   const prefillCountry = prefillBrand ? PAYMENT_BRANDS[prefillBrand].country : undefined
@@ -87,7 +87,7 @@ export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', p
   const isCash = kind === 'cash'
   const reattribute = useReattribute()
   const hasBalance = balance.trim() !== '' && Number.isFinite(parseFloat(balance))
-  const digitsOk = idMode !== 'last4' || isSavableTail(last4)
+  const digitsOk = last4 === '' || isSavableTail(last4)
   const canSave = hasBalance && digitsOk && (isCash || provider.trim() !== '')
   const popular = (COUNTRY[base] ? QUICK_ADD[COUNTRY[base]!] : QUICK_ADD_BLEND)
 
@@ -96,9 +96,6 @@ export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', p
     setBrandId(id)
     setCustom('')
     setPickOpen(false)
-    // A wallet brand (Payoneer, Wise, Deel) is a wallet account; a bank is a bank account (Accounts' combined picker).
-    if (pushCardStep && b.type === 'wallet') setKind('wallet')
-    else if (pushCardStep && b.type === 'bank_account') setKind('bank_account')
     // The provider's own country sets the currency until the user picks one themselves.
     if (!currencyChosen && b.country && b.country in BRAND_CURRENCY) setCurrency(BRAND_CURRENCY[b.country as keyof typeof BRAND_CURRENCY])
   }
@@ -113,8 +110,8 @@ export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', p
       return id
     }
     // The digits are kept whenever they were typed (SMS matching needs them), even when a label is what the user sees.
-    const digits = idMode !== 'none' && last4.length > 0 && isSavableTail(last4) ? last4 : undefined
-    const words = idMode === 'label' ? label.trim() : ''
+    const digits = last4.length > 0 && isSavableTail(last4) ? last4 : undefined
+    const words = label.trim()
     const id = addPaymentMethod({
       name: composePaymentMethodName(provider, { last4: digits }),
       type: kind, currency, isDefault: false,
@@ -146,49 +143,70 @@ export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', p
     </div>
   ) : null
 
+  const pickKind = (k: Kind) => {
+    setKind(k)
+    // The picker lists only what this kind issues: a provider that does not issue it is cleared.
+    if (brand && k !== 'cash' && !brandIssuesType(brand, k)) { setBrandId(null); setCustom('') }
+  }
+  const defaultName = provider.trim() ? `${provider.trim()}${last4 ? ` \u2022\u2022${last4}` : ''}` : ''
   const accountStep = (
     <div className="flex min-h-0 flex-1 flex-col">
-        <V3SheetHeader onClose={onClose}><V3SheetHeader.Title>{t.addAccountTitle}</V3SheetHeader.Title></V3SheetHeader>
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 pb-3 pt-2">
-          <SegmentedControl ariaLabel={t.accountType} value={kind} onChange={setKind}
-            options={[{ value: 'bank_account', label: t.typeBank }, { value: 'wallet', label: t.typeWallet }, { value: 'cash', label: t.typeCash }]} />
+        <V3SheetHeader onClose={onClose}><V3SheetHeader.Title>{isCash ? lt.addAccount.cashTitle : t.addAccountTitle}</V3SheetHeader.Title></V3SheetHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto pb-3 pt-1">
+          {!isCash ? (
+            <div className="px-4">
+              <SegmentedControl ariaLabel={t.accountType} value={kind} onChange={pickKind}
+                options={[{ value: 'bank_account', label: t.typeBank }, { value: 'wallet', label: t.typeWallet }]} />
+            </div>
+          ) : null}
+          <AmountHero value={balance} onChange={setBalance} currency={isCash ? String(cashCur) : String(currency)} label={t.balanceToday} aria-label={t.balanceToday}
+            onCurrencyChange={isCash ? undefined : (c) => { setCurrency(c as Currency); setCurrencyChosen(true) }} base={base}
+            line={isCash ? '' : kind === 'wallet' ? lt.addAccount.walletLine : lt.addAccount.bankLine} />
           {!isCash ? (
             <>
-              <div>
-                <div className={`mx-0.5 mb-2 ${microClassName}`}>{tp.provider}</div>
-                <FieldButton onClick={() => setPickOpen(true)} placeholder={t.chooseBank} value={provider || undefined}
-                  icon={provider ? <BrandMark name={provider} color={brand?.colors[0] ?? PAYMENT_TYPE_META[kind].color} size={32} logo={bankLogoForName(provider)} /> : undefined} />
-              </div>
-              <AccountIdentifierField mode={idMode} onModeChange={setIdMode} allowsLast4 last4={last4} onLast4Change={setLast4} label={label} onLabelChange={setLabel} />
-              <div>
-                <div className="mx-0.5 mb-2 flex items-center gap-2">
-                  <span className={microClassName}>{tp.currency}</span>
-                  <span className="text-[0.625rem] font-medium text-[var(--color-brand-text-muted)]">{tp.optional}</span>
-                </div>
-                <CurrencyField value={currency} onChange={(c) => { setCurrency(c as unknown as Currency); setCurrencyChosen(true) }} className={ACCOUNT_CURRENCY_FIELD_CLASS} />
-              </div>
+              <Card padding="none" divide className="mx-4 overflow-hidden rounded-2xl">
+                <PickerRow label={kind === 'wallet' ? t.typeWallet : t.typeBank} onClick={() => setPickOpen(true)}
+                  value={provider ? (
+                    <>
+                      <BrandMark name={provider} color={brand?.colors[0] ?? PAYMENT_TYPE_META[kind].color} size={24} logo={bankLogoForName(provider)} />
+                      <span dir="auto" className="truncate">{provider}</span>
+                    </>
+                  ) : <span className="text-[var(--color-brand-text-muted)]">{lt.addAccount.choose}</span>} />
+                <Last4Tiles value={last4} onChange={setLast4} optional />
+                <InputRow label={t.accountName} value={label} onChange={setLabel} placeholder={defaultName || lt.addAccount.optional} />
+              </Card>
+              {canCard ? (
+                <section>
+                  <h3 className="px-5 pb-2 pt-5 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{lt.addAccount.cardsHeading}</h3>
+                  <Card padding="none" className="mx-4 overflow-hidden rounded-2xl">
+                    <button type="button" data-raw-button-ok="the dashed Add a card empty state, a whole-row tap target" onClick={addWithCard} disabled={!canSave}
+                      className="flex min-h-11 w-full items-center gap-3 px-3 py-3 text-start disabled:opacity-60">
+                      <span aria-hidden className="flex h-14 w-[88px] shrink-0 items-center justify-center rounded-[7px] border-[1.5px] border-dashed border-[var(--color-brand-border-strong)] text-[var(--color-brand-text-muted)]">
+                        <Plus className="size-5" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[0.9375rem] font-semibold text-[var(--color-brand-primary-ink)]">{t.addACard}</span>
+                        <span className="block text-xs text-[var(--color-brand-text-muted)] [text-wrap:pretty]">{lt.addAccount.addCardSub}</span>
+                      </span>
+                    </button>
+                  </Card>
+                </section>
+              ) : null}
+              {onOnlyCard ? (
+                <Button variant="link" className="mt-2 h-11 w-full whitespace-normal text-[0.8125rem]" onClick={onOnlyCard}>{t.onlyACard}</Button>
+              ) : null}
             </>
           ) : null}
-          <div>
-            <div className={`mx-0.5 mb-2 ${microClassName}`}>{t.balanceToday}</div>
-            <AmountField value={balance} onChange={setBalance} currency={isCash ? cashCur : currency} placeholder="0" />
-          </div>
         </div>
-        <div className="space-y-2 px-5 pb-5 pt-2">
+        <div className="shrink-0 border-t border-[var(--color-brand-border)] px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3">
           <Button size="cta-block" onClick={() => { if (save()) onClose() }} disabled={!canSave} className="font-semibold">{t.addAccountCta}</Button>
-          {canCard ? (
-            <Button variant="outline" size="cta-block" disabled={!canSave} onClick={addWithCard}>{t.addAccountAndCard}</Button>
-          ) : null}
-          {onOnlyCard && !isCash ? (
-            <Button variant="link" className="h-11 w-full whitespace-normal text-[0.8125rem]" onClick={onOnlyCard}>{t.onlyACard}</Button>
-          ) : null}
         </div>
     </div>
   )
 
   const cardStep = saved ? (
     <PaymentMethodSetupSheet key={cardRound} embedded open editing={null} baseCurrency={base} parentAccountId={saved.id}
-      titleOverride={t.addCardTo(provider)} summary={summary} extraChoices={['virtual']} excludeTypes={['wallet']}
+      titleOverride={t.addCardTo(provider)} summary={summary} excludeTypes={['wallet', 'bnpl', 'other']}
       onBack={() => go('done', -1)} onClose={onClose}
       onSaved={(id) => { setFreshCardId(id); go('done') }} />
   ) : null
@@ -228,7 +246,7 @@ export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', p
         </motion.div>
       </AnimatePresence>
       <ProviderPickerSheet open={pickOpen} selectedId={brandId} popularIds={popular}
-        {...(pushCardStep ? { excludeTypes: NOT_ACCOUNTS } : { issuesType: kind === 'wallet' ? 'wallet' : 'bank_account' })}
+        issuesType={kind === 'wallet' ? 'wallet' : 'bank_account'} customLabel={lt.addAccount.notListed}
         onPick={pickProvider}
         onCustom={(term) => { setBrandId(null); setCustom(term); setPickOpen(false) }} onClose={() => setPickOpen(false)} />
     </ModalShell>

@@ -3,76 +3,16 @@
 import type { ReactNode } from 'react'
 import { toLatinDigits } from '@/lib/utils/formatters'
 import { X } from 'lucide-react'
-import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { useLightTouchCopy } from '@/lib/i18n/lightTouchCopy'
 import { OptionChip } from '@/components/ui/OptionChip'
+import { AmountField } from '@/components/ui/AmountField'
 import { useT } from '@/lib/i18n'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 
 /** Trigger styling for the shared `CurrencyField` inside the account and card sheets, so both pick a currency the same way. */
 export const ACCOUNT_CURRENCY_FIELD_CLASS =
   'h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-sm'
-
-export type Identifier = 'last4' | 'label' | 'none'
-
-interface AccountIdentifierFieldProps {
-  mode: Identifier
-  onModeChange: (m: Identifier) => void
-  /** Whether this kind of account or card takes four digits at all. */
-  allowsLast4: boolean
-  last4: string
-  onLast4Change: (v: string) => void
-  label: string
-  onLabelChange: (v: string) => void
-}
-
-/**
- * How an account is told apart on screen: the last four digits, a label of the user's own, or nothing. Shared by the
- * Add account and Add card sheets so both ask the same way. Choosing Label never discards the digits already stored:
- * SMS matching still needs them.
- * Built from OptionChip (size segment) and Input (brand), as the card sheet's identifier block was.
- */
-export function AccountIdentifierField({ mode, onModeChange, allowsLast4, last4, onLast4Change, label, onLabelChange }: AccountIdentifierFieldProps) {
-  const t = useT().paymentMethods
-  const modes: Identifier[] = allowsLast4 ? ['last4', 'label', 'none'] : ['label', 'none']
-  const names: Record<Identifier, string> = { last4: t.fourDigits, label: t.label, none: t.none }
-  return (
-    <div>
-      <div className="mx-0.5 mb-2 flex items-center gap-2">
-        <span className={microClassName}>{t.identifier}</span>
-        <span className="text-[0.625rem] font-medium text-[var(--color-brand-text-muted)]">{t.optional}</span>
-      </div>
-      <div className="flex gap-2">
-        {modes.map((m) => (
-          <OptionChip key={m} size="segment" selected={mode === m} onClick={() => onModeChange(m)}>{names[m]}</OptionChip>
-        ))}
-      </div>
-      {mode === 'last4' ? (
-        <>
-          <Last4Tiles
-            value={last4}
-            onChange={onLast4Change}
-            label={t.fourDigits}
-            className="mt-2.5 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]"
-          />
-          <div className="mt-2 px-0.5 text-[0.71875rem] text-[var(--color-brand-text-muted)]">{t.last4Help}</div>
-        </>
-      ) : null}
-      {mode === 'label' ? (
-        <>
-          <Input
-            value={label}
-            onChange={(e) => onLabelChange(e.target.value)}
-            maxLength={24} placeholder={t.tagPlaceholder} aria-label={t.label}
-            size="brand" className="mt-2.5 text-[0.9375rem] text-[var(--color-brand-text-primary)] text-start"
-          />
-          {last4 ? <div className="mt-2 px-0.5 text-[0.71875rem] text-[var(--color-brand-text-muted)]">{t.labelKeepsDigits}</div> : null}
-        </>
-      ) : null}
-    </div>
-  )
-}
 
 /**
  * The last four digits as four small tiles on one 52px row, typed through one hidden input (digits only, Arabic-Indic
@@ -119,6 +59,40 @@ export function Last4Tiles({ value, onChange, label, optional = false, className
         aria-label={typeof label === 'string' ? label : c.label}
         className="absolute inset-0 w-full cursor-text bg-transparent text-transparent caret-transparent outline-none"
       />
+    </label>
+  )
+}
+
+/**
+ * A typed field as one 52px row of a grouped list (Light touch): the field name, then the input at the end. The
+ * placeholder carries what an empty field means ("CIB ••1234" for a Name, "30,000" for a limit).
+ */
+export function InputRow({ label, value, onChange, placeholder, amountCurrency, maxLength = 40 }: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+  /** An amount in this currency: the app's AmountField (the NumberPad on native, the currency's decimals) instead of text. */
+  amountCurrency?: string
+  maxLength?: number
+}) {
+  const field = 'min-w-0 flex-1 bg-transparent text-end text-[0.9375rem] font-medium text-[var(--color-brand-text-primary)] outline-none placeholder:font-normal placeholder:text-[var(--color-brand-text-muted)]'
+  return (
+    <label className="flex min-h-[52px] items-center gap-3 px-4">
+      <span className="w-[112px] shrink-0 text-[0.84375rem] text-[var(--color-brand-text-secondary)]">{label}</span>
+      {amountCurrency !== undefined ? (
+        <AmountField bare value={value} onChange={onChange} currency={amountCurrency} placeholder={placeholder} aria-label={label}
+          className={cn(field, 'flex justify-end font-mono-numbers')} />
+      ) : (
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          maxLength={maxLength}
+          autoComplete="off"
+          className={field}
+        />
+      )}
     </label>
   )
 }
