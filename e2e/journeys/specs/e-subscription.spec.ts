@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- test code reads untyped store and PostgREST JSON */
 import type { Page } from '@playwright/test'
-import { expect, goto, knownBug, localWait, test, tile } from '../lib/fixtures'
+import { expect, goto, localWait, test, tile } from '../lib/fixtures'
 import { serverRows } from '../lib/server'
 import { addAccount, dialog, pickMethod, shown } from '../lib/ui'
 
@@ -73,7 +73,6 @@ test('E subscription add > mark paid > cancel > re-subscribe (light touch has no
 
   await test.step('the sheet lists the 190 charge under Last charges', async () => {
     const d = await openSub(page)
-    knownBug('LT-E1', 'Last charges shows "−0.00 EGP" for a 190 EGP Mark paid charge (SubscriptionDetailSheet.tsx:247 reads amountInBaseCurrency, which the Mark paid expense does not carry)')
     await expect(d).toContainText(/Last charges[^]*?−190(\.00)? EGP[^]*?Next charges/)
   })
 })

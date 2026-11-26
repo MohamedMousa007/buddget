@@ -268,7 +268,7 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
       youOwe: (p) => `You owe ${p}`,
       owesYou: (p) => `${p} owes you`,
       them: 'them',
-      they: 'They',
+      they: 'Someone',
       goldLine: (v, g, k) => `≈ ${v} today · ${g} a gram of ${k}k`,
       goldUnavailable: 'Today’s gold price isn’t in yet',
       goldCleared: 'Today’s gold price isn’t in yet, so the amount was cleared. Type it again.',

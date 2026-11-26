@@ -30,7 +30,8 @@ import { useSubsPageLtCopy } from '@/lib/i18n/subsPageLtCopy'
 import { buildRow } from '@/lib/subscriptions/subscriptionRows'
 import { SubscriptionStatusBadge } from './SubscriptionStatusBadge'
 import { convertCurrency, tryConvertCurrency } from '@/lib/utils/currency'
-import { formatFixed2 } from '@/lib/utils/formatters'
+import { formatFlex } from '@/lib/utils/formatters'
+import { expenseAmountInBase } from '@/lib/utils/calculations'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { BrandTile } from './BrandTile'
 import { SheetFrame } from './SheetFrame'
@@ -111,7 +112,7 @@ export function SubscriptionDetailSheet({
 
   const rate = cur !== s.base ? tryConvertCurrency(1, cur, s.base, s.rates) : null
   const conversion = rate != null && amount > 0
-    ? c.rate(`${formatFixed2(convertCurrency(amount, cur, s.base, s.rates))} ${s.base}`, cur, formatFixed2(rate), s.base)
+    ? c.rate(`${formatFlex(convertCurrency(amount, cur, s.base, s.rates))} ${s.base}`, cur, formatFlex(rate), s.base)
     : ''
 
   const save = () => {
@@ -140,9 +141,9 @@ export function SubscriptionDetailSheet({
     switch (row.chip.key) {
       case 'trialEnds': return { title: d.trial.title(sub.trialEnd ? shortDate(sub.trialEnd.slice(0, 10)) : ''), body: d.trial.body }
       case 'failed': return { title: d.failed.title(cycleText), body: d.failed.body }
-      case 'shared': return { title: d.shared.title(formatFixed2(sub.amount)), body: d.shared.body((sub.sharedWith ?? []).join(', '), formatFixed2(chargeAmount(sub))) }
-      case 'price': return { title: d.price.title(formatFixed2(row.priceChange?.to ?? chargeAmount(sub))), body: d.price.body(formatFixed2(chargeAmount(sub))) }
-      case 'planChanges': return { title: d.plan.title('', sub.pendingPlanFrom ? shortDate(sub.pendingPlanFrom.slice(0, 10)) : ''), body: d.plan.body(formatFixed2(sub.pendingAmount ?? chargeAmount(sub))) }
+      case 'shared': return { title: d.shared.title(formatFlex(sub.amount)), body: d.shared.body((sub.sharedWith ?? []).join(', '), formatFlex(chargeAmount(sub))) }
+      case 'price': return { title: d.price.title(formatFlex(row.priceChange?.to ?? chargeAmount(sub))), body: d.price.body(formatFlex(chargeAmount(sub))) }
+      case 'planChanges': return { title: d.plan.title('', sub.pendingPlanFrom ? shortDate(sub.pendingPlanFrom.slice(0, 10)) : ''), body: d.plan.body(formatFlex(sub.pendingAmount ?? chargeAmount(sub))) }
       default: return null
     }
   })()
@@ -163,7 +164,7 @@ export function SubscriptionDetailSheet({
     if (life === 'trial') return { label: ui.detail.keepAfterTrial, run: () => s.convertTrial(sub.id) }
     if (row.priceChange) {
       const to = row.priceChange.to
-      return { label: ui.detail.adopt(`${formatFixed2(to)} ${sub.currency}`), run: () => s.adopt(sub.id, to) }
+      return { label: ui.detail.adopt(`${formatFlex(to)} ${sub.currency}`), run: () => s.adopt(sub.id, to) }
     }
     if (sub.pendingPlanId) return { label: ui.detail.applyPlan, run: () => s.applyPlan(sub.id) }
     // Due today, in its grace days or overdue: the user can answer Buddgy's "did you pay?" here (HomeNudge opens this sheet).
@@ -244,8 +245,8 @@ export function SubscriptionDetailSheet({
             <div key={e.id} className="flex min-h-11 items-center gap-2 ps-4 pe-1.5 text-[0.84375rem]">
               <span className="flex-1 text-[var(--color-brand-text-secondary)]">{shortDate(e.date.slice(0, 10))}</span>
               <span dir="ltr" className="font-mono-numbers text-[var(--color-brand-text-primary)]">
-                −{formatFixed2(e.amountInBaseCurrency)} {s.base}
-                {e.currency !== s.base ? <span className="text-[var(--color-brand-text-muted)]"> · {formatFixed2(e.amount)} {e.currency}</span> : null}
+                −{formatFlex(expenseAmountInBase(e, s.base, s.rates, true))} {s.base}
+                {e.currency !== s.base ? <span className="text-[var(--color-brand-text-muted)]"> · {formatFlex(e.amount)} {e.currency}</span> : null}
               </span>
               <IconButton aria-label={ui.detail.unlink} size="sm" onClick={() => s.unlink(e.id)}>
                 <Unlink strokeWidth={1.75} />
@@ -259,7 +260,7 @@ export function SubscriptionDetailSheet({
             {upcoming.map((iso) => (
               <div key={iso} className="flex min-h-11 items-center justify-between px-4 text-[0.84375rem]">
                 <span className="text-[var(--color-brand-text-secondary)]">{shortDate(iso)}</span>
-                <span dir="ltr" className="font-mono-numbers text-[var(--color-brand-text-primary)]">−{formatFixed2(upcomingAmount(iso))} {sub.currency}</span>
+                <span dir="ltr" className="font-mono-numbers text-[var(--color-brand-text-primary)]">−{formatFlex(upcomingAmount(iso))} {sub.currency}</span>
               </div>
             ))}
           </SheetGroup>
@@ -270,7 +271,7 @@ export function SubscriptionDetailSheet({
             {history.map((h, i) => (
               <div key={h.from + h.amount} className="flex min-h-11 items-center justify-between px-4 text-[0.84375rem]">
                 <span className="text-[var(--color-brand-text-secondary)]">{i === 0 ? ui.detail.since(monthYear(h.from)) : ui.detail.before}</span>
-                <span dir="ltr" className="font-mono-numbers text-[var(--color-brand-text-primary)]">{formatFixed2(h.amount)} {sub.currency}</span>
+                <span dir="ltr" className="font-mono-numbers text-[var(--color-brand-text-primary)]">{formatFlex(h.amount)} {sub.currency}</span>
               </div>
             ))}
           </SheetGroup>
