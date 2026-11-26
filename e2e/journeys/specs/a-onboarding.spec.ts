@@ -196,7 +196,7 @@ test('A4 account > income > create/apply budget > expense > Flow and budget cons
     await d.getByRole('textbox', { name: 'Name' }).fill('QA Payroll')
     // Light touch: the day sits behind a "Payday › 26th of each month" row (day picker + Done); the account behind "Received in".
     await d.getByRole('button', { name: /^Payday/ }).click()
-    const day = dialog(page, 'Payday')
+    const day = dialog(page, /^Payday$/)
     await day.getByRole('radio', { name: '25', exact: true }).click()
     await day.getByRole('button', { name: 'Done' }).click()
     await expect(day).toBeHidden()
@@ -246,8 +246,9 @@ test('A4 account > income > create/apply budget > expense > Flow and budget cons
   await test.step('budget shows the 300 consumed', async () => {
     await goto(page, '/budget-setup')
     await page.getByRole('radio', { name: 'Month' }).click()
-    const txt = (await page.locator('main').textContent()) ?? ''
-    const m = txt.match(/E£ ([\d,]+) left\s*of E£ ([\d,]+)/)
+    // Light touch: "Left to spend · Everyday 1,697 EGP" next to "Planned 1,997 EGP".
+    const txt = ((await page.locator('main').textContent()) ?? '').replace(/\s+/g, ' ')
+    const m = txt.match(/Left to spend · Everyday ?([\d,]+) ?EGP ?Planned ?([\d,]+) ?EGP/)
     expect(m, 'Everyday shows left of planned').not.toBeNull()
     const n = (s: string) => Number(s.replace(/,/g, ''))
     expect(n(m![2]) - n(m![1])).toBe(300)

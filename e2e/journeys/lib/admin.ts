@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- test code reads untyped store and PostgREST JSON */
+import { appendFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { env } from './env'
 
 /**
@@ -16,8 +18,15 @@ function guard(email: string) {
   if (!email.endsWith(QA_DOMAIN) || !email.startsWith('qa-e2e-')) throw new Error(`refusing non-synthetic email ${email}`)
 }
 
+/**
+ * Every synthetic email this checkout makes is written to a git-ignored ledger, so `cleanup.ts --mine` deletes only this
+ * runner's users. Parallel sessions share the live project and its qa-e2e-* namespace; `--all` would delete theirs too.
+ */
+export const USER_LEDGER = process.env.QA_USER_LEDGER ?? resolve(__dirname, '../../.qa-users.local.txt')
 export function qaEmail(tag: string): string {
-  return `qa-e2e-${tag}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}${QA_DOMAIN}`
+  const email = `qa-e2e-${tag}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}${QA_DOMAIN}`
+  try { appendFileSync(USER_LEDGER, `${email}\n`) } catch { /* the ledger is a convenience; the fixture still deletes its user */ }
+  return email
 }
 
 async function call(path: string, init: RequestInit = {}) {

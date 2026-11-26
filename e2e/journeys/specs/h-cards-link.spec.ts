@@ -5,20 +5,16 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect, goto, localWait, test } from '../lib/fixtures'
 import { serverRows } from '../lib/server'
-import { addAccount, addExpense, blur, dialog } from '../lib/ui'
+import { addAccount, addExpense, blur, dialog, openAccount } from '../lib/ui'
 
-const cardSheet = (page: Page) => page.getByRole('dialog').filter({ has: page.getByRole('button', { name: 'Save method' }) }).last()
-const linkedField = (sheet: Locator) => sheet.getByRole('button', { name: /^Linked account/ })
+/** Light touch card sheet: "Bank or wallet" provider row, "Uses <account>" link row (No account when standalone). */
+const cardSheet = (page: Page) => page.getByRole('dialog').filter({ has: page.getByRole('button', { name: /^Uses / }) }).last()
+const linkedField = (sheet: Locator) => sheet.getByRole('button', { name: /^Uses / })
 
-async function openAccount(page: Page, name: RegExp) {
-  await goto(page, '/accounts')
-  await page.getByRole('button', { name }).first().click()
-  return page.getByRole('dialog').filter({ has: page.getByRole('button', { name: 'Update' }) }).last()
-}
-
-async function switchProvider(page: Page, sheet: Locator, current: RegExp, next: RegExp) {
-  await sheet.getByRole('button', { name: current }).filter({ hasNotText: 'Linked account' }).first().click()
+async function switchProvider(page: Page, sheet: Locator, search: string, next: RegExp) {
+  await sheet.getByRole('button', { name: /^Bank or wallet/ }).click()
   const pick = dialog(page, 'Choose provider')
+  await pick.getByRole('textbox').first().fill(search)
   await pick.getByRole('radio', { name: next }).first().click()
   await expect(pick).toBeHidden()
 }
@@ -26,7 +22,7 @@ async function switchProvider(page: Page, sheet: Locator, current: RegExp, next:
 const balanceOf = async (page: Page, name: RegExp) => {
   await goto(page, '/accounts')
   const t = await page.getByRole('button', { name }).first().textContent()
-  return Number((t ?? '').match(/[\d,]+\.\d\d/)?.[0].replace(/,/g, ''))
+  return Number((t ?? '').match(/(-?[\d,]+(?:\.\d+)?) EGP/)?.[1].replace(/,/g, ''))
 }
 
 test('H1 card added from an account: linked to it, provider switch re-links, lands under the right account; edit moves it', async ({ page, user }) => {
@@ -40,13 +36,13 @@ test('H1 card added from an account: linked to it, provider switch re-links, lan
     await detail.getByRole('button', { name: 'Add a card' }).click()
     const sheet = cardSheet(page)
     await expect(linkedField(sheet)).toContainText('QNB Alahli')
-    await switchProvider(page, sheet, /QNB Alahli/, /^Banque Misr/)
-    await expect(linkedField(sheet)).toContainText('None (standalone)')
-    await switchProvider(page, sheet, /Banque Misr/, /^CIB/)
+    await switchProvider(page, sheet, 'Banque Misr', /^Banque Misr/)
+    await expect(linkedField(sheet)).toContainText('No account')
+    await switchProvider(page, sheet, 'CIB', /^CIB/)
     await expect(linkedField(sheet)).toContainText('CIB')
-    await sheet.getByRole('textbox', { name: 'Last digits' }).fill('4321')
+    await sheet.getByRole('textbox', { name: 'Last 4 digits' }).fill('4321')
     await blur(page)
-    await sheet.getByRole('button', { name: 'Save method' }).click()
+    await sheet.getByRole('button', { name: 'Add card', exact: true }).click()
     await expect(sheet).toBeHidden()
     const c = await localWait(page, (s) => s.paymentMethods.find((m: any) => m.type === 'debit_card' && m.parentId === cib.id && m.last4 === '4321'))
     await serverRows('payment_methods', user.id, `id=eq.${c.id}`, (r: any[]) => r[0]?.parent_id === cib.id && r[0]?.type === 'debit_card')
@@ -54,12 +50,13 @@ test('H1 card added from an account: linked to it, provider switch re-links, lan
   })
 
   await test.step('the card sits in CIB, not in QNB', async () => {
+    // Light touch: an account sheet lists its cards as rows named "<account> <last 4>".
     const cibSheet = await openAccount(page, /^CIB/)
-    await expect(cibSheet.getByRole('button', { name: 'Manage' })).toBeVisible()
+    await expect(cibSheet.getByRole('button', { name: 'CIB 4321' })).toBeVisible()
     await page.keyboard.press('Escape')
     const qnbSheet = await openAccount(page, /QNB Alahli/)
     await expect(qnbSheet.getByRole('button', { name: 'Add a card' })).toBeVisible()
-    await expect(qnbSheet.getByRole('button', { name: 'Manage' })).toHaveCount(0)
+    await expect(qnbSheet.getByRole('button', { name: /4321$/ })).toHaveCount(0)
   })
 
   await test.step('spend 200 on the card: CIB drops, QNB does not', async () => {
@@ -72,15 +69,18 @@ test('H1 card added from an account: linked to it, provider switch re-links, lan
 
   await test.step('edit the link to QNB: a used debit card asks first, then its spending follows it', async () => {
     const cibSheet = await openAccount(page, /^CIB/)
-    await cibSheet.getByRole('button', { name: 'Manage' }).first().click()
+    await cibSheet.getByRole('button', { name: 'CIB 4321' }).click()
+    // The card row opens the card's own sheet; Edit sits in its More actions menu.
+    const cardView = page.getByRole('dialog').filter({ hasText: '••4321' }).last()
+    await cardView.getByRole('button', { name: 'More actions' }).click()
     await page.getByRole('menuitem', { name: 'Edit' }).click()
     const sheet = cardSheet(page)
     await expect(linkedField(sheet)).toContainText('CIB')
     await linkedField(sheet).click()
-    await sheet.getByRole('option', { name: /QNB Alahli/ }).click()
+    await dialog(page, /^Uses$/).getByRole('radio', { name: /^QNB Alahli/ }).click()
     await expect(linkedField(sheet)).toContainText('QNB Alahli')
     await blur(page)
-    await sheet.getByRole('button', { name: 'Save method' }).click()
+    await sheet.getByRole('button', { name: /^Save( changes| method| card)?$/ }).click()
     const ask = page.getByRole('alertdialog').or(page.getByRole('dialog', { name: 'Move this card?' })).last()
     await expect(ask).toContainText('Move this card?')
     await expect(ask).toContainText('QNB Alahli')

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- test code reads untyped store and PostgREST JSON */
 import type { Page } from '@playwright/test'
-import { expect, goto, localWait, test, tile } from '../lib/fixtures'
+import { expect, goto, knownBug, localWait, test, tile } from '../lib/fixtures'
 import { serverRows } from '../lib/server'
 import { addAccount, dialog, pickMethod, shown } from '../lib/ui'
 
@@ -47,30 +47,33 @@ test('E subscription add > mark paid > pause > resume > cancel', async ({ page, 
     return e[0]
   })
 
-  await test.step('pause -> paused locally and on the server, no charges listed', async () => {
+  // Light touch has no pause: Buddgy sets the status from bank messages (SubscriptionDetailSheet header note). The
+  // lifecycle left to the user is cancel, then Re-subscribe from Ended.
+  await test.step('cancel -> cancelled, past charge kept', async () => {
     const d = await openSub(page)
-    await d.getByRole('button', { name: 'Pause' }).click()
-    await expect(d).toContainText('No charges while paused')
-    await localWait(page, (s) => s.subscriptions.find((x: any) => x.id === sub.id && x.status === 'paused'))
-    await serverRows('subscriptions', user.id, `id=eq.${sub.id}`, (r: any[]) => r[0]?.status === 'paused' && !!r[0].paused_at)
+    await d.getByRole('button', { name: 'Cancel subscription' }).click()
+    const confirm = page.getByRole('dialog').filter({ has: page.getByRole('button', { name: 'Cancel subscription' }) }).last().getByRole('button', { name: 'Cancel subscription' })
+    if (await confirm.isVisible({ timeout: 3000 }).catch(() => false)) await confirm.click()
+    await localWait(page, (s) => s.subscriptions.find((x: any) => x.id === sub.id && x.status === 'cancelled'))
+    await serverRows('subscriptions', user.id, `id=eq.${sub.id}`, (r: any[]) => r[0]?.status === 'cancelled')
+    await serverRows('expenses', user.id, `id=eq.${exp.id}&deleted_at=is.null`, (r) => r.length === 1)
   })
 
-  await test.step('resume -> active again, still one charge', async () => {
+  await test.step('Re-subscribe from Ended -> active again, still one charge', async () => {
+    await goto(page, '/subscriptions')
+    await page.getByRole('radio', { name: 'Ended' }).click()
+    await page.getByRole('button', { name: /^Netflix/ }).first().click()
     const d = dialog(page, /^Netflix/)
-    await d.getByRole('button', { name: 'Resume' }).first().click()
+    await d.getByRole('button', { name: 'Re-subscribe' }).click()
     await localWait(page, (s) => s.subscriptions.find((x: any) => x.id === sub.id && x.status === 'active'))
     await serverRows('subscriptions', user.id, `id=eq.${sub.id}`, (r: any[]) => r[0]?.status === 'active')
     const st = await localWait(page, (s) => s)
     expect(st.expenses.filter((e: any) => e.linkedSubscriptionId === sub.id && !e.deletedAt)).toHaveLength(1)
   })
 
-  await test.step('cancel -> cancelled, past charge kept', async () => {
-    const d = dialog(page, /^Netflix/)
-    await d.getByRole('button', { name: 'Cancel subscription' }).click()
-    const confirm = page.getByRole('button', { name: /^(Cancel subscription|Yes, cancel|Confirm|Cancel it)/ }).last()
-    if (await confirm.isVisible({ timeout: 3000 }).catch(() => false)) await confirm.click()
-    await localWait(page, (s) => s.subscriptions.find((x: any) => x.id === sub.id && x.status === 'cancelled'))
-    await serverRows('subscriptions', user.id, `id=eq.${sub.id}`, (r: any[]) => r[0]?.status === 'cancelled')
-    await serverRows('expenses', user.id, `id=eq.${exp.id}&deleted_at=is.null`, (r) => r.length === 1)
+  await test.step('the sheet lists the 190 charge under Last charges', async () => {
+    const d = await openSub(page)
+    knownBug('LT-E1', 'Last charges shows "−0.00 EGP" for a 190 EGP Mark paid charge (SubscriptionDetailSheet.tsx:247 reads amountInBaseCurrency, which the Mark paid expense does not carry)')
+    await expect(d).toContainText(/Last charges[^]*?−190(\.00)? EGP[^]*?Next charges/)
   })
 })

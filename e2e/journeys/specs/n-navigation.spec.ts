@@ -89,6 +89,7 @@ test('N3 data survives reload and sign-out/sign-in @desktop', async ({ page, use
   expect(nw).toBe(1880)
 
   await test.step('reload', async () => {
+    await goto(page, '/flow')
     await page.reload({ waitUntil: 'domcontentloaded' })
     await expect(page.locator('main')).toContainText('QA N persist')
     expect(await netWorth(page)).toBe(nw)

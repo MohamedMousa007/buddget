@@ -2,12 +2,16 @@
  * Captures the running app next to every approved light-touch mockup screen.
  *
  *   node scripts/qa/light-touch-capture.mjs [name-filter ...]
+ *   CAPTURE_LANG=ar node scripts/qa/light-touch-capture.mjs [name-filter ...]   Arabic (RTL) pass
  *
  * Needs the dev server from .claude/launch.json "buddget-qa-local" (auth bypass, empty Supabase env) on
  * BASE_URL (default http://localhost:3001). Writes:
  *   docs/mockups/light-touch/app-screens/<name>.png   the app at 390x844 @2x
  *   docs/mockups/light-touch/compare/<name>.png       mockup left, app right, same height
  *   docs/mockups/light-touch/compare/checks.json      computed-style checks + skipped screens with reasons
+ * With CAPTURE_LANG=ar the same screens are reached with the English tap labels, then switched to Arabic (`__qa.lang`)
+ * right before the shot; they go to app-screens/ar/ and compare/ar/ (the mockup stays English), so the RTL layout can be
+ * checked against the approved screen mirrored. checks.json there also records `dir` and horizontal overflow.
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -18,8 +22,9 @@ import { launch, phoneContext, seededState, go, tap, settle } from './light-touc
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const DIR = path.join(ROOT, 'docs/mockups/light-touch')
 const MOCK = path.join(DIR, 'screens')
-const APP = path.join(DIR, 'app-screens')
-const CMP = path.join(DIR, 'compare')
+const LANG = process.env.CAPTURE_LANG === 'ar' ? 'ar' : 'en'
+const APP = path.join(DIR, 'app-screens', ...(LANG === 'ar' ? ['ar'] : []))
+const CMP = path.join(DIR, 'compare', ...(LANG === 'ar' ? ['ar'] : []))
 
 /**
  * Data variants: each screen picks one; each is seeded once into its own storage state.
@@ -253,6 +258,8 @@ function checksInPage() {
     scrollWidth: sw,
     viewportWidth: vw,
     sheetOpen: Boolean(document.querySelector('[role=dialog]')),
+    dir: document.documentElement.dir || 'ltr',
+    lang: document.documentElement.lang,
   }
 }
 
@@ -268,7 +275,7 @@ async function composite(name) {
   const rw = (await sharp(right).metadata()).width
   const GAP = 40, TOP = 64
   const label = (x, text) => `<text x="${x}" y="44" font-family="Helvetica, Arial" font-size="30" font-weight="700" fill="#333">${text}</text>`
-  const svg = Buffer.from(`<svg width="${lw + GAP + rw}" height="${TOP}" xmlns="http://www.w3.org/2000/svg">${label(8, `${name} · mockup`)}${label(lw + GAP + 8, 'app')}</svg>`)
+  const svg = Buffer.from(`<svg width="${lw + GAP + rw}" height="${TOP}" xmlns="http://www.w3.org/2000/svg">${label(8, `${name} · mockup`)}${label(lw + GAP + 8, LANG === 'ar' ? 'app · Arabic (RTL)' : 'app')}</svg>`)
   await sharp({ create: { width: lw + GAP + rw, height: H + TOP, channels: 3, background: '#e6e6e6' } })
     .composite([{ input: svg, left: 0, top: 0 }, { input: left, left: 0, top: TOP }, { input: right, left: lw + GAP, top: TOP }])
     .png()
@@ -315,6 +322,10 @@ async function main() {
             e.message = `step ${i + 1}: ${e.message}`
             throw e
           }
+        }
+        if (LANG === 'ar') {
+          await page.evaluate(() => window.__qa.lang('ar'))
+          await page.waitForFunction(() => document.documentElement.dir === 'rtl', null, { timeout: 10_000 })
         }
         await settle(page, 1000)
         await page.screenshot({ path: path.join(APP, `${s.name}.png`) })

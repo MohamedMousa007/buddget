@@ -10,14 +10,9 @@ import { resolve } from 'node:path'
 import type { Page } from '@playwright/test'
 import { expect, goto, localState, localWait, money, test, tile, moneyIn } from '../../lib/fixtures'
 import { serverRows } from '../../lib/server'
-import { addExpense, blur, chooseMethod, dialog, shown } from '../../lib/ui'
+import { addExpense, blur, chooseMethod, dialog, openAccount, shown } from '../../lib/ui'
 import { bank, localMethod, seed } from './seed'
 
-async function openAccount(page: Page, name: RegExp) {
-  await goto(page, '/accounts')
-  await page.getByRole('button', { name }).first().click()
-  return page.getByRole('dialog').filter({ has: page.getByRole('button', { name: 'Update' }) }).last()
-}
 /** The hero's net worth: its value and the "Net worth" label share one paragraph. */
 async function netWorth(page: Page): Promise<number> {
   return money(await page.locator('main p').filter({ hasText: /Net worth\s*$/ }).first().textContent())
@@ -75,17 +70,19 @@ test('W3 a repayment someone makes you credits the account, Flow marks it Not in
   await localMethod(page, qnb.id)
   await goto(page, '/flow')
   const inBefore = await moneyIn(page)
-  expect(moneyIn).toBe(0)
+  expect(inBefore).toBe(0)
 
   await test.step('Log receipt for the QA W3 lend: 200 into QNB', async () => {
     await goto(page, '/debts')
-    await page.getByRole('button', { name: 'Log receipt from QA W3 lend' }).click()
-    const d = dialog(page, 'Record money received')
-    await expect(d).toContainText('Owed to you')
+    // Light touch: the debt row opens its actions; "Record money back" is the receipt sheet.
+    await page.getByRole('button', { name: /^QA W3 lend/ }).first().click()
+    await dialog(page, 'QA W3 lend').getByRole('radio', { name: 'Record money back' }).click()
+    const d = dialog(page, /^Record money (received|back)$/)
+    await expect(d).toContainText(/Omar/)
     await d.getByRole('textbox', { name: 'Amount' }).fill('200')
-    await d.getByRole('button', { name: 'QNB Alahli', exact: true }).first().click()
+    await chooseMethod(page, d, 'QNB Alahli')
     await blur(page)
-    await d.getByRole('button', { name: /^(Mark repaid|Receive [\d,]+ EGP)$/ }).click()
+    await d.getByRole('button', { name: /^(Mark repaid|Record|Receive [\d,]+ EGP|Save)$/ }).click()
     await expect(d).toBeHidden()
   })
 
@@ -123,19 +120,23 @@ test('W5 add money to a goal says what is left or over the target and never caps
   await localMethod(page, qnb.id)
   await goto(page, '/goals')
   await page.getByRole('button', { name: 'Start from scratch' }).click()
-  const g = dialog(page, 'Add a goal')
+  const g = dialog(page, 'New goal')
   await g.getByRole('button', { name: 'Vacation' }).click()
-  await g.getByRole('textbox', { name: 'Name' }).fill('QA W5 Trip')
+  await g.getByRole('textbox', { name: 'Goal name' }).fill('QA W5 Trip')
   await g.getByRole('textbox', { name: 'Target Amount' }).fill('1000')
   await blur(page)
-  await g.getByRole('button', { name: 'Next: fund it' }).click()
-  await g.getByRole('radio', { name: /^I will add money myself/ }).click()
-  await g.getByRole('button', { name: 'Start my goal' }).click()
+  await g.getByRole('button', { name: /^Fund it/ }).click()
+  const fundIt = dialog(page, 'Fund it')
+  await fundIt.getByRole('radio', { name: /add money myself/ }).click()
+  await fundIt.getByRole('button', { name: 'Done' }).click()
+  await g.getByRole('button', { name: 'Create goal' }).click()
   await expect(g).toBeHidden()
   const goal = await localWait(page, (s) => s.goals.find((x: any) => x.name === 'QA W5 Trip'))
 
-  await page.getByRole('button', { name: /Add money/ }).first().click()
-  const d = dialog(page, 'Add money to QA W5 Trip')
+  // Light touch: a goal row opens its detail; Add money is there.
+  await page.getByRole('button', { name: /^QA W5 Trip/ }).first().click()
+  await page.getByRole('button', { name: 'Add money', exact: true }).click()
+  const d = page.getByRole('dialog').filter({ has: page.getByRole('textbox', { name: 'Amount' }) }).last()
   const amount = d.getByRole('textbox', { name: 'Amount' })
   const hint = d.getByRole('status')
   await amount.fill('400')
@@ -145,13 +146,13 @@ test('W5 add money to a goal says what is left or over the target and never caps
   await amount.fill('1500')
   await expect(hint).toHaveText(/\+.*500 over target/)
   await blur(page)
-  await d.getByRole('button', { name: 'Add money', exact: true }).click()
+  await d.getByRole('button', { name: /^(Add to goal|Add money)$/ }).click()
   await expect(d).toBeHidden()
   const pocketId = goal.linkedSavingsAccountIds[0]
   await serverRows('savings_accounts', user.id, `id=eq.${pocketId}`, (r: any[]) => Number(r[0]?.current_balance) === 1500)
 })
 
-test('W6 the account card carousel details follow the selected card', async ({ page, user }) => {
+test('W6 the account sheet lists each card; each card opens its own details', async ({ page, user }) => {
   const [qnb] = await seed(page, user.id, 'payment_methods', [bank('QNB Alahli', 4000)])
   await seed(page, user.id, 'payment_methods', [
     { name: 'QNB Alahli', type: 'debit_card', currency: 'EGP', color: '#1f6feb', parent_id: qnb.id, last4: '1111' },
@@ -159,16 +160,18 @@ test('W6 the account card carousel details follow the selected card', async ({ p
   ])
   await localWait(page, (s) => s.paymentMethods.filter((m: any) => m.parentId === qnb.id).length === 2)
   const d = await openAccount(page, /QNB Alahli/)
-  const carousel = d.getByRole('group').filter({ hasNot: page.getByRole('radio') }).first()
-  const details = d.locator('[aria-live="polite"]').first()
-  const first = (await details.textContent()) ?? ''
-  expect(first).toMatch(/Debit card · •• (1111|2222)/)
-  await expect(details).toContainText('Uses the QNB Alahli balance')
-  await carousel.focus()
-  await carousel.press('ArrowRight')
-  const other = first.includes('1111') ? '2222' : '1111'
-  await expect(details).toContainText(`•• ${other}`)
-  await expect(d.getByText('Spent with QNB Alahli')).toBeVisible()
+  // Light touch replaced the in-sheet carousel with one row per card ("Cards · 2"); a row opens that card's sheet.
+  await expect(d.getByRole('heading', { name: 'Cards · 2' })).toBeVisible()
+  for (const [mine, other] of [['1111', '2222'], ['2222', '1111']]) {
+    await d.getByRole('button', { name: `QNB Alahli ${mine}` }).click()
+    const card = page.getByRole('dialog').filter({ hasText: `••${mine}` }).last()
+    await expect(card).toContainText(`Debit · ••${mine}`)
+    await expect(card).not.toContainText(`••${other}`)
+    await expect(card).toContainText(/Uses\s*QNB Alahli/)
+    await expect(card.getByRole('heading', { name: /^Spent with QNB Alahli/ })).toBeVisible()
+    await card.getByRole('button', { name: 'Close' }).click()
+    await expect(card).toBeHidden()
+  }
 })
 
 test('W7 default payment method: Cash until one is chosen, then the chosen account; the Cash row sets itself as default', async ({ page, user }) => {
@@ -214,17 +217,17 @@ test('W8 lending from a tracked account takes the money out of it; the repayment
   await test.step('New borrow, Owed to me, 5,000 given via CIB: the sheet asks whether the money left CIB, Yes by default', async () => {
     await goto(page, '/debts')
     await page.getByRole('button', { name: /^(Add a debt|New debt)$/ }).first().click()
-    await dialog(page, 'Add debt').getByRole('button', { name: /^Borrow / }).click()
+    await dialog(page, 'Add a debt').getByRole('radio', { name: /^Borrowed money/ }).click()
     const d = dialog(page, 'New borrow')
     await d.getByRole('radio', { name: 'Owed to me' }).click()
-    await d.getByRole('textbox', { name: 'e.g. Ahmed' }).fill('Omar')
-    await d.getByRole('textbox', { name: 'e.g. Rent help' }).fill('QA W8 lend')
+    await d.getByRole('textbox', { name: 'Person', exact: true }).fill('Omar')
+    await d.getByRole('textbox', { name: 'For', exact: true }).fill('QA W8 lend')
     await d.getByRole('textbox', { name: 'Amount' }).fill('5000')
     await blur(page)
     await chooseMethod(page, d, 'CIB')
-    const ask = d.getByRole('radiogroup', { name: 'Did this money leave CIB now?' })
-    await expect(ask.getByRole('radio', { name: 'Yes' })).toBeChecked()
-    await expect(d).toContainText('It is not counted as spending.')
+    // Light touch: the question is a "Left CIB now" switch, on by default, with the balance effect as its hint.
+    await expect(d.getByRole('switch', { name: /^Left CIB now/ })).toBeChecked()
+    await expect(d).toContainText('Takes 5,000 from the balance')
     await shot(d, 'w8-add-debt-left-cib-question')
     await d.getByRole('button', { name: 'Add borrow' }).click()
     await expect(d).toBeHidden()
@@ -248,12 +251,14 @@ test('W8 lending from a tracked account takes the money out of it; the repayment
 
   await test.step('Omar repays 5,000 into CIB: the account and net worth are back where they started', async () => {
     await goto(page, '/debts')
-    await page.getByRole('button', { name: 'Log receipt from QA W8 lend' }).click()
-    const d = dialog(page, 'Record money received')
+    // Light touch: the debt row opens its actions; "Record money back" is the receipt sheet.
+    await page.getByRole('button', { name: /^QA W8 lend/ }).first().click()
+    await dialog(page, 'QA W8 lend').getByRole('radio', { name: 'Record money back' }).click()
+    const d = dialog(page, /^Record money (received|back)$/)
     await d.getByRole('textbox', { name: 'Amount' }).fill('5000')
     await chooseMethod(page, d, 'CIB')
     await blur(page)
-    await d.getByRole('button', { name: /^(Mark repaid|Receive [\d,]+ EGP)$/ }).click()
+    await d.getByRole('button', { name: /^(Mark repaid|Record|Receive [\d,]+ EGP|Save)$/ }).click()
     await expect(d).toBeHidden()
     await goto(page, '/accounts')
     await expect(page.getByRole('button', { name: /^CIB/ }).first()).toContainText(shown('20,000'))
@@ -265,11 +270,11 @@ test('W8 lending from a tracked account takes the money out of it; the repayment
 async function openBorrow(page: Page, o: { lend?: boolean; person: string; what: string; amount: number }) {
   await goto(page, '/debts')
   await page.getByRole('button', { name: /^(Add a debt|New debt)$/ }).first().click()
-  await dialog(page, 'Add debt').getByRole('button', { name: /^Borrow / }).click()
+  await dialog(page, 'Add a debt').getByRole('radio', { name: /^Borrowed money/ }).click()
   const d = dialog(page, 'New borrow')
   if (o.lend) await d.getByRole('radio', { name: 'Owed to me' }).click()
-  await d.getByRole('textbox', { name: 'e.g. Ahmed' }).fill(o.person)
-  await d.getByRole('textbox', { name: 'e.g. Rent help' }).fill(o.what)
+  await d.getByRole('textbox', { name: 'Person', exact: true }).fill(o.person)
+  await d.getByRole('textbox', { name: 'For', exact: true }).fill(o.what)
   await d.getByRole('textbox', { name: 'Amount' }).fill(String(o.amount))
   await blur(page)
   await chooseMethod(page, d, 'CIB')
@@ -290,8 +295,11 @@ test('W9 borrowed money that is already a bank deposit: in the CIB balance once,
   // A credit is linked only on the user's own Yes: the switch starts off.
   const link = d.getByRole('switch', { name: /^That.s the deposit on/ })
   await expect(link).not.toBeChecked()
+  await expect(d.getByRole('switch', { name: /^Arrived in CIB now/ })).toBeVisible()
   await link.click()
-  await expect(d).toContainText('Already added to CIB. It stops counting as income.')
+  // Linked: the money is already in CIB, so the sheet stops offering to add it again.
+  await expect(link).toBeChecked()
+  await expect(d.getByRole('switch', { name: /^Arrived in CIB now/ })).toHaveCount(0)
   await d.getByRole('button', { name: 'Add borrow' }).click()
   await expect(d).toBeHidden()
   const debt = await localWait(page, (s) => s.debts.find((x: any) => x.name === 'QA W9 borrow'))
@@ -313,7 +321,7 @@ async function lendThenLateRow(page: Page, userId: string) {
   const [cib] = await seed(page, userId, 'payment_methods', [bank('CIB', 20000, { opening_at: hourAgo() })])
   await localMethod(page, cib.id)
   const d = await openBorrow(page, { lend: true, person: 'Omar', what: 'QA late lend', amount: 5000 })
-  await expect(d.getByRole('radiogroup', { name: 'Did this money leave CIB now?' }).getByRole('radio', { name: 'Yes' })).toBeChecked()
+  await expect(d.getByRole('switch', { name: /^Left CIB now/ })).toBeChecked()
   await d.getByRole('button', { name: 'Add borrow' }).click()
   await expect(d).toBeHidden()
   const debt = await localWait(page, (s) => s.debts.find((x: any) => x.name === 'QA late lend'))

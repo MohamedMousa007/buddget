@@ -25,8 +25,8 @@ export async function withdrawFor(page: Page, sheet: Locator, purpose: RegExp) {
 }
 
 /** Payment-method carousel: walk it with the keyboard (its accessible path) until the active card matches, then Enter. */
-export async function pickMethod(page: Page, name: RegExp, nth = 0) {
-  const sheet = dialog(page, 'Payment methods')
+export async function pickMethod(page: Page, name: RegExp, nth = 0, title: string | RegExp = /^(Payment methods|طرق الدفع)$/) {
+  const sheet = dialog(page, title)
   await sheet.waitFor()
   const group = sheet.getByRole('group').first()
   await group.focus()
@@ -43,11 +43,16 @@ export async function pickMethod(page: Page, name: RegExp, nth = 0) {
   throw new Error(`payment method ${name} not found in carousel`)
 }
 
-/** A sheet's account or method: its chip when the sheet lists chips, else the method field that opens the carousel. */
+/**
+ * A sheet's account or method: its chip when the sheet lists chips, else (light touch) the method field ("Paid from",
+ * "Received in", "Paid with", "Into", "From") that opens the carousel.
+ */
 export async function chooseMethod(page: Page, sheet: Locator, name: string) {
   const chip = sheet.getByRole('button', { name, exact: true })
   if (await chip.count()) return chip.first().click()
-  await sheet.getByRole('button', { name: /EGP$/ }).filter({ hasNotText: 'E£' }).last().click()
+  const field = sheet.getByRole('button', { name: /^(Paid from|Received in|Paid with|Into|From)\b/ }).first()
+  if (((await field.getAttribute('aria-label')) ?? '').endsWith(`: ${name}`)) return
+  await field.click()
   await pickMethod(page, new RegExp(`^${name}`))
 }
 
@@ -70,10 +75,13 @@ export async function addExpense(page: Page, o: { amount: number; description: s
   await blur(page)
   await d.getByRole('button', { name: 'Save expense' }).click()
   await expect(d).toBeHidden()
-  // The first expense paid with Cash asks once how much cash the user has (S1 covers answering it).
-  const ask = dialog(page, 'How much cash do you have right now?')
-  if (await ask.isVisible({ timeout: 1500 }).catch(() => false)) {
-    await ask.getByRole('button', { name: 'Not now' }).click()
+  // The first expense paid with Cash asks once how much cash the user has (S1 covers answering it). Light touch: the
+  // "Cash on hand · Counted today" sheet, which has no "Not now"; closing it is the skip.
+  const ask = dialog(page, /^(How much cash do you have right now\?|Cash on hand)$/)
+  if (await ask.isVisible({ timeout: 3000 }).catch(() => false)) {
+    const notNow = ask.getByRole('button', { name: 'Not now' })
+    if (await notNow.count()) await notNow.click()
+    else await ask.getByRole('button', { name: 'Close' }).first().click()
     await expect(ask).toBeHidden()
   }
 }
@@ -204,4 +212,22 @@ export async function blur(page: Page) {
 export function shown(amount: string): RegExp {
   const esc = amount.replace(/\.00$/, '').replace(/[.,]/g, (c) => `\\${c}`)
   return new RegExp(`(?<![\\d,.])${esc}(?![\\d]|[.,]\\d)`)
+}
+
+/**
+ * Light touch: a bank row on Accounts opens its provider page ("Total here"); the account row there opens the account
+ * sheet (balance, Cash out, Set aside, cards, Recent). Returns that sheet. A Cash row opens its sheet directly.
+ */
+export async function openAccount(page: Page, name: RegExp | string) {
+  const by = typeof name === 'string' ? { name, exact: true } : { name }
+  await page.goto('/accounts', { waitUntil: 'domcontentloaded' })
+  await page.getByRole('button', by).first().click({ timeout: 60_000 })
+  // The account sheet: its balance is a "Balance …, tap the amount to change it" button (Cash has no Cash out).
+  const sheet = page.getByRole('dialog').filter({ has: page.getByRole('button', { name: /^Balance / }) }).last()
+  // A bank or wallet row opens its provider page first; a Cash row opens its sheet straight away.
+  const provider = page.locator('main').getByText('Total here', { exact: true })
+  await expect(provider.or(sheet).first()).toBeVisible()
+  if (await provider.isVisible()) await page.locator('main').getByRole('button', by).last().click()
+  await sheet.waitFor()
+  return sheet
 }

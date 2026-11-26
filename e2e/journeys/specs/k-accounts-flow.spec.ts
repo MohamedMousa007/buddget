@@ -5,13 +5,7 @@
 import type { Page } from '@playwright/test'
 import { expect, goto, localWait, test } from '../lib/fixtures'
 import { serverRows } from '../lib/server'
-import { addAccount, addExpense, blur, dialog, shown } from '../lib/ui'
-
-async function openAccount(page: Page, name: RegExp | string) {
-  await goto(page, '/accounts')
-  await page.getByRole('button', typeof name === 'string' ? { name, exact: true } : { name }).first().click()
-  return page.getByRole('dialog').filter({ has: page.getByRole('button', { name: 'Update' }) }).last()
-}
+import { addAccount, addExpense, blur, dialog, shown, openAccount } from '../lib/ui'
 
 test('K1 Flow hides own-account moves with no "Not counted" chip; the account Recent row opens the expense editor', async ({ page, user }) => {
   await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: 5000 })
@@ -20,10 +14,10 @@ test('K1 Flow hides own-account moves with no "Not counted" chip; the account Re
   await test.step('cash out 500 from QNB (an own-account move) and spend 120 on QNB', async () => {
     const detail = await openAccount(page, /QNB Alahli/)
     await detail.getByRole('button', { name: 'Cash out' }).click()
-    const move = page.getByRole('dialog').filter({ has: page.getByRole('button', { name: /^Withdraw / }) }).last()
-    await move.getByRole('textbox', { name: 'Amount' }).fill('500')
+    const move = dialog(page, 'Cash out')
+    await move.getByRole('textbox', { name: 'Cash out' }).fill('500')
     await blur(page)
-    await move.getByRole('button', { name: /^Withdraw / }).click()
+    await move.getByRole('button', { name: 'Withdraw 500' }).click()
     await expect(move).toBeHidden()
     const atm = await localWait(page, (s) => s.expenses.find((e: any) => e.paymentMethodId === qnb.id && e.category === 'ATM Cash Withdrawal' && e.amount === 500))
     await serverRows('expenses', user.id, `id=eq.${atm.id}`, (r: any[]) => r.length === 1)
@@ -32,12 +26,17 @@ test('K1 Flow hides own-account moves with no "Not counted" chip; the account Re
     await localWait(page, (s) => s.expenses.find((e: any) => e.description === 'QA K1 coffee' && e.paymentMethodId === qnb.id))
   })
 
-  await test.step('Flow lists the coffee, not the move, and offers no Not counted chip', async () => {
+  // Owner decision (light-touch live QA round 2, W2): a cash out shows in Flow as a transfer row ("QNB Alahli → Cash",
+  // marked not counted toward spending); it still never counts as spending, and Flow has no "Not counted" filter chip.
+  await test.step('Flow lists the coffee and the move as a transfer that does not count; no Not counted chip', async () => {
     await goto(page, '/flow')
     const main = page.locator('main')
     await expect(main.getByText('QA K1 coffee').first()).toBeVisible()
-    await expect(main.getByText('Cash out', { exact: true })).toHaveCount(0)
-    await expect(main.getByText(/Not counted/)).toHaveCount(0)
+    const move = main.getByRole('button', { name: /^Cash out .*QNB Alahli → Cash/ })
+    await expect(move).toHaveCount(1)
+    await expect(move.getByRole('img', { name: 'Not counted toward spending' })).toBeVisible()
+    await expect(main).toContainText(/−120\s*out/)
+    await expect(main.getByRole('button', { name: /^Not counted/ })).toHaveCount(0)
     await expect(main.getByText(/Totals exclude/)).toHaveCount(0)
     await expect(page.getByRole('button', { name: /moves between your own accounts/ })).toHaveCount(0)
   })
@@ -108,7 +107,12 @@ test('K3 an empty Cash follows a main-currency switch, and Undo puts both back [
   })
 
   await test.step('Undo: main currency and Cash are EGP again', async () => {
-    await page.getByRole('button', { name: 'Undo' }).click()
+    // Light touch keeps the Currencies sheet open after the switch, and the toast sits outside it (the open sheet makes
+    // the rest of the page inert). Record whether Undo is reachable over the sheet, then close it as a user would.
+    const undo = page.getByRole('button', { name: 'Undo' })
+    test.info().annotations.push({ type: 'undo-over-sheet', description: String(await undo.isVisible()) })
+    if (await dialog(page, 'Currencies').isVisible()) await dialog(page, 'Currencies').getByRole('button', { name: 'Close' }).click()
+    await undo.click()
     await localWait(page, (s) => s.paymentMethods.find((m: any) => m.id === cash.id && m.currency === 'EGP'))
     await serverRows('payment_methods', user.id, `id=eq.${cash.id}`, (r: any[]) => r[0]?.currency === 'EGP')
   })

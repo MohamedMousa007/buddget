@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- test code reads the untyped persisted store */
 import type { Page } from '@playwright/test'
 import { expect, goto as gotoTab, localWait, test } from '../lib/fixtures'
-import { addAccount, addBorrow, addExpense, addMoneyIn, blur, dialog } from '../lib/ui'
+import { addAccount, addBorrow, addExpense, addMoneyIn, blur, dialog, pickMethod } from '../lib/ui'
 
 /** The Add sheet's tiles, top-left to bottom-right, as the accessible name starts. */
 const TILES = [/^Expense/, /^Money in/, /^Receipt/, /^Pay debt/, /^Savings/, /^Subscription/, /^Add by voice/]
@@ -91,7 +91,7 @@ test('Q3 Savings opens Add money directly on Wealth, once, and saves', async ({ 
     await expect(d.getByRole('button', { name: /^Into: / })).toBeVisible()
     await d.getByRole('textbox', { name: 'Amount' }).fill('500')
     await blur(page)
-    await d.getByRole('button', { name: /^Add [\d,]+ to / }).click()
+    await d.getByRole('button', { name: 'Add money', exact: true }).click()
     await expect(d).toBeHidden()
     await localWait(page, (s) => (s.savingsTransactions ?? s.savingsDeposits ?? []).find((t: any) => Number(t.amount) === 500) ?? (s.savingsAccounts ?? []).find((a: any) => Number(a.balance ?? a.currentBalance) === 500))
   })
@@ -138,9 +138,10 @@ test('Q5 Subscription, Receipt and voice work from a page with no add button', a
     const picker = childSheet(page)
     await expect(picker).toBeVisible()
     await picker.getByRole('button', { name: /^Netflix/ }).first().click()
-    const d = dialog(page, 'Add Netflix Standard')
-    await d.getByRole('group', { name: 'Paid with' }).getByRole('button', { name: 'QNB Alahli' }).click()
-    await d.getByRole('button', { name: 'Add Netflix Standard' }).click()
+    const d = dialog(page, 'Add a subscription')
+    await d.getByRole('button', { name: /^Paid with/ }).click()
+    await pickMethod(page, /^QNB Alahli/)
+    await d.getByRole('button', { name: 'Add Netflix' }).click()
     await expect(d).toBeHidden()
     await localWait(page, (s) => (s.subscriptions ?? []).find((x: any) => /Netflix/.test(x.name ?? '')))
   })

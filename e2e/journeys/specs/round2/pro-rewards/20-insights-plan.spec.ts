@@ -31,20 +31,23 @@ async function seedMonth(userId: string) {
   if (ex.status >= 300) throw new Error(`expenses ${ex.status}`)
 }
 
-test('I1 Insights on Free: the daily answer, readable findings, a locked finding opens its Pro sheet', async ({ page, qa }) => {
+test('I1 Insights on Free: the hero tiles, "Explain my month · See Pro", locked findings open their Pro sheet', async ({ page, qa }) => {
   const u = await qa('i1')
   await seedMonth(u.id)
   await signInWithPlan(page, u, FREE())
   await openLoaded(page, '/reports')
-  await expect(main(page).getByText('You can spend').first()).toBeVisible({ timeout: 60_000 })
-  await expect(main(page).getByText(/a day/).first()).toBeVisible()
-  await expect(main(page).getByText('Things you may not know')).toBeVisible()
-  const unlock = main(page).getByRole('button', { name: 'Unlock with Pro' }).first()
-  await expect(unlock).toBeVisible()
-  await unlock.click()
+  const m = main(page)
+  // Light touch Insights: the month hero with its finding tiles; on Free at least one tile is hidden behind Pro.
+  await expect(m.getByText(/^(Main reason|Before payday|Unusual buy|Your big day)$/).first()).toBeVisible({ timeout: 60_000 })
+  await expect(m.getByText('Hidden, part of Pro').first()).toBeVisible()
+  // Buddgy's read is Pro: Free sees "Explain my month" with a See Pro button instead.
+  await expect(m.getByText('Explain my month', { exact: true })).toBeVisible()
+  await expect(m.getByRole('button', { name: 'See Pro' }).first()).toBeVisible()
+  const locked = m.getByRole('button', { name: /part of Pro|Unlock with Pro/ }).first()
+  await expect(locked).toBeVisible()
+  await locked.click()
   const sheet = page.getByRole('dialog', { name: 'This one is part of Pro' })
   await expect(sheet).toBeVisible()
-  await expect(sheet).toContainText('••••')
   await sheet.getByRole('button', { name: 'Not now' }).click()
   await expect(sheet).toBeHidden()
 })
@@ -54,9 +57,12 @@ test('I2 @desktop Insights on Pro: nothing is locked', async ({ page, qa }) => {
   await seedMonth(u.id)
   await signInWithPlan(page, u, PRO_ACTIVE())
   await openLoaded(page, '/reports')
-  await expect(main(page).getByText('Things you may not know')).toBeVisible({ timeout: 60_000 })
-  await expect(main(page).getByText(/small buys under/).first()).toBeVisible()
-  await expect(main(page).getByRole('button', { name: 'Unlock with Pro' })).toHaveCount(0)
+  const m = main(page)
+  await expect(m.getByText(/^(Main reason|Before payday|Unusual buy|Your big day)$/).first()).toBeVisible({ timeout: 60_000 })
+  await expect(m.getByText(/^Buddgy’s read on /)).toBeVisible()
+  await expect(m.getByText('Hidden, part of Pro')).toHaveCount(0)
+  await expect(m.getByText('Explain my month', { exact: true })).toHaveCount(0)
+  await expect(m.getByRole('button', { name: /part of Pro|Unlock with Pro|^See Pro$/ })).toHaveCount(0)
 })
 
 test('P1 BDG-020 Pro from the store: Change plan and Cancel subscription at the end, no Manage bar or receipts; each opens its sheet', async ({ page, qa }) => {

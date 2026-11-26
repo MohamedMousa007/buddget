@@ -4,7 +4,7 @@ import { appNav, expect, goto, localState, localWait, signIn, test, tile, moneyI
 import { rows } from '../../lib/admin'
 import { serverRows } from '../../lib/server'
 import { installApiShim, forceFlags } from '../../lib/apiShim'
-import { addAccount, addBorrow, addExpense, addMoneyIn, blur, dialog, payDebt, pickMethod, pickPocket, shown } from '../../lib/ui'
+import { addAccount, addBorrow, addExpense, addMoneyIn, blur, dialog, payDebt, pickMethod, pickPocket, shown, pickCategory } from '../../lib/ui'
 
 const ERR = /Something went wrong|Application error|Unhandled Runtime Error/i
 const qnbTile = (p: Page) => p.getByRole('button', { name: /QNB Alahli/ }).first()
@@ -45,7 +45,7 @@ test('R02 pocket funding is an internal move: Flow shows no income and no spendi
   await pickPocket(page, d, 'Into', /QA R02 pocket/)
   await d.getByRole('textbox', { name: 'Amount' }).fill('600')
   await blur(page)
-  await d.getByRole('button', { name: /^Add [\d,]+ to QA R02 pocket/ }).click()
+  await d.getByRole('button', { name: 'Add money', exact: true }).click()
   await expect(d).toBeHidden()
   await serverRows('savings_transactions', user.id, 'amount=eq.600', (r) => r.length === 1)
   // No income event and no expense row may exist for an internal move.
@@ -67,8 +67,8 @@ test('R03 double tap on Save creates one expense (store and server)', async ({ p
   const d = dialog(page, 'Add expense')
   await d.getByRole('textbox', { name: 'Amount' }).fill('75')
   await d.getByRole('textbox', { name: 'Description' }).fill('QA R03 dup')
-  await d.getByRole('radio', { name: 'Food', exact: true }).click()
-  await d.getByRole('button', { name: /EGP$/ }).filter({ hasNotText: 'Egyptian' }).last().click()
+  await pickCategory(page, d, 'Food')
+  await d.getByRole('button', { name: /^Paid with/ }).click()
   await pickMethod(page, /QNB/)
   await blur(page)
   const save = d.getByRole('button', { name: 'Save expense' })
@@ -91,6 +91,10 @@ async function deleteThenUndo(page: Page, userId: string, desc: string, reloadFi
   if (reloadFirst) { await page.reload({ waitUntil: 'domcontentloaded' }); await expect(page.locator('main')).toContainText(desc, { timeout: 30_000 }) }
   await page.getByText(desc).first().click()
   await dialog(page, 'Edit expense').getByRole('button', { name: 'Delete' }).click()
+  // Light touch asks first ("Delete this expense? … You can undo right after.").
+  const ask = page.getByRole('alertdialog', { name: 'Delete this expense?' })
+  await ask.getByRole('button', { name: 'Delete', exact: true }).click()
+  await expect(ask).toBeHidden()
   const undo = page.getByRole('button', { name: /^Undo/ })
   await expect(undo, 'an undo action is offered after delete').toBeVisible({ timeout: 8000 })
   if (waitMs) { await page.waitForTimeout(waitMs); await expect(undo, 'Undo still on screen').toBeVisible() }
@@ -136,8 +140,8 @@ test('R05 Reports: Biggest purchase skips debt payments; money in shows expected
   await payDebt(page, { debt: 'QA R05 loan', amount: 1500, method: 'QNB Alahli' })
   await goto(page, '/reports')
   const main = page.locator('main')
-  // Reports is Insights now (782a1e18): the summary panel sits in the closed "The numbers behind it" fold.
-  await main.getByText('The numbers behind it', { exact: true }).click()
+  // Reports is Insights now: the summary panel sits in the closed "More reports" fold (light touch).
+  await main.getByText('More reports', { exact: true }).click()
   await expect(main.getByText(/Biggest purchase/i).first()).toBeVisible()
   const txt = (await main.innerText()).replace(/\s+/g, ' ')
   test.info().annotations.push({ type: 'evidence', description: txt.slice(0, 500) })
@@ -158,7 +162,11 @@ test('R06 paydays: add salary on the 25th, listed, server row has the day and am
   const d = page.getByRole('dialog', { name: 'New payday' })
   await d.getByRole('textbox', { name: 'Amount' }).fill('7000')
   await d.getByRole('textbox', { name: 'Name' }).fill('QA R06 Payroll')
-  await d.getByRole('button', { name: '25', exact: true }).click()
+  await d.getByRole('button', { name: /^Payday/ }).click()
+  const day = dialog(page, /^Payday$/)
+  await day.getByRole('radio', { name: '25', exact: true }).click()
+  await day.getByRole('button', { name: 'Done' }).click()
+  await expect(day).toBeHidden()
   await blur(page)
   await d.getByRole('button', { name: 'Add payday' }).click()
   await expect(d).toBeHidden()
@@ -407,6 +415,9 @@ test.describe('two devices', () => {
       await expect(B.locator('main')).toContainText('QA R14 from A', { timeout: 30_000 })
       // The list can show A's expense a moment before the Net worth tile recomputes: poll the tile.
       await expect.poll(() => netWorth(B), { timeout: 15_000 }).toBe(2900)
+      // Net worth lives on Accounts now: back to Flow while still online (a navigation would fail offline).
+      await goto(B, '/flow')
+      await expect(B.locator('main')).toContainText('QA R14 from A')
 
       // B goes offline, adds an expense and deletes A's.
       await ctxB.setOffline(true)

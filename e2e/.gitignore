@@ -5,3 +5,4 @@
 ui/*.json
 ui/.seed-email*
 ui/.st*.json
+.qa-users.local.txt
