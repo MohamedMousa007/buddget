@@ -85,19 +85,21 @@ describe('buildHomeLists', () => {
     row(sub({ id: 'e', status: 'cancelled', endsOn: '2026-09-01' })),
   ]
   const toBase = (r: { amount: number }) => r.amount
-  it('groups Upcoming into overdue / week / month / later with paused and cancelled collapsed', () => {
-    const l = buildHomeLists('upcoming', rows, toBase)
+  it('Upcoming lists the next 30 days, then what was paid this month; cancelled and paused never count there (QA W4)', () => {
+    const paidThisMonth = row(sub({ id: 'm', billingDay: 5, startDate: '2026-01-05' }), [exp('m', '2026-10-05')])
+    const yearly = row(sub({ id: 'y', billingCycle: 'yearly', billingDay: 1, startDate: '2026-03-01' }), [exp('y', '2026-03-01')])
+    const l = buildHomeLists('upcoming', [...rows, paidThisMonth, yearly], toBase, today)
     expect(l.groups.map((g) => [g.key, g.rows.map((r) => r.sub.id)])).toEqual([
-      ['overdue', ['a']], ['week', ['b']], ['month', ['c']], ['later', ['d']],
+      ['next30', ['a', 'b', 'c']], ['paid', ['m', 'd']], ['later', ['y']],
     ])
-    expect(l.groups[0].total).toBe(190)
-    expect(l.paused.map((r) => r.sub.id)).toEqual(['p'])
-    expect(l.cancelled.map((r) => r.sub.id)).toEqual(['x'])
-    expect(l.activeCount).toBe(4)
+    expect(l.groups[0].total).toBe(570)
+    expect(paidThisMonth.paidOn).toBe('2026-10-05')
+    expect(l.activeCount).toBe(6)
+    expect(l.groups.flatMap((g) => g.rows).some((r) => r.sub.status === 'cancelled' || r.sub.status === 'paused')).toBe(false)
   })
-  it('lists everything under All and only archived plans under Ended', () => {
-    expect(buildHomeLists('all', rows, toBase).groups[0].rows).toHaveLength(7)
-    expect(buildHomeLists('ended', rows, toBase).groups[0].rows.map((r) => r.sub.id)).toEqual(['e'])
+  it('lists everything under All, and cancelled (still running or over) and paused plans under Ended', () => {
+    expect(buildHomeLists('all', rows, toBase, today).groups[0].rows).toHaveLength(7)
+    expect(buildHomeLists('ended', rows, toBase, today).groups[0].rows.map((r) => r.sub.id).sort()).toEqual(['e', 'p', 'x'])
   })
 })
 
@@ -131,5 +133,32 @@ describe('nudges and rail', () => {
     expect(strip).toHaveLength(30)
     expect(strip[0].isToday).toBe(true)
     expect(strip.filter((d) => d.due).map((d) => d.date.getDate())).toEqual([19])
+  })
+})
+
+describe('dates around today (QA, Nov 26)', () => {
+  const nov26 = new Date(2026, 10, 26, 12)
+  const at = (s: Subscription, e: Expense[] = []) => buildRow(s, e, nov26, 'EGP', {})
+  it('a charge on Dec 10 is Later, not This month', () => {
+    const r = at(sub({ id: 'v', name: 'Vodafone', billingDay: 10, startDate: '2026-01-10' }), [exp('v', '2026-11-10')])
+    expect(r.date).toBe('2026-12-10')
+    expect(r.group).toBe('later')
+  })
+  it('a charge later this month is This month', () => {
+    const r = at(sub({ id: 'm', billingDay: 30, startDate: '2026-01-30' }), [exp('m', '2026-10-30')])
+    expect(r.group).toBe('week')
+    const far = buildRow(sub({ id: 'f', billingDay: 28, startDate: '2026-01-28' }), [exp('f', '2026-10-28')], new Date(2026, 10, 12, 12), 'EGP', {})
+    expect(far.group).toBe('month')
+  })
+  it('an unpaid Nov 18 charge keeps its date for the status, and the next charge rolls to Dec 18', () => {
+    const r = at(sub({ billingDay: 18, startDate: '2026-01-18' }), [exp('s1', '2026-10-18')])
+    expect(r.cycle?.kind).toBe('overdue')
+    expect(r.date).toBe('2026-11-18')
+    expect(r.nextDue).toBe('2026-12-18')
+  })
+  it('a paid cycle’s next charge is its row date', () => {
+    const r = at(sub({ billingDay: 18, startDate: '2026-01-18' }), [exp('s1', '2026-11-18')])
+    expect(r.nextDue).toBe('2026-12-18')
+    expect(r.nextDue).toBe(r.date)
   })
 })

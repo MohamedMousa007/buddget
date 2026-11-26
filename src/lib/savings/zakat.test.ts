@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { computeZakat, type ZakatInput } from './zakat'
 
 const base: ZakatInput = {
-  cashAndSavings: 0, goldValue: 0, cryptoValue: 0, stocksValue: 0,
+  cashAndSavings: 0, goldValue: 0, cryptoValue: 0, stocksValue: 0, receivables: 0, tradeGoodsValue: 0,
   holdsForTrading: false, debtsDueThisYear: 0,
   nisabBasis: 'silver', gold24kSellPerGram: 6846, silverPerGram: 75,
 }
@@ -41,10 +41,10 @@ describe('computeZakat', () => {
     expect(r.due).toBe(false) // 500k < 581.9k
   })
 
-  it('manual override replaces the figure entirely', () => {
-    const r = computeZakat({ ...base, cashAndSavings: 100_000, manualAmount: 1_234 })
-    expect(r.zakat).toBe(1_234)
-    expect(r.due).toBe(true)
+  it('counts receivables and trade goods', () => {
+    const r = computeZakat({ ...base, cashAndSavings: 10_000, receivables: 20_000, tradeGoodsValue: 30_000 })
+    expect(r.zakatable).toBe(60_000)
+    expect(r.zakat).toBeCloseTo(1_500, 5)
   })
 
   it('property principal is never passed in — cash is the only property-derived input', () => {

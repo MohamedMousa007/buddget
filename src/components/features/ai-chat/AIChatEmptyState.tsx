@@ -1,7 +1,7 @@
 'use client'
 
 import type { LucideIcon } from 'lucide-react'
-import { AlertTriangle, Landmark, PiggyBank, SlidersHorizontal, Sparkles } from 'lucide-react'
+import { AlertTriangle, Landmark, SlidersHorizontal, Sparkles, Vault } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { SelectableCard } from '@/components/ui/SelectableCard'
@@ -20,7 +20,7 @@ const KIND_ICON: Record<BuddgyIdea['kind'], LucideIcon> = {
   plan: SlidersHorizontal,
   insight: Sparkles,
   debt: Landmark,
-  save: PiggyBank,
+  save: Vault,
 }
 
 /**

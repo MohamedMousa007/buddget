@@ -15,6 +15,8 @@ export interface ExpensePrefill {
   currency?: string
   category?: string
   paymentMethod?: string
+  /** An exact method to preselect (an account or card sheet's "Add an expense"); wins over the `paymentMethod` name hint. */
+  paymentMethodId?: string
   notes?: string
 }
 

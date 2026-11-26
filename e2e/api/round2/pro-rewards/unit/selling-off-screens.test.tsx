@@ -12,6 +12,11 @@ vi.mock('@/lib/billing/billingStore', async (orig) => {
 })
 vi.mock('@/lib/navigation/navigate', () => ({ navigate: () => undefined }))
 vi.mock('@/components/auth/AuthProvider', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }))
+// next/font only works inside the Next build; the membership card's signature fonts are loaded at import (signatureFont.ts).
+vi.mock('next/font/google', () => ({
+  Pinyon_Script: () => ({ variable: '__variable_pinyon', className: '__className_pinyon' }),
+  Aref_Ruqaa: () => ({ variable: '__variable_aref', className: '__className_aref' }),
+}))
 
 const rewards = { tier: { key: 'silver', name: 'Silver', locked: false }, invite: { enabled: true, code: 'AB-123', link: 'https://buddget.app/i/AB-123', invited: 0, activated: 0, rewarded: 0 } }
 const meOff = { planKey: 'free', planName: 'Free', status: 'active', trialEndsAt: null, billingEnabled: false, rewards }

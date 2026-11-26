@@ -313,9 +313,15 @@ function emitList<T extends HasId, TN extends TableName>(
  * W7: the server also moves pocket balances (month-carry, goal funding), so a pocket edit that does not
  * change the balance (rename, colour, target) must not send the device's possibly stale absolute
  * `current_balance`. Those rows go in their own balance-less batch (never mixed with full rows).
+ *
+ * A balance change goes out on `after`, once the ledger rows behind it are in. The server derives the balance from those
+ * rows and keeps its own on a client write, so a pocket row sent first carried the new edit stamp with the old balance:
+ * a pull (another tab or device, or this one) landing between the two took that stale balance as the newest edit and
+ * kept it (QA W3 P1: gold bought from a pocket left the pocket where it was after a reload).
  */
 function emitSavingsAccounts(
   runner: OpRunner,
+  after: OpRunner,
   next: readonly SavingsAccount[],
   prev: readonly SavingsAccount[],
   userId: string
@@ -330,7 +336,8 @@ function emitSavingsAccounts(
     const { current_balance: _balance, ...row } = savingsAccountToRow(x, userId)
     return withEditTime(row, x)
   })
-  runner.upsert('savings_accounts', [...inserts, ...full], 'savings_accounts.upsert')
+  runner.upsert('savings_accounts', inserts, 'savings_accounts.upsert')
+  after.upsert('savings_accounts', full, 'savings_accounts.upsert')
   // A balance-less row whose server row was hard-deleted becomes an INSERT with a NULL balance (23502): resend it with its balance.
   const nextById = new Map(next.map((a) => [a.id, a]))
   runner.upsert('savings_accounts', metaOnly as never, 'savings_accounts.upsert', (row) => ({
@@ -400,7 +407,7 @@ export async function flushDiff(
   emitList(level1, 'debts', next.debts, prev.debts, debtToRow, userId)
   emitList(level2, 'debt_payments', next.debtPayments, prev.debtPayments, debtPaymentToRow, userId)
   emitList(level2, 'recurring_debt_payments', next.recurringDebtPayments, prev.recurringDebtPayments, recurringDebtPaymentToRow, userId)
-  emitSavingsAccounts(level1, next.savingsAccounts, prev.savingsAccounts, userId)
+  emitSavingsAccounts(level1, level3, next.savingsAccounts, prev.savingsAccounts, userId)
   emitList(level2, 'savings_holdings', next.investmentHoldings, prev.investmentHoldings, investmentHoldingToRow, userId)
   emitList(level2, 'savings_transactions', next.savingsTransactions, prev.savingsTransactions, savingsTransactionToRow, userId)
   emitList(level2, 'recurring_savings_deposits', next.recurringSavingsDeposits, prev.recurringSavingsDeposits, recurringSavingsDepositToRow, userId)

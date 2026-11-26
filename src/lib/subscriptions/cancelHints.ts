@@ -96,9 +96,13 @@ export const CANCEL_HINTS: Record<string, string> = {
 
 const HOST = /^[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i
 
-/** The hint for a brand, plus its URL when the hint is a plain web address. */
-export function cancelHint(brandKey: string | null): { text: string; url: string | null } | null {
+/**
+ * The hint for a brand, plus its URL when the hint is a plain web address. `site` is what a link names: the host alone
+ * ("netflix.com" for netflix.com/cancelplan), or the whole hint when it is not an address.
+ */
+export function cancelHint(brandKey: string | null): { text: string; url: string | null; site: string } | null {
   const text = brandKey ? CANCEL_HINTS[brandKey] : undefined
   if (!text) return null
-  return { text, url: HOST.test(text) ? `https://${text}` : null }
+  const isUrl = HOST.test(text)
+  return { text, url: isUrl ? `https://${text}` : null, site: isUrl ? text.split('/')[0] : text }
 }

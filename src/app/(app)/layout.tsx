@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { cookies, headers } from 'next/headers'
 import { LOCALE_COOKIE, parseLocaleCookie } from '@/lib/i18n/localeCookie'
-import { DM_Sans, JetBrains_Mono, IBM_Plex_Sans_Arabic } from 'next/font/google'
+import { appFontClasses } from '@/lib/fonts/appFonts'
 import '../globals.css'
 import { AppShell } from '@/components/layout/AppShell'
 import { AuthProvider } from '@/components/auth/AuthProvider'
@@ -16,25 +16,6 @@ import { THEME_INIT_SCRIPT } from '@/lib/theme/applyTheme'
 import { PlatformBodyClass } from '@/lib/native/PlatformBodyClass'
 import { NativeInviteLinks } from '@/lib/native/inviteLinks'
 import { CrashReporter } from '@/lib/crash/CrashReporter'
-
-// One variable-weight file serves body and headings (was 8 static weight files).
-const dmSans = DM_Sans({
-  subsets: ['latin'],
-  variable: '--font-sans',
-})
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  variable: '--font-mono',
-  weight: ['400', '500', '600'],
-})
-
-const ibmPlexArabic = IBM_Plex_Sans_Arabic({
-  subsets: ['arabic'],
-  variable: '--font-sans-ar',
-  weight: ['400', '500', '600', '700'],
-  preload: false,
-})
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://buddget.app'),
@@ -147,8 +128,7 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-title" content="buddget" />
       </head>
       <body
-        style={{ '--font-heading': 'var(--font-sans)' } as React.CSSProperties}
-        className={`${dmSans.variable} ${jetbrainsMono.variable} ${ibmPlexArabic.variable} font-sans antialiased`}
+        className={`${appFontClasses} font-sans antialiased`}
       >
         <PlatformBodyClass />
         <NativeInviteLinks />

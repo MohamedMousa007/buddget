@@ -1,123 +1,144 @@
 'use client'
 
 import { categoryLabel } from '@/lib/i18n/categoryLabel'
-import { formatFixed2 } from '@/lib/utils/formatters'
-import { useEffect, useState } from 'react'
-import Image from 'next/image'
+import { useState } from 'react'
+import { Image as ImageIcon, Receipt as ReceiptIcon } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
-import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { methodLabel } from '@/components/features/flow/useFlowLedger'
+import { ReceiptImageViewer, ReceiptItemRow, receiptMoney, useReceiptImage } from '@/components/receipt/ReceiptParts'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { readReceiptImage } from '@/lib/native/receiptImages'
+import { useShortDate } from '@/hooks/useShortDate'
 import { useT } from '@/lib/i18n'
+import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
+import { cn } from '@/lib/utils'
 
-/** Read-only view of a scanned receipt's itemized breakdown (items + charges). */
-/** Receipt rows come from the AI scan; a missing number must not crash the sheet. */
-const money = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) ? `${n < 0 ? '-' : ''}${formatFixed2(n)}` : '—')
+const BOX = 'rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]'
 
+/**
+ * A scanned receipt, read-only: the store and when it was scanned, what paid it and the total, the photo one tap away
+ * (fitted and enhanced, to show at the store), then every printed line, the subtotal, charges and discounts, and the
+ * total.
+ */
 export function ReceiptDetailSheet({
   receiptId,
   open,
   onClose,
+  zIndexClassName,
 }: {
   receiptId: string | null
   open: boolean
   onClose: () => void
+  zIndexClassName?: string
 }) {
   const tAll = useT()
   const t = tAll.receiptDetail
+  const lt = useFlowLtCopy()
+  const shortDate = useShortDate()
   const { receipt, paymentMethods } = useFinanceStore(
     useShallow((s) => ({
       receipt: receiptId ? s.receipts.find((r) => r.id === receiptId) ?? null : null,
       paymentMethods: s.paymentMethods,
     })),
   )
-
-  const [img, setImg] = useState<{ id: string; src: string } | null>(null)
-  useEffect(() => {
-    if (!open || !receiptId) return
-    let stale = false
-    void readReceiptImage(receiptId).then((src) => {
-      if (!stale && src) setImg({ id: receiptId, src })
-    })
-    return () => { stale = true }
-  }, [open, receiptId])
-  const imgSrc = img && img.id === receiptId ? img.src : null
+  const imgSrc = useReceiptImage(receiptId, open)
+  const [viewing, setViewing] = useState(false)
 
   const shellOpen = open && !!receipt
+  const items = receipt?.items ?? []
+  const subtotal = items.reduce((s, it) => s + (Number.isFinite(it.price) ? it.price : 0), 0)
+  const pm = receipt ? methodLabel(paymentMethods.find((m) => m.id === receipt.paymentMethodId)) : null
+  const merchant = receipt?.merchant || t.defaultMerchant
 
   return (
-    <ModalShell open={shellOpen} onBackdropClick={onClose}>
+    <ModalShell open={shellOpen} onBackdropClick={onClose} zIndexClassName={zIndexClassName}>
       {receipt ? (
-        <div className="p-5">
-          <V3SheetHeader title={t.title} onClose={onClose} />
+        <div className="flex flex-col gap-4 px-4 pb-[max(env(safe-area-inset-bottom,0px),20px)]">
+          <V3SheetHeader title={lt.receipt.title} subtitle={lt.receipt.sub} onClose={onClose} />
 
-          {/* Hero: merchant + total, mirroring the scan result card. */}
-          <Card padding="md" className="flex items-center gap-3">
-            {imgSrc ? (
-              <Image
-                src={imgSrc}
-                alt={t.photoAlt}
-                width={64}
-                height={88}
-                unoptimized
-                className="h-20 w-16 flex-shrink-0 rounded-lg border border-[var(--color-brand-border)] object-cover"
-              />
-            ) : null}
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{receipt.merchant || t.defaultMerchant}</p>
-              <p className="mt-0.5 truncate text-xs text-[var(--color-brand-text-muted)]">
-                {receipt.receiptDate} · {categoryLabel(tAll, receipt.category)}
-                {(() => {
-                  const pm = paymentMethods.find((m) => m.id === receipt.paymentMethodId)
-                  return pm ? ` · ${pm.name}` : ''
-                })()}
-              </p>
-              <p className="mt-1.5 text-2xl font-semibold tabular-nums text-[var(--color-brand-text-primary)]">
-                {money(receipt.amount)} <span className="text-base text-[var(--color-brand-text-secondary)]">{receipt.currency}</span>
-              </p>
+          <section className={cn(BOX, 'p-4')}>
+            <div className="flex items-center gap-3">
+              <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]">
+                <ReceiptIcon className="size-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span dir="auto" className="block truncate font-semibold text-[var(--color-brand-text-primary)]">{merchant}</span>
+                <span className="block text-xs text-[var(--color-brand-text-secondary)]">
+                  {lt.receipt.scanned(shortDate(receipt.createdAt))} · {categoryLabel(tAll, receipt.category)}
+                </span>
+              </span>
             </div>
-          </Card>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <span className="rounded-xl bg-[var(--color-brand-elevated)] px-3 py-2">
+                <span className="block text-[var(--color-brand-text-muted)]">{lt.receipt.paidWith}</span>
+                <b className="mt-0.5 block truncate font-semibold text-[var(--color-brand-text-primary)]">{pm ?? '—'}</b>
+              </span>
+              <span className="rounded-xl bg-[var(--color-brand-elevated)] px-3 py-2">
+                <span className="block text-[var(--color-brand-text-muted)]">{lt.receipt.total}</span>
+                <b dir="ltr" className="mt-0.5 block font-mono-numbers font-semibold text-[var(--color-brand-text-primary)]">
+                  {receiptMoney(receipt.amount)} {receipt.currency}
+                </b>
+              </span>
+            </div>
+            {imgSrc ? (
+              <Button variant="ghost" size="touch" className="mt-3 w-full bg-[var(--color-brand-primary-soft)] font-semibold text-[var(--color-brand-primary-ink)] hover:bg-[var(--color-brand-primary-soft)]/70" onClick={() => setViewing(true)}>
+                <ImageIcon className="size-4" aria-hidden />
+                {lt.receipt.viewReceiptImage}
+              </Button>
+            ) : null}
+          </section>
 
-          {receipt.items.length > 0 || receipt.charges.length > 0 ? (
-            <Card radius="sm" padding="sm" className="mt-3">
-              <p className="mb-2 text-xs font-semibold text-[var(--color-brand-text-secondary)]">{t.breakdown}</p>
-
-              {receipt.items.length > 0 ? (
-                <ul className="space-y-1.5">
-                  {receipt.items.map((it, i) => (
-                    <li key={`item-${i}`} className="flex items-baseline gap-2 text-sm">
-                      <span className="flex-1 truncate text-[var(--color-brand-text-primary)]">
-                        {it.qty && it.qty > 1 ? `${it.qty}× ` : ''}{it.name}
-                      </span>
-                      <span className="tabular-nums text-[var(--color-brand-text-secondary)]">
-                        {money(it.price)} {receipt.currency}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-
-              {receipt.charges.length > 0 ? (
-                <ul className="mt-2 space-y-1.5 border-t border-[var(--color-brand-border)] pt-2">
-                  {receipt.charges.map((c, i) => (
-                    <li key={`charge-${i}`} className="flex items-baseline gap-2 text-sm">
-                      <span className="flex-1 truncate text-[var(--color-brand-text-muted)]">{c.label}</span>
-                      <span className="tabular-nums text-[var(--color-brand-text-secondary)]">
-                        {money(c.amount)} {receipt.currency}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </Card>
+          {items.length > 0 || receipt.charges.length > 0 ? (
+            <section>
+              <h3 className="mb-2 px-1 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{lt.receipt.items(items.length)}</h3>
+              <div className={cn(BOX, 'px-4 py-1.5')}>
+                {items.map((it, i) => (
+                  <ReceiptItemRow key={`item-${i}`} item={it} />
+                ))}
+                <div className="mt-1 border-t border-dashed border-[var(--color-brand-border-strong)] pt-1.5">
+                  {items.length > 0 ? (
+                    <div className="flex items-baseline justify-between py-1.5 text-[0.84375rem] text-[var(--color-brand-text-primary)]">
+                      <span>{lt.receipt.subtotal}</span>
+                      <span dir="ltr" className="font-mono-numbers font-medium">{receiptMoney(subtotal)}</span>
+                    </div>
+                  ) : null}
+                  {receipt.charges.map((c, i) => {
+                    const off = c.type === 'discount' || c.amount < 0
+                    return (
+                      <div
+                        key={`charge-${i}`}
+                        className={cn('flex items-baseline justify-between py-1.5 text-[0.84375rem]', off ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-text-secondary)]')}
+                      >
+                        <span dir="auto" className="min-w-0 truncate">{c.label}</span>
+                        <span dir="ltr" className="font-mono-numbers font-medium">{off ? receiptMoney(-Math.abs(c.amount)) : receiptMoney(c.amount)}</span>
+                      </div>
+                    )
+                  })}
+                  <div className="flex items-baseline justify-between py-2 text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">
+                    <span>{lt.receipt.total}</span>
+                    <span dir="ltr" className="font-mono-numbers">{receiptMoney(receipt.amount)} {receipt.currency}</span>
+                  </div>
+                </div>
+              </div>
+            </section>
           ) : null}
 
-          {receipt.notes ? (
-            <p className="mt-3 text-xs text-[var(--color-brand-text-muted)]">{receipt.notes}</p>
-          ) : null}
+          <p className="px-1 text-xs leading-relaxed text-[var(--color-brand-text-muted)]">
+            {receipt.notes ? `${receipt.notes} · ` : ''}
+            {lt.receipt.note(categoryLabel(tAll, receipt.category))}
+          </p>
         </div>
+      ) : null}
+      {imgSrc ? (
+        <ReceiptImageViewer
+          open={viewing}
+          src={imgSrc}
+          title={lt.receipt.imageTitle(merchant)}
+          sub={receipt ? lt.receipt.imageSub(shortDate(receipt.receiptDate)) : undefined}
+          onClose={() => setViewing(false)}
+        />
       ) : null}
     </ModalShell>
   )

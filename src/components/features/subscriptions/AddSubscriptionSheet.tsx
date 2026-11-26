@@ -2,13 +2,13 @@
 
 import { Button } from '@/components/ui/button'
 import { useAddSubscriptionForm } from '@/hooks/useAddSubscriptionForm'
-import { useLocale, useT } from '@/lib/i18n'
+import { useT } from '@/lib/i18n'
+import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 import type { Subscription } from '@/lib/store/types'
 import { AddCatalogStep } from './AddCatalogStep'
 import { AddConfigureStep } from './AddConfigureStep'
 import { SheetFrame } from './SheetFrame'
-import { currencyLabel } from './subscriptionLabels'
-import { formatWhole } from '@/lib/utils/formatters'
+import { addCategoryOf } from '@/lib/subscriptions/catalogDisplay'
 
 function Inner({
   editing,
@@ -20,7 +20,7 @@ function Inner({
   onClose: () => void
 }) {
   const t = useT()
-  const { locale } = useLocale()
+  const lt = useDebtsSubsLtCopy().subs
   const ui = t.subscriptions.ui
   const form = useAddSubscriptionForm(editing, onClose, seedBrandKey)
   const { draft } = form
@@ -30,28 +30,14 @@ function Inner({
     ? ui.detail.edit
     : form.step === 1
       ? t.subscriptions.addSubscription
-      : named
-        ? ui.add.addNamed(named)
-        : t.subscriptions.addSubscription
-  const cta = form.isEdit ? ui.add.saveNamed(named || draft.name) : ui.add.addNamed(named || t.subscriptions.addSubscription)
+      : lt.addTitle
+  const cta = form.isEdit ? ui.add.saveNamed(named || draft.name) : lt.addCta(draft.name || t.subscriptions.addSubscription)
 
   const footer =
     form.step === 2 ? (
-      <>
-        {!draft.trial ? (
-          <div className="flex justify-between gap-2 text-[0.8125rem]">
-            <span className="font-mono-numbers font-semibold text-[var(--color-brand-text-primary)]">
-              {ui.add.impact(formatWhole(form.impact.monthly), currencyLabel(form.base, locale))}
-            </span>
-            <span className="font-mono-numbers text-[var(--color-brand-text-secondary)]">
-              {ui.add.committedBecomes(formatWhole(form.impact.after))}
-            </span>
-          </div>
-        ) : null}
-        <Button size="cta-block" disabled={!form.canSubmit} onClick={form.submit}>
-          {cta}
-        </Button>
-      </>
+      <Button size="cta-block" disabled={!form.canSubmit} onClick={form.submit}>
+        {cta}
+      </Button>
     ) : undefined
 
   return (
@@ -59,6 +45,7 @@ function Inner({
       open
       onClose={onClose}
       title={title}
+      subtitle={!form.isEdit && form.step === 2 && form.brand ? ui.add.categories[addCategoryOf(form.brand)] : undefined}
       onBack={!form.isEdit && form.step === 2 ? () => form.setStep(1) : undefined}
       footer={footer}
     >

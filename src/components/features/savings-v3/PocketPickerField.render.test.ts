@@ -36,14 +36,14 @@ describe('PocketPickerField (Add money Into / Withdraw From)', () => {
     picker?.onPick('a')
     expect(onChange).toHaveBeenCalledWith('a')
   })
-  it('"Add pocket" opens the add-pocket flow', () => {
+  it('"New pocket" opens the add-pocket flow', () => {
     const onAdd = vi.fn()
     renderToStaticMarkup(h(PocketPickerField, { pockets, value: 'b', onChange: () => {}, label: 'Into', onAdd }))
-    expect(picker?.customLabel).toBe('Add pocket')
+    expect(picker?.customLabel).toBe('New pocket')
     picker?.onCustom?.('')
     expect(onAdd).toHaveBeenCalledOnce()
   })
-  it('offers no Add pocket without onAdd (Withdraw)', () => {
+  it('offers no New pocket without onAdd (Withdraw)', () => {
     renderToStaticMarkup(h(PocketPickerField, { pockets, value: 'b', onChange: () => {}, label: 'From' }))
     expect(picker?.onCustom).toBeUndefined()
   })
@@ -51,5 +51,22 @@ describe('PocketPickerField (Add money Into / Withdraw From)', () => {
     const html = renderToStaticMarkup(h(PocketPickerField, { pockets: [], value: null, onChange: () => {}, label: 'Into', onAdd: () => {} }))
     expect(html).toContain('Choose a pocket')
     expect(picker?.items).toEqual([])
+  })
+  it('lists goals first under Goals, with progress, and reports a goal pick as a goal', () => {
+    const onChange = vi.fn()
+    const onGoalChange = vi.fn()
+    const goals = [{ id: 'g1', name: 'Umrah', glyph: null, saved: 18000, target: 48000 }]
+    renderToStaticMarkup(h(PocketPickerField, { pockets, goals, value: 'g1', onChange, onGoalChange, label: 'Goal' }))
+    expect(picker?.items?.map((i) => [i.id, i.group])).toEqual([['g1', 'Goals'], ['a', 'Savings'], ['b', 'Savings']])
+    expect(picker?.items?.[0].progress).toBeCloseTo(0.375)
+    picker?.onPick('g1')
+    expect(onGoalChange).toHaveBeenCalledWith('g1')
+    expect(onChange).not.toHaveBeenCalled()
+  })
+  it('only="goals" lists the goals alone and offers New goal', () => {
+    const goals = [{ id: 'g1', name: 'Umrah', glyph: null, saved: 0, target: null }]
+    renderToStaticMarkup(h(PocketPickerField, { pockets, goals, only: 'goals', value: null, onChange: () => {}, label: 'Goal', onAdd: () => {} }))
+    expect(picker?.items?.map((i) => i.id)).toEqual(['g1'])
+    expect(picker?.customLabel).toBe('New goal')
   })
 })

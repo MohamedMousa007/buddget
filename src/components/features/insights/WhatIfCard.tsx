@@ -9,19 +9,17 @@ import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { MASK } from '@/lib/privacy/mask'
 import { useMask } from '@/lib/privacy/useMask'
 import { debtPayoff } from '@/lib/insights/debtWhatIf'
-import { formatCurrency } from '@/lib/utils/formatters'
-import type { Currency } from '@/lib/store/types'
+import { formatWhole } from '@/lib/utils/formatters'
 
 interface Props {
   plan: { remaining: number; monthly: number }
-  currency: Currency
   /** Free: the card is shown, the slider is not. */
   locked: boolean
   onUnlock: () => void
 }
 
 /** "Pay X more a month": how much sooner the instalment plans end. A native range input, so it works with touch and keyboard. */
-export function WhatIfCard({ plan, currency, locked, onUnlock }: Props) {
+export function WhatIfCard({ plan, locked, onUnlock }: Props) {
   const c = useT().insights
   const { locale } = useLocale()
   const hidden = useMask('lists')
@@ -30,7 +28,7 @@ export function WhatIfCard({ plan, currency, locked, onUnlock }: Props) {
   const [extra, setExtra] = useState(Math.round(max / 2 / step) * step)
   const result = debtPayoff(plan.remaining, plan.monthly, locked ? 0 : extra)
   if (!result) return null
-  const money = (n: number) => (hidden ? MASK : formatCurrency(n, currency, false))
+  const money = (n: number) => (hidden ? MASK : formatWhole(n))
   const end = (months: number) => formatLocalized(addMonths(new Date(), months), 'MMM yyyy', locale)
   return (
     <Card padding="md" className="space-y-3">

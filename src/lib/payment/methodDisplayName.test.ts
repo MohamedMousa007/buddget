@@ -24,8 +24,9 @@ describe('currency field names follow the language (QA-114)', () => {
     expect(src).toContain('currencyName(value)')
     expect(src).not.toContain('{meta.name}')
   })
-  it('the expense sheet passes compact so the 108px column shows the code only', () => {
+  it('the expense sheet shows the currency code inline after the amount (AmountHero), not a name field', () => {
     const src = readFileSync(join(__dirname, '../../components/features/expenses/ExpenseSheetForm.tsx'), 'utf8')
-    expect(src).toMatch(/onChange=\{setCurrency\}\s+compact/)
+    expect(src).toContain('<AmountHero')
+    expect(src).not.toContain('CurrencyField')
   })
 })

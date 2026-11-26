@@ -2,15 +2,21 @@
 
 import { useEffect, useState } from 'react'
 import { ChevronRight, Trash2, Plus, CircleCheck, Landmark, CreditCard, CalendarClock } from 'lucide-react'
-import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useAddDebtSheet } from '@/hooks/useAddDebtSheet'
-import { ModalShell } from '@/components/modals/ModalShell'
+import { AddDebtOptionSheet } from '@/components/features/debts/redesign/AddDebtOptionSheet'
+import { ModalShell, useDismissGuard } from '@/components/modals/ModalShell'
+import { UnsavedChangesDialog } from '@/components/features/expenses/UnsavedChangesDialog'
 import { DebtFamilyStep } from '@/components/features/debts/redesign/DebtFamilyStep'
 import { AddBorrowForm } from '@/components/features/debts/redesign/AddBorrowForm'
 import { AddInstallmentForm } from '@/components/features/debts/redesign/AddInstallmentForm'
 import { PayDebtForm } from '@/components/features/debts/redesign/PayDebtForm'
 import { useT } from '@/lib/i18n'
+import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
+import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
+import { DatePickerField } from '@/components/ui/DatePickerField'
+import { HEADER_PILL } from '@/components/ui/PillButton'
 import { isOwedToUser } from '@/lib/debts/debtDirection'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Button } from '@/components/ui/button'
@@ -26,6 +32,16 @@ function HydrateDebtsWhileOpen() {
   return null
 }
 
+/** Inside ModalShell: a backdrop tap, swipe down, Escape or Android back with typed data asks first. */
+function DraftDismissGuard({ dirty, asking, setAsking }: { dirty: boolean; asking: boolean; setAsking: (v: boolean) => void }) {
+  useDismissGuard(() => {
+    if (asking) { setAsking(false); return true }
+    if (dirty) { setAsking(true); return true }
+    return false
+  })
+  return null
+}
+
 /**
  * Debt bottom sheet (handoff §4). New: family picker → per-family form. Edit: the
  * same per-type form, prefilled, with locked fields + borderless delete. Also the
@@ -35,17 +51,23 @@ function HydrateDebtsWhileOpen() {
 export function AddDebtSheet() {
   const shortDate = useShortDate()
   const d = useAddDebtSheet()
+  const timeLabel = useFlowLtCopy().expense.time
   const t = useT()
+  const lt = useDebtsSubsLtCopy()
+  const confirm = useConfirm()
   // Credit-card add & edit are handled by the payment-method sheet, not here.
   const isCardEdit = d.isEditFlow && d.editingDebt?.debtType === 'credit_card'
   const open = d.isOpen && !isCardEdit
-  useEscapeClose(open, d.closeSheet)
+  const [asking, setAsking] = useState(false)
+  // The Pay debt picker's "Add a debt" / "Add new debt": the same option sheet as the Debts page, over this one.
+  const [addPickOpen, setAddPickOpen] = useState(false)
+  const requestClose = () => (d.hasUnsavedDraft ? setAsking(true) : d.closeSheet())
 
   const presetFamily = useSettingsStore((s) => s.debtSheetPresetFamily)
   const [familyStep, setFamilyStep] = useState<'pick' | 'form'>('pick')
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- reset/preset step when the sheet toggles */
-    if (!d.isOpen) { setFamilyStep('pick'); return }
+    if (!d.isOpen) { setFamilyStep('pick'); setAsking(false); setAddPickOpen(false); return }
     // A preset (e.g. the Installments empty-state CTA) jumps straight to that form.
     if (presetFamily) { d.setDebtType(presetFamily); setFamilyStep('form') }
     /* eslint-enable react-hooks/set-state-in-effect */
@@ -67,23 +89,25 @@ export function AddDebtSheet() {
   const title = isPayUI
     ? payShowsForm ? (receiving ? t.debts.fReceiveTitle : t.debts.fPayTitle) : tp.title
     : d.isEditFlow
-      ? d.debtType === 'installment' ? 'Edit installment' : 'Edit borrow'
+      ? d.debtType === 'installment' ? lt.install.editTitle : lt.borrow.editTitle
       : familyStep === 'pick'
-        ? 'Add debt'
-        : d.debtType === 'installment' ? 'New installment' : 'New borrow'
+        ? lt.debts.addTitle
+        : d.debtType === 'installment' ? lt.install.newTitle : lt.borrow.newTitle
 
   const payAmt = parseFloat(d.paymentAmount)
   const canSubmit = isPayUI
     ? !!(d.selectedDebtId && d.paymentAmount && payAmt > 0)
     : d.canSubmitNewDebt
-  const payAmtLabel = !Number.isNaN(payAmt) && payAmt > 0 ? formatWhole(payAmt) : ''
   const cta = isPayUI
     ? d.paymentScheduleMode === 'recurring'
       ? receiving ? t.debts.fScheduleReceive : t.debts.fSchedulePay
-      : (receiving ? t.debts.fReceiveCta : t.debts.fPayCta)(payAmtLabel, d.paymentCurrency).replace(/\s+/g, ' ').trim()
-    : d.isEditFlow ? 'Save changes' : d.debtType === 'installment' ? 'Add plan' : 'Add borrow'
+      : receiving ? lt.pay.markRepaid : lt.pay.record
+    : d.isEditFlow ? lt.borrow.save : d.debtType === 'installment' ? lt.install.cta : lt.borrow.cta
 
   const onSubmit = isPayUI ? d.handleAddPayment : d.handleAddDebt
+  // A new borrow or plan says what it still needs, once something was typed.
+  const missingCopy = { amount: lt.borrow.needAmount, person: lt.borrow.needPerson, item: lt.borrow.needItem } as const
+  const missing = isFormUI && !d.isEditFlow && d.hasUnsavedDraft && d.newDebtMissing ? missingCopy[d.newDebtMissing] : null
 
   const pickFamily = (k: 'personal' | 'credit_card' | 'installment') => {
     d.setDebtType(k) // 'credit_card' redirects to the unified sheet + closes
@@ -94,12 +118,32 @@ export function AddDebtSheet() {
   const showFooter = isFormUI || (isPayUI && !payShowsSelect)
 
   return (
+    <>
     <ModalShell open={open} onBackdropClick={d.closeSheet} scrollChild>
       {open ? <HydrateDebtsWhileOpen /> : null}
+      {open ? <DraftDismissGuard dirty={d.hasUnsavedDraft} asking={asking} setAsking={setAsking} /> : null}
       <div className="flex min-h-0 flex-1 flex-col">
         {/* Header */}
-        <V3SheetHeader onClose={d.closeSheet}>
-          <V3SheetHeader.Title>{title}</V3SheetHeader.Title>
+        <V3SheetHeader
+          onClose={requestClose}
+          leading={payShowsForm ? <DatePickerField look="pill" className={HEADER_PILL} value={d.paymentDate} onChange={d.setPaymentDate} time={{ value: d.paymentTime, onChange: d.setPaymentTime, label: timeLabel, defaultNow: true }} /> : undefined}
+          actions={d.isEditFlow ? (
+            <V3SheetHeader.Action
+              tone="danger"
+              icon={<Trash2 />}
+              label={t.common.delete}
+              onClick={() => {
+                const name = d.editingDebt?.name || d.editingDebt?.person || ''
+                void confirm({ title: lt.debts.deleteTitle(name), body: lt.debts.deleteBody, confirmLabel: t.common.delete, destructive: true }).then((ok) => { if (ok) d.handleDeleteDebt() })
+              }}
+            />
+          ) : undefined}
+        >
+          {payShowsForm ? (
+            <span className="sr-only"><V3SheetHeader.Title>{title}</V3SheetHeader.Title></span>
+          ) : (
+            <V3SheetHeader.Title size="compact">{title}</V3SheetHeader.Title>
+          )}
         </V3SheetHeader>
 
         {/* Body */}
@@ -113,7 +157,7 @@ export function AddDebtSheet() {
                   title={tp.emptyTitle}
                   description={tp.emptyBody}
                   action={
-                    <Button size="cta" className="w-full" onClick={() => useSettingsStore.getState().openDebtSheetNew()}>
+                    <Button size="cta" className="w-full" onClick={() => setAddPickOpen(true)}>
                       <Plus /> {tp.emptyCta}
                     </Button>
                   }
@@ -151,7 +195,7 @@ export function AddDebtSheet() {
                     variant="outline"
                     size="touch"
                     className="mt-1 w-full border-dashed"
-                    onClick={() => useSettingsStore.getState().openDebtSheetNew()}
+                    onClick={() => setAddPickOpen(true)}
                   >
                     <Plus /> {tp.addNew}
                   </Button>
@@ -173,19 +217,29 @@ export function AddDebtSheet() {
 
         {/* Footer */}
         {showFooter ? (
-          <div className="sheet-cta flex shrink-0 items-center gap-3 border-t border-[var(--color-brand-border)] px-5 pb-[calc(16px+env(safe-area-inset-bottom))] pt-3">
-            {d.isEditFlow ? (
-              <Button variant="destructive" size="touch" onClick={d.handleDeleteDebt}>
-                <Trash2 className="h-4 w-4" />
-                {t.common.delete}
-              </Button>
-            ) : null}
-            <Button size="cta" onClick={onSubmit} disabled={!canSubmit} className="flex-1 text-base font-bold">
+          <div className="sheet-cta flex shrink-0 flex-col gap-2 border-t border-[var(--color-brand-border)] px-5 pb-[calc(16px+env(safe-area-inset-bottom))] pt-3">
+            {missing ? <p role="status" className="text-center text-xs text-[var(--color-brand-text-secondary)]">{missing}</p> : null}
+            <Button size="cta" onClick={onSubmit} disabled={!canSubmit} className="w-full text-base font-bold">
               {cta}
             </Button>
           </div>
         ) : null}
       </div>
+      <UnsavedChangesDialog
+        open={open && asking}
+        title={d.isEditFlow ? undefined : lt.borrow.draftTitle}
+        body={lt.borrow.draftBody}
+        saveLabel={cta}
+        discardLabel={lt.borrow.draftDiscard}
+        onSave={canSubmit ? () => { setAsking(false); onSubmit() } : undefined}
+        onDiscard={() => {
+          setAsking(false)
+          d.closeSheet()
+        }}
+        onKeep={() => setAsking(false)}
+      />
     </ModalShell>
+    <AddDebtOptionSheet open={open && addPickOpen} onClose={() => setAddPickOpen(false)} overSheet />
+    </>
   )
 }

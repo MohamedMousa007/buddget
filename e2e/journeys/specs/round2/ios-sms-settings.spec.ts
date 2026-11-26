@@ -7,9 +7,9 @@ import { env } from '../../lib/env'
  * BDG-008 on the settings page, as an iPhone sees it (findings/B-sms-setup.md). The browser plays the iOS app: a fake
  * WKWebView bridge makes Capacitor report 'ios', and the SMS plugin's getStatus answers with this phone's facts.
  * - never set up here: a "Set up" button, no switch
- * - setup claimed: the switch, "View guide" beside it, "Not confirmed yet"
- * - a Shortcut run seen: the switch, "The Shortcut ran"
- * - the guide's guard: "Shortcuts already exist? Skip guide" asks before it marks this phone set up
+ * - setup claimed: the switch, "View guide" beside it, "Waiting for your first text"
+ * - a Shortcut run seen: the switch, "Working · no bank text yet"
+ * - the guide's guard: "I already know the steps" opens the last step; nothing marks the phone set up before its Finish
  */
 
 const SMS_METHODS = ['checkPermission', 'requestPermission', 'saveToken', 'setEnabled', 'setSetupCompleted', 'setForwardMode', 'clearCredentials', 'clearState', 'setDeviceSecret', 'getDeviceSecret', 'removeDeviceSecret', 'setSecureItem', 'getSecureItem', 'removeSecureItem', 'getStatus', 'healthCheck', 'peekPendingQueue', 'removePending']
@@ -82,7 +82,7 @@ test.describe('iPhone SMS tracking on Settings (BDG-008)', () => {
     if (process.env.QA_SHOT) await smsRow(page).screenshot({ path: process.env.QA_SHOT.replace('.png', '-setup.png') })
   })
 
-  test('setup claimed here: the switch, "View guide" beside it, and "Not confirmed yet"', async ({ page }) => {
+  test('setup claimed here: the switch, "View guide" beside it, and "Waiting for your first text"', async ({ page }) => {
     await asIphone(page, { setupCompleted: true, enabled: true }, auth.session, auth.storageKey)
     await page.goto('/settings')
     const sw = page.getByRole('switch', { name: 'SMS tracking' })
@@ -91,30 +91,32 @@ test.describe('iPhone SMS tracking on Settings (BDG-008)', () => {
     await expect(guide).toHaveText('View guide')
     const [g, s] = await Promise.all([guide.boundingBox(), sw.boundingBox()])
     expect(g && s && g.x + g.width <= s.x + 1).toBeTruthy()
-    await expect(smsRow(page)).toContainText('Not confirmed yet')
+    await expect(smsRow(page)).toContainText('Waiting for your first text')
     await expect(page.getByTestId('sms-setup-button')).toHaveCount(0)
     if (process.env.QA_SHOT) await smsRow(page).screenshot({ path: process.env.QA_SHOT })
     await guide.click()
     await expect(page).toHaveURL(/\/settings\/sms/)
     // Straight to the guide's first page: no in-between screen with a second setup button.
-    await expect(page.getByText('Shortcuts already exist? Skip guide')).toBeVisible()
+    await expect(page.getByText('I already know the steps')).toBeVisible()
     await expect(page.getByText('Not confirmed yet · waiting')).toHaveCount(0)
   })
 
-  test('a Shortcut run seen here: the switch and "The Shortcut ran"', async ({ page }) => {
+  test('a Shortcut run seen here: the switch and "Working · no bank text yet"', async ({ page }) => {
     await asIphone(page, { setupCompleted: false, lastRunAt: new Date().toISOString(), enabled: true }, auth.session, auth.storageKey)
     await page.goto('/settings')
     await expect(page.getByRole('switch', { name: 'SMS tracking' })).toBeVisible({ timeout: 90_000 })
-    await expect(smsRow(page)).toContainText('The Shortcut ran')
+    await expect(smsRow(page)).toContainText('Working · no bank text yet')
   })
 
-  test('"Set up" opens the guide, and "Skip guide" asks before it marks this phone set up', async ({ page }) => {
+  test('"Set up" opens the guide, and "I already know the steps" goes to the last step without marking this phone set up', async ({ page }) => {
     await asIphone(page, { setupCompleted: false, enabled: false }, auth.session, auth.storageKey)
     await page.goto('/settings')
     await page.getByTestId('sms-setup-button').click({ timeout: 90_000 })
     await expect(page).toHaveURL(/\/settings\/sms/)
-    await page.getByText('Shortcuts already exist? Skip guide').click()
-    await expect(page.getByRole('alertdialog').or(page.getByRole('dialog').filter({ hasText: /skip|already/i })).first()).toBeVisible()
+    // Light touch guide: the link jumps to the last step instead of skipping; only that step's Finish claims the phone.
+    await page.getByText('I already know the steps').click()
+    await expect(page.getByText('Step 5 of 5')).toBeVisible()
+    await page.waitForTimeout(1000)
     expect(await page.evaluate(() => (window as any).__sms.setupCompleted)).toBe(false)
   })
 })

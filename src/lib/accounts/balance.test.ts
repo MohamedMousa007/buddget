@@ -24,3 +24,28 @@ describe('computeBalances partial refund', () => {
     expect(balance(exp({ refundedAmount: 100 }))).toBe(200)
   })
 })
+
+describe('computeBalances month flows (account sheet "In / Out this month")', () => {
+  const run = (expenses: Expense[], adjustments: { id: string; paymentMethodId: string; delta: number; reason: 'manual_update'; occurredAt: string }[] = [], flowsFrom?: number) =>
+    computeBalances({ paymentMethods: [cash], expenses, incomeEvents: [], debtPayments: [], debts: [], savingsTransactions: [], savingsAccounts: [], adjustments: adjustments as never, convert: (a) => a, flowsFrom }).get('cash')
+  const nov = Date.parse('2026-11-01T00:00:00.000Z')
+  it('splits movements since the given instant into money in and money out', () => {
+    const b = run([
+      exp({ id: 'old', date: '2026-10-20', amount: 40, paymentMethodId: 'cash' }),
+      exp({ id: 'out', date: '2026-11-03', amount: 25, paymentMethodId: 'cash' }),
+      exp({ id: 'in', date: '2026-11-04', amount: 60, category: 'Transfer', paymentMethodId: 'other', toPaymentMethodId: 'cash' }),
+    ], [], nov)
+    expect(b?.flowsIn).toBe(60)
+    expect(b?.flowsOut).toBe(25)
+    expect(b?.balance).toBe(195)
+  })
+  it('a balance correction is neither money in nor money out', () => {
+    const b = run([], [{ id: 'j', paymentMethodId: 'cash', delta: 500, reason: 'manual_update', occurredAt: '2026-11-05T00:00:00.000Z' }], nov)
+    expect(b?.balance).toBe(700)
+    expect(b?.flowsIn).toBe(0)
+    expect(b?.flowsOut).toBe(0)
+  })
+  it('without the instant there are no flow figures', () => {
+    expect(run([])?.flowsIn).toBeUndefined()
+  })
+})

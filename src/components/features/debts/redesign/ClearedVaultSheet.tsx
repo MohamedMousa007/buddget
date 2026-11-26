@@ -1,128 +1,90 @@
 'use client'
 
 import { useState } from 'react'
-import { format, parseISO } from 'date-fns'
-import { Award, Check, ChevronDown, ChevronUp, X } from 'lucide-react'
+import { parseISO } from 'date-fns'
+import { Award, Check, ChevronDown, ChevronUp } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
-import type { ClearedVM } from '@/hooks/useDebtTabData'
-import type { DebtFamily } from '@/lib/debts/debtFamily'
-import { fmtWhole, soft } from './heroCardShared'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
-import { IconButton } from '@/components/ui/IconButton'
 import { Button } from '@/components/ui/button'
-import { useT } from '@/lib/i18n'
+import type { ClearedVM } from '@/hooks/useDebtTabData'
+import { cn } from '@/lib/utils'
+import { formatWhole } from '@/lib/utils/formatters'
+import { useLocale } from '@/lib/i18n'
+import { formatLocalized } from '@/lib/i18n/dateFormat'
+import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 
-const GREEN = 'var(--color-brand-green)'
-const VAULT_CARD = 'rounded-[16px] border border-[var(--color-brand-green)]/25 bg-[var(--color-brand-green-soft)]'
-
-function Seal({ size }: { size: 'sm' | 'lg' }) {
+/** The dashed, tilted green seal of a cleared debt. */
+function Seal({ big, children }: { big?: boolean; children: React.ReactNode }) {
   return (
-    <span
-      className={`flex shrink-0 -rotate-12 items-center justify-center rounded-full border-2 border-dashed border-[var(--color-brand-green)]/70 text-[var(--color-brand-green)] ${size === 'lg' ? 'h-[54px] w-[54px]' : 'h-11 w-11'}`}
-    >
-      <Check className={size === 'lg' ? 'h-6 w-6' : 'h-5 w-5'} strokeWidth={2.5} />
+    <span aria-hidden className={cn('flex shrink-0 -rotate-12 items-center justify-center rounded-full border-2 border-dashed border-[var(--color-brand-green)] text-[var(--color-brand-green)]', big ? 'size-11 [&_svg]:size-5' : 'size-9 [&_svg]:size-4')}>
+      {children}
     </span>
   )
 }
 
-/** Celebratory cleared-debt archive (handoff §8). */
+/** Cleared debts (Light touch `s_vault`): a green "paid off so far" hero, then two columns of seal cards that open to "How you paid". */
 export function ClearedVaultSheet({ open, onClose, cleared, base }: { open: boolean; onClose: () => void; cleared: ClearedVM[]; base: string }) {
-  const t = useT().debts
-  const [selected, setSelected] = useState<string | null>(null)
-  const sum = cleared.reduce((s, c) => s + c.original, 0)
-  const detail = cleared.find((c) => c.id === selected) ?? null
-  const familyTag: Record<DebtFamily, string> = {
-    borrow: t.tagBorrow,
-    credit_card: t.tagCard,
-    installment: t.tagInstallment,
-  }
+  const c = useDebtsSubsLtCopy().vault
+  const { locale } = useLocale()
+  const [openId, setOpenId] = useState<string | null>(null)
+  const sum = cleared.reduce((s, x) => s + x.original, 0)
+  const lastMonth = cleared[0]?.clearedMonth && cleared[0].clearedMonth !== '—' ? cleared[0].clearedMonth : ''
 
   return (
-    <ModalShell open={open} onBackdropClick={onClose} panelClassName="bg-[var(--color-brand-card)]" scrollChild>
-      <V3SheetHeader
-        onClose={onClose}
-        leading={
-          <span
-            aria-hidden
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] text-[var(--color-brand-green)]"
-            style={{ background: soft(GREEN, 16) }}
-          >
-            <Award className="h-6 w-6" />
-          </span>
-        }
-      >
-        <V3SheetHeader.Title>{t.vaultTitle}</V3SheetHeader.Title>
-        <V3SheetHeader.Subtitle>
-          <span dir="auto" className="font-mono-numbers">{t.vaultSummary(cleared.length, fmtWhole(sum), base)}</span>
-        </V3SheetHeader.Subtitle>
-      </V3SheetHeader>
+    <ModalShell open={open} onBackdropClick={onClose} scrollChild>
+      <div className="flex min-h-0 flex-1 flex-col">
+        <V3SheetHeader onClose={onClose}>
+          <V3SheetHeader.Title size="compact">{c.title}</V3SheetHeader.Title>
+        </V3SheetHeader>
+        <div className="native-scroll min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(24px+env(safe-area-inset-bottom))]">
+          <div className="rounded-3xl bg-[linear-gradient(150deg,color-mix(in_oklab,var(--color-brand-green)_22%,var(--color-brand-card)),color-mix(in_oklab,var(--color-brand-green)_8%,var(--color-brand-card)))] px-5 pb-5 pt-4">
+            <Seal big><Award /></Seal>
+            <p className="mt-3 text-[0.8125rem] font-medium text-[var(--color-brand-text-secondary)]">{c.paidOff}</p>
+            <p className="font-mono-numbers text-[2rem] font-semibold leading-tight tracking-[-0.04em] text-[var(--color-brand-text-primary)]">
+              {formatWhole(sum)} <span className="text-sm font-medium text-[var(--color-brand-text-muted)]">{base}</span>
+            </p>
+            <p className="mt-1 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{c.summary(cleared.length, lastMonth)}</p>
+          </div>
 
-      <div className="px-5 pb-6 pt-4">
-        {cleared.length === 0 ? (
-          <p className="py-10 text-center text-sm text-[var(--color-brand-text-muted)]">{t.vaultEmpty}</p>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {cleared.map((c) => {
-              const on = selected === c.id
-              return (
-                <div key={c.id} className={`flex flex-col p-3.5 ${VAULT_CARD}`}>
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-[0.625rem] font-bold uppercase leading-tight tracking-[0.05em] text-[var(--color-brand-green)]">
-                      {t.clearedTag(familyTag[c.family])}
+          {cleared.length === 0 ? (
+            <p className="py-10 text-center text-sm text-[var(--color-brand-text-muted)]">{c.empty}</p>
+          ) : (
+            <div className="mt-3 grid grid-cols-2 gap-2.5">
+              {cleared.map((x) => {
+                const on = openId === x.id
+                return (
+                  <div key={x.id} className={cn('rounded-2xl border border-[color-mix(in_oklab,var(--color-brand-green)_28%,transparent)] bg-[var(--color-brand-card)] p-3.5', on && 'col-span-2')}>
+                    <div className="flex items-start justify-between">
+                      <Seal><Check /></Seal>
+                      <span className="text-[0.6875rem] font-semibold text-[var(--color-brand-green)]">{c.tag[x.family]}</span>
+                    </div>
+                    <p dir="auto" className="mt-3 truncate text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">{x.name}</p>
+                    <p className="font-mono-numbers text-[1.0625rem] font-semibold text-[var(--color-brand-text-primary)]">
+                      {formatWhole(x.original)} <span className="text-[0.6875rem] font-medium text-[var(--color-brand-text-muted)]">{x.currency}</span>
                     </p>
-                    <Seal size="lg" />
-                  </div>
-                  <p className="mt-1 truncate text-lg font-bold text-[var(--color-brand-text-primary)]">{c.name}</p>
-                  <p className="mt-2 text-[0.625rem] font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">{t.originalLabel}</p>
-                  <p className="font-mono-numbers text-xl font-bold text-[var(--color-brand-text-primary)]">
-                    {fmtWhole(c.original)} <span className="text-sm text-[var(--color-brand-text-muted)]">{c.currency}</span>
-                  </p>
-                  <div className="mt-3 flex items-center justify-between border-t border-[var(--color-brand-border)] pt-2.5">
-                    <span dir="auto" className="font-mono-numbers text-[0.75rem] text-[var(--color-brand-text-muted)]">{t.clearedMonth(c.clearedMonth)}</span>
-                    {c.history.length > 0 ? (
-                      <Button
-                        variant="ghost"
-                        size="touch"
-                        onClick={() => setSelected(on ? null : c.id)}
-                        className="text-[0.75rem] font-semibold text-[var(--color-brand-green)]"
-                      >
-                        {on ? t.hide : t.historyLabel}
-                        {on ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                    <p className="text-xs text-[var(--color-brand-text-muted)]">{c.clearedIn(x.clearedMonth, x.history.length)}</p>
+                    {on ? (
+                      <div className="mt-3 border-t border-[var(--color-brand-border)] pt-2">
+                        {x.history.map((h, i) => (
+                          <div key={i} className="flex justify-between py-1 text-xs text-[var(--color-brand-text-secondary)]">
+                            <span dir="auto">{[formatLocalized(parseISO(h.date.slice(0, 10)), 'MMM d', locale), h.method].filter(Boolean).join(' · ')}</span>
+                            <span className="font-mono-numbers">−{formatWhole(h.amount)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                    {x.history.length > 0 ? (
+                      <Button variant="ghost" size="touch" onClick={() => setOpenId(on ? null : x.id)} className="mt-1 -ms-2 px-2 text-[0.8125rem] font-semibold text-[var(--color-brand-primary-ink)]">
+                        {on ? c.hide : c.howYouPaid}
+                        {on ? <ChevronUp aria-hidden /> : <ChevronDown aria-hidden />}
                       </Button>
                     ) : null}
                   </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-
-        {detail ? (
-          <div className={`mt-4 overflow-hidden ${VAULT_CARD}`}>
-            <div className="flex items-center gap-3 p-3.5">
-              <Seal size="sm" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-lg font-bold text-[var(--color-brand-text-primary)]">{detail.name}</p>
-                <p className="font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-muted)]">
-                  {t.vaultOriginalLine(fmtWhole(detail.original), detail.currency, detail.clearedMonth)}
-                </p>
-              </div>
-              <IconButton onClick={() => setSelected(null)} aria-label={t.closeHistory} variant="tinted" size="sm" shape="round">
-                <X className="h-4 w-4" />
-              </IconButton>
+                )
+              })}
             </div>
-            {detail.history.map((h, i) => (
-              <div key={i} className="flex items-center gap-3 border-t border-[var(--color-brand-border)] px-4 py-3">
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--color-brand-green)]" />
-                <span className="font-mono-numbers text-sm text-[var(--color-brand-text-secondary)]">{format(parseISO(h.date), 'MMM d')}</span>
-                <span className="ms-auto font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-muted)]">{h.method ?? '—'}</span>
-                <span className="font-mono-numbers text-sm font-semibold text-[var(--color-brand-text-primary)]">−{fmtWhole(h.amount)}</span>
-              </div>
-            ))}
-          </div>
-        ) : null}
-
-        <p className="mt-6 text-center text-[0.8125rem] leading-relaxed text-[var(--color-brand-text-muted)]">{t.vaultFooter}</p>
+          )}
+        </div>
       </div>
     </ModalShell>
   )

@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, useSyncExternalStore, type ComponentProps, type MutableRefObject, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { AnimatePresence, motion, useDragControls, useIsPresent } from 'framer-motion'
+import { AnimatePresence, motion, useDragControls, useIsPresent, useReducedMotion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useNumpadInset } from '@/lib/ui/numpadInset'
 import { useScrollLock } from '@/lib/ui/scrollLock'
@@ -57,9 +57,9 @@ export function useDismissGuard(guard: DismissGuard) {
  * While AnimatePresence plays the exit animation the panel is still mounted with the handlers of its last
  * render. Inert + no pointer events stop a second tap on Save from re-running that stale submit.
  */
-export function ExitInertPanel({ style, ...rest }: ComponentProps<typeof motion.div>) {
+export function ExitInertPanel({ style, inert, ...rest }: ComponentProps<typeof motion.div>) {
   const present = useIsPresent()
-  return <motion.div {...rest} inert={!present} style={present ? style : { ...style, pointerEvents: 'none' }} />
+  return <motion.div {...rest} inert={!present || !!inert} style={present ? style : { ...style, pointerEvents: 'none' }} />
 }
 
 export function ExitInertBackdrop({ style, ...rest }: ComponentProps<typeof motion.button>) {
@@ -138,6 +138,16 @@ interface ModalShellProps {
   anchor?: 'center' | 'corner'
   /** Accessible name for a sheet whose content has no single title (multi-state flows). */
   ariaLabel?: string
+  /**
+   * Another sheet is stacked over this one (iOS stacked sheets): the panel scales back and dims, and stays inert
+   * until the top sheet closes. Off by default.
+   */
+  behind?: boolean
+  /**
+   * This sheet opens over another open sheet whose scrim already dims the page: its own backdrop stays clear (it still
+   * catches the tap that closes it), so the page is not dimmed twice. Off by default.
+   */
+  overSheet?: boolean
 }
 
 /**
@@ -154,6 +164,8 @@ export function ModalShell({
   scrollChild = false,
   anchor = 'center',
   ariaLabel,
+  behind = false,
+  overSheet = false,
 }: ModalShellProps) {
   const dragControls = useDragControls()
   const zStack = zIndexClassName ?? OVERLAY_Z
@@ -249,6 +261,9 @@ export function ModalShell({
   }, [open])
 
   const desktopFadePanel = lgMotion
+  const reduceMotion = useReducedMotion()
+  const settled = desktopFadePanel ? { opacity: 1, scale: 1 } : { y: 0 }
+  const pushedBack = reduceMotion ? { ...settled, opacity: 0.55 } : { ...settled, scale: 0.94, opacity: 0.7 }
 
   // A focused field only means "soft keyboard up" on touch devices. With a mouse (a narrow desktop
   // window is still a bottom sheet below md) focusing an input must never remove the CTA.
@@ -286,7 +301,7 @@ export function ModalShell({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
             onClick={guardedDismiss}
-            className={cn('fixed inset-0', corner ? 'bg-black/60 backdrop-blur-sm lg:bg-black/20 lg:backdrop-blur-none' : 'bg-black/60 backdrop-blur-sm', zStack)}
+            className={cn('fixed inset-0', overSheet ? 'bg-transparent' : corner ? 'bg-black/60 backdrop-blur-sm lg:bg-black/20 lg:backdrop-blur-none' : 'bg-black/60 backdrop-blur-sm', zStack)}
           />
           <ExitInertPanel
             ref={panelRef}
@@ -299,7 +314,7 @@ export function ModalShell({
             tabIndex={-1}
             data-keyboard-open={keyboardUp ? 'true' : undefined}
             initial={desktopFadePanel ? { opacity: 0, scale: 0.98 } : { y: '100%' }}
-            animate={desktopFadePanel ? { opacity: 1, scale: 1 } : { y: 0 }}
+            animate={behind ? pushedBack : settled}
             exit={desktopFadePanel ? { opacity: 0, scale: 0.97 } : { y: '100%' }}
             transition={
               desktopFadePanel
@@ -324,11 +339,12 @@ export function ModalShell({
               'native-scroll',
               panelClassName
             )}
-            style={
-              bottomInset > 0 && !desktopFadePanel
-                ? { paddingBottom: `${bottomInset}px` }
-                : undefined
-            }
+            inert={behind || undefined}
+            aria-hidden={behind || undefined}
+            style={{
+              ...(bottomInset > 0 && !desktopFadePanel ? { paddingBottom: `${bottomInset}px` } : {}),
+              ...(behind ? { transformOrigin: '50% 0%' } : {}),
+            }}
           >
             <ModalTitleIdContext.Provider value={titleId}>
              <DismissGuardContext.Provider value={dismissGuard}>

@@ -6,7 +6,7 @@ import type { ReportRangePreset } from '@/lib/reports/reportsPeriod'
 export const FREE_RANGES: readonly ReportRangePreset[] = ['thisMonth', 'lastMonth', 'last3Months', 'last6Months']
 
 /**
- * Pro insights: every finding, the 6-month and year ranges. UI-only, like the other gates.
+ * Pro insights: every finding and the year range (Free keeps up to 6 months). UI-only, like the other gates.
  * Billing off (or unknown) opens everything; otherwise the server's `features` list decides, which honours per-user
  * overrides, and a missing list falls back to the plan.
  */

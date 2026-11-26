@@ -27,6 +27,17 @@ function ensureListener() {
   )
 }
 
+/** Puts a layer on top of the Escape stack; returns its removal. The hook below is the only caller in the app. */
+export function pushEscapeLayer(fn: () => void): () => void {
+  ensureListener()
+  const entry: Entry = { fn }
+  stack.push(entry)
+  return () => {
+    const i = stack.indexOf(entry)
+    if (i !== -1) stack.splice(i, 1)
+  }
+}
+
 export function useEscapeClose(isOpen: boolean, onClose: () => void) {
   const cb = useRef(onClose)
   useEffect(() => {
@@ -34,12 +45,6 @@ export function useEscapeClose(isOpen: boolean, onClose: () => void) {
   })
   useEffect(() => {
     if (!isOpen) return
-    ensureListener()
-    const entry: Entry = { fn: () => cb.current() }
-    stack.push(entry)
-    return () => {
-      const i = stack.indexOf(entry)
-      if (i !== -1) stack.splice(i, 1)
-    }
+    return pushEscapeLayer(() => cb.current())
   }, [isOpen])
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cardDetails, sheetActivity } from './cardDetails'
+import { availableCredit, cardDetails, sheetActivity } from './cardDetails'
 import type { Debt, Expense, PaymentMethod } from '@/lib/store/types'
 
 const bank = { id: 'bank', name: 'HSBC', type: 'bank_account', currency: 'EGP', isDefault: false } as PaymentMethod
@@ -14,7 +14,7 @@ describe('BUD-103 card details follow the carousel', () => {
     expect(cardDetails(debit, [], [], [], {})).toEqual({ kind: 'debit' })
   })
   it('a credit card shows its own outstanding and limit', () => {
-    expect(cardDetails(credit, [ccDebt], [exp('c1', 'cc', '2026-11-02')], [], {})).toEqual({ kind: 'credit', outstanding: 250, limit: 5000, currency: 'EGP' })
+    expect(cardDetails(credit, [ccDebt], [exp('c1', 'cc', '2026-11-02')], [], {})).toEqual({ kind: 'credit', outstanding: 250, limit: 5000, currency: 'EGP', dueDay: null })
   })
   it('a credit card with no linked debt has no outstanding to show', () => {
     expect(cardDetails(credit, [], [], [], {})).toMatchObject({ kind: 'credit', outstanding: null })
@@ -30,5 +30,24 @@ describe('BUD-103 activity follows the selected card', () => {
   })
   it('shows the whole account on the add-card slot', () => {
     expect(sheetActivity(undefined, 'bank', expenses, methods).map((e) => e.id)).toEqual(['b', 'a'])
+  })
+})
+
+describe('card sheet facts', () => {
+  it('a credit card carries its due day when set', () => {
+    expect(cardDetails(credit, [{ ...ccDebt, paymentDueDay: 15 } as Debt], [], [], {})).toMatchObject({ dueDay: 15 })
+  })
+  it('available is the limit minus what is owed, never below zero, unknown without a limit', () => {
+    expect(availableCredit(30000, 8420)).toBe(21580)
+    expect(availableCredit(30000, null)).toBe(30000)
+    expect(availableCredit(5000, 6200)).toBe(0)
+    expect(availableCredit(null, 100)).toBeNull()
+  })
+  it('a pay-later card counts the plan instalments paid', () => {
+    const valu = { id: 'v', name: 'valU', type: 'bnpl', currency: 'EGP', isDefault: false } as PaymentMethod
+    const plan = { id: 'p', debtType: 'installment', linkedPaymentMethodId: 'v', installmentCount: 12, currency: 'EGP', status: 'active' } as unknown as Debt
+    const pays = [1, 2, 3, 4].map((n) => ({ id: `x${n}`, debtId: 'p' })) as never
+    expect(cardDetails(valu, [plan], [], pays, {})).toEqual({ kind: 'bnpl', debtId: 'p', paid: 4, count: 12 })
+    expect(cardDetails(valu, [], [], [], {})).toEqual({ kind: 'other' })
   })
 })

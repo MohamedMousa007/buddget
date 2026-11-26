@@ -9,7 +9,7 @@ import { useGoalAllocationRuns } from '@/hooks/useGoalAllocationRuns'
 import { useT } from '@/lib/i18n'
 import { getGoalStatus } from '@/lib/goals/goalStatus'
 import type { Goal } from '@/lib/store/types'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { formatWhole } from '@/lib/utils/formatters'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 
 /** Bottom sheet shown when a goal crosses 25, 50 or 75%. */
@@ -26,7 +26,7 @@ export function MilestoneCheerSheet({ goal, pct, current, onClose }: { goal: Goa
         </ProgressRing>
         <V3SheetHeader.DialogTitle>{t.cheerTitle(pct)}</V3SheetHeader.DialogTitle>
         <p className="max-w-xs text-sm leading-normal text-[var(--color-brand-text-secondary)]">
-          {t.cheerBody(goal.name, formatCurrency(current, goal.currency, false))}
+          {t.cheerBody(goal.name, formatWhole(current))}
         </p>
         <div className="flex flex-wrap justify-center gap-2">
           {status.kind === 'streak' ? (

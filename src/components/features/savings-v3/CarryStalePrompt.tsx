@@ -8,7 +8,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { monthNames } from '@/lib/i18n/dateFormat'
 import { useLocale, useT } from '@/lib/i18n'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { formatWhole } from '@/lib/utils/formatters'
 
 /**
  * Tells the user a closed month's savings carry no longer matches its rows, and updates it on their tap. Newest stale
@@ -33,7 +33,7 @@ export function CarryStalePrompt() {
       tone: 'warning',
       icon: RefreshCw,
       title: t.carryStaleTitle,
-      description: t.carryStaleBody(`${monthNames(locale)[m - 1]} ${y}`, formatCurrency(cycle.posted, base), formatCurrency(cycle.recomputed, base)),
+      description: t.carryStaleBody(`${monthNames(locale)[m - 1]} ${y}`, `${formatWhole(cycle.posted)} ${base}`, `${formatWhole(cycle.recomputed)} ${base}`),
       actions: [
         {
           label: t.carryStaleUpdate,

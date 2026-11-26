@@ -75,11 +75,13 @@ import { overpaysDebt } from '@/lib/debts/overpaysDebt'
 import { withGoalDefaults } from '@/lib/goals/goalDefaults'
 import { resolveAccountLeg, incomeEventIdForTx } from '@/lib/savings/accountLeg'
 import { correctionRefusal, depositLegId, depositRefusal, ledgerOf } from '@/lib/savings/pocketHome'
+import { entryOccurredAt } from '@/lib/time/occurredAt'
 import { dropExpenseReceipt, restoreExpenseReceipt } from '@/lib/receipt/receiptCascade'
 import { migrateIdsToUuid } from '@/lib/store/migrations/v17_uuid_remap'
 import { resendCashDebtPayments } from '@/lib/store/migrations/v23_cash_debt_payment_resend'
 import { noteRestored } from '@/lib/store/undoWatch'
 import { dropMistypedFields } from '@/lib/store/persistShape'
+import { stampRateKeys } from '@/lib/market/rateFreshness'
 import { decomposePaymentMethodName, normalizePaymentMethodType } from '@/lib/payment/paymentMethodDefaults'
 const PERSIST_VERSION = 23
 
@@ -90,8 +92,7 @@ const restoredNow = <T extends { id: string }>(row: T): T => {
 }
 
 /** Today's entries carry the exact time; back-dated ones stay day-level (the balance reads them at noon). */
-const occurredNow = (date: string, given?: string): string | undefined =>
-  given ?? (date === localTodayISO() ? new Date().toISOString() : undefined)
+const occurredNow = (date: string, given?: string): string => given ?? entryOccurredAt(date)
 const PERSIST_WRITE_DEBOUNCE_MS = 150
 
 const persistStorage = createDebouncedJsonStorage<FinanceStore>(() => createSafeLocalStorage(), PERSIST_WRITE_DEBOUNCE_MS)
@@ -278,6 +279,7 @@ export const useFinanceStore = create<FinanceStore>()(
       goldPriceAvailable: false,
       goldPriceStale: false,
       lastRatesFetch: null,
+      rateFetchedAt: {},
       dataReady: false,
       setDataReady: (v) => set({ dataReady: v }),
 
@@ -1204,9 +1206,6 @@ export const useFinanceStore = create<FinanceStore>()(
           return { subscriptions: subs, recurringExpenses: recurring }
         }),
 
-      pauseSubscription: (id) =>
-        get().updateSubscription(id, { status: 'paused', pausedAt: new Date().toISOString() }),
-
       resumeSubscription: (id) =>
         get().updateSubscription(id, { status: 'active', pausedAt: null, createdAt: new Date().toISOString() }),
 
@@ -1731,6 +1730,7 @@ export const useFinanceStore = create<FinanceStore>()(
                     amount: openingBalance,
                     currency: row.currency,
                     date: today,
+                    occurredAt: new Date().toISOString(),
                     notes: 'Opening balance',
                     // Declaring what already exists — no cash moved, so it must not be
                     // netted out of monthlyFlow (that would zero out the account).
@@ -1842,7 +1842,7 @@ export const useFinanceStore = create<FinanceStore>()(
             // this month's flow. 'allocate' (default) is real cash flow — left as undefined
             // so cashSavingsDepositsInBaseForMonth counts it against left-to-spend.
             ...(opts?.mode === 'declare' ? { isCashFlow: false } : {}),
-            ...(!opts?.date || opts.date === localTodayISO() ? { occurredAt: new Date().toISOString() } : {}),
+            occurredAt: occurredNow(opts?.date ?? localTodayISO(), opts?.occurredAt),
             ...(legId ? { paymentMethodId: legId } : {}),
           }
           const nextState: FinanceStore = {
@@ -1861,7 +1861,7 @@ export const useFinanceStore = create<FinanceStore>()(
         return ok
       },
 
-      transferBetweenPockets: (fromId, toId, amount, notes) => {
+      transferBetweenPockets: (fromId, toId, amount, notes, date, at) => {
         const raw = Math.max(0, Number(amount) || 0)
         if (raw <= 0 || fromId === toId) return false
         let ok = false
@@ -1877,18 +1877,18 @@ export const useFinanceStore = create<FinanceStore>()(
               : tryConvertWithGold(raw, from.currency, to.currency, state.exchangeRates, state.settings.baseCurrency, goldQuoteOf(state))
           if (toAmt === null || toAmt <= 0) return state
           const gid = generateId()
-          const today = localTodayISO()
-          const occurredAt = new Date().toISOString()
+          const day = date ?? localTodayISO()
+          const occurredAt = occurredNow(day, at)
           // Both legs are non-cash-flow: money moved between pockets, so neither net worth
           // nor left-to-spend changes.
           const outTx: SavingsTransaction = {
             id: generateId(), accountId: fromId, type: 'withdrawal', amount: raw,
-            currency: from.currency, date: today, occurredAt, notes, source: 'transfer',
+            currency: from.currency, date: day, occurredAt, notes, source: 'transfer',
             transferGroupId: gid, isCashFlow: false,
           }
           const inTx: SavingsTransaction = {
             id: generateId(), accountId: toId, type: 'deposit', amount: toAmt,
-            currency: to.currency, date: today, occurredAt, notes, source: 'transfer',
+            currency: to.currency, date: day, occurredAt, notes, source: 'transfer',
             transferGroupId: gid, isCashFlow: false,
           }
           const nextState: FinanceStore = {
@@ -1923,14 +1923,16 @@ export const useFinanceStore = create<FinanceStore>()(
               : tryConvertWithGold(raw, cIn, acc.currency, state.exchangeRates, state.settings.baseCurrency, goldQuoteOf(state))
           if (amt === null || amt <= 0 || acc.currentBalance + balanceEpsilon(acc.currency) < amt) return state
           const nowIso = new Date().toISOString()
+          const day = opts?.date ?? localTodayISO()
+          const occurredAt = occurredNow(day, opts?.occurredAt)
           const tx: SavingsTransaction = {
             id: opts?.txId ?? generateId(),
             accountId,
             type: 'withdrawal',
             amount: amt,
             currency: acc.currency,
-            date: localTodayISO(),
-            occurredAt: nowIso,
+            date: day,
+            occurredAt,
             notes,
           }
           // Only 'income' returns the money to this month's spendable income. A transfer,
@@ -1956,10 +1958,11 @@ export const useFinanceStore = create<FinanceStore>()(
                   sourceType: isInvestment ? 'investment' : 'savings',
                   // Local, to match the paired ledger row's `date` — the same movement must
                   // not straddle two calendar days in the Cairo-before-dawn window.
-                  receivedDate: localTodayISO(),
+                  receivedDate: day,
                   status: 'confirmed',
                   linkedSavingsAccountId: accountId,
-                  ...(legId ? { paymentMethodId: legId, occurredAt: nowIso } : {}),
+                  occurredAt,
+                  ...(legId ? { paymentMethodId: legId } : {}),
                   notes: notes?.trim() || undefined,
                   createdAt: nowIso,
                   updatedAt: nowIso,
@@ -2040,6 +2043,7 @@ export const useFinanceStore = create<FinanceStore>()(
             amount: Math.abs(diff),
             currency: acc.currency,
             date: localTodayISO(),
+            occurredAt: new Date().toISOString(),
             notes: notes?.trim() || 'Manual balance correction',
             // A revaluation (e.g. investment gains), not cash — netting it out of
             // monthlyFlow would cancel the gain. `type` still carries the direction.
@@ -2071,10 +2075,11 @@ export const useFinanceStore = create<FinanceStore>()(
         })),
 
       updateRates: (rates) =>
-        set((state) => ({
-          exchangeRates: { ...state.exchangeRates, ...withoutGoldRates(rates) },
-          lastRatesFetch: new Date().toISOString(),
-        })),
+        set((state) => {
+          const live = withoutGoldRates(rates)
+          const at = new Date().toISOString()
+          return { exchangeRates: { ...state.exchangeRates, ...live }, lastRatesFetch: at, rateFetchedAt: stampRateKeys(state.rateFetchedAt ?? {}, live, at) }
+        }),
 
       updateGoldPrice: (price) =>
         set({
@@ -2232,6 +2237,7 @@ export const useFinanceStore = create<FinanceStore>()(
           goldPriceAvailable: false,
           goldPriceStale: false,
           lastRatesFetch: null,
+          rateFetchedAt: {},
           dataReady: false,
         }),
 
@@ -2459,6 +2465,7 @@ export const useFinanceStore = create<FinanceStore>()(
           goldPriceAvailable: false,
           goldPriceStale: false,
           lastRatesFetch: null,
+          rateFetchedAt: {},
         } as never
       },
       storage: persistStorage,

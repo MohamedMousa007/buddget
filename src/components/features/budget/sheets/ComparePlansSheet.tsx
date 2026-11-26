@@ -6,7 +6,7 @@ import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Card } from '@/components/ui/card'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { comparePlans } from '@/lib/budget/comparePlans'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { inlineMoney } from '@/components/features/budget/chromeFormat'
 import type { BudgetPlan, Currency } from '@/lib/store/types'
 import { blockColor } from '../chromeFormat'
 import { useBudgetDeckCopy } from '../useDeckCopy'
@@ -31,7 +31,7 @@ export function ComparePlansSheet({ open, plans, aId, bId, base, rates, onChange
   const a = plans.find((p) => p.id === aId) ?? null
   const b = plans.find((p) => p.id === bId) ?? null
   const cmp = a && b ? comparePlans(a, b, base, rates) : null
-  const money = (n: number) => formatCurrency(n, base, false)
+  const money = (n: number) => inlineMoney(n, base)
   const signed = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${money(Math.abs(n))}`
 
   const picker = (label: string, value: string | null, other: string | null, set: (id: string) => void) => (

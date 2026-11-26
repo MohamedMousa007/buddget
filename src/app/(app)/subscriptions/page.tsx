@@ -1,6 +1,5 @@
 'use client'
 
-import { format } from 'date-fns'
 import { useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { AddSubscriptionSheet } from '@/components/features/subscriptions/AddSubscriptionSheet'
@@ -9,16 +8,14 @@ import { HomeNudge } from '@/components/features/subscriptions/HomeNudge'
 import { FoundSubscriptionsSheet } from '@/components/features/subscriptions/FoundSubscriptionsSheet'
 import { SubscriptionsFoundRow } from '@/components/features/subscriptions/SubscriptionsFoundRow'
 import { SubscriptionDetailSheet } from '@/components/features/subscriptions/SubscriptionDetailSheet'
-import { SubscriptionGroups } from '@/components/features/subscriptions/SubscriptionGroups'
+import { AddSubscriptionLink, SubscriptionGroups } from '@/components/features/subscriptions/SubscriptionGroups'
 import { SubscriptionsEmpty } from '@/components/features/subscriptions/SubscriptionsEmpty'
 import { SubscriptionsHero } from '@/components/features/subscriptions/SubscriptionsHero'
 import { SubscriptionsRail } from '@/components/features/subscriptions/SubscriptionsRail'
 import { PageGrid } from '@/components/layout/PageGrid'
-import { Plus } from 'lucide-react'
-import { IconButton } from '@/components/ui/IconButton'
+import { PageHero } from '@/components/layout/PageHero'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SkeletonList } from '@/components/ui/SkeletonList'
-import { useSubscriptionDates } from '@/hooks/useSubscriptionDates'
 import { useSubscriptionsHome } from '@/hooks/useSubscriptionsHome'
 import { catalogRegionOf } from '@/lib/subscriptions/catalogDisplay'
 import { useT } from '@/lib/i18n'
@@ -31,7 +28,6 @@ import type { Segment } from '@/lib/subscriptions/subscriptionRows'
 export default function SubscriptionsPage() {
   const t = useT()
   const ui = t.subscriptions.ui
-  const { periodLabel: formatMonth } = useSubscriptionDates()
   const { dataReady, profile, smsEnabled, subscriptions } = useFinanceStore(
     useShallow((s) => ({
       dataReady: s.dataReady,
@@ -80,13 +76,17 @@ export default function SubscriptionsPage() {
   const scan = () => (smsEnabled ? setReviewOpen(true) : navigate('/settings/sms'))
 
   const empty = dataReady && subscriptions.length === 0
-  const period = formatMonth(format(home.today, 'yyyy-MM'))
-  const { groups, paused, cancelled, activeCount } = home.lists
+  const { groups } = home.lists
 
   return (
     <div>
-      <SubscriptionsHero hero={dataReady ? home.hero : null} base={home.base} loading={!dataReady} />
+      {empty ? null : (
+        <PageHero inset>
+          <SubscriptionsHero hero={dataReady ? home.hero : null} base={home.base} loading={!dataReady} />
+        </PageHero>
+      )}
       <PageGrid
+        stack
         wide={empty}
         primary={
           <div className="flex min-w-0 flex-col gap-3.5 px-4 pb-4 pt-4 lg:px-0 lg:pb-0 lg:pt-0">
@@ -100,15 +100,6 @@ export default function SubscriptionsPage() {
               />
             ) : (
               <>
-                <div className="flex min-h-6 items-center justify-between">
-                  <span className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{period}</span>
-                  <span className="flex items-center gap-1 text-xs text-[var(--color-brand-text-secondary)]">
-                    {ui.activeCount(activeCount)}
-                    <IconButton variant="brand" aria-label={t.subscriptions.addSubscription} onClick={() => openAdd()}>
-                      <Plus strokeWidth={1.75} />
-                    </IconButton>
-                  </span>
-                </div>
                 <SegmentedControl<Segment>
                   ariaLabel={ui.segments.label}
                   value={segment}
@@ -124,10 +115,13 @@ export default function SubscriptionsPage() {
                 ) : (
                   <>
                     {segment === 'upcoming' && home.nudge ? <HomeNudge nudge={home.nudge} onOpen={setDetailId} /> : null}
-                    {groups.length === 0 && segment === 'ended' ? (
-                      <p className="py-6 text-center text-sm text-[var(--color-brand-text-secondary)]">{ui.emptyTab}</p>
+                    {groups.length === 0 ? (
+                      <div className="flex flex-col items-center gap-1 py-6">
+                        <p className="text-center text-sm text-[var(--color-brand-text-secondary)]">{ui.emptyTab}</p>
+                        <AddSubscriptionLink onAdd={() => openAdd()} />
+                      </div>
                     ) : (
-                      <SubscriptionGroups groups={groups} paused={paused} cancelled={cancelled} onOpen={setDetailId} />
+                      <SubscriptionGroups groups={groups} onOpen={setDetailId} onAdd={() => openAdd()} />
                     )}
                   </>
                 )}

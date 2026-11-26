@@ -1,107 +1,106 @@
 'use client'
 
-import { Badge } from '@/components/ui/badge'
-import { useMemo, useState } from 'react'
-import { Wallet, Gem, Bitcoin, TrendingUp, Home, CreditCard, BookOpen, Calendar } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Coins, Settings, X } from 'lucide-react'
+import { IconButton } from '@/components/ui/IconButton'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+import { PickerRow } from '@/components/ui/PickerRow'
+import { PickerSheet } from '@/components/ui/PickerSheet'
+import { AmountHero } from '@/components/ui/AmountHero'
+import { PromptBanner } from '@/components/ui/PromptBanner'
+import { SettingsSwitchRow } from '@/components/features/settings/SettingsSwitchRow'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { useActionToast } from '@/components/ui/ActionToast'
-import { parseZakatLine, resolveLineEdit } from '@/lib/savings/zakatLineInput'
 import { markZakatPaid, undoZakatPaid } from '@/lib/savings/zakatPaid'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { computeZakat } from '@/lib/savings/zakat'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
-import { cn } from '@/lib/utils'
+import { SheetBody, SheetFooter, tint } from '@/components/features/savings-v3/MoneySheetParts'
+import { ZakatSettingsSheet } from '@/components/features/savings-v3/ZakatSettingsSheet'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { localTodayISO } from '@/lib/utils/localDate'
-import { micro } from '@/lib/ui/microLabelStyle'
-import type { ZakatBase } from '@/lib/savings/zakatInputs'
+import { formatLocalized } from '@/lib/i18n/dateFormat'
+import { parseDateOnly } from '@/lib/time/calendarDays'
+import { navigate } from '@/lib/navigation/navigate'
+import { effectiveNisabBasis, patchZakatConfig } from '@/lib/savings/zakatBasis'
+import { hasLegacyZakat, legacyZakatFigure, withoutLegacyZakat } from '@/lib/savings/zakatLegacy'
+import { parseZakatLine } from '@/lib/savings/zakatLineInput'
+import { firstNisabDay, type ZakatSources, type ZakatYear } from '@/lib/savings/zakatYear'
 import type { ZakatConfig } from '@/lib/store/types'
-import { Switch } from '@/components/ui/switch'
-import { FieldButton } from '@/components/ui/FieldButton'
-import { OptionChip } from '@/components/ui/OptionChip'
-import { SelectableCard } from '@/components/ui/SelectableCard'
-import { SegmentedControl } from '@/components/ui/SegmentedControl'
-import { UnifiedDatePicker, formatDatePillLabel } from '@/components/ui/UnifiedDatePicker'
-import { tint } from '@/components/features/savings-v3/MoneySheetParts'
-import { effectiveNisabBasis, zakatBasisChosen } from '@/lib/savings/zakatBasis'
 import { useLocale, useT } from '@/lib/i18n'
+import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
+import { useZakatCopy } from '@/lib/i18n/zakatCopy'
 
 export interface ZakatSheetProps {
   open: boolean
   onClose: () => void
-  base: ZakatBase
+  sources: ZakatSources
+  /** The one-year evaluation the Wealth tile also shows. */
+  year: ZakatYear
   hawlDate: string
 }
 
-type LineId = 'cash' | 'gold' | 'crypto' | 'stocks' | 'debts'
+const GOLD = 'var(--color-brand-gold)'
+const MINUS = '−'
+const GROW = '[&>span:first-child]:w-auto [&>span:first-child]:flex-1'
 
-export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
+/**
+ * Zakat (Light touch): what is due, then what counts. Every line is live and opens Wealth or Debts; the only typed
+ * inputs are what the app cannot know (worn jewellery, doubtful receivables, trade goods). The one-year rule decides
+ * whether the figure is an estimate, due now, or not due yet. The gear holds the nisab basis, stocks and the year start.
+ */
+/** The dismissed-banner key of the one-time "year start is rebuilt from your history" note. */
+const ZAKAT_PAST_NOTE_KEY = 'zakat-past-note'
+
+export function ZakatSheet({ open, onClose, sources, year, hawlDate }: ZakatSheetProps) {
   const updateProfile = useFinanceStore((s) => s.updateProfile)
   const cfg = useFinanceStore((s) => s.profile.zakatConfig) ?? undefined
   const t = useT().wealthSheets.zakat
-  const z = useT().savingsForms.zakat
+  const sf = useT().savingsForms.zakat
+  const z = useGoalsLtCopy().zakat
+  const zc = useZakatCopy()
   const { locale } = useLocale()
-  const todayLabel = useT().expenseForm.today
   const unit = useFinanceStore((s) => s.settings.baseCurrency)
   const confirmDialog = useConfirm()
   const showToast = useActionToast()
+  const [settings, setSettings] = useState(false)
+  const [tradeOpen, setTradeOpen] = useState(false)
+  const [tradeDraft, setTradeDraft] = useState('')
+  // "The year start is rebuilt from your history…": shown on the first visit only, and it can be closed then.
+  const dismissBanner = useSettingsStore((s) => s.dismissBanner)
+  const [pastNote, setPastNote] = useState(() => !useSettingsStore.getState().dismissedBanners.includes(ZAKAT_PAST_NOTE_KEY))
+  useEffect(() => { if (pastNote) dismissBanner(ZAKAT_PAST_NOTE_KEY) }, [pastNote, dismissBanner])
 
-  const [nisabBasis, setNisabBasis] = useState<'silver' | 'gold'>(effectiveNisabBasis(cfg))
-  const [basisChosen, setBasisChosen] = useState(zakatBasisChosen(cfg))
-  const [yearPickerOpen, setYearPickerOpen] = useState(false)
-  const [holdsForTrading, setHoldsForTrading] = useState(cfg?.holdsForTrading ?? false)
-  const [manualOn, setManualOn] = useState(cfg?.manualAmount != null)
-  const [yearStart, setYearStart] = useState(cfg?.yearStartDate ?? '')
-  const [manualAmount, setManualAmount] = useState(cfg?.manualAmount != null ? String(cfg.manualAmount) : '')
-  const [overrides, setOverrides] = useState<Record<string, number>>(cfg?.lineOverrides ?? {})
-  const [drafts, setDrafts] = useState<Partial<Record<LineId, string>>>({})
-  const manualParsed = manualOn ? parseZakatLine(manualAmount) : null
+  const today = localTodayISO()
+  const firstDay = useMemo(
+    () => (year.state === 'notYet' ? firstNisabDay(sources, cfg, year.yearStart, today) : null),
+    [year.state, year.yearStart, sources, cfg, today],
+  )
+  const { base, result } = year
+  const legacy = hasLegacyZakat(cfg) ? legacyZakatFigure(cfg, base) : null
 
-  const val = (id: LineId, live: number) => (overrides[id] != null ? overrides[id] : live)
-  const cash = val('cash', base.cashAndSavings)
-  const gold = val('gold', base.goldValue)
-  const crypto = val('crypto', base.cryptoValue)
-  const stocks = val('stocks', base.stocksValue)
-  const debts = val('debts', base.debtsDueThisYear)
-
-  const result = useMemo(() => computeZakat({
-    cashAndSavings: cash, goldValue: gold, cryptoValue: crypto, stocksValue: stocks,
-    holdsForTrading, debtsDueThisYear: debts, nisabBasis,
-    gold24kSellPerGram: base.gold24kSellPerGram, silverPerGram: base.silverPerGram,
-    manualAmount: manualParsed,
-  }), [cash, gold, crypto, stocks, holdsForTrading, debts, nisabBasis, base, manualParsed])
-
-  // A choice already saved (here or on another phone) is never undone by an edit made while the sheet still held the old answer.
-  const save = (patch: Partial<ZakatConfig>) => updateProfile({ zakatConfig: { ...useFinanceStore.getState().profile.zakatConfig, nisabBasis, nisabBasisChosen: basisChosen || zakatBasisChosen(useFinanceStore.getState().profile.zakatConfig), holdsForTrading, manualAmount: manualParsed, lineOverrides: overrides, yearStartDate: yearStart || null, ...patch } })
-  const commitLine = (id: LineId, live: number) => {
-    const raw = drafts[id]
-    setDrafts((d) => ({ ...d, [id]: undefined }))
-    if (raw === undefined) return
-    const edit = resolveLineEdit(raw, live, overrides[id])
-    if (edit.kind === 'keep') return
-    const next = { ...overrides }
-    if (edit.kind === 'clear') delete next[id]
-    else next[id] = edit.value
-    setOverrides(next); save({ lineOverrides: next })
+  const save = (patch: Partial<ZakatConfig>) => updateProfile({ zakatConfig: patchZakatConfig(useFinanceStore.getState().profile.zakatConfig, patch) })
+  const toggleIn = (list: string[] | undefined, id: string, on: boolean) => {
+    const rest = (list ?? []).filter((x) => x !== id)
+    return on ? [...rest, id] : rest
   }
-  const lineInput = (id: LineId, live: number, label: string) => ({
-    'aria-label': label,
-    inputMode: 'decimal' as const,
-    value: drafts[id] ?? fmtNum(live),
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => setDrafts((d) => ({ ...d, [id]: e.target.value })),
-    onBlur: () => commitLine(id, live),
-  })
+  const dismissLegacy = () => {
+    const cur = useFinanceStore.getState().profile.zakatConfig
+    if (cur) updateProfile({ zakatConfig: withoutLegacyZakat(cur) })
+  }
+
+  const holdsForTrading = cfg?.holdsForTrading ?? false
+  const trade = cfg?.tradeGoodsValue ?? 0
+  const showsDue = year.state === 'estimate' || year.state === 'dueNow'
+
   const markPaid = async () => {
     const amount = fmtNum(result.zakat)
     if (!(await confirmDialog({ title: t.markPaidTitle, body: t.markPaidBody(amount, unit) }))) return
     const before = useFinanceStore.getState().profile.zakatConfig
-    const paid = markZakatPaid({ ...before, nisabBasis, holdsForTrading, manualAmount: manualParsed, lineOverrides: overrides }, localTodayISO(), new Date().toISOString())
+    const paid = markZakatPaid({ holdsForTrading: false, ...before, nisabBasis: effectiveNisabBasis(before) }, localTodayISO(), new Date().toISOString())
     updateProfile({ zakatConfig: paid })
-    setYearStart(paid.yearStartDate ?? '')
     onClose()
     showToast(t.markPaidToast, {
       undoLabel: t.undo,
@@ -112,168 +111,147 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
     })
   }
 
-  const todayIso = localTodayISO()
-  const janIso = `${todayIso.slice(0, 4)}-01-01`
-  const pickYear = (v: string) => { setYearStart(v); save({ yearStartDate: v || null }) }
-
-  const silverNisab = 595 * base.silverPerGram
-  const goldNisab = 85 * base.gold24kSellPerGram
-  const accent = result.due ? 'var(--color-brand-gold)' : 'var(--color-brand-green)'
+  const go = (path: string) => () => { onClose(); navigate(path) }
+  const openTrade = () => { setTradeDraft(trade > 0 ? String(trade) : ''); setTradeOpen(true) }
+  const saveTrade = () => {
+    const v = parseZakatLine(tradeDraft)
+    save({ tradeGoodsValue: v != null && v > 0 ? v : null })
+    setTradeOpen(false)
+  }
 
   if (!open) return null
 
-  const rows: Array<{ id: LineId; icon: React.ReactNode; color: string; name: string; sub: string; value: number; negative?: boolean }> = [
-    { id: 'cash', icon: <Wallet size={18} />, color: 'var(--color-cat-5)', name: z.cash, sub: z.cashSub, value: cash },
-    { id: 'gold', icon: <Gem size={18} />, color: 'var(--color-brand-gold)', name: z.gold, sub: z.goldSub, value: gold },
-    { id: 'crypto', icon: <Bitcoin size={18} />, color: 'var(--color-cat-6)', name: z.crypto, sub: z.cryptoSub, value: crypto },
-    { id: 'stocks', icon: <TrendingUp size={18} />, color: 'var(--color-brand-green)', name: z.stocks, sub: z.stocksSub(holdsForTrading), value: stocks },
+  const money = (n: number) => <span className="font-mono-numbers">{fmtNum(n)}</span>
+  const countedGrams = base.goldHoldings.filter((h) => !h.worn).reduce((s, h) => s + h.grams, 0)
+  const goldLabel = base.wornGoldGrams > 0
+    ? zc.goldCounted(fmtNum(countedGrams), fmtNum(base.wornGoldGrams))
+    : countedGrams > 0 ? z.gold(fmtNum(countedGrams)) : sf.gold
+  const lines = [
+    { key: 'cash', label: z.cash, value: money(base.cashAndSavings), path: '/wealth' },
+    { key: 'gold', label: goldLabel, value: money(base.goldValue), path: '/wealth' },
+    ...(base.cryptoValue > 0 ? [{ key: 'crypto', label: z.crypto, value: money(base.cryptoValue), path: '/wealth' }] : []),
+    { key: 'stocks', label: z.stocks(holdsForTrading ? 100 : 30), value: money(base.stocksValue), path: '/wealth' },
+    ...(base.receivableDebts.length > 0 ? [{ key: 'receivables', label: zc.receivables, value: money(base.receivables), path: '/debts' }] : []),
   ]
+  const status = year.state === 'estimate' ? zc.estimate(hawlDate) : year.state === 'dueNow' ? zc.dueNow : null
 
   return (
     <ModalShell open={open} onBackdropClick={onClose} scrollChild>
       <div className="flex min-h-0 flex-1 flex-col">
-        <V3SheetHeader onClose={onClose}>
-          <V3SheetHeader.Title>{z.title}</V3SheetHeader.Title>
+        <V3SheetHeader
+          onClose={onClose}
+          actions={<V3SheetHeader.Action icon={<Settings size={16} />} label={z.settings} onClick={() => setSettings(true)} />}
+        >
+          <V3SheetHeader.Title>{sf.title}</V3SheetHeader.Title>
+          <V3SheetHeader.Subtitle>{!year.ended ? z.yearEnds(hawlDate) : year.state === 'dueNow' ? z.yearEndedDue(hawlDate) : z.yearEnded(hawlDate)}</V3SheetHeader.Subtitle>
         </V3SheetHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-3 space-y-4">
-          {/* verdict */}
-          <div className="relative overflow-hidden rounded-2xl border p-4" style={{ borderColor: tint(accent, 35), background: tint(accent, 6) }}>
-            <p className="text-sm font-semibold" style={{ color: accent }}>{result.due ? z.due : z.notDue}</p>
-            <p className="mt-1 font-mono-numbers text-[30px] font-bold text-[var(--color-brand-text-primary)]">{result.due ? fmtNum(result.zakat) : '—'} <span className="text-base text-[var(--color-brand-text-muted)]">{unit}</span></p>
-            <p dir="auto" className="mt-1 font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{result.due ? z.zakatableLine('2.5%', fmtNum(result.zakatable), unit) : z.underLine(fmtNum(result.gap), unit)}</p>
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full" style={{ background: 'var(--color-brand-sunken)' }}><div style={{ width: `${Math.min(100, result.nisab > 0 ? (result.zakatable / result.nisab) * 100 : 0)}%`, height: '100%', background: accent }} /></div>
-            <div className="mt-2 flex justify-between font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-muted)]"><span>{z.nisab(fmtNum(result.nisab), unit)}</span><span>{z.hawlEnds(hawlDate)}</span></div>
+        <SheetBody className="space-y-3 pt-0">
+          {legacy != null ? (
+            <PromptBanner title={zc.legacyTitle} description={zc.legacyBody(`${fmtNum(legacy)} ${unit}`)} confirmLabel={zc.gotIt} onConfirm={dismissLegacy} />
+          ) : null}
+
+          <div className="flex flex-col items-center px-5 pb-4 pt-2 text-center">
+            <span aria-hidden className="flex size-[52px] items-center justify-center rounded-2xl" style={{ background: tint(GOLD, 18), color: GOLD }}>
+              <Coins className="size-6" />
+            </span>
+            <p dir="ltr" className="mt-3 flex items-baseline justify-center gap-1.5">
+              <span className="font-mono-numbers text-[2.5rem] font-semibold leading-none tracking-[-0.04em] text-[var(--color-brand-text-primary)]">
+                {showsDue ? fmtNum(result.zakat) : '0'}
+              </span>
+              <span dir="auto" className="text-[1.0625rem] font-semibold text-[var(--color-brand-text-muted)]">{showsDue ? z.due(unit) : z.notDue}</span>
+            </p>
+            {status ? <p dir="auto" className="mt-2 text-[0.8125rem] font-semibold text-[var(--color-brand-text-primary)]">{status}</p> : null}
+            <p dir="auto" className="mt-1 font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
+              {showsDue
+                ? z.dueLine(fmtNum(result.zakatable), fmtNum(result.nisab))
+                : year.state === 'notYet' ? zc.notYet : sf.underLine(fmtNum(result.gap), unit)}
+            </p>
+            {firstDay ? (
+              <Button variant="outline" className="mt-3 min-h-11" onClick={() => save({ yearStartDate: firstDay })}>
+                {zc.setYearStart(formatLocalized(parseDateOnly(firstDay), 'd MMM yyyy', locale))}
+              </Button>
+            ) : null}
           </div>
 
-          {/* what counts */}
           <div>
-            <p style={micro}>{z.whatCounts}</p>
-            <Card padding="none" className="mt-2 overflow-hidden">
-              {rows.map((r, i) => (
-                <div key={r.id} className="flex items-center gap-3 p-3" style={{ borderTop: i ? '1px solid var(--color-brand-border)' : undefined }}>
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: tint(r.color, 14), color: r.color }}>{r.icon}</span>
-                  <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{r.name}</p><p className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{r.sub}</p></div>
-                  {/* Standard 48px field. */}
-                  <input {...lineInput(r.id, r.value, r.name)}
-                    className={cn(
-                      'h-12 w-[84px] rounded-[11px] border bg-[var(--color-brand-elevated)] px-2 text-right font-mono-numbers text-sm text-[var(--color-brand-text-primary)] outline-none focus-visible:border-[var(--color-brand-focus)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]',
-                      overrides[r.id] != null ? 'border-[var(--color-brand-primary)]/50' : 'border-transparent',
-                    )} />
-                </div>
+            <p className="mb-2 ms-1 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{sf.whatCounts}</p>
+            <Card padding="none" divide className="overflow-hidden">
+              {lines.map((l) => (
+                <PickerRow key={l.key} label={l.label} value={l.value} onClick={go(l.path)} className={GROW} />
               ))}
-              {/* property */}
-              <div className="flex items-center gap-3 p-3" style={{ borderTop: '1px solid var(--color-brand-border)' }}>
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: tint('var(--color-cat-1)', 14), color: 'var(--color-cat-1)' }}><Home size={18} /></span>
-                <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{z.property}</p><p className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{z.propertySub}</p></div>
-                <Badge tone="dashed" size="md" className="text-[0.6875rem] font-normal">{z.notCounted}</Badge>
-              </div>
-              {/* debts (negative) */}
-              <div className="flex items-center gap-3 p-3" style={{ borderTop: '1px solid var(--color-brand-border)' }}>
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: tint('var(--color-brand-red)', 14), color: 'var(--color-brand-red)' }}><CreditCard size={18} /></span>
-                <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{z.debts}</p><p className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{z.debtsSub}</p></div>
-                <span className="me-1 text-sm text-[var(--color-brand-red)]">−</span>
-                <input {...lineInput('debts', debts, z.debts)}
-                  className={cn(
-                    'h-12 w-[76px] rounded-[11px] border bg-[var(--color-brand-elevated)] px-2 text-right font-mono-numbers text-sm text-[var(--color-brand-red)] outline-none focus-visible:border-[var(--color-brand-focus)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]',
-                    overrides.debts != null ? 'border-[var(--color-brand-primary)]/50' : 'border-transparent',
-                  )} />
-              </div>
-              <div className="flex items-center justify-between bg-[var(--color-brand-elevated)] p-3">
-                <span className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{z.zakatableWealth}</span>
-                <span className="font-mono-numbers text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">{fmtNum(result.zakatable)} {unit}</span>
-              </div>
-            </Card>
-          </div>
-
-          {/* nisab basis */}
-          <div>
-            <p style={micro}>{t.basis}</p>
-            <SegmentedControl
-              className="mt-2"
-              ariaLabel={t.basisAria}
-              value={nisabBasis}
-              onChange={(v) => { setNisabBasis(v); setBasisChosen(true); save({ nisabBasis: v, nisabBasisChosen: true }) }}
-              options={[
-                { value: 'silver', label: `${t.silver} \u00b7 595 g` },
-                { value: 'gold', label: `${t.gold} \u00b7 85 g` },
-              ]}
-            />
-            <div className="mt-2 flex items-start gap-2 rounded-xl bg-[var(--color-brand-elevated)] px-3 py-2.5">
-              <BookOpen size={14} className="mt-0.5 shrink-0 text-[var(--color-brand-green)]" />
-              <p className="font-mono-numbers text-[0.71875rem] leading-relaxed text-[var(--color-brand-text-secondary)]">
-                {t.silver} ≈ {fmtNum(silverNisab)} · {t.gold} {fmtNum(goldNisab)} {unit}. {t.silverEstimate}
-              </p>
-            </div>
-          </div>
-
-          {/* stock factor */}
-          <div>
-            <p style={micro}>{z.stockHold}</p>
-            <div className="mt-2 grid grid-cols-2 gap-2.5">
-              <FactorCard title={z.longTerm} sub={z.longTermSub} on={!holdsForTrading} onClick={() => { setHoldsForTrading(false); save({ holdsForTrading: false }) }} />
-              <FactorCard title={z.forTrading} sub={z.forTradingSub} on={holdsForTrading} onClick={() => { setHoldsForTrading(true); save({ holdsForTrading: true }) }} />
-            </div>
-          </div>
-
-          {/* zakat year — the hawl anchor. Without this the due date is derived from the
-              account's creation, which is when they installed the app and means nothing
-              religiously. See lib/savings/hawl.ts. */}
-          <Card variant="elevated" padding="none" className="p-3.5">
-            <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{t.yearStart}</p>
-            <p className="mt-0.5 text-xs text-[var(--color-brand-text-muted)]">{yearStart ? t.yearSet : t.yearNotSet}</p>
-            <FieldButton
-              className="mt-3"
-              icon={<Calendar className="size-4 text-[var(--color-brand-text-muted)]" />}
-              value={yearStart ? formatDatePillLabel(yearStart, locale, todayLabel) : undefined}
-              placeholder={t.pickDate}
-              affordance={null}
-              onClick={() => setYearPickerOpen(true)}
-            />
-            <div className="mt-2 flex gap-2 overflow-x-auto hide-scrollbar">
-              <OptionChip selected={yearStart === todayIso} onClick={() => pickYear(todayIso)}>{t.today}</OptionChip>
-              <OptionChip selected={yearStart === janIso} onClick={() => pickYear(janIso)}>{t.startOfYear}</OptionChip>
-            </div>
-            <UnifiedDatePicker open={yearPickerOpen} value={yearStart} onConfirm={pickYear} onClose={() => setYearPickerOpen(false)} />
-          </Card>
-
-          {/* override */}
-          <Card variant="elevated" padding="none" className="p-3.5">
-            <div className="flex w-full items-center justify-between text-start">
-              <div><p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{t.override}</p><p className="text-xs text-[var(--color-brand-text-muted)]">{t.overrideHint}</p></div>
-              <Switch
-                size="touch"
-                aria-label={t.override}
-                checked={manualOn}
-                onCheckedChange={(v) => { setManualOn(v); save({ manualAmount: v ? parseZakatLine(manualAmount) : null }) }}
+              <PickerRow label={zc.tradeGoods} value={trade > 0 ? money(trade) : zc.tradeGoodsAdd} onClick={openTrade} className={GROW} />
+              <PickerRow
+                label={z.debts}
+                value={<span className="font-mono-numbers">{base.debtsDueThisYear > 0 ? MINUS : ''}{fmtNum(base.debtsDueThisYear)}</span>}
+                onClick={go('/debts')}
+                className={GROW}
               />
-            </div>
-            {manualOn && (
-              <Input inputMode="decimal" value={manualAmount} onChange={(e) => setManualAmount(e.target.value)} onBlur={() => save({ manualAmount: parseZakatLine(manualAmount) })} placeholder="0"
-                className="mt-3 h-12 rounded-xl border-[var(--color-brand-primary)]/50 bg-[var(--color-brand-card)] px-4 font-mono-numbers text-lg text-[var(--color-brand-text-primary)]" />
-            )}
-          </Card>
-
-          <div className="flex items-start gap-2 rounded-2xl bg-[var(--color-brand-elevated)] p-3.5">
-            <BookOpen size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--color-brand-gold)' }} />
-            <p className="text-xs text-[var(--color-brand-text-secondary)]">{z.explainer}</p>
+              <PickerRow label={z.zakatable} value={<span className="font-mono-numbers font-semibold">{fmtNum(result.zakatable)}</span>} className={GROW} />
+            </Card>
+            <p className="mt-2 px-1 text-xs text-[var(--color-brand-text-secondary)]">{z.footnote}</p>
+            {pastNote ? (
+              <div className="mt-1 flex items-start gap-2 ps-1">
+                <p className="min-w-0 flex-1 pt-1.5 text-xs text-[var(--color-brand-text-muted)]">{zc.pastNote}</p>
+                <IconButton aria-label={zc.hideNote} variant="ghost" size="sm" onClick={() => setPastNote(false)}><X className="size-3.5" /></IconButton>
+              </div>
+            ) : null}
+            {year.noHistoryCount > 0 ? <p className="mt-1 px-1 text-xs text-[var(--color-brand-text-muted)]">{zc.noHistory}</p> : null}
           </div>
-        </div>
 
-        <div className="flex gap-3 px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))]">
-          <Button variant={result.due ? 'outline' : 'default'} size="cta" onClick={onClose} className="flex-1 text-sm font-semibold">{t.done}</Button>
-          {result.due ? <Button size="cta" onClick={markPaid} className="flex-1 text-sm font-semibold">{t.markPaid}</Button> : null}
-        </div>
+          {base.goldHoldings.length > 0 || base.receivableDebts.length > 0 ? (
+            <div>
+              <p className="mb-2 ms-1 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{zc.onlyForZakat}</p>
+              <Card padding="none" divide className="overflow-hidden">
+                {base.goldHoldings.map((h) => (
+                  <SettingsSwitchRow
+                    key={h.id}
+                    label={zc.worn}
+                    ariaLabel={`${zc.worn}: ${h.name}`}
+                    hint={zc.wornHint(h.name, fmtNum(h.grams))}
+                    checked={h.worn}
+                    onChange={(on) => save({ jewelleryHoldingIds: toggleIn(useFinanceStore.getState().profile.zakatConfig?.jewelleryHoldingIds, h.id, on) })}
+                  />
+                ))}
+                {base.receivableDebts.map((d) => (
+                  <SettingsSwitchRow
+                    key={d.id}
+                    label={zc.likelyRepaid}
+                    ariaLabel={`${zc.likelyRepaid}: ${d.name}`}
+                    hint={zc.likelyRepaidHint(d.name, `${fmtNum(d.value)} ${unit}`)}
+                    checked={d.counted}
+                    onChange={(on) => save({ doubtfulDebtIds: toggleIn(useFinanceStore.getState().profile.zakatConfig?.doubtfulDebtIds, d.id, !on) })}
+                  />
+                ))}
+              </Card>
+            </div>
+          ) : null}
+        </SheetBody>
+
+        <SheetFooter safeArea>
+          {showsDue ? (
+            <Button size="cta-block" onClick={markPaid} className="font-semibold">{z.markPaid}</Button>
+          ) : (
+            <Button size="cta-block" variant="outline" onClick={onClose} className="font-semibold">{t.done}</Button>
+          )}
+        </SheetFooter>
       </div>
+      <ZakatSettingsSheet
+        open={settings}
+        onClose={() => setSettings(false)}
+        goldNisab={85 * base.gold24kSellPerGram}
+        silverNisab={595 * base.silverPerGram}
+        unit={unit}
+        derivedStart={year.yearStart}
+      />
+      <PickerSheet
+        open={tradeOpen}
+        onClose={() => setTradeOpen(false)}
+        title={zc.tradeGoods}
+        footer={<Button size="cta-block" onClick={saveTrade}>{z.done}</Button>}
+      >
+        <AmountHero value={tradeDraft} onChange={setTradeDraft} currency={unit} line={zc.tradeGoodsLine} aria-label={zc.tradeGoods} />
+      </PickerSheet>
     </ModalShell>
-  )
-}
-
-function FactorCard({ title, sub, on, onClick }: { title: string; sub: string; on: boolean; onClick: () => void }) {
-  return (
-    <SelectableCard layout="stack" selected={on} onClick={onClick}>
-      <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
-      <p className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{sub}</p>
-    </SelectableCard>
   )
 }

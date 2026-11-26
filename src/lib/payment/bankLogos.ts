@@ -3,7 +3,7 @@ import { resolvePaymentBrandKey } from './paymentMethodDefaults'
 /**
  * Catalogue brand id -> official logo file in `public/logos/banks/`. Sources and licence notes:
  * `docs/quality/buddget-remediation/bank-logos.md`. A test keeps this map and the folder in step.
- * ADIB Egypt shares ADIB's file (`adib.png`): same brand, same mark.
+ * ADIB Egypt shares ADIB's file (`adib.png`): same brand, same mark. `etisalatcash` and `wepay` carry their parent's mark (e&, WE).
  */
 export const BANK_LOGO_FILES: Record<string, string> = {
   aaib: 'aaib.svg',
@@ -60,6 +60,22 @@ export const BANK_LOGO_FILES: Record<string, string> = {
   snb: 'snb.svg',
   weyay: 'weyay.svg',
   wio: 'wio.png',
+  // Wallets, card schemes and prepaid brands (catalogue completion).
+  adnoc: 'adnoc.svg',
+  deel: 'deel.png',
+  edenred: 'edenred.svg',
+  emarat: 'emarat.svg',
+  enoc: 'enoc.svg',
+  etisalatcash: 'etisalatcash.svg',
+  khazna: 'khazna.png',
+  opay: 'opay.svg',
+  payit: 'payit.png',
+  pluxee: 'pluxee.svg',
+  skrill: 'skrill.svg',
+  thawani: 'thawani.png',
+  unionpay: 'unionpay.svg',
+  wepay: 'wepay.svg',
+  ziina: 'ziina.png',
 }
 
 /**

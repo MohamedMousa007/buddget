@@ -17,6 +17,7 @@ import { POCKET_KINDS, type PocketKind } from '@/lib/savings/pocketKinds'
 import type { Currency, FinanceStore, GoldKarat, InvestmentAssetType, InvestmentHolding, SavingsAccount } from '@/lib/store/types'
 import { useFinanceStore, goldQuoteOf } from '@/lib/store/useFinanceStore'
 import { canDeletePocket } from '@/lib/savings/canDeletePocket'
+import { deleteHoldingWithUndo } from '@/lib/savings/pocketUndo'
 import { correctionRefusal, depositRefusal, explainDepositRefusal, ledgerOf } from '@/lib/savings/pocketHome'
 import { tryConvertCurrency, tryConvertWithGold } from '@/lib/utils/currency'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
@@ -745,13 +746,8 @@ const delete_investment_holding: WriteImpl = {
     if (!again.ok) return { ok: false, error: again.error }
     const hit = assetOf(fin(), again.proposal.args.asset)
     if ('error' in hit) return { ok: false, error: 'That asset no longer exists.' }
-    const before = fin().investmentHoldings
-    fin().deleteInvestmentHolding(hit.item.id)
-    return {
-      ok: true,
-      message: hit.item.name,
-      undo: () => useFinanceStore.setState((st) => ({ investmentHoldings: restoreRows(st.investmentHoldings, before, new Set([hit.item.id])) })),
-    }
+    // The money row that paid for it goes too; Undo brings both back.
+    return { ok: true, message: hit.item.name, undo: deleteHoldingWithUndo(hit.item.id) }
   },
 }
 

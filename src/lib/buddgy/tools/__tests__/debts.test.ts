@@ -222,6 +222,14 @@ describe('add_credit_card', () => {
 })
 
 describe('record_debt_payment', () => {
+  it('uses the plan’s default card when no card is named, and the named one when it is', () => {
+    useFinanceStore.setState({ debts: [debt(D_LOAN, { defaultPaymentMethodId: CARD_PM })] })
+    proposeApply('record_debt_payment', { debt: refOf(D_LOAN), amount: 100 })
+    expect(st().debtPayments[0].paymentMethodId).toBe(CARD_PM)
+    proposeApply('record_debt_payment', { debt: refOf(D_LOAN), amount: 100, method: 'Cash' })
+    expect(st().debtPayments[1].paymentMethodId).toBe(CASH)
+  })
+
   it('records the payment and a linked Debt expense, like the pay sheet', () => {
     const { applied } = proposeApply('record_debt_payment', { debt: refOf(D_LOAN), amount: 300 })
     expect(applied.ok).toBe(true)

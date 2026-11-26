@@ -1,6 +1,7 @@
 import type { PaymentMethod } from '@/lib/store/types'
 import type { Dictionary } from '@/lib/i18n/types'
 import { inkFor } from '@/lib/ui/contrast'
+import { accountDisplayName, accountTitle } from '@/lib/accounts/accountTitle'
 import { PAYMENT_TYPE_META, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 
 /** "CIB" stays "CIB"; "Vodafone Cash" becomes "VC". */
@@ -64,16 +65,19 @@ export function moneyFlex(n: number, currency: string): string {
   return /^\.0+$/.test(dec) ? int : int + dec
 }
 
-/** "CIB ••2016" is stored as one name; the list shows the provider and the digits separately. */
-export function accountTitle(m: PaymentMethod): string {
-  return decomposePaymentMethodName(m.name, m.last4).provider
+/** {@link splitMoney} with smart decimals: no `.00` when there are no cents (Accounts' figures, Light touch). */
+export function smartSplit(n: number, currency: string): { int: string; dec: string } {
+  const s = splitMoney(n, currency)
+  return /^\.0+$/.test(s.dec) ? { int: s.int, dec: '' } : s
 }
+
+export { accountDisplayName, accountTitle }
 
 /** What identifies the account beside its name: the user's label, else the last four digits, else nothing. */
 export function accountIdentifier(m: Pick<PaymentMethod, 'label' | 'last4'>): string | null {
   const label = m.label?.trim()
   if (label) return label
-  return m.last4 ? `\u2022\u2022 ${m.last4}` : null
+  return m.last4 ? `\u2022\u2022${m.last4}` : null
 }
 
 /** True when another open account shares this one's provider ("HSBC" USD and "HSBC" EGP): the row then has to say which. */
@@ -89,6 +93,6 @@ export function sharesProvider(m: PaymentMethod, all: readonly PaymentMethod[]):
 export function accountSubtitle(m: Pick<PaymentMethod, 'label' | 'last4' | 'currency'>, shared: boolean): string | null {
   if (!shared) return accountIdentifier(m)
   const label = m.label?.trim()
-  const digits = m.last4 ? `\u2022\u2022 ${m.last4}` : null
+  const digits = m.last4 ? `\u2022\u2022${m.last4}` : null
   return [String(m.currency), label, digits].filter(Boolean).join(' \u00b7 ')
 }

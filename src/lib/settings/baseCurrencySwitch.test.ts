@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { planBaseCurrencySwitch, type BaseCurrencySlice } from '@/lib/settings/baseCurrencySwitch'
 import { DEFAULT_PROFILE, DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
 import type { BudgetPlan } from '@/lib/store/types'
+import type { StoredZakatConfig } from '@/lib/savings/zakatLegacy'
 
 const rates = { EGP_USD: 0.02, USD_EGP: 50 }
 
@@ -52,14 +53,16 @@ describe('planBaseCurrencySwitch', () => {
       profile: {
         ...DEFAULT_PROFILE,
         emergencyFundConfig: { targetMonths: 6, monthlyEssentials: 5000 },
-        zakatConfig: { nisabBasis: 'gold', holdsForTrading: false, manualAmount: 2500, lineOverrides: { gold: 1000 } },
+        zakatConfig: { nisabBasis: 'gold', holdsForTrading: false, tradeGoodsValue: 500, manualAmount: 2500, lineOverrides: { gold: 1000 } } as StoredZakatConfig,
       },
     })
     const r = planBaseCurrencySwitch(s, 'USD')
     if (!r.ok) throw new Error('expected ok')
     expect(r.patch.profile.emergencyFundConfig?.monthlyEssentials).toBe(100)
-    expect(r.patch.profile.zakatConfig?.manualAmount).toBe(50)
-    expect(r.patch.profile.zakatConfig?.lineOverrides).toEqual({ gold: 20 })
+    const z = r.patch.profile.zakatConfig as StoredZakatConfig
+    expect(z.tradeGoodsValue).toBe(10)
+    expect(z.manualAmount).toBe(50)
+    expect(z.lineOverrides).toEqual({ gold: 20 })
     expect(r.patch.profile.monthlyRent).toBeUndefined()
 
     const bare = planBaseCurrencySwitch(slice({ profile: { ...DEFAULT_PROFILE } }), 'USD')

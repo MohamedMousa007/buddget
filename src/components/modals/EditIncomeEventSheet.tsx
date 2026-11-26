@@ -1,49 +1,41 @@
 'use client'
 
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { Lock, Trash2, Unlink } from 'lucide-react'
-import { ModalShell } from '@/components/modals/ModalShell'
+import { Calendar, Lock, MessageSquare, StickyNote, Trash2, Unlink } from 'lucide-react'
+import { ModalShell, useDismissGuard } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
-import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useLocale, useT } from '@/lib/i18n'
-import { transactionTime } from '@/lib/time/transactionTime'
+import { formatClock, intlTag } from '@/lib/i18n/dateFormat'
+import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
+import { clockOf, editedOccurredAt, mergeDayTime } from '@/lib/time/occurredAt'
 import type { Currency, IncomeEvent, IncomeEventStatus, IncomeSourceType } from '@/lib/store/types'
-import { Input } from '@/components/ui/input'
-import { AmountField } from '@/components/ui/AmountField'
+import { AmountHero } from '@/components/ui/AmountHero'
 import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { FiatCurrencyField } from '@/components/ui/CurrencyField'
-import { DatePickerField } from '@/components/ui/DatePickerField'
-import { IncomeSourceTypePicker } from '@/components/features/income/IncomeSourceTypePicker'
-import { IncomeTemplatePicker } from '@/components/features/income/IncomeTemplatePicker'
-import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
-import { OptionChip } from '@/components/ui/OptionChip'
+import { Card } from '@/components/ui/card'
+import { PickerRow } from '@/components/ui/PickerRow'
+import { HEADER_PILL, PillButton } from '@/components/ui/PillButton'
+import { OptionSheet } from '@/components/ui/OptionSheet'
+import { UnifiedDatePicker, formatDatePillLabel } from '@/components/ui/UnifiedDatePicker'
+import { SelectPaymentMethodSheet } from '@/components/features/payments/SelectPaymentMethodSheet'
+import { MethodValue } from '@/components/features/expenses/MethodValue'
+import { UnsavedChangesDialog } from '@/components/features/expenses/UnsavedChangesDialog'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
-import { Badge } from '@/components/ui/badge'
-import { FactsTable, type Fact } from '@/components/ui/FactsTable'
 import { IncomeTypeIcon } from '@/components/features/income/IncomeTypeIcon'
-import { methodLabel } from '@/components/features/flow/useFlowLedger'
+import { amountInputText } from '@/lib/ui/amountSanitize'
 import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
+import { MANUAL_INCOME_SOURCE_TYPES } from '@/lib/constants/incomeSourceTypes'
+import { incomeTypeGridItem } from '@/lib/constants/categoryGrid'
 import { eventDaysLate } from '@/lib/utils/incomeOccurrences'
-import { cadenceLine } from '@/lib/income/cadence'
 import { countPassThroughCredit } from '@/lib/spending/passThrough'
-import { formatFixed2 } from '@/lib/utils/formatters'
 import { useShortDate } from '@/hooks/useShortDate'
 import { occurrenceChange } from '@/lib/income/occurrenceChange'
 import { navigate } from '@/lib/navigation/navigate'
-import {
-  MODAL_BODY_SCROLL_CLASS,
-  MODAL_CONTROL_CLASS,
-  MODAL_LABEL_CLASS,
-} from '@/lib/modals/modalFormClasses'
-
-const DATE_FIELD_CLASS = 'mt-1.5 h-12 rounded-xl'
+import { cardBankName } from '@/lib/payment/cardThemes'
 
 /**
  * Delete, with the borrowed-money branch: an income linked to a debt asks whether the debt
@@ -102,152 +94,20 @@ function useDeleteIncomeEvent(event: IncomeEvent, onDone: () => void) {
   return { request, dialog }
 }
 
+/** The payday statuses a linked income can be set to (the old status chips). */
+const STATUS_CHOICES: IncomeEventStatus[] = ['confirmed', 'late', 'partial', 'missed']
+
 /**
- * Income detail (screens 11, 12): what arrived, when, for which payday and where it went,
- * as facts. Recurring income keeps its payday and its arrival as two dates (§8.0), so a
- * late payday reads "3 days after the payday" for good. Editing is behind the pencil.
+ * Money that came in, Light touch: the same sheet as an expense. The date pill top-left with the bin and close, the
+ * amount with its currency inline and the name under it with which payday it filled, then Type, Received in, Payday
+ * and where it was recorded from, and a slim note. A recurring payday keeps its payday and its arrival as two dates
+ * (§8.0); linking goes through the assign sheet and the linked payday opens in Paydays.
  */
-function IncomeEventDetail({ event, onClose, onEdit }: { event: IncomeEvent; onClose: () => void; onEdit: () => void }) {
-  const shortDate = useShortDate()
-  const t = useT()
-  const { locale } = useLocale()
-  const { incomeSources, paymentMethods, updateIncomeEvent } = useFinanceStore(
-    useShallow((s) => ({ incomeSources: s.incomeSources, paymentMethods: s.paymentMethods, updateIncomeEvent: s.updateIncomeEvent })),
-  )
-  const { openNewPayday, setPaydayFocusId } = useSettingsStore(
-    useShallow((s) => ({ openNewPayday: s.openNewPayday, setPaydayFocusId: s.setPaydayFocusId })),
-  )
-  const del = useDeleteIncomeEvent(event, onClose)
-  const source = event.templateId ? incomeSources.find((s) => s.id === event.templateId) : undefined
-  const recurring = Boolean(event.templateId)
-  const daysLate = recurring ? eventDaysLate(event) : null
-  const typeLabel = incomeSourceTypeLabel(t.income, event.sourceType)
-  // §8.4/§8.5: only a payment method is a destination — never "Main account", never a savings/debt link.
-  const pm = methodLabel(paymentMethods.find((m) => m.id === event.paymentMethodId))
-  const paidInto: Fact = pm
-    ? { label: t.income.factPaidInto, value: pm }
-    : { label: t.income.factPaidInto, value: t.income.notRecorded, valueTone: 'var(--color-brand-text-muted)', sub: t.income.setAccount, subTone: 'var(--color-brand-primary-ink)' }
-  const payday = event.occurrenceDate ?? event.receivedDate
-  const time = transactionTime(event.occurredAt, event.receivedDate, locale)
-  const received = time ? `${shortDate(event.receivedDate)} · ${time}` : shortDate(event.receivedDate)
-
-  const facts: Fact[] = recurring
-    ? [
-        {
-          label: t.income.factPayday,
-          value: shortDate(payday),
-          trailing: (
-            <Button
-              variant="link"
-              size="touch"
-              aria-label={t.income.unlinkAria(shortDate(payday))}
-              onClick={() => updateIncomeEvent(event.id, { templateId: null, occurrenceDate: null })}
-            >
-              <Unlink className="size-3.5" strokeWidth={2} />
-              {t.income.unlink}
-            </Button>
-          ),
-        },
-        {
-          label: t.income.factArrived,
-          value: received,
-          ...(daysLate ? { sub: t.income.daysAfterPayday(daysLate), subTone: 'var(--color-brand-amber)' } : {}),
-        },
-        paidInto,
-        { label: t.income.factRecordedFrom, value: event.smsLogId ? t.income.recordedSms : t.income.recordedManual },
-      ]
-    : [
-        { label: t.income.factReceived, value: received },
-        paidInto,
-        event.exclusion === 'pass_through'
-          ? {
-              label: t.income.factCountedIn,
-              value: t.income.notCountedPassThrough,
-              valueTone: 'var(--color-brand-text-muted)',
-              trailing: (
-                <Button variant="link" size="touch" onClick={() => countPassThroughCredit(event.id)}>
-                  {t.income.countAsIncome}
-                </Button>
-              ),
-            }
-          : { label: t.income.factCountedIn, value: t.income.countedInOneTime },
-      ]
-
-  return (
-    <div className="flex flex-col gap-3.5 px-4 pb-[max(env(safe-area-inset-bottom,0px),20px)]">
-      <V3SheetHeader
-        title={event.name}
-        titleSize="compact"
-        subtitle={recurring ? `${typeLabel}${source ? ` · ${cadenceLine(source, t)}` : ''}` : t.income.oneTimeIncome}
-        onClose={onClose}
-        leading={
-          <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]">
-            <IncomeTypeIcon type={event.sourceType} className="h-5 w-5" />
-          </span>
-        }
-        extra={
-          daysLate ? (
-            <Badge variant="warning" size="xs">{t.income.daysLateChip(daysLate)}</Badge>
-          ) : recurring ? (
-            <Badge variant="brand" size="xs">{t.income.recurringLabel}</Badge>
-          ) : (
-            <Badge variant="muted" size="xs">{t.income.oneTimeLabel}</Badge>
-          )
-        }
-      />
-      <p className="flex items-baseline gap-1.5">
-        <span className="font-mono-numbers text-[32px] font-semibold tracking-[-0.02em] text-[var(--color-brand-green)]">
-          +{formatFixed2(event.amount)}
-        </span>
-        <span className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{event.currency}</span>
-      </p>
-      <FactsTable label={t.income.detailsLabel} onEdit={onEdit} editLabel={t.income.editIncomeAria} rows={facts} />
-      {recurring ? null : (
-        <p className="text-[0.78125rem] leading-[1.45] text-[var(--color-brand-text-secondary)]">{t.income.makeRecurringNote}</p>
-      )}
-      <div className={`grid gap-2 ${recurring ? 'grid-cols-[1fr_1fr]' : 'grid-cols-[2fr_1fr]'}`}>
-        {recurring ? (
-          <Button
-            variant="outline"
-            size="cta"
-            onClick={() => {
-              if (source) setPaydayFocusId(source.id)
-              onClose()
-              navigate('/paydays')
-            }}
-          >
-            {t.income.openInPaydays}
-          </Button>
-        ) : (
-          <Button
-            size="cta"
-            onClick={() => {
-              onClose()
-              openNewPayday({
-                name: event.name,
-                amount: event.amount,
-                currency: event.currency,
-                sourceType: event.sourceType,
-                dayOfMonth: Number(event.receivedDate.slice(8, 10)) || 1,
-                paymentMethodId: event.paymentMethodId,
-              })
-            }}
-          >
-            {t.income.makeRecurring}
-          </Button>
-        )}
-        <Button variant="destructive" size="cta" onClick={() => void del.request()}>
-          {t.common.delete}
-        </Button>
-      </div>
-      {del.dialog}
-    </div>
-  )
-}
-
 function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: () => void }) {
-  useEscapeClose(true, onClose)
   const t = useT()
+  const lt = useFlowLtCopy()
+  const { locale } = useLocale()
+  const shortDate = useShortDate()
   const { updateIncomeEvent, settings, paymentMethods, incomeSources } = useFinanceStore(
     useShallow((s) => ({
       updateIncomeEvent: s.updateIncomeEvent,
@@ -256,25 +116,51 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
       incomeSources: s.incomeSources,
     }))
   )
-  const recurringTemplates = incomeSources.filter((s) => s.isRecurring)
+  const { openNewPayday, setPaydayFocusId, openAssignIncome } = useSettingsStore(
+    useShallow((s) => ({ openNewPayday: s.openNewPayday, setPaydayFocusId: s.setPaydayFocusId, openAssignIncome: s.openAssignIncome })),
+  )
   const del = useDeleteIncomeEvent(event, onClose)
-  // Savings/investment/debt events are system-linked — keep their type read-only.
+  // Savings/investment/debt events are system-linked — keep their type and amount read-only.
   const typeLocked = Boolean(event.linkedSavingsAccountId || event.linkedDebtId)
 
   const [name, setName] = useState(event.name)
-  const [amount, setAmount] = useState(String(event.amount))
+  const [amount, setAmount] = useState(amountInputText(event.amount, event.currency))
   const [currency, setCurrency] = useState<Currency>(event.currency)
   const [sourceType, setSourceType] = useState<IncomeSourceType>(event.sourceType ?? 'other')
   const [receivedDate, setReceivedDate] = useState(event.receivedDate)
-  const [templateId, setTemplateId] = useState(event.templateId ?? '')
-  const [status, setStatus] = useState<IncomeEventStatus>(event.status)
+  const savedClock = clockOf(event.occurredAt, event.receivedDate)
+  const [clock, setClock] = useState(savedClock)
   const [paymentMethodId, setPaymentMethodId] = useState(event.paymentMethodId ?? '')
   const [notes, setNotes] = useState(event.notes ?? '')
+  const [status, setStatus] = useState<IncomeEventStatus>(event.status)
+  const [statusOpen, setStatusOpen] = useState(false)
+  const [calOpen, setCalOpen] = useState(false)
+  const [typeOpen, setTypeOpen] = useState(false)
+  const [methodOpen, setMethodOpen] = useState(false)
+  const noteRef = useRef<HTMLTextAreaElement>(null)
+  useLayoutEffect(() => {
+    const n = noteRef.current
+    if (!n) return
+    n.style.height = 'auto'
+    n.style.height = `${n.scrollHeight}px`
+  }, [notes])
 
-  const amt = parseFloat(amount)
-  const valid = name.trim().length > 0 && !Number.isNaN(amt) && amt > 0
-  // Received-vs-expected status only makes sense for template-linked events.
-  const STATUS_CHOICES: IncomeEventStatus[] = ['confirmed', 'late', 'partial', 'missed']
+  const source = event.templateId ? incomeSources.find((s) => s.id === event.templateId) : undefined
+  const recurring = Boolean(event.templateId)
+  const daysLate = recurring ? eventDaysLate(event) : null
+  const payday = event.occurrenceDate ?? event.receivedDate
+  const clockAt = mergeDayTime(receivedDate, clock)
+  const time = clockAt ? formatClock(new Date(clockAt), locale) : null
+  const method = paymentMethods.find((m) => m.id === paymentMethodId)
+  const savedMethod = paymentMethods.find((m) => m.id === event.paymentMethodId)
+  const parent = savedMethod?.parentId ? paymentMethods.find((m) => m.id === savedMethod.parentId) : undefined
+  const monthOf = (iso: string) => new Intl.DateTimeFormat(intlTag(locale), { month: 'long' }).format(new Date(`${iso.slice(0, 10)}T00:00:00`))
+  const line =
+    event.exclusion === 'pass_through'
+      ? lt.income.linePassThrough
+      : recurring
+        ? daysLate ? lt.income.lineLate(monthOf(payday), daysLate) : lt.income.lineOnTime(monthOf(payday))
+        : lt.income.lineOneTime
   const statusText: Record<IncomeEventStatus, string> = {
     confirmed: t.income.statusReceived,
     late: t.income.statusLate,
@@ -283,11 +169,46 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
     projected: t.income.statusPending,
   }
 
-  const handleSave = () => {
-    if (!valid) return
+  const amt = parseFloat(amount)
+  const valid = name.trim().length > 0 && !Number.isNaN(amt) && amt > 0
+  const isDirty =
+    name !== event.name ||
+    amount !== amountInputText(event.amount, event.currency) ||
+    currency !== event.currency ||
+    sourceType !== (event.sourceType ?? 'other') ||
+    receivedDate !== event.receivedDate ||
+    clock !== savedClock ||
+    paymentMethodId !== (event.paymentMethodId ?? '') ||
+    notes !== (event.notes ?? '') ||
+    status !== event.status
+  const [confirmOpen, setConfirmOpen] = useState(false)
+
+  // Leaving with edits (close, Escape, backdrop, swipe-down, Android back: ModalShell asks the guard) asks to save or discard.
+  const handleX = () => {
+    if (isDirty) setConfirmOpen(true)
+    else onClose()
+  }
+  useDismissGuard(() => {
+    if (confirmOpen) {
+      setConfirmOpen(false)
+      return true
+    }
+    if (isDirty) {
+      setConfirmOpen(true)
+      return true
+    }
+    return false
+  })
+
+  /** Writes the edits; false when they are not valid yet. */
+  const persist = (): boolean => {
+    if (!valid) return false
+    // A picked time moves the instant, a cleared one drops it; untouched, the store keeps its own rule for a re-dated row.
+    const occurredAt = editedOccurredAt(receivedDate, clock, { day: event.receivedDate, clock: savedClock })
     updateIncomeEvent(event.id, {
       name: name.trim(),
       receivedDate,
+      ...(occurredAt ? { occurredAt } : {}),
       notes: notes.trim() || undefined,
       paymentMethodId: paymentMethodId || undefined,
       ...(typeLocked
@@ -296,145 +217,246 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
             amount: amt,
             currency: clampFiatToAllowed(settings, currency),
             sourceType,
-            templateId: templateId || null,
-            status,
-            ...occurrenceChange(event, templateId, receivedDate),
+            // Received / late / partial / missed only means something against a payday.
+            ...(recurring ? { status } : {}),
+            ...occurrenceChange(event, event.templateId ?? '', receivedDate),
           }),
     })
-    onClose()
+    return true
+  }
+  const handleSave = () => {
+    if (persist()) onClose()
+  }
+
+  // Rows that leave the sheet keep what was typed: a valid edit is saved first.
+  const openPayday = () => {
+    if (isDirty) persist()
+    if (recurring) {
+      if (source) setPaydayFocusId(source.id)
+      onClose()
+      navigate('/paydays')
+    } else {
+      openAssignIncome({ eventId: event.id })
+    }
   }
 
   return (
     <>
     <div className="flex min-h-0 flex-1 flex-col outline-none">
-      <div className="shrink-0 px-5 pt-1">
-        <V3SheetHeader title={t.editIncome.title} onClose={onClose} />
-      </div>
-      <div className={`${MODAL_BODY_SCROLL_CLASS} px-5`}>
-        {!typeLocked ? (
-          <div>
-            <span className={MODAL_LABEL_CLASS}>{t.addIncome.labelSourceType}</span>
-            <div className="mt-1.5">
-              <IncomeSourceTypePicker value={sourceType} onChange={setSourceType} labels={t.income} mode="manual" />
-            </div>
-          </div>
-        ) : null}
+      <V3SheetHeader
+        onClose={handleX}
+        leading={
+          <PillButton icon={<Calendar />} onClick={() => setCalOpen(true)} aria-haspopup="dialog" aria-expanded={calOpen} className={HEADER_PILL}>
+            <span dir="auto">{`${formatDatePillLabel(receivedDate, locale, t.expenseForm.today)}${time ? ` · ${time}` : ''}`}</span>
+          </PillButton>
+        }
+        actions={<V3SheetHeader.Action icon={<Trash2 size={16} />} label={lt.income.deleteAria} tone="danger" onClick={() => void del.request()} />}
+      >
+        <span className="sr-only">
+          <V3SheetHeader.Title>{t.editIncome.title}</V3SheetHeader.Title>
+        </span>
+      </V3SheetHeader>
 
-        <div>
-          <label htmlFor="ie-name" className={MODAL_LABEL_CLASS}>{t.addIncome.labelSource}</label>
-          <Input id="ie-name" value={name} onChange={(e) => setName(e.target.value)} className={`mt-1.5 ${MODAL_CONTROL_CLASS}`} />
-        </div>
-
-        <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
-          <div className="min-w-0">
-            <label htmlFor="ie-amt" className={MODAL_LABEL_CLASS}>{t.addIncome.labelAmount}</label>
-            <AmountField
-              id="ie-amt"
-              value={amount}
-              onChange={setAmount}
-              decimalsFor={currency}
-              disabled={typeLocked}
-              className={`mt-1.5 ${MODAL_CONTROL_CLASS} text-xl font-semibold font-mono-numbers`}
-            />
-          </div>
-          <div className="w-[7.5rem] shrink-0">
-            <span className={MODAL_LABEL_CLASS}>{t.addIncome.labelCurrency}</span>
-            <FiatCurrencyField
-              value={currency}
-              onChange={setCurrency}
-              compact
-              disabled={typeLocked}
-              className="mt-1.5 w-full h-12 px-3 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] text-sm focus:border-[var(--color-brand-focus)]"
-            />
-          </div>
-        </div>
-
-        {typeLocked ? (
-          <p className="flex items-center gap-1.5 text-[0.78125rem] leading-[1.45] text-[var(--color-brand-text-secondary)]">
-            <Lock className="size-3.5 shrink-0" aria-hidden />
-            {t.moneyFlows.incomeLocked}
-          </p>
-        ) : null}
-
-        <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.income.receivedDate}</Label>
-          <DatePickerField value={receivedDate} onChange={setReceivedDate} className={DATE_FIELD_CLASS} />
-        </div>
-
-        {!typeLocked ? (
-          <IncomeTemplatePicker
-            value={templateId}
-            onChange={setTemplateId}
-            templates={recurringTemplates}
-            label={t.income.linkToRecurring}
-            noneLabel={t.income.notLinkedToRecurring}
-          />
-        ) : null}
-
-        {!typeLocked && templateId ? (
-          <div>
-            <span className={MODAL_LABEL_CLASS}>{t.income.statusLabel}</span>
-            <div className="mt-1.5 grid grid-cols-4 gap-1.5">
-              {STATUS_CHOICES.map((sVal) => {
-                const on = status === sVal
-                return (
-                  <OptionChip
-                    key={sVal}
-                    size="segment"
-                    selected={on}
-                    onClick={() => setStatus(sVal)}
-                    className="h-10 text-xs"
-                  >
-                    {statusText[sVal]}
-                  </OptionChip>
-                )
-              })}
-            </div>
-          </div>
-        ) : null}
-
-        <PaymentMethodPicker
-          value={paymentMethodId}
-          onChange={setPaymentMethodId}
-          paymentMethods={paymentMethods}
-          label={t.addIncome.labelPaymentMethod}
+      <div className="min-h-0 flex-1 overflow-y-auto pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <AmountHero
+          id="ie-amt"
+          value={amount}
+          onChange={setAmount}
+          readOnly={typeLocked}
+          currency={currency}
+          onCurrencyChange={(c) => setCurrency(c as Currency)}
+          base={settings.baseCurrency}
+          sign="+"
+          top={
+            <span aria-hidden className="flex size-[52px] items-center justify-center rounded-[16px]" style={{ background: 'var(--color-brand-green-soft)', color: 'var(--color-brand-green)' }}>
+              <IncomeTypeIcon type={sourceType} className="size-6" />
+            </span>
+          }
+          line={typeLocked ? (
+            <span className="inline-flex items-center gap-1.5"><Lock className="size-3.5 shrink-0" aria-hidden />{t.moneyFlows.incomeLocked}</span>
+          ) : ''}
+          className="pb-0"
         />
+        <div className="flex flex-col items-center px-5 pb-5 text-center">
+          <input
+            id="ie-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onCompositionUpdate={(e) => setName(e.currentTarget.value)}
+            onCompositionEnd={(e) => setName(e.currentTarget.value)}
+            aria-label={t.addIncome.labelSource}
+            placeholder={t.addIncome.namePlaceholder}
+            dir="auto"
+            maxLength={120}
+            className="w-full bg-transparent text-center text-[1.0625rem] font-semibold text-[var(--color-brand-text-primary)] outline-none placeholder:text-[var(--color-brand-text-muted)]"
+          />
+          <p className="mt-1 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{line}</p>
+        </div>
 
-        <div>
-          <label htmlFor="ie-notes" className={MODAL_LABEL_CLASS}>{t.addIncome.labelNotes}</label>
-          <Textarea
+        <Card padding="none" divide className="mx-4 overflow-hidden rounded-2xl">
+          <PickerRow
+            label={lt.income.type}
+            onClick={typeLocked ? undefined : () => setTypeOpen(true)}
+            value={<span className="truncate">{incomeSourceTypeLabel(t.income, sourceType)}</span>}
+          />
+          <PickerRow
+            label={lt.income.receivedIn}
+            onClick={() => setMethodOpen(true)}
+            value={method ? <MethodValue method={method} /> : <span className="font-semibold text-[var(--color-brand-primary-ink)]">{t.income.setAccount}</span>}
+          />
+          <PickerRow
+            label={lt.income.payday}
+            onClick={typeLocked ? undefined : openPayday}
+            value={
+              recurring ? (
+                <span className="truncate">{[incomeSourceTypeLabel(t.income, event.sourceType ?? source?.sourceType), shortDate(payday)].join(' · ')}</span>
+              ) : (
+                <span className="text-[var(--color-brand-text-muted)]">{lt.income.notLinked}</span>
+              )
+            }
+          />
+          <PickerRow
+            label={lt.expense.recordedFrom}
+            value={
+              event.smsLogId ? (
+                <span className="inline-flex min-w-0 items-center gap-1.5">
+                  <MessageSquare className="size-4 shrink-0 text-[var(--color-brand-text-muted)]" aria-hidden />
+                  <span className="truncate">{savedMethod ? lt.expense.fromSms(cardBankName(savedMethod, parent)) : lt.expense.fromSmsPlain}</span>
+                </span>
+              ) : (
+                lt.expense.fromYou
+              )
+            }
+          />
+        </Card>
+
+        <label className="mx-4 mt-3 flex min-h-12 items-start gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-3">
+          <StickyNote className="mt-[3px] size-[18px] shrink-0 text-[var(--color-brand-text-muted)]" aria-hidden />
+          <textarea
             id="ie-notes"
+            ref={noteRef}
+            rows={1}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="mt-1.5 min-h-16 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
+            aria-label={t.addIncome.labelNotes}
+            placeholder={t.expenseForm.notePlaceholder}
+            dir="auto"
+            className="block min-h-6 w-full resize-none overflow-hidden bg-transparent text-[0.9375rem] leading-6 text-[var(--color-brand-text-primary)] outline-none placeholder:text-[var(--color-brand-text-muted)]"
           />
-        </div>
+        </label>
+        {/* Not in the mockup: the payday status, Unlink and the one-time actions stay reachable as quiet links under the note. */}
+        {recurring || event.exclusion === 'pass_through' || !typeLocked ? (
+          <div className="mx-4 mt-1 flex flex-wrap justify-center gap-x-2">
+            {recurring && !typeLocked ? (
+              <Button variant="link" size="touch" className="text-[var(--color-brand-text-secondary)]" aria-haspopup="dialog" onClick={() => setStatusOpen(true)}>
+                {t.income.statusLabel}: {statusText[status]}
+              </Button>
+            ) : null}
+            {recurring ? (
+              <Button
+                variant="link"
+                size="touch"
+                aria-label={t.income.unlinkAria(shortDate(payday))}
+                onClick={() => updateIncomeEvent(event.id, { templateId: null, occurrenceDate: null })}
+              >
+                <Unlink className="size-3.5" strokeWidth={2} />
+                {t.income.unlink}
+              </Button>
+            ) : null}
+            {event.exclusion === 'pass_through' ? (
+              <Button variant="link" size="touch" onClick={() => countPassThroughCredit(event.id)}>
+                {t.income.countAsIncome}
+              </Button>
+            ) : null}
+            {!recurring && !typeLocked ? (
+              <Button
+                variant="link"
+                size="touch"
+                onClick={() => {
+                  if (isDirty) persist()
+                  onClose()
+                  openNewPayday({
+                    name: event.name,
+                    amount: event.amount,
+                    currency: event.currency,
+                    sourceType: event.sourceType,
+                    dayOfMonth: Number(event.receivedDate.slice(8, 10)) || 1,
+                    paymentMethodId: event.paymentMethodId,
+                  })
+                }}
+              >
+                {t.income.makeRecurring}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
 
-        <Button
-          type="button"
-          onClick={() => void del.request()}
-          variant="destructive"
-          size="touch"
-          className="w-full text-sm"
-        >
-          <Trash2 className="h-4 w-4" />
-          {t.common.delete}
-        </Button>
       </div>
 
-      <div className="sheet-cta shrink-0 px-5 pb-5 pt-4">
-        <Button
-          type="button"
-          onClick={handleSave}
-          disabled={!valid}
-          size="cta-block"
-          className="text-sm font-semibold"
-        >
+      <div className="sheet-cta shrink-0 border-t border-[var(--color-brand-border)] px-4 pb-6 pt-3">
+        <Button type="button" onClick={handleSave} disabled={!valid} size="cta-block" className="font-semibold">
           {t.editIncome.buttonSave}
         </Button>
       </div>
     </div>
 
+    <OptionSheet
+      open={statusOpen}
+      onClose={() => setStatusOpen(false)}
+      title={t.income.statusLabel}
+      value={status}
+      onChange={(v) => setStatus(v)}
+      options={STATUS_CHOICES.map((v) => ({ value: v, title: statusText[v] }))}
+    />
+    <OptionSheet
+      open={typeOpen}
+      onClose={() => setTypeOpen(false)}
+      title={lt.income.typePickTitle}
+      value={sourceType}
+      onChange={(v) => setSourceType(v)}
+      options={MANUAL_INCOME_SOURCE_TYPES.map((st) => {
+        const { icon: Icon, accent } = incomeTypeGridItem(st)
+        return { value: st, title: incomeSourceTypeLabel(t.income, st), icon: <Icon />, tone: accent }
+      })}
+    />
+    <SelectPaymentMethodSheet
+      open={methodOpen}
+      value={paymentMethodId}
+      paymentMethods={paymentMethods}
+      onSelect={setPaymentMethodId}
+      onClose={() => setMethodOpen(false)}
+    />
+    {calOpen ? (
+      <UnifiedDatePicker
+        open
+        value={receivedDate}
+        onConfirm={setReceivedDate}
+        time={{ value: clock, label: lt.expense.time }}
+        onConfirmDateTime={(iso, hm) => {
+          setReceivedDate(iso)
+          setClock(hm)
+        }}
+        onClose={() => setCalOpen(false)}
+      />
+    ) : null}
+    <UnsavedChangesDialog
+      open={confirmOpen}
+      title={valid ? undefined : lt.expense.incompleteTitle}
+      body={valid ? lt.income.unsavedBody : lt.expense.incompleteBody}
+      onSave={
+        valid
+          ? () => {
+              setConfirmOpen(false)
+              handleSave()
+            }
+          : undefined
+      }
+      onDiscard={() => {
+        setConfirmOpen(false)
+        onClose()
+      }}
+      onKeep={() => setConfirmOpen(false)}
+    />
     {del.dialog}
     </>
   )
@@ -445,23 +467,15 @@ export function EditIncomeEventSheet() {
   const { activeModal, setActiveModal, editingIncomeEventId, setEditingIncomeEventId } = useSettingsStore()
   const isOpen = activeModal === 'editIncomeEvent'
   const event = incomeEvents.find((e) => e.id === editingIncomeEventId)
-  const [editing, setEditing] = useState(false)
 
   const close = () => {
     setActiveModal(null)
     setEditingIncomeEventId(null)
-    setEditing(false)
   }
 
   return (
-    <ModalShell open={isOpen && !!event} onBackdropClick={close} scrollChild={editing}>
-      {event ? (
-        editing ? (
-          <EditIncomeEventForm key={event.id} event={event} onClose={close} />
-        ) : (
-          <IncomeEventDetail key={event.id} event={event} onClose={close} onEdit={() => setEditing(true)} />
-        )
-      ) : null}
+    <ModalShell open={isOpen && !!event} onBackdropClick={close} scrollChild>
+      {event ? <EditIncomeEventForm key={event.id} event={event} onClose={close} /> : null}
     </ModalShell>
   )
 }

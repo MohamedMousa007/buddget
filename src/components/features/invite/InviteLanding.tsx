@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Check } from 'lucide-react'
 import { CardSpotlight } from '@/components/features/membership/FlipCardRig'
 import { GuestPassCard } from '@/components/features/membership/GuestPassCard'
@@ -19,7 +19,6 @@ export function InviteLanding({ code }: { code: string }) {
   const copy = useRewardsCopy()
   const c = copy.landing
   const p = copy.invite.pass
-  const router = useRouter()
   const [saved, setSaved] = useState(false)
   const [name, setName] = useState<string | null>(null)
 
@@ -29,8 +28,6 @@ export function InviteLanding({ code }: { code: string }) {
     void fetchInviterFirstName(code).then((n) => { if (live) setName(n) })
     return () => { live = false }
   }, [code])
-
-  const start = () => router.push(INVITE_TARGET)
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
@@ -79,8 +76,9 @@ export function InviteLanding({ code }: { code: string }) {
         </MembershipPanel>
 
         <div className="mt-auto grid gap-2.5">
-          <Button size="cta-block" className="font-bold" onClick={start}>{c.create}</Button>
-          <Button size="cta-block" variant="outline" onClick={start}>{c.signIn}</Button>
+          {/* Real links: a tap before the page hydrates still goes on to sign-up (a router.push button did nothing then). */}
+          <Button size="cta-block" className="font-bold" nativeButton={false} render={<Link href={INVITE_TARGET} />}>{c.create}</Button>
+          <Button size="cta-block" variant="outline" nativeButton={false} render={<Link href={INVITE_TARGET} />}>{c.signIn}</Button>
         </div>
         <Fine>{c.foot}</Fine>
       </main>

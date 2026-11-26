@@ -15,6 +15,8 @@ export interface SegmentedOption<T extends string> {
    * so the icon is hidden from assistive tech rather than announced twice.
    */
   icon?: React.ReactNode
+  /** A fuller accessible name than the short visible label (e.g. "From an account" for "Account"). Default: the label. */
+  ariaLabel?: string
 }
 
 export interface SegmentedControlProps<T extends string> {
@@ -83,6 +85,7 @@ export function SegmentedControl<T extends string>({
             type="button"
             role="radio"
             aria-checked={selected}
+            aria-label={o.ariaLabel}
             // Only the selected option is in the tab order; arrows move within.
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(o.value)}

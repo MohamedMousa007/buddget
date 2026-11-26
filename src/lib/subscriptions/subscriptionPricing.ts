@@ -87,3 +87,11 @@ export function priceHistoryWith(
   const history = sub.priceHistory?.length ? sub.priceHistory : [{ amount: sub.amount, from: sub.startDate.slice(0, 10) }]
   return history[history.length - 1]?.amount === amount ? history : [...history, { amount, from }]
 }
+
+/**
+ * The price history newest first, as the sheet lists it ("Since …" then "Before"). Entries are appended in the order
+ * the prices took effect, so on a tie (a price typed over the plan's on the day it was added) the later entry is newer.
+ */
+export function priceHistoryNewestFirst<T extends { amount: number; from: string }>(history: readonly T[] | null | undefined): T[] {
+  return [...(history ?? [])].reverse().sort((a, b) => b.from.localeCompare(a.from))
+}

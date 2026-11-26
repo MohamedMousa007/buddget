@@ -1,15 +1,17 @@
 'use client'
 
-import { toLatinDigits } from '@/lib/utils/formatters'
 import { useState } from 'react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { Plus } from 'lucide-react'
+import { Calendar, Plus } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { AmountField } from '@/components/ui/AmountField'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { OptionChip } from '@/components/ui/OptionChip'
+import { DayOfMonthSheet } from '@/components/ui/DayOfMonthSheet'
+import { PillButton } from '@/components/ui/PillButton'
+import { useLightTouchCopy } from '@/lib/i18n/lightTouchCopy'
 import { Switch } from '@/components/ui/switch'
 import { LineIcon } from '@/components/features/budget/LineIcon'
 import { TintedTile } from '@/components/features/budget/TintedTile'
@@ -62,7 +64,9 @@ export function AddLineForm({ block, suggestions, onClose, onAdd, addAnotherLabe
   const [name, setName] = useState('')
   const [amount, setAmount] = useState('')
   const [icon, setIcon] = useState(icons[0])
-  const [dueDay, setDueDay] = useState('')
+  const [dueDay, setDueDay] = useState<number | null>(null)
+  const [dayOpen, setDayOpen] = useState(false)
+  const ordinal = useLightTouchCopy().dayOfMonth.ordinal
   const [essential, setEssential] = useState(!!DEFAULT_ESSENTIAL[block])
 
   const value = Number(amount)
@@ -76,7 +80,6 @@ export function AddLineForm({ block, suggestions, onClose, onAdd, addAnotherLabe
 
   const add = (keepOpen = false) => {
     if (!canAdd) return
-    const day = Number(dueDay)
     onAdd({
       name: name.trim(),
       icon,
@@ -85,13 +88,13 @@ export function AddLineForm({ block, suggestions, onClose, onAdd, addAnotherLabe
       linkType: 'none',
       isSavings: block === 'safety' || block === 'goals',
       essential,
-      dueDay: block === 'bills' && day >= 1 && day <= 31 ? Math.floor(day) : null,
+      dueDay: block === 'bills' ? dueDay : null,
       expenseCategories: BLOCK_EXPENSE_CATEGORIES[block],
     })
     if (keepOpen) {
       setName('')
       setAmount('')
-      setDueDay('')
+      setDueDay(null)
     } else onClose()
   }
 
@@ -124,16 +127,11 @@ export function AddLineForm({ block, suggestions, onClose, onAdd, addAnotherLabe
       </div>
 
       {block === 'bills' ? (
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-[var(--color-brand-text-secondary)]">{c.add.dueDay}</span>
-          <Input
-            size="brand"
-            inputMode="numeric"
-            value={dueDay}
-            onChange={(e) => setDueDay(toLatinDigits(e.target.value).replace(/\D/g, '').slice(0, 2))}
-            placeholder="1-31"
-          />
-        </label>
+        <div className="flex min-h-[52px] items-center gap-3">
+          <span className="flex-1 text-[0.90625rem] font-semibold text-[var(--color-brand-text-primary)]">{c.add.dueDay}</span>
+          <PillButton icon={<Calendar />} onClick={() => setDayOpen(true)}>{dueDay === null ? '1–31' : ordinal(dueDay)}</PillButton>
+          <DayOfMonthSheet open={dayOpen} value={dueDay} onChange={setDueDay} onClose={() => setDayOpen(false)} title={c.add.dueDay} zIndexClassName="z-[110]" />
+        </div>
       ) : null}
 
       {block === 'bills' || block === 'everyday' ? (

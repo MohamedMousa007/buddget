@@ -168,7 +168,6 @@ export function buildFactsFromStore(s: FactsSlice, now: Date, { remembered = tru
   }
   const subs = subscriptionsLive(s.subscriptions, base, rates, now)
   const usualKeep = fundingBasis(s, now).usualKeep
-  const zakatAnnual = profile.zakatConfig?.manualAmount ?? 0
   const transportMode = profile.transportMode ?? null
 
   const facts: BudgetFacts = {
@@ -192,7 +191,7 @@ export function buildFactsFromStore(s: FactsSlice, now: Date, { remembered = tru
     subscriptionsMonthly: subs.monthly,
     subscriptionCount: subs.count,
     debts: liveDebts(s.debts, debtCtx).map((d) => ({
-      id: d.debt.id, name: d.debt.name, minimum: d.minimum, balance: d.balance, kind: d.kind,
+      id: d.debt.id, name: d.debt.name || d.debt.personName || d.debt.person, minimum: d.minimum, balance: d.balance, kind: d.kind,
     })),
     goals: liveGoals(s.goals, buildGoalProgressContext(s, monthKey), usualKeep).map((g) => ({
       id: g.goal.id,
@@ -207,7 +206,8 @@ export function buildFactsFromStore(s: FactsSlice, now: Date, { remembered = tru
     liquidSavings: liquidSavings(s.savingsAccounts, base, rates, s.goldPricePerGram, s.goldPriceAvailable),
     essentialsMonthly: profile.emergencyFundConfig?.monthlyEssentials ?? null,
     emergencyTargetMonths: profile.emergencyFundConfig?.targetMonths ?? DEFAULT_TARGET_MONTHS,
-    zakatMonthly: zakatAnnual > 0 ? zakatAnnual / 12 : 0,
+    // Zakat is reckoned live in Wealth; a budget line comes only from the flow's zakat answer.
+    zakatMonthly: 0,
     ...everydayEvidence(s.expenses, monthKey, settings.monthStartDay, base, rates),
     priorities: (fp.priorities ?? []).filter((p): p is StudioPriority => (PRIORITIES as readonly string[]).includes(p)),
     known: knownFacts(s),

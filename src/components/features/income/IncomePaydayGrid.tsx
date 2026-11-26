@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Pencil } from 'lucide-react'
 import { useT } from '@/lib/i18n'
+import { dayCellClass } from '@/components/ui/DayOfMonthSheet'
 import { deriveDefaultPaydays, paydaysPerMonth } from '@/lib/utils/paydaySchedule'
 import type { IncomeRecurringFrequency } from '@/lib/store/types'
 
@@ -59,13 +60,7 @@ export function IncomePaydayGrid({ frequency, days, onChange }: Props) {
             key={day}
             type="button"
             onClick={() => tap(day)}
-            className={`flex h-11 items-center justify-center rounded-md font-mono-numbers text-sm font-semibold transition-colors ${
-              isSolid
-                ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
-                : isDerived
-                  ? 'bg-[color-mix(in_oklab,var(--color-brand-primary)_18%,transparent)] text-[var(--color-brand-primary-ink)]'
-                  : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-border)]'
-            }`}
+            className={dayCellClass(isSolid ? 'solid' : isDerived ? 'derived' : 'idle')}
           >
             {day}
           </button>

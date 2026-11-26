@@ -22,9 +22,13 @@ interface UseNumberPadOptions {
   currency?: string
   label?: string
   dir?: 'ltr' | 'rtl'
+  /** Passed through to NumberPad: the ± key for a balance that can go below zero. */
+  allowNegative?: boolean
+  negative?: boolean
+  onNegativeChange?: (negative: boolean) => void
 }
 
-export function useNumberPad({ value, onChange, mode, currency, label, dir }: UseNumberPadOptions) {
+export function useNumberPad({ value, onChange, mode, currency, label, dir, allowNegative, negative, onNegativeChange }: UseNumberPadOptions) {
   const [isOpen, setOpen] = useState(false)
   const triggerRef = useRef<HTMLElement | null>(null)
 
@@ -54,6 +58,9 @@ export function useNumberPad({ value, onChange, mode, currency, label, dir }: Us
             currency={currency}
             label={label}
             dir={dir}
+            allowNegative={allowNegative}
+            negative={negative}
+            onNegativeChange={onNegativeChange}
             showDisplay={false}
             onDone={() => setOpen(false)}
             onClose={() => setOpen(false)}

@@ -221,16 +221,13 @@ describe('update_subscription', () => {
   })
 })
 
-describe('pause_subscription / resume_subscription', () => {
-  it('pauses, stops the recurring expense, resumes and undoes', () => {
-    const paused = proposeApply('pause_subscription', { sub: refOf(S_NET) })
-    expect(st().subscriptions[0].status).toBe('paused')
-    expect(st().recurringExpenses[0].isActive).toBe(false)
-    if (paused.applied.ok) paused.applied.undo?.()
-    expect(st().subscriptions[0].status).toBe('active')
-    expect(st().recurringExpenses[0].isActive).toBe(true)
+describe('resume_subscription (there is no pause)', () => {
+  it('has no pause tool', () => {
+    expect(TOOLS.has('pause_subscription')).toBe(false)
+  })
 
-    proposeApply('pause_subscription', { sub: refOf(S_NET) })
+  it('resumes a legacy paused row and undoes', () => {
+    seed([sub(S_NET, RE_NET, { status: 'paused', pausedAt: '2026-04-01T00:00:00.000Z' })])
     const resumed = proposeApply('resume_subscription', { sub: refOf(S_NET) })
     expect(st().subscriptions[0]).toMatchObject({ status: 'active', pausedAt: null })
     expect(st().recurringExpenses[0].isActive).toBe(true)
@@ -238,10 +235,8 @@ describe('pause_subscription / resume_subscription', () => {
     expect(st().subscriptions[0].status).toBe('paused')
   })
 
-  it('refuses to pause what is not active and to resume what is already active', () => {
+  it('refuses to resume what is already active', () => {
     expect(write('resume_subscription').propose({ sub: refOf(S_NET) }, ctx).ok).toBe(false)
-    seed([sub(S_NET, RE_NET, { status: 'paused' })])
-    expect(write('pause_subscription').propose({ sub: refOf(S_NET) }, ctx).ok).toBe(false)
   })
 
   it('re-subscribes a cancelled subscription', () => {

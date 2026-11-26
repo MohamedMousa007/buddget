@@ -14,7 +14,9 @@ import { categorySourceAfterSave } from '@/lib/spending/merchantCategory'
 import { usePlanCategories } from '@/hooks/usePlanCategories'
 import { useSubmitOnce } from '@/hooks/useSubmitOnce'
 import { canonicalAmount, currencyDecimals, parseLocalizedAmount } from '@/lib/ui/amountParse'
+import { amountInputText } from '@/lib/ui/amountSanitize'
 import type { Expense, Currency, SpendExclusion } from '@/lib/store/types'
+import { clockOf, editedOccurredAt } from '@/lib/time/occurredAt'
 
 export function useEditExpenseForm(expense: Expense, onClose: () => void) {
   const { updateExpense, paymentMethods, settings, exchangeRates } = useFinanceStore(
@@ -26,8 +28,11 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
   const submit = useSubmitOnce()
 
   const [date, setDate] = useState(expense.date)
+  /** The recorded time of day (`HH:mm`), '' when the row has none of its own. */
+  const savedClock = clockOf(expense.occurredAt, expense.date)
+  const [clock, setClock] = useState(savedClock)
   const [description, setDescription] = useState(expense.description)
-  const [amount, setAmount] = useState(expense.amount.toString())
+  const [amount, setAmount] = useState(amountInputText(expense.amount, expense.currency))
   const [currency, setCurrency] = useState<Currency>(expense.currency)
   const [category, setCategory] = useState<string>(expense.category)
   const [subcategory, setSubcategory] = useState<string | undefined>(expense.subcategory)
@@ -61,8 +66,11 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
     setSubmitError('')
 
     const exclusion = paymentMethodId === expense.paymentMethodId ? spendExclusion : reconcileExclusion(spendExclusion, paymentMethods, paymentMethodId)
+    // A picked time moves the instant (and so the row's place in its day), a cleared one drops it; untouched, the store keeps its own rule.
+    const occurredAt = editedOccurredAt(date, clock, { day: expense.date, clock: savedClock })
     updateExpense(expense.id, {
       date,
+      ...(occurredAt ? { occurredAt } : {}),
       description: title,
       category,
       // Saving a row whose category was only the AI's suggestion settles it: kept = confirmed, replaced = changed.
@@ -98,6 +106,9 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
     subcategory,
     currency,
     date,
+    clock,
+    savedClock,
+    expense.date,
     description,
     exchangeRates,
     expense.id,
@@ -124,6 +135,9 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
   return {
     date,
     setDate,
+    clock,
+    setClock,
+    savedClock,
     description,
     setDescription,
     amount,

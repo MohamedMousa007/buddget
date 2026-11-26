@@ -1,72 +1,48 @@
 'use client'
 
 import { addYears, format, parseISO, startOfDay } from 'date-fns'
-import { Ban, Check, Clock, Link as LinkIcon, Pause, Repeat, TrendingUp, TriangleAlert, Unlink, Users, type LucideIcon } from 'lucide-react'
+import { Calendar, Trash2, Unlink } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { Button } from '@/components/ui/button'
+import { AmountHero } from '@/components/ui/AmountHero'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { IconButton } from '@/components/ui/IconButton'
-import { SelectableCard } from '@/components/ui/SelectableCard'
+import { OptionSheet } from '@/components/ui/OptionSheet'
+import { HEADER_PILL, Pill } from '@/components/ui/PillButton'
+import { PickerRow } from '@/components/ui/PickerRow'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
+import { SettingsSwitchRow } from '@/components/features/settings/SettingsSwitchRow'
+import { MethodPickerRow } from '@/components/features/debts/lt/MethodPickerRow'
+import { SheetGroup } from '@/components/features/debts/lt/SheetParts'
 import { useSubscriptionDates } from '@/hooks/useSubscriptionDates'
-import { useLocale, useT } from '@/lib/i18n'
+import { useTypedAmount } from '@/hooks/useTypedAmount'
+import { useT } from '@/lib/i18n'
+import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import type { SubscriptionTracking } from '@/lib/store/types'
-import { localTodayISO } from '@/lib/utils/localDate'
-import { findBrandByKey, plansForRegion, type CatalogRegion } from '@/lib/constants/subscriptionCatalog'
+import type { Currency, SubscriptionBillingCycle } from '@/lib/store/types'
+import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
+import { foreignSymbol } from '@/lib/constants/currencyMeta'
 import { chargeAmount, markPaidTarget, scheduledDates } from '@/lib/subscriptions/subscriptionForecast'
-import { buildRow, type Chip } from '@/lib/subscriptions/subscriptionRows'
-import { cn } from '@/lib/utils'
+import { priceHistoryNewestFirst } from '@/lib/subscriptions/subscriptionPricing'
+import { useSubsPageLtCopy } from '@/lib/i18n/subsPageLtCopy'
+import { buildRow } from '@/lib/subscriptions/subscriptionRows'
+import { SubscriptionStatusBadge } from './SubscriptionStatusBadge'
+import { convertCurrency, tryConvertCurrency } from '@/lib/utils/currency'
+import { formatFlex } from '@/lib/utils/formatters'
+import { expenseAmountInBase } from '@/lib/utils/calculations'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { BrandTile } from './BrandTile'
-import { SectionLabel, SheetFrame } from './SheetFrame'
-import { chipLabel, currencyLabel, cycleWord, TRACKING_ICON } from './subscriptionLabels'
-import { StatusChip } from './StatusChip'
-import { formatFixed2 } from '@/lib/utils/formatters'
+import { SheetFrame } from './SheetFrame'
 
-const TRACKING: SubscriptionTracking[] = ['sms', 'ask', 'log']
+const CYCLES: SubscriptionBillingCycle[] = ['weekly', 'monthly', 'quarterly', 'semiannual', 'yearly']
 
-type BannerKind = 'trial' | 'paused' | 'cancelled' | 'price' | 'plan' | 'overdue' | 'failed' | 'shared'
-const BANNER_BY_CHIP: Partial<Record<Chip['key'], BannerKind>> = {
-  trialEnds: 'trial',
-  paused: 'paused',
-  ends: 'cancelled',
-  price: 'price',
-  planChanges: 'plan',
-  expected: 'overdue',
-  failed: 'failed',
-  shared: 'shared',
-}
-const BANNER_ICON: Record<BannerKind, LucideIcon> = {
-  trial: Clock,
-  paused: Pause,
-  cancelled: Ban,
-  price: TrendingUp,
-  plan: Repeat,
-  overdue: Clock,
-  failed: TriangleAlert,
-  shared: Users,
-}
-const BANNER_TONE: Record<BannerKind, string> = {
-  trial: 'bg-[var(--color-brand-primary-soft)]',
-  plan: 'bg-[var(--color-brand-primary-soft)]',
-  shared: 'bg-[var(--color-brand-primary-soft)]',
-  price: 'bg-[var(--color-brand-amber-soft)]',
-  overdue: 'bg-[var(--color-brand-amber-soft)]',
-  failed: 'bg-[var(--color-brand-amber-soft)]',
-  paused: 'bg-[var(--color-brand-elevated)]',
-  cancelled: 'bg-[var(--color-brand-elevated)]',
-}
-
-function Group({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="divide-y divide-[var(--color-brand-border)] overflow-hidden rounded-2xl border border-[var(--color-brand-border)]">
-      {children}
-    </div>
-  )
-}
-
-/** One subscription in full: state, next charges, tracking, matched charges, price history, actions. */
+/**
+ * One subscription (Light touch `sub`): the next charge in the header, logo and name, the price with its currency and
+ * what it is in the base currency, the derived status, then Paid with · Category · Repeats · Remind me and the last
+ * charges. Buddgy sets the status from the bank messages; there is no pause.
+ */
 export function SubscriptionDetailSheet({
   subId,
   onClose,
@@ -79,24 +55,24 @@ export function SubscriptionDetailSheet({
   onCancel: (id: string) => void
 }) {
   const t = useT()
-  const { locale } = useLocale()
   const ui = t.subscriptions.ui
+  const c = useDebtsSubsLtCopy().subs
+  const pageCopy = useSubsPageLtCopy()
   const confirm = useConfirm()
   const toast = useActionToast()
-  const { shortDate: formatDateShort, monthYear } = useSubscriptionDates()
-  const [pickTracking, setPickTracking] = useState(false)
+  const { shortDate, monthYear } = useSubscriptionDates()
   const s = useFinanceStore(
     useShallow((st) => ({
       sub: st.subscriptions.find((x) => x.id === subId) ?? null,
       expenses: st.expenses,
+      paymentMethods: st.paymentMethods,
       base: st.settings.baseCurrency,
       rates: st.exchangeRates,
       update: st.updateSubscription,
-      markPaid: st.markSubscriptionPaid,
+      convertTrial: st.convertTrial,
       adopt: st.adoptSubscriptionPrice,
       applyPlan: st.applyPendingPlanChange,
-      convertTrial: st.convertTrial,
-      pause: st.pauseSubscription,
+      markPaid: st.markSubscriptionPaid,
       resume: st.resumeSubscription,
       reactivate: st.reactivateSubscription,
       remove: st.deleteSubscription,
@@ -104,263 +80,226 @@ export function SubscriptionDetailSheet({
     })),
   )
   const { sub } = s
+  const [amountText, setAmountText] = useTypedAmount(sub ? chargeAmount(sub) : 0)
+  const [currency, setCurrency] = useState<Currency | null>(sub?.currency ?? null)
+  const [paymentMethodId, setPaymentMethodId] = useState(sub?.paymentMethodId ?? '')
+  const [category, setCategory] = useState(sub?.expenseCategory ?? '')
+  const [cycle, setCycle] = useState<SubscriptionBillingCycle | null>(sub?.billingCycle ?? null)
+  const [sheet, setSheet] = useState<'category' | 'cycle' | null>(null)
+
   const today = localTodayISO()
-  const row = useMemo(
-    () => (sub ? buildRow(sub, s.expenses, parseISO(today), s.base, s.rates) : null),
-    [sub, s.expenses, s.base, s.rates, today],
-  )
-
-  const upcoming = useMemo(() => {
-    if (!sub || !row) return []
-    if (row.life !== 'active' && row.life !== 'trial') return []
-    const from = row.life === 'trial' && sub.trialEnd ? parseISO(sub.trialEnd.slice(0, 10)) : (row.cycle?.due ?? startOfDay(parseISO(today)))
-    const price = row.priceChange?.to ?? chargeAmount(sub)
-    return scheduledDates(sub, from, addYears(from, 4))
-      .slice(0, 3)
-      .map((d) => {
-        const iso = format(d, 'yyyy-MM-dd')
-        const moved = sub.pendingPlanId && sub.pendingPlanFrom && sub.pendingAmount != null && iso >= sub.pendingPlanFrom.slice(0, 10)
-        return { iso, amount: moved ? (sub.pendingAmount as number) : price }
-      })
-  }, [sub, row, today])
-
-  const matched = useMemo(
-    () =>
-      sub
-        ? s.expenses
-            .filter((e) => e.linkedSubscriptionId === sub.id && !e.refundKind)
-            .sort((a, b) => b.date.localeCompare(a.date))
-            .slice(0, 5)
-        : [],
+  const row = useMemo(() => (sub ? buildRow(sub, s.expenses, parseISO(today), s.base, s.rates) : null), [sub, s.expenses, s.base, s.rates, today])
+  const status = row?.status ?? 'active'
+  const lastCharges = useMemo(
+    () => (sub ? s.expenses.filter((e) => e.linkedSubscriptionId === sub.id && !e.refundKind).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3) : []),
     [sub, s.expenses],
   )
 
   if (!sub || !row) return null
+  const cur = currency ?? sub.currency
+  const every = cycle ?? sub.billingCycle
+  const amount = Number.parseFloat(amountText.replace(',', '.')) || 0
+  const shared = sub.myShare != null
+  const amountChanged = !shared && amount > 0 && Math.abs(amount - sub.amount) > 0.004
+  const dirty = amountChanged || cur !== sub.currency || (paymentMethodId || null) !== sub.paymentMethodId || category !== sub.expenseCategory || every !== sub.billingCycle
+  // The header and the list look ahead: an unpaid past cycle shows as Payment due, never as the next charge.
+  const nextIso = (row.life === 'active' ? row.nextDue : row.date) ?? undefined
+  const nextText = nextIso ? shortDate(nextIso) : ''
+  /** The cycle the status talks about: an unpaid one keeps its own (past) date. */
+  const cycleText = row.date ? shortDate(row.date) : ''
   const life = row.life
-  const charge = chargeAmount(sub)
-  const bannerKind = BANNER_BY_CHIP[row.chip.key]
-  const BannerIcon = bannerKind ? BANNER_ICON[bannerKind] : null
-  const d = ui.detail.banner
-  const fmt = (n: number) => formatFixed2(n)
-  const pendingBrand = findBrandByKey(sub.brandKey)
-  const pendingPlanName =
-    (pendingBrand && sub.catalogRegion
-      ? plansForRegion(pendingBrand, sub.catalogRegion as CatalogRegion).find((p) => p.id === sub.pendingPlanId)?.name
-      : undefined) ?? ''
-  const shortDate = (iso: string) => formatDateShort(iso)
+  const ended = life === 'cancelled' || life === 'ended' || life === 'paused'
 
-  const banner = (() => {
-    switch (bannerKind) {
-      case 'trial':
-        return { title: d.trial.title(shortDate(sub.trialEnd ?? '')), body: d.trial.body }
-      case 'paused':
-        return { title: d.paused.title, body: d.paused.body(sub.pausedAt ? shortDate(sub.pausedAt.slice(0, 10)) : '') }
-      case 'cancelled':
-        return { title: d.cancelled.title(sub.endsOn ? shortDate(sub.endsOn.slice(0, 10)) : ''), body: d.cancelled.body }
-      case 'price':
-        return { title: d.price.title(fmt(row.priceChange?.to ?? charge)), body: d.price.body(fmt(charge)) }
-      case 'plan':
-        return {
-          title: d.plan.title(pendingPlanName, sub.pendingPlanFrom ? shortDate(sub.pendingPlanFrom.slice(0, 10)) : ''),
-          body: d.plan.body(fmt(sub.pendingAmount ?? charge)),
-        }
-      case 'overdue':
-        return { title: d.overdue.title(row.date ? shortDate(row.date) : ''), body: d.overdue.body }
-      case 'failed':
-        return { title: d.failed.title(row.date ? shortDate(row.date) : ''), body: d.failed.body }
-      case 'shared':
-        return { title: d.shared.title(fmt(sub.amount)), body: d.shared.body((sub.sharedWith ?? []).join(', '), fmt(charge)) }
-      default:
-        return null
-    }
-  })()
+  const rate = cur !== s.base ? tryConvertCurrency(1, cur, s.base, s.rates) : null
+  const conversion = rate != null && amount > 0
+    ? c.rate(`${formatFlex(convertCurrency(amount, cur, s.base, s.rates))} ${s.base}`, cur, formatFlex(rate), s.base)
+    : ''
 
-  const canMarkPaid = markPaidTarget(sub, s.expenses) !== null
-  const footer = (() => {
-    if (life === 'trial') return { label: ui.detail.keepAfterTrial, run: () => s.convertTrial(sub.id) }
-    if (life === 'paused') return { label: ui.detail.resume, run: () => s.resume(sub.id) }
-    if (life === 'cancelled' || life === 'ended') return { label: ui.detail.resubscribe, run: () => s.reactivate(sub.id) }
-    if (row.priceChange) {
-      const to = row.priceChange.to
-      return { label: ui.detail.adopt(`${currencyLabel(sub.currency, locale)} ${fmt(to)}`), run: () => s.adopt(sub.id, to) }
-    }
-    if (sub.pendingPlanId) return { label: ui.detail.applyPlan, run: () => s.applyPlan(sub.id) }
-    return canMarkPaid ? { label: ui.detail.markPaid, run: () => { s.markPaid(sub.id); toast(t.moneyFlows.markedPaid) } } : null
-  })()
-
-  const history = [...(sub.priceHistory ?? [])].sort((a, b) => b.from.localeCompare(a.from))
-  const Track = TRACKING_ICON[sub.tracking ?? 'sms']
-  const canCancel = life === 'active' || life === 'trial' || life === 'paused'
+  const save = () => {
+    s.update(sub.id, {
+      currency: cur,
+      paymentMethodId: paymentMethodId || null,
+      expenseCategory: category,
+      billingCycle: every,
+    })
+    if (amountChanged) s.adopt(sub.id, amount)
+    toast(t.common.saved)
+    onClose()
+  }
 
   const remove = async () => {
-    if (await confirm({ title: t.subscriptions.confirmDeleteSubscription, destructive: true })) {
+    if (await confirm({ title: c.deleteTitle(sub.name), body: c.deleteBody, confirmLabel: t.common.delete, destructive: true })) {
       s.remove(sub.id)
       onClose()
     }
   }
 
+  // What Buddgy's checks found: a free trial, a declined charge, a shared plan, a new price or a plan change.
+  const d = ui.detail.banner
+  const note = (() => {
+    if (ended) return null
+    switch (row.chip.key) {
+      case 'trialEnds': return { title: d.trial.title(sub.trialEnd ? shortDate(sub.trialEnd.slice(0, 10)) : ''), body: d.trial.body }
+      case 'failed': return { title: d.failed.title(cycleText), body: d.failed.body }
+      case 'shared': return { title: d.shared.title(formatFlex(sub.amount)), body: d.shared.body((sub.sharedWith ?? []).join(', '), formatFlex(chargeAmount(sub))) }
+      case 'price': return { title: d.price.title(formatFlex(row.priceChange?.to ?? chargeAmount(sub))), body: d.price.body(formatFlex(chargeAmount(sub))) }
+      case 'planChanges': return { title: d.plan.title('', sub.pendingPlanFrom ? shortDate(sub.pendingPlanFrom.slice(0, 10)) : ''), body: d.plan.body(formatFlex(sub.pendingAmount ?? chargeAmount(sub))) }
+      default: return null
+    }
+  })()
+
+  // The next three charges (from the end of a trial, or the current cycle) and every price the plan has billed.
+  const upcoming = ended
+    ? []
+    : scheduledDates(sub, life === 'trial' && sub.trialEnd ? parseISO(sub.trialEnd.slice(0, 10)) : (row.nextDue ? parseISO(row.nextDue) : startOfDay(parseISO(today))), addYears(parseISO(today), 4))
+        .slice(0, 3)
+        .map((x) => format(x, 'yyyy-MM-dd'))
+  const upcomingAmount = (iso: string) =>
+    sub.pendingPlanFrom && sub.pendingAmount != null && iso >= sub.pendingPlanFrom.slice(0, 10) ? sub.pendingAmount : (row.priceChange?.to ?? chargeAmount(sub))
+  const history = priceHistoryNewestFirst(sub.priceHistory)
+
+  // The one contextual action Buddgy's own checks raise: keep after a trial, a new price, a detected plan change, or an unpaid charge.
+  const prompt = (() => {
+    if (ended) return null
+    if (life === 'trial') return { label: ui.detail.keepAfterTrial, run: () => s.convertTrial(sub.id) }
+    if (row.priceChange) {
+      const to = row.priceChange.to
+      return { label: ui.detail.adopt(`${formatFlex(to)} ${sub.currency}`), run: () => s.adopt(sub.id, to) }
+    }
+    if (sub.pendingPlanId) return { label: ui.detail.applyPlan, run: () => s.applyPlan(sub.id) }
+    // Due today, in its grace days or overdue: the user can answer Buddgy's "did you pay?" here (HomeNudge opens this sheet).
+    if (((row.cycle && row.cycle.kind !== 'upcoming') || status === 'needs_renewal') && markPaidTarget(sub, s.expenses) !== null) {
+      return { label: ui.detail.markPaid, run: () => { s.markPaid(sub.id); toast(t.moneyFlows.markedPaid) } }
+    }
+    return null
+  })()
+
   return (
-    <SheetFrame
-      open
-      onClose={onClose}
-      title={ui.detail.title}
-      footer={
-        footer ? (
-          <Button
-            size="cta-block"
-            onClick={() => {
-              footer.run()
-              if (life === 'active' && !row.priceChange && !sub.pendingPlanId) onClose()
-            }}
-          >
-            {footer.label}
-          </Button>
-        ) : undefined
-      }
-    >
-      <div className="flex items-center gap-3.5">
-        <BrandTile brandKey={sub.brandKey} name={sub.name} size={56} />
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-lg font-semibold text-[var(--color-brand-text-primary)]">{sub.name}</div>
-          <div className="truncate text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{sub.planName ?? ui.chips.subscription}</div>
-        </div>
-        <StatusChip tone={row.chip.tone} icon={row.chip.icon}>
-          {chipLabel(row.chip, ui, shortDate)}
-        </StatusChip>
-      </div>
-
-      <div className="flex items-baseline gap-2">
-        <span className="font-mono-numbers text-[28px] font-semibold tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{fmt(charge)}</span>
-        <span className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
-          {currencyLabel(sub.currency, locale)} {cycleWord(sub.billingCycle, ui)}
-        </span>
-      </div>
-
-      {banner && BannerIcon && bannerKind ? (
-        <div className={cn('flex items-start gap-2.5 rounded-2xl px-3.5 py-3', BANNER_TONE[bannerKind])}>
-          <BannerIcon className="mt-px size-[18px] shrink-0 text-[var(--color-brand-text-primary)]" strokeWidth={1.75} aria-hidden />
-          <div className="flex-1">
-            <div className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{banner.title}</div>
-            <div className="mt-0.5 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{banner.body}</div>
-          </div>
-        </div>
-      ) : null}
-
-      <section className="flex flex-col gap-2">
-        <SectionLabel>{ui.detail.nextCharges}</SectionLabel>
-        {upcoming.length > 0 ? (
-          <Group>
-            {upcoming.map((c) => (
-              <div key={c.iso} className="flex min-h-11 items-center justify-between px-3.5 text-sm">
-                <span className="font-mono-numbers">{shortDate(c.iso)}</span>
-                <span className="font-mono-numbers font-semibold">{fmt(c.amount)}</span>
-              </div>
-            ))}
-          </Group>
-        ) : (
-          <p className="py-1 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
-            {life === 'paused' ? ui.detail.noChargesPaused : ui.detail.noCharges}
+    <>
+      <SheetFrame
+        open
+        title={sub.name}
+        onClose={onClose}
+        headerStart={!ended && nextText ? <Pill icon={<Calendar />} className={HEADER_PILL}>{c.nextCharge(nextText)}</Pill> : undefined}
+        headerActions={<V3SheetHeader.Action tone="danger" icon={<Trash2 />} label={t.common.delete} onClick={remove} />}
+        footer={
+          ended ? (
+            <Button size="cta-block" onClick={() => { if (life === 'paused') s.resume(sub.id); else s.reactivate(sub.id); onClose() }}>
+              {c.resubscribe}
+            </Button>
+          ) : (
+            <>
+              <Button size="cta-block" disabled={!dirty} onClick={save}>{c.save}</Button>
+              {/* The approved sheet's footer is Save changes alone; cancelling stays one tap away as a quiet link, not a red one. */}
+              <Button variant="ghost" size="touch" className="text-[0.8125rem] font-medium text-[var(--color-brand-text-secondary)]" onClick={() => onCancel(sub.id)}>{c.cancelLink}</Button>
+            </>
+          )
+        }
+      >
+        <AmountHero
+          value={amountText}
+          onChange={setAmountText}
+          currency={cur}
+          onCurrencyChange={shared || ended ? undefined : (code) => setCurrency(code as Currency)}
+          base={s.base}
+          sign={`−${foreignSymbol(cur, s.base)}`}
+          aria-label={ui.add.amount}
+          top={
+            <div className="flex flex-col items-center">
+              <BrandTile brandKey={sub.brandKey} name={sub.name} size={52} />
+              <p dir="auto" className="mt-2.5 text-[1.0625rem] font-semibold text-[var(--color-brand-text-primary)]">{sub.name}</p>
+            </div>
+          }
+          line={conversion}
+          className="px-0 pb-0"
+        />
+        <div className="-mt-2 flex flex-col items-center gap-1.5 text-center">
+          <SubscriptionStatusBadge status={status} />
+          <p className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
+            {c.cycle[every]} · {c.statusLine[status](status === 'trial' && sub.trialEnd ? shortDate(sub.trialEnd.slice(0, 10)) : status === 'payment_due' ? cycleText : nextText)}
           </p>
-        )}
-      </section>
-
-      <div className="rounded-2xl border border-[var(--color-brand-border)]">
-        <div className="flex min-h-14 items-center gap-3 px-3.5">
-          <Track className="size-[18px] text-[var(--color-brand-text-secondary)]" strokeWidth={1.75} aria-hidden />
-          <div className="flex-1">
-            <div className="text-xs text-[var(--color-brand-text-secondary)]">{ui.detail.tracking}</div>
-            <div className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{ui.tracking[sub.tracking ?? 'sms'].name}</div>
-          </div>
-          <Button variant="link" size="touch" className="px-2 text-[0.8125rem] font-semibold text-[var(--color-brand-primary-ink)] no-underline" onClick={() => setPickTracking(!pickTracking)}>
-            {ui.detail.change}
-          </Button>
         </div>
-        {pickTracking ? (
-          <div role="radiogroup" aria-label={ui.detail.tracking} className="flex flex-col gap-2 border-t border-[var(--color-brand-border)] p-3">
-            {TRACKING.map((m) => {
-              const Icon = TRACKING_ICON[m]
-              const selected = (sub.tracking ?? 'sms') === m
-              return (
-                <SelectableCard
-                  key={m}
-                  layout="row"
-                  selected={selected}
-                  onClick={() => {
-                    s.update(sub.id, { tracking: m })
-                    setPickTracking(false)
-                  }}
-                  className="min-h-14 gap-3 px-3 py-2.5"
-                >
-                  <Icon className="size-5 shrink-0 text-[var(--color-brand-text-secondary)]" strokeWidth={1.75} aria-hidden />
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="text-sm font-semibold">{ui.tracking[m].name}</span>
-                    <span className="text-xs text-[var(--color-brand-text-secondary)]">{ui.tracking[m].hint}</span>
-                  </span>
-                  {selected ? <Check className="size-[18px] text-[var(--color-brand-primary-ink)]" strokeWidth={1.75} aria-hidden /> : null}
-                </SelectableCard>
-              )
-            })}
+
+        {note ? (
+          <div className="rounded-2xl bg-[var(--color-brand-primary-soft)] px-4 py-3">
+            <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{note.title}</p>
+            <p className="mt-0.5 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{note.body}</p>
           </div>
         ) : null}
-      </div>
 
-      {matched.length > 0 ? (
-        <section className="flex flex-col gap-2">
-          <SectionLabel>{ui.detail.matched}</SectionLabel>
-          <Group>
-            {matched.map((e) => (
-              <div key={e.id} className="flex min-h-12 items-center gap-2.5 ps-3.5 pe-1.5 text-[0.8125rem]">
-                <LinkIcon className="size-3.5 text-[var(--color-brand-text-muted)]" strokeWidth={1.75} aria-hidden />
-                <span className="flex-1">{e.smsLogId ? ui.detail.smsCharge(shortDate(e.date)) : ui.detail.manualCharge(shortDate(e.date))}</span>
-                <span className="font-mono-numbers font-semibold">{fmt(e.amount)}</span>
-                <IconButton aria-label={ui.detail.unlink} onClick={() => s.unlink(e.id)}>
-                  <Unlink strokeWidth={1.75} />
-                </IconButton>
-              </div>
-            ))}
-          </Group>
-        </section>
-      ) : null}
-
-      {history.length > 0 ? (
-        <section className="flex flex-col gap-2">
-          <SectionLabel>{ui.detail.priceHistory}</SectionLabel>
-          <Group>
-            {history.map((h, i) => (
-              <div key={h.from + h.amount} className="flex min-h-11 items-center justify-between px-3.5 text-[0.8125rem]">
-                <span className="text-[var(--color-brand-text-secondary)]">
-                  {i === 0 ? ui.detail.since(monthYear(h.from)) : ui.detail.before}
-                </span>
-                <span className="font-mono-numbers font-semibold">{fmt(h.amount)}</span>
-              </div>
-            ))}
-          </Group>
-        </section>
-      ) : null}
-
-      <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="touch" onClick={() => onEdit(sub.id)}>
-          {ui.detail.edit}
-        </Button>
-        {life === 'paused' ? (
-          <Button variant="outline" size="touch" onClick={() => s.resume(sub.id)}>
-            {ui.detail.resume}
-          </Button>
-        ) : life === 'active' || life === 'trial' ? (
-          <Button variant="outline" size="touch" onClick={() => s.pause(sub.id)}>
-            {ui.detail.pause}
-          </Button>
+        {prompt ? (
+          <Button variant="outline" size="touch" className="w-full" onClick={prompt.run}>{prompt.label}</Button>
         ) : null}
-        {canCancel ? (
-          <Button variant="destructive" size="touch" onClick={() => onCancel(sub.id)}>
-            {ui.detail.cancel}
-          </Button>
-        ) : (
-          <Button variant="destructive" size="touch" onClick={remove}>
-            {ui.detail.delete}
-          </Button>
-        )}
-      </div>
-    </SheetFrame>
+
+        <SheetGroup>
+          <MethodPickerRow label={c.paidWith} value={paymentMethodId} onChange={setPaymentMethodId} paymentMethods={s.paymentMethods} />
+          <PickerRow label={c.category} value={t.expenseForm.categoryLabels[category as keyof typeof t.expenseForm.categoryLabels] ?? category} onClick={() => setSheet('category')} />
+          <PickerRow label={c.repeatsLabel} value={c.repeats[every]} onClick={() => setSheet('cycle')} />
+          <SettingsSwitchRow label={c.remind} hint={c.remindHelp} checked={sub.reminder ?? true} onChange={(v) => s.update(sub.id, { reminder: v })} />
+        </SheetGroup>
+
+        <SheetGroup label={c.lastCharges}>
+          {lastCharges.length === 0 ? (
+            <p className="flex min-h-11 items-center px-4 text-[0.84375rem] text-[var(--color-brand-text-muted)]">{pageCopy.noCharges}</p>
+          ) : lastCharges.map((e) => (
+            <div key={e.id} className="flex min-h-11 items-center gap-2 ps-4 pe-1.5 text-[0.84375rem]">
+              <span className="flex-1 text-[var(--color-brand-text-secondary)]">{shortDate(e.date.slice(0, 10))}</span>
+              <span dir="ltr" className="font-mono-numbers text-[var(--color-brand-text-primary)]">
+                −{formatFlex(expenseAmountInBase(e, s.base, s.rates, true))} {s.base}
+                {e.currency !== s.base ? <span className="text-[var(--color-brand-text-muted)]"> · {formatFlex(e.amount)} {e.currency}</span> : null}
+              </span>
+              <IconButton aria-label={ui.detail.unlink} size="sm" onClick={() => s.unlink(e.id)}>
+                <Unlink strokeWidth={1.75} />
+              </IconButton>
+            </div>
+          ))}
+        </SheetGroup>
+
+        {upcoming.length > 0 ? (
+          <SheetGroup label={ui.detail.nextCharges}>
+            {upcoming.map((iso) => (
+              <div key={iso} className="flex min-h-11 items-center justify-between px-4 text-[0.84375rem]">
+                <span className="text-[var(--color-brand-text-secondary)]">{shortDate(iso)}</span>
+                <span dir="ltr" className="font-mono-numbers text-[var(--color-brand-text-primary)]">−{formatFlex(upcomingAmount(iso))} {sub.currency}</span>
+              </div>
+            ))}
+          </SheetGroup>
+        ) : null}
+
+        {history.length > 0 ? (
+          <SheetGroup label={ui.detail.priceHistory}>
+            {history.map((h, i) => (
+              <div key={h.from + h.amount} className="flex min-h-11 items-center justify-between px-4 text-[0.84375rem]">
+                <span className="text-[var(--color-brand-text-secondary)]">{i === 0 ? ui.detail.since(monthYear(h.from)) : ui.detail.before}</span>
+                <span dir="ltr" className="font-mono-numbers text-[var(--color-brand-text-primary)]">{formatFlex(h.amount)} {sub.currency}</span>
+              </div>
+            ))}
+          </SheetGroup>
+        ) : null}
+
+        <Button variant="ghost" size="touch" className="self-center text-[0.8125rem] font-medium text-[var(--color-brand-text-secondary)]" onClick={() => onEdit(sub.id)}>
+          {pageCopy.moreDetails}
+        </Button>
+      </SheetFrame>
+
+      <OptionSheet
+        open={sheet === 'category'}
+        onClose={() => setSheet(null)}
+        title={c.category}
+        value={category}
+        onChange={setCategory}
+        options={EXPENSE_ENTRY_CATEGORIES.map((x) => ({ value: x as string, title: t.expenseForm.categoryLabels[x] ?? x }))}
+        zIndexClassName="z-[110]"
+      />
+      <OptionSheet<SubscriptionBillingCycle>
+        open={sheet === 'cycle'}
+        onClose={() => setSheet(null)}
+        title={c.repeatsLabel}
+        value={every}
+        onChange={setCycle}
+        options={CYCLES.map((x) => ({ value: x, title: c.repeats[x] }))}
+        zIndexClassName="z-[110]"
+      />
+    </>
   )
 }

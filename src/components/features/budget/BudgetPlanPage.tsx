@@ -12,6 +12,7 @@ import { useBudgetPageActions } from '@/hooks/useBudgetPageActions'
 import { usePlanActions } from '@/hooks/usePlanActions'
 import { History } from 'lucide-react'
 import { summarizePlan } from '@/lib/budget/planSummary'
+import { everydayPace } from '@/lib/budget/monthSummary'
 import { fallbackPlanId, selectActivePlan } from '@/lib/budget/activePlan'
 import { useLocale } from '@/lib/i18n'
 import { usePlanView } from '@/hooks/usePlanView'
@@ -19,8 +20,8 @@ import { navigate } from '@/lib/navigation/navigate'
 import { findLineView } from '@/lib/budget/planView'
 import type { LineView, PlanMode } from '@/lib/budget/planView.types'
 import type { BudgetBlock } from '@/lib/store/types'
-import { PlanBar } from './PlanBar'
-import { LedgerList } from './LedgerList'
+import { PlanBar, PlanPickerRow } from './PlanBar'
+import { BudgetLinesList } from './BudgetLinesList'
 import { SegmentPage } from './SegmentPage'
 import { useBudgetTakeover } from './useBudgetTakeover'
 import { FlowStrip } from './FlowStrip'
@@ -54,7 +55,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   const deckCopy = useBudgetDeckCopy()
   const studioCopy = useBudgetStudioCopy()
   const { locale } = useLocale()
-  const [mode, setMode] = useState<PlanMode>('plan')
+  const [mode, setMode] = useState<PlanMode>('month')
   // Drafts and archived plans are still the user's plans: with no live one, the first plan stands in so the chrome never vanishes.
   const standInPlanId = useFinanceStore((s) => fallbackPlanId(s.budgetPlans, s.activeBudgetPlanId))
   const view = usePlanView(mode, standInPlanId)
@@ -99,7 +100,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
 
   if (!ready) {
     return (
-      <PageBody className="space-y-4">
+      <PageBody narrow className="space-y-4">
         <SkeletonList rows={4} />
       </PageBody>
     )
@@ -201,11 +202,16 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
     onDelete: planActions.remove,
     onCompare: (id: string) => setCompare({ a: view.plan.id, b: id === view.plan.id ? (plans.find((p) => p.id !== id)?.id ?? id) : id }),
   }
+  const applied = view.plan.id === selectActivePlan(plans, activeId)?.id
+  // The month hero carries the Close chip itself (Light touch `page-budget`); elsewhere the close card stays.
+  const heroHasClose = mode === 'month' && applied && !view.learning && everydayPace(view) != null
   const hero = (
     <>
+      {/* Mockup `page-budget`: Month | Plan first; the plan picker becomes a quiet row at the end of the page. */}
       <PlanBar
+        picker={false}
         planName={view.plan.name}
-        state={view.plan.id === selectActivePlan(plans, activeId)?.id ? 'active' : view.plan.status === 'draft' ? 'draft' : 'ready'}
+        state={applied ? 'active' : view.plan.status === 'draft' ? 'draft' : 'ready'}
         mode={mode}
         onModeChange={setMode}
         expanded={switcherOpen}
@@ -214,16 +220,31 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
           setSwitcherOpen(true)
         }}
       />
-      {mode === 'plan' && monthClose ? <MonthCloseCard month={closeMonth} onOpen={() => setCloseOpen(true)} /> : null}
-      <FlowStrip view={view} variant="hero" />
+      {monthClose && !heroHasClose ? <MonthCloseCard month={closeMonth} onOpen={() => setCloseOpen(true)} /> : null}
+      <FlowStrip
+        view={view}
+        variant="hero"
+        onApply={applied ? undefined : () => (view.plan.status === 'draft' ? openBuilder(view.plan.id) : onActivate(view.plan.id))}
+        onCloseMonth={monthClose && heroHasClose ? () => setCloseOpen(true) : undefined}
+      />
       {view.needsUpgrade && view.plan.categories.length > 0 && !upgradeLater ? (
         <UpgradeBanner lineCount={view.plan.categories.length} onReview={act.groupLegacyLines} onLater={() => setUpgradeLater(true)} />
       ) : null}
-      <LedgerList view={view} onOpen={setSegment} />
+      <BudgetLinesList view={view} onOpenBlock={setSegment} onOpenLine={setLineId} />
+      <PlanPickerRow
+        className="-mt-2"
+        planName={view.plan.name}
+        state={applied ? 'active' : view.plan.status === 'draft' ? 'draft' : 'ready'}
+        expanded={switcherOpen}
+        onOpenPlans={() => {
+          setSelectedPlanId(view.plan.id)
+          setSwitcherOpen(true)
+        }}
+      />
     </>
   )
   return (
-    <PageBody className="space-y-4 lg:pb-6">
+    <PageBody narrow className="space-y-4 lg:pb-6">
       {segment ? (
         <SegmentPage view={view} block={segment} onBack={() => setSegment(null)} onSelect={setSegment} onOpenLine={setLineId} onAdd={setAddBlock} />
       ) : (

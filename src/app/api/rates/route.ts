@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { plausibleRates } from '@/lib/utils/rateBands'
+import { createServiceRoleClient, type ServiceClient } from '@/lib/supabase/service'
 
 // Currencies relevant to our target markets: UAE, Egypt, GCC, global
 const CURRENCIES = 'AED,EGP,EUR,GBP,SAR,KWD,QAR,BHD,OMR,MAD,TND,JOD,XAU'
@@ -87,24 +88,76 @@ function validRates(rates: Record<string, number> | null): Record<string, number
   return Object.keys(clean).length > 0 ? clean : null
 }
 
+/** Fingerprints this instance already sent; the table dedupes too, this only spares the database repeat calls. */
+const reported = new Set<string>()
+
+/**
+ * Files a missing rate in the admin Crashes queue, one row per currency per day (repeats bump its occurrences).
+ * Runs after the response and never fails it. No user data: only the currency, the providers and their failures.
+ */
+function reportMissingRates(currencies: string[], level: 'warning' | 'error', providerUsed: string, tried: string[]) {
+  const day = new Date().toISOString().slice(0, 10)
+  const fresh = currencies.filter((cur) => !reported.has(`fx_rate_missing:${cur}:${day}`))
+  if (fresh.length === 0) return
+  for (const cur of fresh) reported.add(`fx_rate_missing:${cur}:${day}`)
+  const send = async (service: ServiceClient, cur: string) => {
+    const fingerprint = `fx_rate_missing:${cur}:${day}`
+    try {
+      const { error } = await service.rpc('record_client_crash', {
+        p_fingerprint: fingerprint,
+        p_release: '',
+        p_title: `FX rate missing: ${cur}`,
+        p_level: level,
+        p_culprit: `api/rates ${providerUsed}`,
+        p_stack: tried.join('\n'),
+        p_platform: 'server',
+        p_build: null,
+        p_device_id: null,
+        p_user_id: null,
+        p_sentry_issue_id: null,
+        p_sentry_url: null,
+        p_seen: new Date().toISOString(),
+      } as never)
+      if (error) reported.delete(fingerprint)
+    } catch {
+      reported.delete(fingerprint)
+    }
+  }
+  const forget = () => { for (const cur of fresh) reported.delete(`fx_rate_missing:${cur}:${day}`) }
+  try {
+    after(async () => {
+      let service: ServiceClient
+      try { service = createServiceRoleClient() } catch { forget(); return }
+      await Promise.all(fresh.map((cur) => send(service, cur)))
+    })
+  } catch {
+    forget()
+  }
+}
+
 export async function GET() {
   try {
     let rawRates: Record<string, number> | null = null
     let providerUsed = 'none'
+    const tried: string[] = []
 
     for (const source of sources) {
       try {
         rawRates = validRates(await source.fetch())
         if (rawRates && Object.keys(rawRates).length > 0) {
           providerUsed = source.name
+          tried.push(`${source.name}: ok`)
           break
         }
-      } catch {
+        tried.push(`${source.name}: no valid rates`)
+      } catch (e) {
+        tried.push(`${source.name}: ${e instanceof Error ? e.name : 'error'}`)
         continue
       }
     }
 
     if (!rawRates) {
+      reportMissingRates(['ALL'], 'error', sources[sources.length - 1].name, tried)
       return NextResponse.json(
         { error: 'All rate providers failed' },
         { status: 502, headers: ERROR_CACHE }
@@ -129,6 +182,11 @@ export async function GET() {
         /* keep rates without XAU */
       }
     }
+
+    const merged = rawRates
+    // Gold is priced by /api/gold; a missing XAU here is not an FX failure.
+    const missing = CURRENCIES.split(',').filter((c) => c !== 'XAU' && !(merged[c] > 0))
+    if (missing.length > 0) reportMissingRates(missing, 'warning', providerUsed, tried)
 
     // Build comprehensive cross-rate map
     const rates: Record<string, number> = {}

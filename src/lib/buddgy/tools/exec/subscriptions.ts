@@ -482,15 +482,6 @@ const lifecycleTool = (opts: {
   return impl
 }
 
-const pause_subscription = lifecycleTool({
-  tool: 'pause_subscription',
-  accept: (l) => l === 'active' || l === 'trial',
-  refusal: 'Only an active subscription or trial can be paused.',
-  title: (L) => L.pauseSub,
-  effect: (L) => L.pauseEffect,
-  run: (id) => fin().pauseSubscription(id),
-})
-
 const resume_subscription = lifecycleTool({
   tool: 'resume_subscription',
   accept: (l) => l === 'paused' || l === 'cancelled' || l === 'ended',
@@ -707,7 +698,6 @@ export const subscriptionsTools = defineTools(subscriptionsSpecs, {
   list_subscriptions,
   add_subscription,
   update_subscription,
-  pause_subscription,
   resume_subscription,
   cancel_subscription,
   mark_subscription_paid,

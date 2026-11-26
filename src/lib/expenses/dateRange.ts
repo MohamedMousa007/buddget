@@ -1,4 +1,5 @@
 import {
+  addMonths,
   differenceInCalendarDays,
   endOfDay,
   endOfWeek,
@@ -12,7 +13,8 @@ import { formatLocalized, type AppLocale } from '@/lib/i18n/dateFormat'
 import type { WeekStartDay } from '@/lib/time/weekStart'
 import { getMonthRange } from '@/lib/utils/calculations'
 
-export type RangePreset = 'today' | 'yesterday' | 'week' | 'month' | 'custom'
+/** `all` (every month) and `lastMonth` are Flow's; RANGE_PRESETS keeps the shared chip set. */
+export type RangePreset = 'today' | 'yesterday' | 'week' | 'month' | 'custom' | 'all' | 'lastMonth'
 
 export const RANGE_PRESETS: readonly RangePreset[] = ['today', 'yesterday', 'week', 'month', 'custom']
 
@@ -58,6 +60,10 @@ export function resolveRange(
       if (end < start) break
       return { start, end }
     }
+    case 'all':
+      return { start: new Date(0), end: endOfDay(new Date(9999, 11, 31)) }
+    case 'lastMonth':
+      return getMonthRange(format(addMonths(parseISO(`${monthFilter}-01`), -1), 'yyyy-MM'), monthStartDay)
     case 'month':
       break
   }

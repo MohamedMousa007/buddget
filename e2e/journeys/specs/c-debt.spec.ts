@@ -2,12 +2,12 @@
 import type { Page } from '@playwright/test'
 import { expect, goto, localWait, test, tile } from '../lib/fixtures'
 import { serverNow, serverRows } from '../lib/server'
-import { addAccount, addBorrow, payDebt } from '../lib/ui'
+import { addAccount, addBorrow, payDebt, shown } from '../lib/ui'
 
 const stillOwed = (page: Page) => tile(page, 'Still owed')
 
 async function setupDebt(page: Page, userId: string) {
-  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 5000 })
+  await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: 5000 })
   await addBorrow(page, { person: 'Ahmed', what: 'QA C loan', amount: 3000 })
   await expect.poll(() => stillOwed(page)).toBe(3000)
   const debt = await localWait(page, (s) => s.debts.find((d: any) => d.name === 'QA C loan'))
@@ -40,7 +40,7 @@ test('C1 debt > pay from a bank account > remaining debt > reports', async ({ pa
   })
   await test.step('UI: QNB balance 5,000 -> 4,300', async () => {
     await goto(page, '/accounts')
-    await expect(page.getByRole('button', { name: /QNB Alahli/ }).first()).toContainText('4,300.00', { timeout: 10_000 })
+    await expect(page.getByRole('button', { name: /QNB Alahli/ }).first()).toContainText(shown('4,300'), { timeout: 10_000 })
   })
 })
 

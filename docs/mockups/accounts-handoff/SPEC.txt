@@ -1,0 +1,520 @@
+APPROVED HANDOFF V1.0 · ACCOUNTS · 25 NOV 2026
+
+buddget Accounts Handoff
+
+Accounts grouped by bank or service, every card under its provider, a card sheet of its own, and balances you change by tapping the figure. Round 2 applies the owner's decisions and the council verdicts. Everything in the phone is tappable; sample data and sample rates.
+
+THEME
+Light
+Dark
+PHONE WIDTH
+430
+390
+320
+LANGUAGE
+EN
+AR
+SHOW STATE
+Normal
+Empty Accounts
+Missing USD rate
+No other cards
+Cash not tracked yet
+Handoff notes
+Accounts
+AVAILABLE NOW
+
+≈
+473,385
+EGP
+
+474,165
+Net worth
+
+CIB 44%
+DEEL 23%
+QNB 10%
+12 accounts
+USD and EUR at sample rates (24 Nov)
+
+IN ACCOUNTS
+
+488,385
+
+SET ASIDE
+
+15,000
+
+CREDIT OWED
+
+14,220
+
+2 accounts found in your SMS
+Confirm them to track their balance
+Banks
+4
+Add account
+CIB
+3 accounts · 4 cards
+≈ 213,425
+EGP
+15,000 set aside
+CIB
+DEBIT
+••4821
+CIB
+CREDIT
+••6120
+CIB
+DEBIT
+••7745
+CIB
+DEBIT
+••3390
+4 cards
+Show all
+QNB
+2 accounts · 3 cards
+≈ 47,500
+EGP
+QNB
+DEBIT
+••1188
+QNB
+CREDIT
+••5520
+QNB
+CREDIT
+••9034
+3 cards
+Show all
+NBE
+1 account · 2 cards
+47,000
+EGP
+NBE
+DEBIT
+••7702
+NBE
+PREPAID
+••5521
+2 cards
+!
+Banque Misr
+1 account · 0 cards
+22,500
+EGP
+Wallets and cash
+4
+D
+Deel
+1 account · 1 card
+≈ 111,550
+EGP
+DEEL
+DEBIT
+••0457
+1 card
+P
+Payoneer
+1 account · 1 card
+≈ 41,710
+EGP
+PAY
+DEBIT
+••3321
+1 card
+VC
+Vodafone Cash
+1 account · 0 cards
+1,200
+EGP
+Cash
+EGP
+Estimate
+3,500.00
+Other cards
+2
+Add card
+VALU
+BNPL
+••••
+valU
+Pay later · 4/12 · See plan in Debts
+CCA
+OTHER
+••••
+City Centre Almaza
+Store card · EGP
+
+Sample data. Sample rates: 1 USD = 48.50 EGP, 1 EUR = 52.80 EGP. Net worth here is accounts minus credit owed; the app's figure also counts savings and other debts.
+
+Phone frame 390 × 820
+
+Approved handoff · v1.0 · 25 Nov 2026
+Owner decisions from all three rounds and the council verdicts are applied; this page is the build reference.
+
+Handoff notes
+
+Owner decisions and council verdicts applied. Tiers follow the repo rule: UI-only mockup approval and a screenshot, Complex interaction a targeted test where it can fail, Financial / deep tests written and run.
+
+Build checklist
+Catalogue additions (src/lib/payment/paymentMethodDefaults.ts, src/lib/payment/bankLogos.ts): add colors to the 73 entries listed in "Catalogue additions", add the deel entry and its logo. UI-only
+Grouping helper + tests: src/lib/accounts/providerGroups.ts (canonical key via resolvePaymentBrandKey, parent wins, closed-parent fallback, prepaid under issuer counted once, bank vs wallet section, Other fallback) and standaloneCards !m.provisional fix. Deep: unit tests listed under "Grouping rules".
+Face texture: the faceLook metal grain in CardFace.tsx. UI-only snapshot.
+Components and variants: new ProviderCard, ProviderCardFaces + cardFit.ts, ProviderHero, RateAlert; additive AccountRow.baseEquivalent, ModalShell.behind, NumberPad.allowNegative, ProviderPickerSheet.excludeTypes. Complex: stack fit, spread, face tap.
+Sheets: redesigned AccountDetailSheet with InlineBalanceEdit (replaces UpdateBalanceSheet; also in EditSavingsAccountSheet), new CardDetailSheet (credit grid), AddAccountSheet pushCardStep and PaymentMethodSetupSheet embedded/summary/allowLink/extraChoices. Financial for the balance edit; Complex for push and stacked sheets.
+Removals: PaymentMethodsSheet (move its addPaymentMethod modal and pmPrefill entry to the Accounts card form; update ModalProvider and offlineSafeSheet.test.ts) and the ProfileDropdown Cards item. Complex nav; Deep default-method regression.
+Savings icon swap: PiggyBank → lucide Vault in the 11 references listed in "Savings icon". UI-only, plus a check that legacy 'PiggyBank' keys still render.
+FX error report: missing-rate report into client_crashes via record_client_crash from src/app/api/rates/route.ts, one per currency per day (spec below). Deep: route test for the dedupe fingerprint.
+i18n keys: every EN/AR key in the i18n table, in src/lib/i18n/dictionaries/en.ts and ar.ts (parity test must stay green). UI-only
+Test tiers: Automated (grouping, totals, balance edit, defaultMethodId, FX dedupe, fitsInRow); Playwright journeys (add bank → card push incl. empty state, stack spread → card sheet, set default → quick add, close account → cards stay with provider); Manual (texture, hero tints, AR layout, reduced motion).
+Decisions log
+#	DECISION	WHAT IT BECAME	TIER
+V1	Standard 16px padding; stack only when faces + label don't fit	The provider card uses the design system's 16px inner padding. Room = width − 32 − 2 − 32. Three faces + "3 cards" need ~329px: they fit at 430 (366) but not at 390 (324) or 320 (254), so 1–2 cards are a row and 3+ stack on 390 and smaller phones. The width switch has 430 so the flip is visible. In row mode the whole provider card is one button (header and faces); in stack mode the header opens the provider page, the stack spreads, and a face in a spread stack opens that card.	Complex
+V2	Group by canonical provider	Grouped by the catalogue key (resolvePaymentBrandKey): "National Bank of Egypt" and "NBE" land in one group. Final round: two sections again, "Banks" (bank provider cards) and "Wallets and cash" (Deel and Payoneer as provider cards with their faces, Vodafone Cash as a provider card with no card row, then today's Cash row). Deel's virtual card is a card under the Deel account. NBE's Meeza prepaid card sits under NBE with a "Prepaid" label and its balance counted once. "Other cards" appears only when it has cards: valU (pay later, links to Debts, no balance or owed) and a store card. Picking Payoneer or Wise in Add account makes a wallet account; their cards are added inside it.	Deep grouping and totals
+V3	± only for bank accounts	The pad shows a full-width "± Overdrawn (minus)" key only on a bank account's balance. On, the figure turns red with "−" and the save reads "Set balance to −2,000". No ± for cash, wallet, prepaid; credit owed stays positive.	Financial
+V4	Empty activity	The Recent / Spent with this card section always shows. While loading: three skeleton rows (700ms in the prototype). Empty after load: compact EmptyState with icon, one line and "Add an expense" (opens Add expense with this account or card prefilled). Try CIB Dollar or the CIB USD debit card.	UI-only
+5	Missing FX rate is an error	Dismissable alert at the top of Accounts: "We couldn't load today's USD rate. Totals that include USD are approximate until it's back." The ≈ stays on totals. No hint on the provider card. Backend: reported to the existing crashes queue (see "FX rate error report").	Deep backend reporter
+6	Profile "Cards" removed now	No deep link. ProfileDropdown loses the Cards item (and settingsHubCopy.page.cards); PaymentMethodsSheet is removed in the same change.	Complex nav
+7	Accounts with no cards	The dashed "Add a card" slot (CardStrip's empty state) shows under bank and wallet rows on the provider page, and in the account sheet (slot + "Add a card").	UI-only
+8	Credit card sheet	Owed, Available (limit − owed), Limit, Due day in a 2×2 grid, a usage bar with "% of limit used", the card's own currency, "Not taken from your accounts", Set as default, ⋮ Edit / Delete. Owed 0 reads "Nothing owed".	UI-only; Financial available = limit − outstanding
+9	Simpler provider hero	Brand-tinted hero: logo, name, full name, "Total here" ≈ amount, a pill with accounts · cards, a pill with set aside if any, the eye. No bar, no cells; per-currency detail lives in the rows. Tint = PAYMENT_BRANDS[key].colors[0] mixed 62% with black (light) or 36% into the dark background (dark). The mockup now uses the proposed QNB colour (#003D74, sampled from qnb.svg) and the proposed Deel entry (placeholder #2A2E45).	UI-only
+F2	Everything in the catalogue	Every catalogue entry without colors is listed with a proposed colour and its source; Deel is a new entry.	UI-only
+F3	FX error → existing queue	client_crashes via record_client_crash, deduped per currency per day.	Deep
+F4	Banks and Wallets and cash separated	As V2 above.	UI-only
+F5	Virtual as labelled debit	Accepted.	none
+F6	No pig icon	Set aside uses lucide Vault (exists in lucide-react 0.577.0).	UI-only
+10	EN/AR switch	Live switch above the phone. Every string in the phone swaps; layout stays LTR as in the app. Face kind labels use cardKindLabel copy; the stack offset re-measures per language.	UI-only
+Requirements map (round 1, still true)
+#	REQUIREMENT	NOW
+1	Mini faces unchanged, richer metal	CardFaceChip 1:1; only faceLook gains a 5px grain and fractal noise on metal (see below).
+2–3	Faces on provider cards; stack rule and order	See V1 and "Stack geometry". First card on top at the left; hidden cards show kind and digits.
+4	Credit debt placement	Never beside or inside a provider total. Card sheet, provider page Credit cards rows, home "Credit owed" cell only. Owed 0 shows no figure outside its sheet. Computation unchanged (computeCreditCardOutstanding).
+5	Provider card content	Logo, name, "N accounts · M cards", ≈ total, "X set aside". No currency chips.
+6, 10	Every card lives in Accounts	Cards sit under their account or issuer; Other cards is a hidden-when-empty fallback; default, edit, delete in each card's sheet.
+7–8	Account sheet, tap-to-edit balance	Header with ⋮, editable figure with pad and live difference, free vs set aside, SMS line, cards row, three tiles, month, activity. updateBalance: adjustment for tracked accounts (tracked Cash too), opening balance for untracked and the Cash sentinel.
+9	Add account → card	Push inside the same sheet (works from the empty state); stacked form from the account sheet. Bank and wallet accounts both offer it.
+11	Gaps and states	See "UX gap review".
+Grouping rules (for the implementer)
+Group key = resolvePaymentBrandKey(accountTitle(m)), else the normalised name. Display name = the catalogue name.
+A card's group: its parent's group (parentId wins over its own name). If the parent is closed or missing, its own provider's group; if that provider is not identifiable (not in the catalogue and no open account with that provider) or is pay-later, Other cards.
+A prepaid_card holder with no parent belongs to its issuer's group, drawn as a face with "Prepaid". It is an account in useAccounts and counts once in the group total; it is never added again as a card.
+Group total = Σ tracked accounts in base currency (prepaid included once); credit owed never enters it.
+Section: a group is a wallet group when any of its accounts is a wallet (or, for card-only groups, the catalogue type is wallet); otherwise it is a bank group. Cash keeps its own row inside "Wallets and cash".
+standaloneCards needs !m.provisional: today a provisional method from SMS fails isOpenAccount and would fall into Other cards.
+
+Tests (deep): alias grouping (NBE / National Bank of Egypt), prepaid counted once, credit excluded, closed-parent card falls back, unknown provider → Other, provisional excluded.
+
+Catalogue additions
+
+Source: PAYMENT_BRANDS in src/lib/payment/paymentMethodDefaults.ts (114 entries, 73 without colors) and BANK_LOGO_FILES in src/lib/payment/bankLogos.ts (every logo file maps to a catalogue key). Proposed colours were sampled from the repo's own logo files (most used SVG fill, or dominant PNG colour); entries with no logo have no in-repo source and need the brand's guidelines. Sampled colours are a starting point: very light ones (e.g. Weyay, ila Bank, QIB, Bank Dhofar) still pass the hero contrast check because the hero mixes them with black, but review them by eye. BrandMark has no colour of its own (it uses the method colour or the logo tile), so the catalogue is the one place to fix.
+
+74 items (Deel + 73 missing colours), EG first
+KEY	NAME	TYPE	COUNTRY	MISSING	PROPOSED	SOURCE
+deel (new)	Deel	wallet	—	whole entry: name, type, colors, logo file	#2A2E45	No Deel asset or colour in the repo. Placeholder used in this mockup; replace from Deel's brand kit. Logo file needed in public/logos/banks/ + BANK_LOGO_FILES.
+qnb	QNB	bank_account	QA	colors	#003D74	most used fill in public/logos/banks/qnb.svg
+aaib	AAIB	bank_account	EG	colors	#C8A900	most used fill in public/logos/banks/aaib.svg
+aalex	Bank of Alexandria	bank_account	EG	colors	#046939	most used fill in public/logos/banks/aalex.svg
+adibeg	ADIB Egypt	bank_account	EG	colors	#02B3EC	dominant colour of public/logos/banks/adib.png
+albarakaeg	Al Baraka	bank_account	EG	colors	#BF0C26	most used fill in public/logos/banks/albarakaeg.svg
+aman	Aman	bnpl	EG	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+banqueducaire	Banque du Caire	bank_account	EG	colors	#EE352A	dominant colour of public/logos/banks/banqueducaire.png
+contact	Contact	bnpl	EG	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+etisalatcash	e& Cash	wallet	EG	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+faisaleg	Faisal Islamic Bank	bank_account	EG	colors	#003C15	most used fill in public/logos/banks/faisaleg.svg
+halan	MNT-Halan	wallet	EG	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+hsbceg	HSBC Egypt	bank_account	EG	colors	#DB0011	most used fill in public/logos/banks/hsbceg.svg
+khazna	Khazna	wallet	EG	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+lucky	Lucky	wallet	EG	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+opay	OPay	wallet	EG	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+souhoola	Souhoola	bnpl	EG	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+sympl	Sympl	bnpl	EG	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+wepay	WE Pay	wallet	EG	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+edenred	Edenred	prepaid_card	—	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+pluxee	Pluxee	prepaid_card	—	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+skrill	Skrill	wallet	—	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+unionpay	UnionPay	credit_card	—	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+albilad	Bank Albilad	bank_account	SA	colors	#F5B335	most used fill in public/logos/banks/albilad.svg
+alinma	Alinma Bank	bank_account	SA	colors	#002134	most used fill in public/logos/banks/alinma.svg
+aljazira	Bank Aljazira	bank_account	SA	colors	—	logo is monochrome; no colour to take
+anb	Arab National Bank	bank_account	SA	colors	#0073CF	most used fill in public/logos/banks/anb.svg
+barq	Barq	wallet	SA	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+d360	D360 Bank	bank_account	SA	colors	#EB644C	most used fill in public/logos/banks/d360.svg
+riyadbank	Riyad Bank	bank_account	SA	colors	#230871	most used fill in public/logos/banks/riyadbank.svg
+sabb	SABB	bank_account	SA	colors	#ED1D24	most used fill in public/logos/banks/sabb.svg
+snb	SNB	bank_account	SA	colors	—	No logo in the repo to sample; take from the brand guidelines
+adib	ADIB	bank_account	AE	colors	#02B3EC	dominant colour of public/logos/banks/adib.png
+adnoc	ADNOC	prepaid_card	AE	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+botim	Botim Pay	wallet	AE	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+cashew	Cashew	bnpl	AE	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+cbd	CBD	bank_account	AE	colors	#C1D342	dominant colour of public/logos/banks/cbd.png
+dib	DIB	bank_account	AE	colors	#156936	dominant colour of public/logos/banks/dib.png
+emarat	Emarat	prepaid_card	AE	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+enoc	ENOC	prepaid_card	AE	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+hafilat	Hafilat	prepaid_card	AE	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+jaywan	Jaywan	debit_card	AE	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+liv	Liv	bank_account	AE	colors	#FDCE56	dominant colour of public/logos/banks/liv.png
+mashreq	Mashreq	bank_account	AE	colors	#FE6A63	dominant colour of public/logos/banks/mashreq.png
+payit	Payit	wallet	AE	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+postpay	Postpay	bnpl	AE	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+rakbank	RAKBANK	bank_account	AE	colors	#9D1200	most used fill in public/logos/banks/rakbank.svg
+sayer	Sayer	prepaid_card	AE	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+spotii	Spotii	bnpl	AE	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+wio	Wio	bank_account	AE	colors	#5600FF	dominant colour of public/logos/banks/wio.png
+ziina	Ziina	wallet	AE	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+boubyan	Boubyan Bank	bank_account	KW	colors	#D22630	most used fill in public/logos/banks/boubyan.svg
+burgan	Burgan Bank	bank_account	KW	colors	#1093CF	most used fill in public/logos/banks/burgan.svg
+gulfbank	Gulf Bank	bank_account	KW	colors	#003A78	dominant colour of public/logos/banks/gulfbank.png
+kfh	KFH	bank_account	KW	colors	#43B02A	most used fill in public/logos/banks/kfh.svg
+knet	KNET	debit_card	KW	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+nbk	NBK	bank_account	KW	colors	#21376B	most used fill in public/logos/banks/nbk.svg
+weyay	Weyay	bank_account	KW	colors	#1DFFB9	most used fill in public/logos/banks/weyay.svg
+cbq	CBQ	bank_account	QA	colors	#8A2043	dominant colour of public/logos/banks/cbq.png
+dohabank	Doha Bank	bank_account	QA	colors	#04498B	dominant colour of public/logos/banks/dohabank.png
+naps	NAPS	debit_card	QA	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+ooredoomoney	Ooredoo Money	wallet	QA	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+qib	QIB	bank_account	QA	colors	#98D3F3	most used fill in public/logos/banks/qib.svg
+bbk	BBK	bank_account	BH	colors	#001878	dominant colour of public/logos/banks/bbk.png
+benefit	BENEFIT	debit_card	BH	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+bisb	Bahrain Islamic Bank	bank_account	BH	colors	#E2A900	dominant colour of public/logos/banks/bisb.png
+ilabank	ila Bank	bank_account	BH	colors	#79EE00	dominant colour of public/logos/banks/ilabank.png
+nbb	NBB	bank_account	BH	colors	#CF001C	most used fill in public/logos/banks/nbb.svg
+bankdhofar	Bank Dhofar	bank_account	OM	colors	#6CFF00	dominant colour of public/logos/banks/bankdhofar.png
+bankmuscat	Bank Muscat	bank_account	OM	colors	#EE3F42	most used fill in public/logos/banks/bankmuscat.svg
+nbo	NBO	bank_account	OM	colors	#00529A	dominant colour of public/logos/banks/nbo.png
+omannet	OmanNet	debit_card	OM	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+thawani	Thawani	wallet	OM	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+zaincash	ZainCash	wallet	JO	colors, logo	—	No logo in the repo to sample; take from the brand guidelines
+FX rate error report
+
+What exists: there is no generic "errors queue" or "tech tickets" table. The closest mechanism is the admin Crashes queue: table client_crashes (supabase/migrations/0184_client_crashes.sql), written only through the service-role RPC record_client_crash(...), deduped by UNIQUE (fingerprint, release) with an occurrences counter and a new → acknowledged → resolved status (a resolved row reopens on a new hit). Admins see it in src/components/features/admin/views/CrashesView.tsx via src/app/api/admin/crashes/route.ts. Today only the Sentry webhook writes it (src/app/api/webhooks/sentry/route.ts). User support tickets (src/app/api/support/*) are user-facing and not the right place.
+
+Where to report: in src/app/api/rates/route.ts GET, after validRates: when all providers fail (the existing 502 branch), and for each currency in CURRENCIES that is missing from the merged result. Use createServiceRoleClient() from src/lib/supabase/service, fire-and-forget (never block or fail the response).
+
+RPC ARGUMENT	VALUE
+p_fingerprint	fx_rate_missing:<CUR>:<YYYY-MM-DD UTC> (all providers down: fx_rate_missing:ALL:<date>). This is the dedupe: one row per currency per day; repeats only bump occurrences.
+p_release	'' (server, not a client release)
+p_title	FX rate missing: USD
+p_level	'warning' ('error' when all providers fail)
+p_culprit	api/rates + the provider tried last (providerUsed)
+p_stack	Short list of providers tried and their failure (no user data)
+p_platform	'server'
+p_build, p_device_id, p_user_id, p_sentry_issue_id, p_sentry_url	null
+p_seen	new Date().toISOString()
+
+No migration needed (level already allows warning; the 120-day retention job already covers the table). The client keeps showing the dismissable rate alert from useRates when a needed currency has no rate. Test: route test that two failing calls on one day produce one RPC fingerprint, and that a success path never calls it.
+
+Savings icon: PiggyBank → Vault
+
+Vault exists in lucide-react 0.577.0 (node_modules/lucide-react/dist/esm/icons/vault.js), so no substitute is needed. The mockup's Set aside tile uses it. The 11 references:
+
+FILE	REFS	CHANGE
+src/components/features/accounts/AccountDetailSheet.tsx	2 (import, Set aside button)	Import and render Vault (gone anyway in the redesigned sheet's tiles)
+src/components/features/ai-chat/ProposalCard.tsx	2 (import, savings: PiggyBank)	savings: Vault
+src/components/features/ai-chat/AIChatEmptyState.tsx	2 (import, save: PiggyBank)	save: Vault
+src/components/features/budget/studio/optionIcons.ts	2 (import, self: PiggyBank)	self: Vault
+src/components/features/savings/SavingsAccountIcon.tsx	2 (comment, legacy map PiggyBank: Coins)	Keep the stored key 'PiggyBank' as a legacy alias so imported pockets still resolve; point it at Vault. No data migration.
+src/lib/constants/savingsIcons.ts	1 (comment)	Already a stored-key list (OTHER_SAVINGS_ICON_KEYS includes 'Vault', excludes 'PiggyBank'); update the comment only. Stored keys stay valid.
+
+Also found, not in the 11: src/lib/store/types.ts:925 mentions an avatar preset id preset_piggy (profile avatars, not savings). Left as is; the owner should say whether it goes too.
+
+Provider hero tint: contrast check
+
+Approximate sRGB mix of the brand colour (light: 62% brand + black, white text; dark: 36% brand + #0A100F, --text ink). AA needs 4.5:1 for the small name line.
+
+PROVIDER	BRAND COLOUR	LIGHT	DARK
+CIB	#2E5AAC	11.5:1 AA	12.5:1 AA
+QNB	#003D74	15.3:1 AA	14.6:1 AA
+NBE	#2E8B57	8.6:1 AA	10.8:1 AA
+Banque Misr	#0E7A3B	10.1:1 AA	11.8:1 AA
+Deel	#2A2E45	16.7:1 AA	15.2:1 AA
+Payoneer	#FF4800	7.4:1 AA	10.4:1 AA
+Vodafone Cash	#E60000	9.7:1 AA	12.5:1 AA
+Metal texture: the one face change
+
+Edit to faceLook() in src/components/features/payments/CardFace.tsx, shared by CardFaceChip and CardFace. Bank style untouched.
+
+BEFORE (TODAY)
+CIB
+DEBIT
+••4821
+CIB
+DEBIT
+••7745
+CIB
+CREDIT
+••6120
+CIB
+DEBIT
+••3390
+CIB
+DEBIT
+EGP
+•••• 4821
+AFTER (PROPOSED)
+CIB
+DEBIT
+••4821
+CIB
+DEBIT
+••7745
+CIB
+CREDIT
+••6120
+CIB
+DEBIT
+••3390
+CIB
+DEBIT
+EGP
+•••• 4821
+CIB
+DEBIT
+••4821
+CIB
+DEBIT
+••7745
+CIB
+DEBIT
+••4821
+CIB
+DEBIT
+••7745
+
+At 2× zoom: today navy and titanium on the left, proposed on the right. Bank-issued faces are identical in both.
+
++ const METAL_NOISE = (light: boolean) => `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 ${light ? 1 : 0} 0 0 0 0 ${light ? 1 : 0} 0 0 0 0 ${light ? 1 : 0} 0 0 0 ${light ? .14 : .12} 0'/%3E%3C/filter%3E%3Crect width='96' height='96' filter='url(%23n)'/%3E%3C/svg%3E")`
+  const brushed = metal ? `repeating-linear-gradient(90deg, rgba(255,255,255,${a}) 0 1px, transparent 1px 3px), ` : ''
++ const grain = metal ? `${METAL_NOISE(lightInk)}, repeating-linear-gradient(90deg, rgba(0,0,0,${lightInk ? .16 : .05}) 0 1px, transparent 1px 5px), ` : ''
+- background: `${brushed}linear-gradient(135deg, ${t.a} 0%, ${t.b} 100%)`,
++ background: `${grain}${brushed}linear-gradient(135deg, ${t.a} 0%, ${t.b} 100%)`,
+Stack geometry
+
+The layout fact: CardFaceChip puts the kind label top-right and the digits bottom-right, so a card tucked behind and offset right shows both in its visible strip. No face change is needed.
+
+88
+52
+CIB
+DEBIT
+••4821
+CIB
+CREDIT
+••6120
+CIB
+DEBIT
+••7745
+CIB
+DEBIT
+••3390
+
+Measured in this page: widest kind label 34px, digits 42px ("••4821", 11px mono). Each hidden card shows its rightmost 52px = widest of the two + 7px face padding + 3px air. Stack width for 4 cards: 88 + 3 × 52 = 244px. The offset is re-measured per language (Arabic kind labels differ in width).
+
+PROVIDER	FACES	ROW NEEDS	430	390	320
+CIB	4	428	364 · stack	324 · stack	254 · stack
+QNB	3	332	364 · row	324 · stack	254 · stack
+NBE	2	235	364 · row	324 · row	254 · row
+Deel	1	130	364 · row	324 · row	254 · row
+Payoneer	1	130	364 · row	324 · row	254 · row
+Screens and sheets
+SCREEN / SHEET	REUSED UNCHANGED	ADDITIVE PROPS (DEFAULTS UNCHANGED)	NEW (WHY)	STORE CALLS	TIER
+Accounts home	AccountsHero, HeroBand, PendingRow, AccountRow, BrandMark, Card, Badge, EmptyState	Page groups accounts by provider; Other cards renders only when non-empty	ProviderCard: no provider-level summary exists. RateAlert: a dismissable banner (check src/components/ui for an existing alert/notice primitive first; reuse it if present)	useAccounts(), useNetWorth(), totalDebtRemainingInBase	UI-only; deep grouping
+Provider card faces	CardFaceChip	none	ProviderCardFaces + pure fitsInRow(n, labelW, room). CardStrip caps at 2 faces, so it cannot show all faces without reshaping its default	none	Complex
+Provider page	AccountRow, CardStrip (incl. its empty add slot), CardFaceChip, BrandMark	none on HeroBand (not used here)	ProviderHero: HeroBand is the teal band with bar and cells; a brand-tinted, three-fact hero would reshape it. Composition of BrandMark + amount + pills	cardDetails()	UI-only
+Account sheet	ModalShell, V3SheetHeader, BrandMark, CardFaceChip, CardActionMenu, TransactionRow, EmptyState, useBalanceView, UsageMeter	Content redesigned (owner request); empty activity via EmptyState compact	none beyond InlineBalanceEdit	updatePaymentMethod, closeAccount, sheetActivity(), MoveMoneySheet	Complex
+Inline balance edit	NumberPad, useNumberPad	NumberPad allowNegative?: boolean (adds the ± key), default false	InlineBalanceEdit: replaces UpdateBalanceSheet	updateBalance(id, current, reported); gap → snoozeGap + refresh; savings → correctSavingsBalance	Financial: tracked → adjustment, untracked/sentinel → opening, negative only for bank_account, 0 diff → no row, gap snoozed
+Card sheet	ModalShell, V3SheetHeader, CardFace, CardActionMenu, TransactionRow, EmptyState, useConfirm	ModalShell behind?: boolean, default false	CardDetailSheet: no single-card sheet exists once the carousel menu goes	cardDetails() (outstanding, limit), updatePaymentMethod({isDefault}), deletePaymentMethod	Complex; deep default
+Card form	PaymentMethodSetupSheet body, ProviderPickerSheet, CardThemePicker, CardFace, AmountField, SegmentedControl	embedded, summary, allowLink, extraChoices (Virtual, Store card); ProviderPickerSheet excludeTypes? (hide wallets in the card-only path)	none	addPaymentMethod (+ credit debt as today; standalone prepaid also setOpeningBalance)	Complex
+Add account	Whole form	pushCardStep; picking a wallet brand switches the type to Wallet; "Only a card? Add a card" link opens the card-only form	none	addPaymentMethod + setOpeningBalance + reattribute	Complex
+Removed or replaced
+ProfileDropdown "Cards" item: removed now. Drop page.cards copy if unused elsewhere.
+PaymentMethodsSheet: removed. Its 'addPaymentMethod' modal entry (openAddPaymentMethodWithPrefill from DetectedAccountsSheet and the Buddgy navigation tool) moves to the Accounts card form with the same pmPrefill. Update ModalProvider and offlineSafeSheet.test.ts.
+PaymentCardCarousel: stays; still imported by SelectPaymentMethodSheet, PaymentMethodSetupSheet, InstallmentProviderPickerSheet.
+UpdateBalanceSheet: replaced by InlineBalanceEdit; keys update and whatBankShows go.
+Wallet card choice in the card form: removed (wallet cards are added inside the wallet account).
+Default payment method: must keep working
+
+defaultMethodId (src/lib/accounts/resolve.ts) callers: useAddExpenseSheet (quick add), useAddSubscriptionForm, useAddDebtSheet, useRecurringDebtPaymentSheet, IncomeSheetForm, aiActionHandlers (AI), useFinanceStore. One unit test on defaultMethodId plus one Playwright "set default in card sheet → quick add preselects it".
+
+Component paths
+COMPONENT	PATH	STATUS
+CardFaceChip	src/components/features/accounts/CardFaceChip.tsx	unchanged
+CardFace, faceLook	src/components/features/payments/CardFace.tsx	faceLook edited
+cardThemes	src/lib/payment/cardThemes.ts	unchanged
+PAYMENT_BRANDS, resolvePaymentBrandKey	src/lib/payment/paymentMethodDefaults.ts	add colors to qnb; add a deel entry
+CardStrip, AccountRow, BrandMark, AccountsHero	src/components/features/accounts/	unchanged (AccountRow additive baseEquivalent?; strip shown for wallets too)
+HeroBand	src/components/features/hero/HeroBand.tsx	unchanged (home only)
+AccountDetailSheet	src/components/features/accounts/AccountDetailSheet.tsx	redesigned
+UpdateBalanceSheet	src/components/features/accounts/UpdateBalanceSheet.tsx	removed
+AddAccountSheet	src/components/features/accounts/AddAccountSheet.tsx	additive
+PaymentMethodSetupSheet, ProviderPickerSheet, CardThemePicker	src/components/features/payments/	additive
+PaymentMethodsSheet	src/components/modals/PaymentMethodsSheet.tsx	removed
+ProfileDropdown	src/components/layout/ProfileDropdown.tsx	Cards item removed
+ModalShell	src/components/modals/ModalShell.tsx	additive behind
+NumberPad	src/components/ui/NumberPad.tsx	additive allowNegative
+EmptyState, CardActionMenu, AmountField, SegmentedControl, Badge, PendingRow	src/components/ui/	unchanged
+TransactionRow	src/components/transactions/TransactionRow.tsx	unchanged
+useAccounts	src/lib/accounts/useAccounts.ts	standaloneCards: add !m.provisional
+EditSavingsAccountSheet	src/components/modals/EditSavingsAccountSheet.tsx	figure-and-pad balance
+ProviderCard, ProviderCardFaces, ProviderHero, InlineBalanceEdit, CardDetailSheet, RateAlert (new)	src/components/features/accounts/; src/lib/accounts/cardFit.ts; src/lib/accounts/providerGroups.ts	new
+i18n keys (accountsPage unless noted)
+
+The phone's EN/AR switch uses exactly these strings.
+
+KEY	STATUS	EN	AR
+banks / walletsCash	walletsCash existing; banks new (replaces bankAccounts as the header)	Banks / Wallets and cash	البنوك / المحافظ والنقد
+totalHere	new	Total here	الإجمالي هنا
+owed / nothingOwed / available	new	Owed / Nothing owed / Available	مستحق / لا شيء مستحق / المتاح
+usedPct(p)	new	{p}% of limit used	مستخدم {p}٪ من الحد
+notFromAccounts	new	Not taken from your accounts	لا يُخصم من حساباتك
+creditNote	new	What you owe on a card is not taken from any account or from this total.	ما تدين به على البطاقة لا يُخصم من أي حساب ولا من هذا الإجمالي.
+setAsideAt(a)	new	{a} set aside	{a} مُخصَّص
+showAll / showLess	new	Show all / Show less	عرض الكل / عرض أقل
+tapToChange	new	Tap the amount to change it	اضغط على المبلغ لتغييره
+newBalance / startsToday	new	New balance / Starts tracking from today	الرصيد الجديد / يبدأ التتبع من اليوم
+correctionNote	new	Saved as a balance correction, never as spending.	يُحفظ كتصحيح للرصيد، وليس كإنفاق.
+negativeKey / negativeOn	new	± Overdrawn (minus) / Minus on: overdrawn balance	± مكشوف (سالب) / السالب مفعّل: رصيد مكشوف
+smsMatch / smsShows(a) / useAmount(a)	new (reuse usageCopy.balance where it overlaps)	Matches your bank's last SMS / Your bank's SMS shows {a} / Use {a}	يطابق آخر رسالة من البنك / رسالة البنك تُظهر {a} / استخدم {a}
+inThisMonth / outThisMonth	new	In this month / Out this month	دخل هذا الشهر / خرج هذا الشهر
+emptyAccountActivity / emptyCardActivity / addExpense	new	No activity on this account yet / No spending with this card yet / Add an expense	لا يوجد نشاط على هذا الحساب بعد / لا يوجد إنفاق بهذه البطاقة بعد / أضف مصروفًا
+rateMissing(c)	new	We couldn't load today's {c} rate. Totals that include {c} are approximate until it's back.	تعذّر تحميل سعر {c} اليوم. الإجماليات التي تشمل {c} تقريبية حتى يعود.
+noRateToday	new	No rate today	لا يوجد سعر اليوم
+addCardTo(a) / accountAdded(a) / cardAdded / addAnotherCard	new	Add a card to {a} / {a} added / Card added / Add another card	أضف بطاقة إلى {a} / تمت إضافة {a} / تمت إضافة البطاقة / أضف بطاقة أخرى
+onlyACard	new	Only a card, like a store card? Add a card	بطاقة فقط، مثل بطاقة متجر؟ أضف بطاقة
+walletAsAccount	new	Payoneer, Wise and other wallets are added as an account. Add their cards inside that account.	تُضاف Payoneer وWise والمحافظ الأخرى كحساب. أضف بطاقاتها داخل ذلك الحساب.
+typeVirtual / typeStoreCard	new	Virtual / Store card	افتراضية / بطاقة متجر
+planInDebts	new	See plan in Debts	عرض الخطة في الديون
+defaultForNew	new	Default for new expenses	الافتراضية للمصروفات الجديدة
+keepCard / deleteCard / keepOpen	new	Keep card / Delete card / Keep open	الإبقاء على البطاقة / حذف البطاقة / إبقاؤه مفتوحًا
+closedAccounts(n)	new	1 closed account · history kept	حساب مغلق · السجل محفوظ
+standaloneCards	existing, now used	Other cards	بطاقات أخرى
+cardOutstanding, update, whatBankShows; settingsHub page.cards	removed		
+UX gap review
+STATE	DESIGNED HERE	REACH IT
+Empty Accounts	EmptyState + Cash row; add-account → card push runs inside the sheet (the empty branch of page.tsx mounts no card form today)	Show state › Empty
+Missing FX rate (error)	Dismissable alert on Accounts; ≈ on totals; USD rows read "No rate today"	Show state › Missing USD rate
+Hide balances	Masks hero, provider totals, set aside, rows, sheets, owed, available	Eye
+Loading activity	Skeleton rows, then data or the compact empty state	Open any account
+Empty activity	EmptyState compact with "Add an expense"	CIB Dollar; CIB USD card
+Cash not tracked	Row opens the Cash sheet with the pad open; ⋮ Set as default kept	Show state › Cash not tracked
+Gap (amber)	Row keeps FixGapSheet; "!" on the provider mark; amber line in the sheet	Banque Misr
+Overdrawn bank account	± key, red figure, "Overdrawn" badge	CIB Main › tap balance
+Closed account	Footnote on the provider page; its cards stay with the provider	CIB page; ⋮ › Close account
+No Other cards	Section hidden; "Only a card? Add a card" in Add account	Show state › No other cards
+Foreign-currency credit card	Owed, available, limit in USD in its sheet and row	QNB Credit ••9034
+Long names at 320, AR	Names ellipsise; meta lines wrap; offset re-measured per language	Width 320, AR
+Live balance used up or metered	Kept from today under the SMS line (not drawn)	n/a
+Excluded account, unplaced SMS card	Unchanged from today (not drawn)	n/a
+Which skill informed which decision
+SKILL	DECISIONS
+artifact-design	Page contract, theme tokens (the provider tint uses --ph-amt / --ph-base tokens per theme), 16px gutter, frame-contained sheets.
+ui-ux-pro-max	44px targets, predictable back, semantic colour (red for negative, amber for gaps) separate from the brand tint.
+design:design-critique	Provider hero cut to three facts; empty activity kept visible so the sheet's shape does not jump.
+ecc:make-interfaces-feel-better	Tabular numbers, dimmed decimals, press scale, explicit transition properties, skeleton matching row geometry.
+design:ux-copy	Rate alert says what failed and what it means; "Available" over "Remaining"; "Add an expense" as the one action; "± Overdrawn (minus)" names the outcome; Arabic strings reuse existing dictionary terms (مستحق، مُخصَّص).
+design:accessibility-review	Hero tint contrast computed per brand (table above); banner uses role="alert" with a labelled dismiss; ± key is aria-pressed; skeleton has aria-busy; folded stack faces aria-hidden.
+ecc:frontend-design-direction	Modern via the brand-tinted provider hero and a 2×2 credit grid, not new chrome; content states (loading, empty, error, partial FX) recorded above.
+ecc:motion-patterns	Sheets 280ms in / 180ms out; shared-axis push; stack spread transform-only; skeleton shimmer off under reduced motion.
+Owner answers and what is still open
+Resolved: 3 cards stack on phones up to 390 (accepted); everything goes in the catalogue (list above); FX failures go to the crashes queue; Banks and Wallets and cash are separate sections; Virtual stays a labelled debit card; no pig icon.
+Still open: Deel's real brand colour and logo (placeholder #2A2E45, no asset in the repo); 36 catalogue entries with no logo file have no in-repo colour source; whether the preset_piggy avatar should also go.

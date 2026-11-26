@@ -22,12 +22,12 @@ const setPrivacy = (privacy: { preset: 'off' | 'hero' | 'all' }) =>
 
 afterEach(() => setPrivacy({ preset: 'off' }))
 
-const trophy = h(TrophyHero, { stats: { count: 2, totalLabel: 'EGP 98,765', avgMonths: 4, early: 1, checkpoints: 8 } })
+const trophy = h(TrophyHero, { stats: { count: 2, totalLabel: '98,765', currency: 'EGP', deposits: 4, fastestMonths: 1, bestStreak: 8 } })
 const wealth = h(SavingsHero, {
   total: '123,456', currency: 'EGP', netWorth: '654,321', split: [{ key: 'a', label: 'Cash', value: '111,222', pct: 100 }], badges: null,
 })
 const debts = h(DebtPortfolioHero, {
-  owed: 77777, base: 'EGP', clearedPct: 10, borrowedTotal: 90000, activeCount: 1, nextPayment: null, dueThisMonth: 0,
+  owed: 77777, base: 'EGP', clearedPct: 10, borrowedTotal: 90000, activeCount: 1, nextPayment: null, overdue: null, dueThisMonth: 0,
   paidThisMonth: 0, debtFreeDate: null, unplannedCount: 0, lastClearedAt: null, paidOff: 5000, clearedCount: 0,
 })
 

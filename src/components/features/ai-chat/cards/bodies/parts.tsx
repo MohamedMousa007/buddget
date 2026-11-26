@@ -8,7 +8,18 @@ import { formatFixed2 } from '@/lib/utils/formatters'
 import { cn } from '@/lib/utils'
 
 /** The amount drawn large, currency beside it, the description under it. */
-export function AmountHero({ amount, currency, what }: { amount: number; currency?: string; what?: string }) {
+export function AmountHero({ amount, currency, what, align = 'start' }: { amount: number; currency?: string; what?: string; align?: 'start' | 'center' }) {
+  if (align === 'center') {
+    return (
+      <div className="flex flex-col items-center pb-1 text-center">
+        <span dir="ltr" className="flex items-baseline gap-1.5">
+          <span className="font-mono-numbers text-[2rem] font-semibold leading-tight tracking-[-0.03em]">{formatFixed2(amount)}</span>
+          {currency ? <span className="font-mono-numbers text-sm font-semibold text-[var(--color-brand-text-muted)]">{currency}</span> : null}
+        </span>
+        {what ? <span dir="auto" className="text-[0.875rem] font-semibold">{what}</span> : null}
+      </div>
+    )
+  }
   return (
     <div className="flex flex-col gap-0.5">
       <span dir="ltr" className="flex items-baseline gap-1.5 self-start">
@@ -20,8 +31,9 @@ export function AmountHero({ amount, currency, what }: { amount: number; currenc
   )
 }
 
-/** The amber "what this does" line under a change. */
-export function EffectLine({ children }: { children: ReactNode }) {
+/** The amber "what this does" line under a change; `plain` is the quiet one-line form (Light touch quick record). */
+export function EffectLine({ children, plain = false }: { children: ReactNode; plain?: boolean }) {
+  if (plain) return <p dir="auto" className="px-1 text-xs text-[var(--color-brand-amber)]">{children}</p>
   return (
     <p className="flex items-start gap-2 rounded-xl bg-[var(--color-brand-amber-soft)] px-3 py-2.5 text-[0.8125rem] font-semibold text-[var(--color-brand-amber)]">
       <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
@@ -46,7 +58,7 @@ export function Facts({ rows }: { rows: PreviewRow[] }) {
 }
 
 /** One fact that opens its picker in place: label, value, an optional "guessed", a chevron. */
-export function PickerLine({ label, value, aria, open, guessed, onToggle, children }: {
+export function PickerLine({ label, value, aria, open, guessed, onToggle, children, inset = false }: {
   label: string
   value: ReactNode
   aria: string
@@ -54,9 +66,11 @@ export function PickerLine({ label, value, aria, open, guessed, onToggle, childr
   guessed?: string
   onToggle: () => void
   children: ReactNode
+  /** Inside a boxed group: side padding, and the group draws the lines. */
+  inset?: boolean
 }) {
   return (
-    <div className="border-t border-[var(--color-brand-border)]">
+    <div className={cn('border-t border-[var(--color-brand-border)]', inset && 'px-3.5')}>
       <button
         type="button"
         data-raw-button-ok="a fact line in a Buddgy card that opens its picker in place"

@@ -8,6 +8,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useBillingStore, type BillingMe } from '@/lib/billing/billingStore'
 import { useWeekCheckStore } from '@/lib/loyalty/weekCheckStore'
 import { useUsageStore } from '@/lib/usage/usageStore'
+import { useAssetPricesStore } from '@/lib/store/useAssetPricesStore'
 
 const DAY = 86_400_000
 const iso = (days: number) => new Date(Date.now() + days * DAY).toISOString()
@@ -53,6 +54,8 @@ export function DevAuthBypassSeed() {
     ;(window as unknown as Record<string, unknown>).__billing = useBillingStore
     ;(window as unknown as Record<string, unknown>).__weekCheck = useWeekCheckStore
     ;(window as unknown as Record<string, unknown>).__usage = useUsageStore
+    // Live prices (gold, stocks) for QA captures: the local server has no Supabase to read asset_prices from.
+    ;(window as unknown as Record<string, unknown>).__prices = useAssetPricesStore
     ;(window as unknown as Record<string, unknown>).__qa = { plan: qaPlan, lang: (language: 'en' | 'ar') => useFinanceStore.getState().updateSettings({ language }), theme: (theme: 'light' | 'dark') => useFinanceStore.getState().updateSettings({ theme }), name: (name: string) => useFinanceStore.getState().updateProfile({ name }) }
     const st = useFinanceStore.getState()
     st.setDataReady(true)

@@ -15,7 +15,7 @@ import { IconButton } from '@/components/ui/IconButton'
 import { useBuddgyMood, buddgyStatusText } from '@/lib/ai/useBuddgyMood'
 import { useBuddgyLife } from '@/hooks/useBuddgyLife'
 import { NUDGE_RULES, type BuddgyNudge } from '@/lib/ai/buddgyIdeas'
-import { ORB_INSET as EDGE_INSET, ORB_SIZE, dragLeft, readViewport, snapSide } from '@/components/features/ai-chat/panelGeometry'
+import { ORB_INSET as EDGE_INSET, ORB_SIZE, clampOrbTop, dragLeft, readViewport, safeAreaInsets, snapSide } from '@/components/features/ai-chat/panelGeometry'
 
 interface AIChatBubbleProps {
   /** Opens the chat; with a prompt, sends it straight away (a tapped tip). */
@@ -24,7 +24,7 @@ interface AIChatBubbleProps {
 
 const TALK_MS = 1600
 const SETTLE_MS = 240
-const clampTop = (top: number) => Math.max(70, Math.min(window.innerHeight - 150, top))
+const clampTop = (top: number) => clampOrbTop(top, window.innerHeight, window.innerWidth, safeAreaInsets())
 
 /**
  * Buddgy himself, standing at the screen edge — the face is the button, not an

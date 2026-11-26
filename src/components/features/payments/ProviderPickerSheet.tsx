@@ -31,6 +31,10 @@ export interface ProviderPickerItem {
   glyph: ReactNode
   /** End-aligned value, e.g. the current balance. */
   trailing?: ReactNode
+  /** Section the row is listed under ("Goals", "Savings"); items with a group are shown in labelled sections with counts. */
+  group?: string
+  /** 0–1: a small progress bar after the subtitle (a goal's way to its target). */
+  progress?: number
 }
 
 export interface ProviderPickerSheetProps {
@@ -44,6 +48,8 @@ export interface ProviderPickerSheetProps {
   onClose: () => void
   /** Locked context: only show providers that issue this type. */
   issuesType?: PaymentMethodType
+  /** Hide providers whose primary type is one of these (the card-only form hides wallets: their cards live inside the wallet account). */
+  excludeTypes?: PaymentMethodType[]
   zIndexClassName?: string
   /** Options to list instead of the brand catalogue. */
   items?: ProviderPickerItem[]
@@ -51,6 +57,10 @@ export interface ProviderPickerSheetProps {
   searchPlaceholder?: string
   /** Replaces the CTA label. */
   customLabel?: string
+  /** One line under the title. */
+  subtitle?: ReactNode
+  /** Shown when the search matches no item (items mode). */
+  emptyLabel?: (query: string) => string
 }
 
 /** Items whose name or subtitle contains the query (case-insensitive); all of them for an empty query. */
@@ -60,9 +70,20 @@ export function filterPickerItems(items: readonly ProviderPickerItem[], query: s
   return items.filter((i) => `${i.name} ${i.subtitle ?? ''}`.toLowerCase().includes(q))
 }
 
+/** Items split into their sections in first-seen order, or null when no item names a group. */
+export function groupPickerItems(items: readonly ProviderPickerItem[]): [string, ProviderPickerItem[]][] | null {
+  if (!items.some((i) => i.group)) return null
+  const out = new Map<string, ProviderPickerItem[]>()
+  for (const it of items) {
+    const key = it.group ?? ''
+    out.set(key, [...(out.get(key) ?? []), it])
+  }
+  return [...out.entries()]
+}
+
 export function ProviderPickerSheet({
-  open, selectedId, popularIds = [], onPick, onCustom, onClose, issuesType, zIndexClassName,
-  items, title, searchPlaceholder, customLabel: customLabelOverride,
+  open, selectedId, popularIds = [], onPick, onCustom, onClose, issuesType, excludeTypes, zIndexClassName,
+  items, title, searchPlaceholder, customLabel: customLabelOverride, subtitle, emptyLabel,
 }: ProviderPickerSheetProps) {
   const t = useT()
   const [query, setQuery] = useState('')
@@ -71,7 +92,8 @@ export function ProviderPickerSheet({
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase()
     const ids = Object.keys(PAYMENT_BRANDS).filter(
-      (id) => !issuesType || brandIssuesType(PAYMENT_BRANDS[id], issuesType),
+      (id) => (!issuesType || brandIssuesType(PAYMENT_BRANDS[id], issuesType)) && !excludeTypes?.includes(PAYMENT_BRANDS[id].type)
+        && (!PAYMENT_BRANDS[id].retired || id === selectedId),
     )
     if (q) {
       const hits = ids.filter((id) => (`${PAYMENT_BRANDS[id].name} ${PAYMENT_BRANDS[id].full ?? ''}`).toLowerCase().includes(q))
@@ -89,17 +111,42 @@ export function ProviderPickerSheet({
       { kind: 'header' as const, label: t.paymentMethods.allProviders },
       ...rest.map((id) => ({ kind: 'item' as const, id })),
     ]
-  }, [query, popularIds, t, issuesType])
+  }, [query, popularIds, t, issuesType, excludeTypes, selectedId])
 
   const customLabel = customLabelOverride ?? (query.trim()
     ? t.paymentMethods.addCustomNamed.replace('{q}', query.trim())
     : t.paymentMethods.addCustom)
   const shownItems = useMemo(() => (items ? filterPickerItems(items, query) : null), [items, query])
+  const sections = useMemo(() => (shownItems ? groupPickerItems(shownItems) : null), [shownItems])
+
+  const itemRow = (it: ProviderPickerItem) => {
+    const sel = selectedId === it.id
+    return (
+      <SelectableCard key={it.id} selected={sel} onClick={() => onPick(it.id)} className="min-h-14 gap-3 rounded-[14px] px-3 py-2">
+        <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[11px]">{it.glyph}</span>
+        <span className="min-w-0 flex-1 text-start">
+          <span dir="auto" className="block truncate text-[0.90625rem] font-semibold text-[var(--color-brand-text-primary)]">{it.name}</span>
+          {it.subtitle || it.progress !== undefined ? (
+            <span className="mt-0.5 flex items-center gap-2 text-[0.6875rem] font-medium text-[var(--color-brand-text-muted)]">
+              {it.subtitle ? <span dir="auto" className="truncate">{it.subtitle}</span> : null}
+              {it.progress !== undefined ? (
+                <span aria-hidden className="block h-1 w-12 shrink-0 overflow-hidden rounded-full bg-[var(--color-brand-sunken)]">
+                  <span className="block h-full rounded-full bg-[var(--color-brand-primary)]" style={{ width: `${Math.round(Math.min(1, Math.max(0, it.progress)) * 100)}%` }} />
+                </span>
+              ) : null}
+            </span>
+          ) : null}
+        </span>
+        {it.trailing}
+        {sel && <Check className="h-[18px] w-[18px] shrink-0 text-[var(--color-brand-primary-ink)]" />}
+      </SelectableCard>
+    )
+  }
 
   return (
     <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={zIndexClassName} panelClassName="h-[64dvh] md:w-[420px]">
       <div className="flex min-h-0 flex-1 flex-col px-4 pb-4">
-        <V3SheetHeader title={title ?? t.paymentMethods.chooseProvider} onClose={onClose} />
+        <V3SheetHeader title={title ?? t.paymentMethods.chooseProvider} subtitle={subtitle} onClose={onClose} />
         <div className="relative mb-2.5 shrink-0">
           <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-brand-text-muted)]" />
           <Input
@@ -110,20 +157,17 @@ export function ProviderPickerSheet({
         </div>
         {shownItems ? (
           <div role="radiogroup" aria-label={title} className="native-scroll -mx-1 flex max-h-[52dvh] min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-1">
-            {shownItems.map((it) => {
-              const sel = selectedId === it.id
-              return (
-                <SelectableCard key={it.id} selected={sel} onClick={() => onPick(it.id)} className="min-h-14 gap-3 rounded-[14px] px-3 py-2">
-                  <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[11px]">{it.glyph}</span>
-                  <span className="min-w-0 flex-1 text-start">
-                    <span dir="auto" className="block truncate text-[0.90625rem] font-semibold text-[var(--color-brand-text-primary)]">{it.name}</span>
-                    {it.subtitle ? <span className="block truncate text-[0.6875rem] font-medium text-[var(--color-brand-text-muted)]">{it.subtitle}</span> : null}
-                  </span>
-                  {it.trailing}
-                  {sel && <Check className="h-[18px] w-[18px] shrink-0 text-[var(--color-brand-primary-ink)]" />}
-                </SelectableCard>
-              )
-            })}
+            {sections ? sections.map(([group, list]) => (
+              <div key={group} role="presentation" className="flex flex-col gap-0.5">
+                <div className="px-1.5 pb-1 pt-2.5 text-[0.5625rem] font-semibold uppercase tracking-[0.1em] text-[var(--color-brand-text-muted)]">
+                  {group} · <span className="font-mono-numbers">{list.length}</span>
+                </div>
+                {list.map(itemRow)}
+              </div>
+            )) : shownItems.map(itemRow)}
+            {shownItems.length === 0 && query.trim() && emptyLabel ? (
+              <p className="py-10 text-center text-sm text-[var(--color-brand-text-muted)]">{emptyLabel(query.trim())}</p>
+            ) : null}
           </div>
         ) : (
         <div className="native-scroll -mx-1 flex max-h-[52dvh] min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-1">

@@ -1,5 +1,6 @@
 'use client'
 
+import { inlineMoney } from '@/components/features/budget/chromeFormat'
 import { useMemo } from 'react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -11,7 +12,6 @@ import { everydayPace } from '@/lib/budget/monthSummary'
 import type { PlanView } from '@/lib/budget/planView.types'
 import type { BudgetBlock } from '@/lib/store/types'
 import { getMonthRange } from '@/lib/utils/calculations'
-import { formatCurrency } from '@/lib/utils/formatters'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import { coverGauge, railDots, railPosition } from './blocks/geometry'
 import { useBudgetBlocksCopy } from './useBlocksCopy'
@@ -39,7 +39,7 @@ export function SegmentExtra({ view, block }: { view: PlanView; block: BudgetBlo
   const t = useSegmentCopy()
   const blocks = useBudgetBlocksCopy()
   const { formatDayMonth } = useLocalizedFormatters()
-  const money = (n: number) => formatCurrency(n, view.base, false)
+  const money = (n: number) => inlineMoney(n, view.base)
   const month = view.mode === 'month'
   const merchants = useWhereItWent(view)
   const b = view.blocks[block]

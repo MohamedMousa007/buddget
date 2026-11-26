@@ -7,11 +7,11 @@ import { useLocale, useT } from '@/lib/i18n'
 import type { PaceResult } from '@/lib/goals/goalPlan'
 import { goalVisual } from '@/lib/goals/goalVisual'
 import type { GoalCategory } from '@/lib/store/types'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { formatWhole } from '@/lib/utils/formatters'
 
 /** The goal as it will look on the Goals page, shaped live while Buddgy and the user talk it through. */
 export function GoalDraftCard({
-  category, name, target, saved, currency, targetDate, pace, quarterly,
+  category, name, target, saved, targetDate, pace, quarterly,
 }: {
   category: GoalCategory
   name: string
@@ -32,7 +32,7 @@ export function GoalDraftCard({
   const ready = target > 0 && pace !== null
   const stretch = pace?.zone === 'stretch' || pace?.zone === 'ambitious'
   const StatusIcon = ready && !stretch ? Check : Flag
-  const money = (n: number) => formatCurrency(Math.round(n), currency, false)
+  const money = (n: number) => formatWhole(Math.round(n))
 
   return (
     <div className="flex flex-col gap-3 overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 pt-4 shadow-sm">

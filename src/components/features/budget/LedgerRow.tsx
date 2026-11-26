@@ -8,8 +8,7 @@ import type { PlanView } from '@/lib/budget/planView.types'
 import type { BudgetOverviewCopy } from '@/lib/i18n/budgetPage/overviewCopy'
 import { useLocale } from '@/lib/i18n'
 import type { BudgetBlock } from '@/lib/store/types'
-import { formatCurrency } from '@/lib/utils/formatters'
-import { monthKeyLabel, percentText } from './chromeFormat'
+import { monthKeyLabel, percentText, inlineMoney } from './chromeFormat'
 import { LineIcon } from './LineIcon'
 import { TintedTile } from './TintedTile'
 import { useBudgetBlocksCopy } from './useBlocksCopy'
@@ -71,7 +70,7 @@ function monthRightText(r: MonthRight, x: TextCtx): { amount: string; sub: strin
 
 /** All the words of one ledger row, pure over the view so they can be tested without rendering. */
 export function ledgerRowText(view: PlanView, block: BudgetBlock, today: number, copy: BudgetOverviewCopy, month: (key: string) => string, review = false): RowText {
-  const x: TextCtx = { copy: copy.ledger, hero: copy.hero, money: (n) => formatCurrency(n, view.base, false), month }
+  const x: TextCtx = { copy: copy.ledger, hero: copy.hero, money: (n) => inlineMoney(n, view.base), month }
   if (view.mode === 'month') {
     const r = monthRow(view, block, today)
     const s = monthStatusText(r.status, x)

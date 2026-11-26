@@ -5,7 +5,7 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { inlineMoney } from '@/components/features/budget/chromeFormat'
 import type { PlanSummary } from '@/lib/budget/planSummary'
 import type { BudgetPlan, Currency } from '@/lib/store/types'
 import { percentText } from '../chromeFormat'
@@ -29,7 +29,7 @@ type Tone = 'good' | 'neutral' | 'warn'
 /** Confirm a switch: current versus new on three numbers, and what it means for past months. */
 export function ActivateSheet({ open, plan, current, next, now, base, monthLabel, onConfirm, onClose }: ActivateSheetProps) {
   const c = useBudgetDeckCopy().activate
-  const money = (n: number) => formatCurrency(n, base, false)
+  const money = (n: number) => inlineMoney(n, base)
 
   const rows =
     next && now

@@ -131,12 +131,12 @@ describe('debt principal leg', () => {
     expect(netWorth()).toBe(nw)
   })
 
-  it('a leg dated before the account opening has no effect, and the question defaults to No there', () => {
+  it('before the account opening the question defaults to No, but an explicit Yes still moves the balance (QA W4 P1)', () => {
     const account = principalAccount(cib, s().paymentMethods)!
     expect(principalMovesByDefault(account, ago(30).getTime())).toBe(false)
     expect(principalMovesByDefault(account, Date.now())).toBe(true)
     create('they_owe', { at: ago(30) })
-    expect(bal()).toBe(START)
+    expect(bal()).toBe(START - 5000)
   })
 
   it('answering No books no leg: today\'s behaviour, and debts that never had one stay untouched', () => {

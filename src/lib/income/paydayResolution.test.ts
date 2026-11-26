@@ -56,6 +56,19 @@ describe('paydayCandidates', () => {
     const salary = src('salary', 14500, 22)
     const rent = src('rent', 1250, 20)
     const list = paydayCandidates(ev('c', 14380, '2026-09-25'), [rent, salary], [], 1, {}, today)
-    expect(list.map((c) => [c.source.id, c.plausible])).toEqual([['salary', true], ['rent', false]])
+    // September's match first, then the rest by distance, October's paydays included.
+    expect(list.map((c) => [c.source.id, c.occ.dueDate.slice(0, 7), c.plausible])).toEqual([
+      ['salary', '2026-09', true], ['rent', '2026-09', false], ['rent', '2026-10', false], ['salary', '2026-10', false],
+    ])
+  })
+
+  it('offers the next payday for money that came in early, not only last month’s', () => {
+    // Paid on the 5th; November's is filled, so money on Nov 26 is most likely December's, paid early.
+    const salary = { ...src('salary', 42000, 5), effectiveStart: '2026-09-01' }
+    const nov = ev('nov', 42000, '2026-11-05', { templateId: 'salary', occurrenceDate: '2026-11-05' })
+    const list = paydayCandidates(ev('c', 42000, '2026-11-26'), [salary], [nov], 1, {}, new Date(2026, 10, 26))
+    expect(list[0].occ.dueDate).toBe('2026-12-04') // Dec 5 2026 is a Saturday: the business day before
+    expect(list[0].plausible).toBe(true)
+    expect(list.map((c) => c.occ.dueDate)).toContain('2026-10-05')
   })
 })

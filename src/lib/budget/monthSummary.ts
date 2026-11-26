@@ -64,3 +64,8 @@ export function stillToPay(view: PlanView): { amount: number; count: number; las
   }
   return { amount, count, lastDueDay }
 }
+
+/** Everything the plan sets aside a month, across every block (what a plan that is not applied yet "plans"). */
+export function plannedTotal(view: PlanView): number {
+  return Object.values(view.totals).reduce((s, x) => s + x, 0)
+}

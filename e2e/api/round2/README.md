@@ -5,7 +5,7 @@ Playwright in API mode (no browser) against the shared dev server on :3100 and t
 ```bash
 QA_PW_FILE=<file holding a generated password> node e2e/api/round2/setup.mjs
 QA_PW_FILE=<same file> npx playwright test -c e2e/api/round2/playwright.config.ts --reporter=line --trace off
-node e2e/api/round2/teardown.mjs
+QA_PW_FILE=<same file> node e2e/api/round2/teardown.mjs   # lib.mjs reads the password file on import, so teardown needs it too
 ```
 
 - `qa-regressions.spec.ts`: one test per QA fix (QA-17, 30, 51 to 62, 98 to 102).

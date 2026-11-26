@@ -238,7 +238,6 @@ export interface Dictionary {
     attachMessagesName: string
     attachMessagesSub: (n: number, amount: string) => string
     attachMessagesCta: string
-    bankAccounts: string
     walletsCash: string
     addAccountOrCard: string
     addAccount: string
@@ -263,7 +262,6 @@ export interface Dictionary {
     addOneMyself: string
     cashOut: string
     setAsideAction: string
-    update: string
     from: string
     toCash: string
     enterAmount: string
@@ -281,12 +279,8 @@ export interface Dictionary {
     matchesBank: string
     spentWith: (card: string) => string
     recent: string
-    noActivity: string
-    noCardActivity: string
     usesBalance: (account: string) => string
-    cardOutstanding: string
     cardLimit: string
-    whatBankShows: string
     matchesBuddget: string
     vsBuddget: (diff: string) => string
     buddgetHas: (amount: string) => string
@@ -367,6 +361,50 @@ export interface Dictionary {
     hideAmountsInNotifications: string
     surfaceWidgets: string
     surfaceBuddgy: string
+    banks: string
+    totalHere: string
+    owed: string
+    nothingOwed: string
+    available: string
+    usedPct: (p: number) => string
+    notFromAccounts: string
+    creditNote: string
+    setAsideAt: (amount: string) => string
+    showAll: string
+    showLess: string
+    tapToChange: string
+    newBalance: string
+    startsToday: string
+    correctionNote: string
+    negativeKey: string
+    negativeOn: string
+    smsMatch: string
+    smsShows: (amount: string) => string
+    useAmount: (amount: string) => string
+    inThisMonth: string
+    outThisMonth: string
+    emptyAccountActivity: string
+    emptyCardActivity: string
+    addExpense: string
+    rateMissing: (currency: string) => string
+    noRateToday: string
+    addCardTo: (account: string) => string
+    accountAdded: (account: string) => string
+    cardAdded: string
+    addAnotherCard: string
+    onlyACard: string
+    walletAsAccount: string
+    typeVirtual: string
+    typeStoreCard: string
+    planInDebts: string
+    defaultForNew: string
+    keepCard: string
+    deleteCard: string
+    keepOpen: string
+    closedAccounts: (n: number) => string
+    estimateCountedByYou: string
+    creditCards: string
+    cardsHeading: string
   }
 
   wealthPage: {
@@ -393,6 +431,7 @@ export interface Dictionary {
     efSetUp: string
     efMonths: (covered: string, target: number) => string
     efAria: string
+    /** `due` empty while the zakat year has no start date: the amount alone. */
     zakatBadge: (amount: string, due: string) => string
     zakatAria: string
     stripLive: string
@@ -1122,10 +1161,6 @@ export interface Dictionary {
     step2: string
     propertyNote: string
     propertyWorth: string
-    boughtThisMonth: string
-    boughtThisMonthSub: string
-    alreadyHad: string
-    alreadyHadSub: string
     whenBought: string
     whatYouPaid: string
     optional: string
@@ -2411,8 +2446,6 @@ export interface Dictionary {
     title: string
     addMethod: string
     default: string
-    walletHint: string
-    emptyHint: string
     edit: string
     delete: string
     setDefault: string
@@ -2828,7 +2861,6 @@ export interface Dictionary {
       addOver: (amount: string) => string
       addExact: string
       checkpointsAria: (pct: number, reached: number) => string
-      emptyFilter: string
       insightMilestones: (n: number) => string
       insightYear: string
       insightNext: (name: string, pct: number, when: string) => string
@@ -3165,8 +3197,6 @@ export interface Dictionary {
     suggestedCategory: string
     passThrough: string
     returnedOn: (d: string) => string
-    oneTimeCaption: string
-    repaymentCaption: string
     repaymentReceived: (person: string) => string
     repaymentNotIncome: string
     askBuddgy: string

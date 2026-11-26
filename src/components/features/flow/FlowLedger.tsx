@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { useT } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
 import { SwipeToDelete, type SwipeSide } from '@/components/expenses/SwipeToDelete'
 import { TransactionRow, type TransactionRowProps } from '@/components/transactions/TransactionRow'
 
@@ -30,8 +31,13 @@ export interface FlowLedgerGroup {
   date?: string
   /** Signed day net, pre-formatted — excludes refunded, declined and pending rows. */
   net?: string
+  /** On the first day of a month in an all-months list: "October 2026" and its row count. */
+  monthHead?: { label: string; count: string }
   rows: FlowLedgerRow[]
 }
+
+/** `flush` (default) is the edge-to-edge list; `card` insets each day into a rounded card (Flow, Light touch). */
+export type FlowLedgerLook = 'flush' | 'card'
 
 /**
  * Day-grouped transaction list for Flow and Paydays history: a day header, then the rows on
@@ -41,7 +47,7 @@ export interface FlowLedgerGroup {
  */
 export const FLOW_LEDGER_PAGE_DAYS = 40
 
-export function FlowLedger({ groups, fadeKey }: { groups: FlowLedgerGroup[]; fadeKey?: string }) {
+export function FlowLedger({ groups, fadeKey, look = 'flush' }: { groups: FlowLedgerGroup[]; fadeKey?: string; look?: FlowLedgerLook }) {
   const t = useT()
   const [open, setOpen] = useState<{ key: string; side: SwipeSide } | null>(null)
   const [limit, setLimit] = useState(FLOW_LEDGER_PAGE_DAYS)
@@ -54,7 +60,7 @@ export function FlowLedger({ groups, fadeKey }: { groups: FlowLedgerGroup[]; fad
       transition={{ duration: 0.12, ease: 'easeOut' }}
     >
       {groups.slice(0, limit).map((g) => (
-        <DayGroup key={g.key} group={g} open={open} setOpen={setOpen} />
+        <DayGroup key={g.key} group={g} open={open} setOpen={setOpen} look={look} />
       ))}
       {groups.length > limit ? (
         <Button variant="ghost" size="touch" onClick={() => setLimit((n) => n + FLOW_LEDGER_PAGE_DAYS)} className="mx-auto mt-3 flex font-semibold">
@@ -69,15 +75,24 @@ export function DayGroup({
   group,
   open,
   setOpen,
+  look = 'flush',
 }: {
   group: FlowLedgerGroup
   open: { key: string; side: SwipeSide } | null
   setOpen: (v: { key: string; side: SwipeSide } | null) => void
+  look?: FlowLedgerLook
 }) {
+  const card = look === 'card'
   return (
     <section className="lg:mb-3">
+      {group.monthHead ? (
+        <div className="mx-5 mb-1 mt-6 flex items-baseline justify-between">
+          <span className="text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{group.monthHead.label}</span>
+          <span dir="auto" className="font-mono-numbers text-[0.71875rem] font-semibold text-[var(--color-brand-text-muted)]">{group.monthHead.count}</span>
+        </div>
+      ) : null}
       {group.label ? (
-      <div className="flex items-baseline justify-between px-4 pb-1.5 pt-3">
+      <div className={cn('flex items-baseline justify-between', card ? 'px-5 pb-2 pt-4' : 'px-4 pb-1.5 pt-3')}>
         <span className="flex items-baseline gap-2">
           <span className="text-[0.8125rem] font-bold text-[var(--color-brand-text-primary)]">{group.label}</span>
           {group.date ? (
@@ -91,7 +106,12 @@ export function DayGroup({
         ) : null}
       </div>
       ) : null}
-      <div className="border-y border-[var(--color-brand-border)] bg-[var(--color-brand-card)] lg:overflow-hidden lg:rounded-2xl lg:border">
+      <div
+        className={cn(
+          'border-[var(--color-brand-border)] bg-[var(--color-brand-card)]',
+          card ? 'mx-4 overflow-hidden rounded-2xl border shadow-[var(--shadow-sm)]' : 'border-y lg:overflow-hidden lg:rounded-2xl lg:border',
+        )}
+      >
         {group.rows.map((r, i) => {
           const row = <TransactionRow {...r.row} />
           return (
@@ -103,7 +123,7 @@ export function DayGroup({
               {r.selected ? (
                 <span aria-hidden className="absolute inset-y-0 start-0 z-[2] w-[3px] bg-[var(--color-brand-primary)]" />
               ) : null}
-              {i > 0 ? <div className="ms-[82px] h-px bg-[var(--color-brand-border)]" /> : null}
+              {i > 0 ? <div className={cn('h-px bg-[var(--color-brand-border)]', card ? 'ms-[68px]' : 'ms-[82px]')} /> : null}
               {r.isIn ? (
                 <span
                   aria-hidden

@@ -155,6 +155,15 @@ describe('allocateGoalFunding', () => {
     expect(db.goal_allocation_runs[0]).toMatchObject({ planned: 300, amount: 300 })
   })
 
+  it('yearly goals are funded monthly, fixed amounts split across the year', async () => {
+    const { service, db } = fakeService(seed())
+    await allocateGoalFunding({
+      ...base, service, carry: 1000, accounts,
+      goals: [goal('a', 0, 0, { fundingMode: 'fixed', frequency: 'yearly', monthlyContribution: 2400, sharePct: null })],
+    })
+    expect(db.goal_allocation_runs[0]).toMatchObject({ planned: 200, amount: 200 })
+  })
+
   it('reports each checkpoint crossed and completion', async () => {
     const { service } = fakeService(seed())
     const hits: number[] = []

@@ -1,8 +1,9 @@
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import type { Currency, FinanceStore, PaymentMethod } from '@/lib/store/types'
+import type { Currency, FinanceStore, PaymentMethod, SavingsAccount } from '@/lib/store/types'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import { computeBalances, type LedgerInput } from './balance'
+import { balanceDelta, balanceSave } from './balanceEdit'
 import { DEFAULT_CASH_ID, isTracked } from './kinds'
 import { removePaymentMethod } from './removePaymentMethod'
 import { cashAccountId } from './resolve'
@@ -66,22 +67,30 @@ export function cashOut(fromId: string, amount: number, currency: PaymentMethod[
   })
 }
 
+/**
+ * The pocket Set aside starts on: one held in this account (the money then stays in it and only "free" shrinks), else the
+ * first. A pocket held elsewhere takes the money out of the account, so it is never the silent default.
+ */
+export function defaultSetAsidePocketId(pockets: readonly Pick<SavingsAccount, 'id' | 'heldInPaymentMethodId'>[], accountId: string): string | null {
+  return (pockets.find((p) => p.heldInPaymentMethodId === accountId) ?? pockets[0])?.id ?? null
+}
+
 /** Set aside: a pocket deposit stamped with the account it came from (earmark when the pocket is held in it). */
-export function setAside(fromId: string, pocketId: string, amount: number, currency: PaymentMethod['currency']): void {
-  store().depositToSavings(pocketId, amount, currency, undefined, { mode: 'declare', paymentMethodId: fromId })
+export function setAside(fromId: string, pocketId: string, amount: number, currency: PaymentMethod['currency'], at: Date = new Date()): void {
+  store().depositToSavings(pocketId, amount, currency, undefined, { mode: 'declare', paymentMethodId: fromId, date: localTodayISO(at), occurredAt: at.toISOString() })
 }
 
 /** "What does your bank show now?": records the difference as an explicit adjustment, never as an expense. */
 export function updateBalance(accountId: string, current: number, reported: number, reason: 'manual_update' | 'gap' = 'manual_update'): number {
   const account = store().paymentMethods.find((m) => m.id === accountId)
-  if (accountId === DEFAULT_CASH_ID || (account && !isTracked(account))) {
-    setOpeningBalance(accountId === DEFAULT_CASH_ID ? ensureCashAccount() : accountId, reported)
-    return Math.round((reported - current) * 100) / 100
+  const save = balanceSave(accountId !== DEFAULT_CASH_ID && (!account || isTracked(account)), current, reported, account ? String(account.currency) : '')
+  if (save.kind === 'opening') {
+    setOpeningBalance(accountId === DEFAULT_CASH_ID ? ensureCashAccount() : accountId, save.amount)
+    return balanceDelta(current, reported, account ? String(account.currency) : '')
   }
-  const delta = Math.round((reported - current) * 100) / 100
-  if (delta === 0) return 0
-  store().addAccountAdjustment({ paymentMethodId: accountId, delta, reason, occurredAt: new Date().toISOString() })
-  return delta
+  if (save.kind === 'none') return 0
+  store().addAccountAdjustment({ paymentMethodId: accountId, delta: save.delta, reason, occurredAt: new Date().toISOString() })
+  return save.delta
 }
 
 /** Closed accounts keep their history; their cards become standalone cards. */
@@ -105,9 +114,30 @@ const ledgerOf = (s: FinanceStore): LedgerInput => ({
  * relabelled, so the balance ends at exactly that amount (the same adjustment path as Update balance).
  */
 export function changeCashCurrency(id: string, to: Currency, amountInNew: number): void {
+  if (store().paymentMethods.find((m) => m.id === id)?.type !== 'cash') return
+  changeAccountCurrency(id, to, amountInNew)
+}
+
+/** Debit and prepaid cards follow their account's currency; a credit card keeps its own. */
+export const followsAccountCurrency = (card: PaymentMethod): boolean => card.type === 'debit_card' || card.type === 'prepaid_card'
+
+/** The account's open debit and prepaid cards that are not in `to` yet: the ones a currency change offers to move too. */
+export function cardsToFollow(methods: readonly PaymentMethod[], accountId: string, to: Currency): PaymentMethod[] {
+  return methods.filter((m) => m.parentId === accountId && !m.closedAt && followsAccountCurrency(m) && m.currency !== to)
+}
+
+/**
+ * Any account moves to another currency, its balance ending at `amountInNew` (the Cash rule above, for a bank or wallet
+ * too). `cardIds` relabels those of its cards too (only its own debit and prepaid cards; a credit card never changes).
+ * A relabel only: past rows keep their amounts and currency, nothing is converted.
+ */
+export function changeAccountCurrency(id: string, to: Currency, amountInNew: number, { cardIds = [] }: { cardIds?: readonly string[] } = {}): void {
   const before = store().paymentMethods.find((m) => m.id === id)
-  if (!before || before.type !== 'cash' || before.currency === to) return
+  if (!before || before.currency === to) return
   store().updatePaymentMethod(id, { currency: to })
+  for (const card of cardsToFollow(store().paymentMethods, id, to)) {
+    if (cardIds.includes(card.id)) store().updatePaymentMethod(card.id, { currency: to })
+  }
   if (!isTracked(before)) return
   const current = computeBalances(ledgerOf(store())).get(id)?.balance ?? 0
   updateBalance(id, current, amountInNew)

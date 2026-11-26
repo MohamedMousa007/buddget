@@ -3,7 +3,7 @@ import { offlineSafe } from './offlineSafeSheet'
 
 describe('R13 / offline: a lazy sheet whose chunk cannot load never crashes the app', () => {
   it('a failed chunk load resolves to a stand-in component instead of rejecting', async () => {
-    const load = offlineSafe(() => Promise.reject(new Error('ChunkLoadError: Loading chunk PaymentMethodsSheet failed')))
+    const load = offlineSafe(() => Promise.reject(new Error('ChunkLoadError: Loading chunk AddPaymentMethodSheet failed')))
     await expect(load()).resolves.toEqual(expect.any(Function))
   })
 

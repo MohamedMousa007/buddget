@@ -17,7 +17,7 @@ export interface PocketKindDef {
 
 export const POCKET_KINDS: Record<PocketKind, PocketKindDef> = {
   bank: { kind: 'bank', savingsType: 'bank', label: 'Bank account', sub: 'Current or savings', color: '#7EAEF9', icon: 'Landmark', fields: ['provider', 'last4'] },
-  wallet: { kind: 'wallet', savingsType: 'bank', label: 'Mobile wallet', sub: 'Vodafone Cash, InstaPay', color: '#35D46F', icon: 'Wallet', fields: ['provider', 'last4'] },
+  wallet: { kind: 'wallet', savingsType: 'bank', label: 'Mobile wallet', sub: 'Vodafone Cash, Orange Cash', color: '#35D46F', icon: 'Wallet', fields: ['provider', 'last4'] },
   cash: { kind: 'cash', savingsType: 'cash', label: 'Cash', sub: 'At home or in a safe', color: '#B79CFF', icon: 'Banknote', fields: [] },
   certificate: { kind: 'certificate', savingsType: 'bank', label: 'Certificate', sub: 'Fixed term, matures', color: '#2CE0C6', icon: 'Landmark', fields: ['provider', 'maturity', 'yearlyReturn'] },
   stablecoin: { kind: 'stablecoin', savingsType: 'stablecoin', label: 'Stablecoin', sub: 'USDT and friends', color: '#EDC463', icon: 'CircleDollarSign', fields: ['coin'] },

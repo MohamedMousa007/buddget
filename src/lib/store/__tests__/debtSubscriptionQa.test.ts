@@ -114,7 +114,7 @@ describe('subscriptions (D18-D20)', () => {
   it('D18: resuming after the billing day does not back-log the paused cycle', () => {
     const id = st().addSubscription(subInput())
     useFinanceStore.setState({ subscriptions: st().subscriptions.map((s) => ({ ...s, createdAt: '2026-01-01T00:00:00Z' })) })
-    st().pauseSubscription(id)
+    st().updateSubscription(id, { status: 'paused', pausedAt: '2026-08-01T00:00:00.000Z' })
     st().resumeSubscription(id)
     st().logDueSubscriptions()
     expect(charges()).toHaveLength(0)

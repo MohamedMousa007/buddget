@@ -13,8 +13,8 @@ describe('zakatBasis', () => {
     expect(effectiveNisabBasis({ nisabBasis: 'silver', holdsForTrading: false })).toBe('silver')
   })
   it('records the choice and keeps other fields', () => {
-    expect(withNisabBasis({ nisabBasis: 'gold', holdsForTrading: true, manualAmount: 5 }, 'silver')).toEqual({
-      nisabBasis: 'silver', nisabBasisChosen: true, holdsForTrading: true, manualAmount: 5,
+    expect(withNisabBasis({ nisabBasis: 'gold', holdsForTrading: true, tradeGoodsValue: 5 }, 'silver')).toEqual({
+      nisabBasis: 'silver', nisabBasisChosen: true, holdsForTrading: true, tradeGoodsValue: 5,
     })
     expect(withNisabBasis(null, 'gold').nisabBasisChosen).toBe(true)
   })

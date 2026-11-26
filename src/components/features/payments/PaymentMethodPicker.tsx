@@ -61,10 +61,10 @@ export function PaymentMethodPicker({
               <CardFaceChip method={selPay} parent={parentOf(selPay)} />
               <span className="min-w-0 flex-1 text-start">
                 <span className="block truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">
-                  {decomposePaymentMethodName(methodDisplayName(parentOf(selPay) ?? selPay, t.accountsPage.typeCash), (parentOf(selPay) ?? selPay).last4 ?? undefined).provider}
+                  {(parentOf(selPay) ?? selPay).label?.trim() || decomposePaymentMethodName(methodDisplayName(parentOf(selPay) ?? selPay, t.accountsPage.typeCash), (parentOf(selPay) ?? selPay).last4 ?? undefined).provider}
                 </span>
                 <span className="mt-0.5 block truncate text-xs font-medium text-[var(--color-brand-text-muted)]">
-                  {[cardKindLabel(selPay.type, t.accountsPage), selPay.currency, accountIdentifier(selPay)].filter(Boolean).join(' · ')}
+                  {[cardKindLabel(selPay.type, t.accountsPage), selPay.currency, accountIdentifier(parentOf(selPay) ? selPay : { ...selPay, label: undefined })].filter(Boolean).join(' · ')}
                 </span>
               </span>
             </span>

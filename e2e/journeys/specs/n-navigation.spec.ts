@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- test code reads untyped store and PostgREST JSON */
 import type { Page } from '@playwright/test'
-import { appNav, expect, goto, localWait, signIn, test, tile } from '../lib/fixtures'
+import { appNav, expect, goto, localWait, signIn, test, tile, netWorth } from '../lib/fixtures'
 import { serverRows } from '../lib/server'
-import { addAccount, addExpense, dialog } from '../lib/ui'
+import { addAccount, addExpense, dialog, shown } from '../lib/ui'
 
 const ERROR_TEXT = /Something went wrong|Application error|Unhandled Runtime Error|This page could not be found/i
 
@@ -32,11 +32,11 @@ test('N1 navigation: every main tab, header Budget, profile menu pages @desktop'
     await expect(page).toHaveURL(/budget-setup/)
     await healthy(page)
   })
-  await test.step('profile menu > Cards opens the payment methods sheet', async () => {
+  await test.step('profile menu has no Cards item (cards live in Accounts)', async () => {
     await goto(page, '/flow')
     await page.getByRole('button', { name: /^Profile menu/ }).click()
-    await page.getByRole('menuitem', { name: 'Cards', exact: true }).click()
-    await expect(page.getByRole('dialog').or(page.getByRole('heading', { name: /Payment methods/ })).first()).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Goals', exact: true })).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Cards', exact: true })).toHaveCount(0)
     await page.keyboard.press('Escape')
   })
   for (const [item, path] of [
@@ -80,18 +80,19 @@ test('N2 global + opens every entry from every main tab @desktop', async ({ page
 })
 
 test('N3 data survives reload and sign-out/sign-in @desktop', async ({ page, user }) => {
-  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 2000 })
+  await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: 2000 })
   await goto(page, '/flow')
   await addExpense(page, { amount: 120, description: 'QA N persist', category: 'Transport', method: /QNB/ })
   const e = await localWait(page, (s) => s.expenses.find((x: any) => x.description === 'QA N persist'))
   await serverRows('expenses', user.id, `id=eq.${e.id}`, (r) => r.length === 1)
-  const nw = await tile(page, 'Net worth')
+  const nw = await netWorth(page)
   expect(nw).toBe(1880)
 
   await test.step('reload', async () => {
+    await goto(page, '/flow')
     await page.reload({ waitUntil: 'domcontentloaded' })
     await expect(page.locator('main')).toContainText('QA N persist')
-    expect(await tile(page, 'Net worth')).toBe(nw)
+    expect(await netWorth(page)).toBe(nw)
   })
   await test.step('sign out clears the device copy', async () => {
     // The profile menu redesign (b69d8b3a) moved Sign out to the foot of Settings.
@@ -109,8 +110,8 @@ test('N3 data survives reload and sign-out/sign-in @desktop', async ({ page, use
     await signIn(page, user.email)
     await goto(page, '/flow')
     await expect(page.locator('main')).toContainText('QA N persist', { timeout: 30_000 })
-    expect(await tile(page, 'Net worth')).toBe(nw)
+    expect(await netWorth(page)).toBe(nw)
     await goto(page, '/accounts')
-    await expect(page.getByRole('button', { name: /QNB Alahli/ }).first()).toContainText('1,880.00')
+    await expect(page.getByRole('button', { name: /QNB Alahli/ }).first()).toContainText(shown('1,880'))
   })
 })

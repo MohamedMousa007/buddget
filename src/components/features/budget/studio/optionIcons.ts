@@ -1,7 +1,7 @@
 import {
   Baby, Banknote, Bike, Briefcase, Building2, Bus, Car, CalendarClock, Church, Coffee, CreditCard, Footprints, Gem, GraduationCap,
-  Gift, HandCoins, Heart, Home, Key, Landmark, Laptop, PartyPopper, PiggyBank, Plane, Receipt, School, Scale, ShieldCheck, ShoppingBag,
-  ShoppingBasket, Smile, Stethoscope, Store, Target, TrendingUp, Truck, Tv, User, Users, UtensilsCrossed, Wrench, Zap,
+  Gift, HandCoins, Heart, Home, Key, Landmark, Laptop, PartyPopper, Plane, Receipt, School, Scale, ShieldCheck, ShoppingBag,
+  ShoppingBasket, Smile, Stethoscope, Store, Target, TrendingUp, Truck, Tv, User, Users, UtensilsCrossed, Vault, Wrench, Zap,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -15,5 +15,5 @@ export const OPTION_ICONS: Record<string, LucideIcon> = {
   dining: UtensilsCrossed, fun: PartyPopper, shopping: ShoppingBag, subscriptions: Tv, transport: Bus, groceries: ShoppingBasket, bills: Receipt,
   safety: ShieldCheck, debt: CreditCard, goals: Target, invest: TrendingUp, enjoy: Smile, travel: Plane, vacation: Plane, house: Home,
   education: GraduationCap, pilgrimage: Church, car_yearly: Car, school_start: School, festive: Gift, home_repairs: Wrench, renewals: CalendarClock,
-  everyday: Coffee, employer: Briefcase, self: PiggyBank, extra_income: Zap, pause_goals: Target,
+  everyday: Coffee, employer: Briefcase, self: Vault, extra_income: Zap, pause_goals: Target,
 }
