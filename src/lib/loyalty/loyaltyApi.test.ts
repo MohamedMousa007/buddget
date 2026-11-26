@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const rpc = vi.fn()
 vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({ rpc }) }))
+vi.mock('@/lib/supabase/env', () => ({ isSupabaseConfigured: () => true }))
 import { applyCosmetic, buyShopItem, fetchCredits, fetchWeekSummary, formatFounderNumber, keepWeek, requestCreditName } from './loyaltyApi'
 
 beforeEach(() => rpc.mockReset())
