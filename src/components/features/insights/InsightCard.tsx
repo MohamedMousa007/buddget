@@ -1,79 +1,56 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
-import type { InsightArea } from '@/lib/insights/types'
-
-const AREA_DOT: Record<InsightArea, string> = {
-  spending: 'var(--color-cat-3)',
-  income: 'var(--color-brand-green)',
-  bills: 'var(--color-cat-2)',
-  debts: 'var(--color-cat-4)',
-  how: 'var(--color-cat-5)',
-  wealth: 'var(--color-brand-gold)',
-}
+import type { ReactNode } from 'react'
+import { Emphasis, ToneTile, UnlockButton, type Tone } from './InsightsParts'
 
 export interface InsightCardProps {
   /** The finding's kind, so Buddgy can scroll to it. */
   id: string
-  area: InsightArea
-  tag: string
+  icon: ReactNode
+  tone: Tone
   /** The sentence; `*like this*` marks the figures. */
   headline: string
   why: string
-  /** Free users past the top findings: the sentence stays, the figures are hidden. */
+  /** Free users on a Pro finding: the sentence stays, the figures are hidden. */
   locked?: boolean
   askLabel: string
-  unlockLabel: string
   onAsk: () => void
   onUnlock: () => void
 }
 
-function Headline({ text, locked }: { text: string; locked: boolean }) {
-  return (
+/**
+ * One finding as a row of the "What changed" list. Readable rows open Buddgy with the finding as the question;
+ * locked rows keep their sentence with •••• in place of the figures and "Unlock with Pro" in place of the detail.
+ */
+export function InsightCard({ id, icon, tone, headline, why, locked = false, askLabel, onAsk, onUnlock }: InsightCardProps) {
+  const readable = (
     <>
-      {text.split('*').map((part, i) =>
-        i % 2 === 0 ? (
-          part
-        ) : locked ? (
-          <span key={i} aria-hidden className="mx-0.5 inline-block select-none rounded-md bg-[var(--color-brand-sunken)] px-1.5 text-transparent">
-            ••••
-          </span>
-        ) : (
-          <b key={i} className="font-bold text-[var(--color-brand-primary-ink)]">
-            {part}
-          </b>
-        ),
-      )}
+      <ToneTile tone={tone}>{icon}</ToneTile>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[0.9375rem] font-semibold leading-snug text-[var(--color-brand-text-primary)] [&_b]:font-mono-numbers">
+          <Emphasis text={headline} />
+        </span>
+        <span className="mt-0.5 block text-xs text-[var(--color-brand-text-muted)]">{why}</span>
+      </span>
     </>
   )
-}
-
-/** One finding. The locked variant is the same card with the figures hidden and "Unlock with Pro" in place of "Ask Buddgy". */
-export function InsightCard({ id, area, tag, headline, why, locked = false, askLabel, unlockLabel, onAsk, onUnlock }: InsightCardProps) {
   return (
-    <Card padding="md" className="space-y-1.5 scroll-mt-4" data-insight-id={id} data-insight-locked={locked || undefined}>
-      <span className="flex items-center gap-1.5 text-[0.6875rem] font-bold uppercase tracking-wide text-[var(--color-brand-text-secondary)]">
-        <i aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: AREA_DOT[area] }} />
-        {tag}
-      </span>
-      <p className="text-base font-bold leading-snug text-[var(--color-brand-text-primary)]">
-        <Headline text={headline} locked={locked} />
-      </p>
-      {!locked && <p className="text-[0.78125rem] leading-snug text-[var(--color-brand-text-secondary)]">{why}</p>}
-      <div className="-mb-1.5 -ms-2 pt-1">
-        {locked ? (
-          <Button variant="ghost" size="touch" className="font-bold text-[var(--color-brand-gold)]" onClick={onUnlock}>
-            {unlockLabel} ›
-          </Button>
-        ) : (
-          <Button variant="ghost" size="touch" className="gap-1.5 font-bold text-[var(--color-brand-primary-ink)]" onClick={onAsk}>
-            <BuddgyIcon size={20} mood="curious" />
-            {askLabel}
-          </Button>
-        )}
-      </div>
-    </Card>
+    <li className="scroll-mt-4" data-insight-id={id} data-insight-locked={locked || undefined}>
+      {locked ? (
+        <div className="flex items-start gap-3 px-4 pb-1 pt-3">
+          <ToneTile tone={tone}>{icon}</ToneTile>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[0.9375rem] font-semibold leading-snug text-[var(--color-brand-text-primary)]">
+              <Emphasis text={headline} locked />
+            </span>
+            <UnlockButton onClick={onUnlock} />
+          </span>
+        </div>
+      ) : (
+        <button type="button" className="flex w-full items-start gap-3 px-4 py-3 text-start active:bg-[var(--color-brand-elevated)]" aria-label={`${askLabel}: ${headline.replace(/\*/g, '')}`} onClick={onAsk}>
+          {readable}
+        </button>
+      )}
+    </li>
   )
 }

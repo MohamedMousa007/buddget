@@ -10,11 +10,14 @@ export interface NetWorthPath {
   high: number
   /** How many months of snapshots the line was drawn from. */
   months: number
+  /** The last few monthly values the line was drawn through, oldest first (the Insights sparkline). */
+  values?: number[]
 }
 
 export const MIN_HISTORY_DAYS = 90
 export const MIN_HISTORY_POINTS = 4
 const HORIZON_DAYS = 365
+const SPARK_POINTS = 6
 
 /**
  * A straight line through the snapshots, carried 12 months ahead, with a band of two standard errors of the
@@ -35,7 +38,7 @@ export function projectNetWorth(points: readonly NetWorthPoint[]): NetWorthPath 
   const resid = points.reduce((s, p) => s + (p.value - (intercept + slope * p.day)) ** 2, 0)
   const sd = Math.sqrt(resid / Math.max(1, n - 2))
   const projected = intercept + slope * (last + HORIZON_DAYS)
-  return { projected, low: projected - 2 * sd, high: projected + 2 * sd, months: Math.round((last - first) / 30) }
+  return { projected, low: projected - 2 * sd, high: projected + 2 * sd, months: Math.round((last - first) / 30), values: points.slice(-SPARK_POINTS).map((p) => p.value) }
 }
 
 /** One point per calendar month (the last snapshot of each), oldest first, as `day` offsets from the first. */
