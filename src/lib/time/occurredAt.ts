@@ -67,6 +67,21 @@ export function editedOccurredAt(day: string, clock: string, saved: { day: strin
 }
 
 /**
+ * The `occurredAt` an edit sends for a row whose instant must follow its day (a debt's principal move): as
+ * {@link editedOccurredAt}, and when only the day changed with no time picked, the saved instant's time of day on the
+ * new day, or the "no time" stand-in when nothing was saved or the shown time was cleared.
+ */
+export function editedDayFollowingAt(day: string, clock: string, saved: { day: string; clock: string; at?: string }): string | undefined {
+  const edited = editedOccurredAt(day, clock, saved)
+  if (edited || clock || day === saved.day || !DAY.test(day.slice(0, 10))) return edited
+  const prev = saved.at ? new Date(saved.at) : null
+  if (saved.clock || !prev || Number.isNaN(prev.getTime())) return noTimeAt(day)
+  const [y, mo, d] = day.slice(0, 10).split('-').map(Number)
+  prev.setFullYear(y, mo - 1, d)
+  return prev.toISOString()
+}
+
+/**
  * The `HH:mm` an existing row shows in the time field: its own clock time when `occurredAt` falls on its day, and ''
  * for no real time (absent, another day, or the exact local 12:00:00.000 stand-in a re-dated row is given).
  */

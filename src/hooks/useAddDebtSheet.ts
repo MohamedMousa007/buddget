@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { localTodayISO } from '@/lib/utils/localDate'
-import { manualOccurredAt } from '@/lib/time/occurredAt'
+import { clockOf, editedDayFollowingAt, manualOccurredAt } from '@/lib/time/occurredAt'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -196,6 +196,7 @@ export function useAddDebtSheet() {
     setStartingBalance(String(dd.startingBalance ?? ''))
     setCreditor(dd.creditor ?? '')
     setInstallmentStartDate(dd.startDate ?? dd.createdAt.slice(0, 10))
+    setBorrowTime(clockOf(dd.principalAt, dd.startDate ?? dd.createdAt.slice(0, 10)))
     if (dd.debtType === 'installment') {
       setInstallmentItemName(dd.name ?? '')
       setInstallmentCount(String(dd.installmentCount ?? 12))
@@ -590,7 +591,12 @@ export function useAddDebtSheet() {
       // Payments are stored in the debt's unit: its currency, gold flag, karat and kind never change under them.
       const { currency: _cur, isGold: _gold, goldKarat: _karat, receivedVia: _via, ...unlocked } = rest
       void _cur; void _gold; void _karat; void _via
-      updateDebt(editingDebt.id, currencyLocked ? unlocked : rest)
+      // A borrow or lend whose money moved keeps the picked day and time on that move.
+      const savedDay = editingDebt.startDate ?? editingDebt.createdAt.slice(0, 10)
+      const principalAt = debtType === 'personal' && editingDebt.principalPaymentMethodId
+        ? editedDayFollowingAt(installmentStartDate, borrowTime, { day: savedDay, clock: clockOf(editingDebt.principalAt, savedDay), at: editingDebt.principalAt })
+        : undefined
+      updateDebt(editingDebt.id, { ...(currencyLocked ? unlocked : rest), ...(principalAt ? { principalAt } : {}) })
     } else {
       // A borrow or lend moved the money on its picked day and time; other debts book it now.
       const movedAt = debtType === 'personal' ? manualOccurredAt(installmentStartDate, borrowTime) : new Date().toISOString()

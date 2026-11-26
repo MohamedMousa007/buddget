@@ -154,9 +154,10 @@ export default function WealthPage() {
     () => deriveHawl({ yearStartDate: profile.zakatConfig?.yearStartDate, lastPaidDate: profile.zakatConfig?.lastPaidDate, createdAt: profile.createdAt }),
     [profile.zakatConfig?.yearStartDate, profile.zakatConfig?.lastPaidDate, profile.createdAt],
   )
+  const today = localTodayISO()
   const zakatYear = useMemo(
-    () => evaluateZakatYear(zakatSources, profile.zakatConfig, hawl.dueDate, localTodayISO()),
-    [zakatSources, profile.zakatConfig, hawl.dueDate],
+    () => evaluateZakatYear(zakatSources, profile.zakatConfig, hawl.dueDate, today),
+    [zakatSources, profile.zakatConfig, hawl.dueDate, today],
   )
   const hawlDate = useMemo(() => formatLocalized(parseDateOnly(hawl.dueDate), 'd MMM yyyy', locale), [hawl.dueDate, locale])
   const silverNisab = 595 * zakatBase.silverPerGram

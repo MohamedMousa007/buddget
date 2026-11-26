@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clockOf, editedOccurredAt, entryOccurredAt, manualOccurredAt, mergeDayTime, noTimeAt, nowClock } from '@/lib/time/occurredAt'
+import { clockOf, editedDayFollowingAt, editedOccurredAt, entryOccurredAt, manualOccurredAt, mergeDayTime, noTimeAt, nowClock } from '@/lib/time/occurredAt'
 
 describe('mergeDayTime', () => {
   it('puts the picked clock time on the local day', () => {
@@ -104,5 +104,23 @@ describe('manualOccurredAt', () => {
 describe('nowClock', () => {
   it('is the zero-padded clock time', () => {
     expect(nowClock(new Date(2026, 0, 1, 7, 5))).toBe('07:05')
+  })
+})
+
+describe('editedDayFollowingAt', () => {
+  const at = (day: string, h: number, m: number) => { const [y, mo, d] = day.split('-').map(Number); return new Date(y, mo - 1, d, h, m).toISOString() }
+  it('moves to the new day as the no-time stand-in when no time was stored', () => {
+    expect(editedDayFollowingAt('2026-05-03', '', { day: '2026-05-01', clock: '' })).toBe(noTimeAt('2026-05-03'))
+    expect(editedDayFollowingAt('2026-05-03', '', { day: '2026-05-01', clock: '', at: noTimeAt('2026-05-01') })).toBe(noTimeAt('2026-05-03'))
+  })
+  it('keeps a stored time of day on the new day', () => {
+    expect(editedDayFollowingAt('2026-05-03', '', { day: '2026-05-01', clock: '', at: at('2026-04-28', 9, 15) })).toBe(at('2026-05-03', 9, 15))
+  })
+  it('drops to the stand-in when the shown time was cleared', () => {
+    expect(editedDayFollowingAt('2026-05-03', '', { day: '2026-05-01', clock: '09:15', at: at('2026-05-01', 9, 15) })).toBe(noTimeAt('2026-05-03'))
+  })
+  it('otherwise follows editedOccurredAt', () => {
+    expect(editedDayFollowingAt('2026-05-03', '10:30', { day: '2026-05-01', clock: '' })).toBe(mergeDayTime('2026-05-03', '10:30'))
+    expect(editedDayFollowingAt('2026-05-01', '', { day: '2026-05-01', clock: '' })).toBeUndefined()
   })
 })

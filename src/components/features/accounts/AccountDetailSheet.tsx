@@ -2,7 +2,7 @@
 
 import { createElement, useMemo, useState } from 'react'
 import { Banknote, Coins, Landmark, MoreVertical, Pencil, Plus, Trash2, WalletCards } from 'lucide-react'
-import { ModalShell } from '@/components/modals/ModalShell'
+import { ModalShell, useDismissGuard } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -58,6 +58,12 @@ interface AccountDetailSheetProps {
   onBalanceSaved?: () => void
   /** A card sheet or the card form is stacked over this one. */
   behind?: boolean
+}
+
+/** Lives inside ModalShell's guard context: Escape, back or swipe-down while "Change N cards too?" is open keeps editing. */
+function PendingDismissGuard({ onDismiss }: { onDismiss: () => boolean }) {
+  useDismissGuard(onDismiss)
+  return null
 }
 
 const monthStart = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).getTime() }
@@ -155,6 +161,11 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onA
 
   return (
     <ModalShell open={open} onBackdropClick={onClose} scrollChild behind={behind} panelClassName={parentKind ? 'h-[min(88dvh,760px)]' : ''}>
+      <PendingDismissGuard onDismiss={() => {
+        if (!pending) return false
+        keepEditing()
+        return true
+      }} />
       <div className="flex min-h-0 flex-1 flex-col">
         <V3SheetHeader onClose={onClose}
           leading={<BrandMark name={accountTitle(method)} color={isCash ? 'var(--color-brand-sunken)' : accountColor(method)} size={36} alert={!!gap}

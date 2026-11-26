@@ -14,6 +14,8 @@ import { EXPENSE_CATEGORIES, EXPENSE_ENTRY_CATEGORIES, PAYMENT_METHOD_TYPES } fr
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import type { LedgerInput } from '@/lib/accounts/balance'
 import { depositRefusal, explainDepositRefusal, ledgerOf } from '@/lib/savings/pocketHome'
+import { holdingFundedBy } from '@/lib/savings/assetPurchase'
+import { deleteHoldingWithUndo } from '@/lib/savings/pocketUndo'
 import {
   defaultColorForPaymentMethodType,
   defaultIconEmojiForPaymentMethodType,
@@ -38,6 +40,7 @@ import type {
   Goal,
   IncomeSource,
   IncomeSourceType,
+  InvestmentHolding,
   PaymentMethod,
   AppSettings,
   FinanceStore,
@@ -256,6 +259,7 @@ export function buildAIActionHandlerContext(store: FinanceStore): AIActionHandle
     incomeSources: store.incomeSources,
     savingsAccounts: store.savingsAccounts,
     goals: store.goals,
+    investmentHoldings: store.investmentHoldings,
     settings: store.settings,
     exchangeRates: store.exchangeRates,
     goldPricePerGram: store.goldPricePerGram,
@@ -263,6 +267,7 @@ export function buildAIActionHandlerContext(store: FinanceStore): AIActionHandle
     addExpense: store.addExpense,
     updateExpense: store.updateExpense,
     deleteExpense: store.deleteExpense,
+    deleteHolding: (id) => { deleteHoldingWithUndo(id) },
     addDebtPayment: store.addDebtPayment,
     addDebt: store.addDebt,
     deleteDebt: store.deleteDebt,
@@ -297,6 +302,7 @@ export interface AIActionHandlerContext {
   incomeSources: IncomeSource[]
   savingsAccounts: SavingsAccount[]
   goals: Goal[]
+  investmentHoldings: InvestmentHolding[]
   settings: AppSettings
   exchangeRates: Record<string, number>
   goldPricePerGram: number
@@ -305,6 +311,8 @@ export interface AIActionHandlerContext {
   addExpense: FinanceStore['addExpense']
   updateExpense: FinanceStore['updateExpense']
   deleteExpense: FinanceStore['deleteExpense']
+  /** Deletes a holding with the money row that paid for it. */
+  deleteHolding: (id: string) => void
   addDebtPayment: FinanceStore['addDebtPayment']
   addDebt: FinanceStore['addDebt']
   deleteDebt: FinanceStore['deleteDebt']
@@ -579,7 +587,11 @@ export function executeActionItem(
   }
   if (action === 'delete_expense') {
     const exp = resolved<Expense>(ctx, action, d)
-    if (exp && !isDebtLinked(exp)) ctx.deleteExpense(exp.id)
+    if (!exp || isDebtLinked(exp)) return
+    // An asset purchase's money row goes with the asset.
+    const bought = holdingFundedBy(ctx.investmentHoldings, exp.id)
+    if (bought) ctx.deleteHolding(bought.id)
+    else ctx.deleteExpense(exp.id)
     return
   }
   if (action === 'update_expense') {

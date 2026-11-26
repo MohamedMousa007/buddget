@@ -1,5 +1,5 @@
 import { addDays, format, parseISO } from 'date-fns'
-import { computeBalances, type AccountBalance, type LedgerInput } from '@/lib/accounts/balance'
+import { balancesOverTime, computeBalances, type AccountBalance, type BalancesAt, type LedgerInput } from '@/lib/accounts/balance'
 import type { Currency, Debt, DebtPayment, InvestmentHolding, ZakatConfig } from '@/lib/store/types'
 import type { PriceLookup } from '@/lib/savings/holdingValuation'
 import { LUNAR_YEAR_DAYS } from '@/lib/savings/hawl'
@@ -34,7 +34,9 @@ export const endOfDayMs = (day: string): number => new Date(`${day.slice(0, 10)}
 const shiftDay = (day: string, days: number): string => format(addDays(parseISO(day.slice(0, 10)), days), 'yyyy-MM-dd')
 
 /** The zakat figures now (no `asOf`) or as they stood at the end of `asOfDay`. */
-export function zakatBaseAt(src: ZakatSources, cfg: ZakatConfig | null | undefined, asOfDay?: string, current?: ReadonlyMap<string, AccountBalance>): ZakatBase {
+export function zakatBaseAt(
+  src: ZakatSources, cfg: ZakatConfig | null | undefined, asOfDay?: string, current?: ReadonlyMap<string, AccountBalance>, history?: BalancesAt,
+): ZakatBase {
   const asOf = asOfDay ? endOfDayMs(asOfDay) : undefined
   const { ledger } = src
   return deriveZakatBase({
@@ -50,14 +52,14 @@ export function zakatBaseAt(src: ZakatSources, cfg: ZakatConfig | null | undefin
     lookup: src.lookup,
     config: cfg,
     asOf,
-    ...zakatAccountsFromLedger(ledger, asOf, current),
+    ...zakatAccountsFromLedger(ledger, asOf, current, history),
   })
 }
 
 export function zakatResultAt(
-  src: ZakatSources, cfg: ZakatConfig | null | undefined, asOfDay?: string, current?: ReadonlyMap<string, AccountBalance>,
+  src: ZakatSources, cfg: ZakatConfig | null | undefined, asOfDay?: string, current?: ReadonlyMap<string, AccountBalance>, history?: BalancesAt,
 ): { base: ZakatBase; result: ZakatResult } {
-  const base = zakatBaseAt(src, cfg, asOfDay, current)
+  const base = zakatBaseAt(src, cfg, asOfDay, current, history)
   return { base, result: computeZakat(toZakatInput(base, cfg)) }
 }
 
@@ -104,8 +106,10 @@ const MAX_SCAN_DAYS = LUNAR_YEAR_DAYS + 31
 /** The first day after `fromDay`, up to `toDay`, on which zakatable wealth was at or above nisab; null when none. */
 export function firstNisabDay(src: ZakatSources, cfg: ZakatConfig | null | undefined, fromDay: string, toDay: string): string | null {
   const current = computeBalances(src.ledger)
+  // The ledger is walked once; each day reads its balances off that one series.
+  const history = balancesOverTime(src.ledger)
   for (let i = 1, day = shiftDay(fromDay, 1); i <= MAX_SCAN_DAYS && day <= toDay; i++, day = shiftDay(day, 1)) {
-    const { result } = zakatResultAt(src, cfg, day, current)
+    const { result } = zakatResultAt(src, cfg, day, current, history)
     if (result.nisabAvailable && result.zakatable >= result.nisab) return day
   }
   return null
