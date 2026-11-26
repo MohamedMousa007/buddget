@@ -214,3 +214,32 @@ The owner approved mockup v7 on 2026-11-26. This file is the brief for building 
 
 - An admin review queue for user-reported subscription prices.
 - "Buddgy's read" written by the AI model. This pass uses a deterministic narrative from the detectors.
+
+## Foundation, built (commit 6b1f4000): use these, don't rebuild them
+
+- **`ui/AmountHero`**:
+  - Props: `value`, `onChange`, `currency?`, `onCurrencyChange?` (opens `CurrencySheet`), `unit?` + `onUnitClick?` (grams, karat), `sign?`, `top?`, `label?`, `line?`. Uses the NumberPad on native.
+- **`ui/PillButton`**: `Pill` and `PillButton`.
+- **`ui/PickerRow`**:
+  - The 52px row: `label`, `value`, `onClick`, `chevron`.
+  - Goes inside `<Card padding="none" divide>`.
+- **`ui/PickerSheet`**: the frame for the small pickers.
+- **`ui/DayOfMonthSheet`**: `open`, `value`, `onChange`, `onClose`, `title`.
+- **`ui/NumberPickerSheet`**: `open`, `value`, `onChange`, `onClose`, `title`, `presets`, `unit(n)`, `max?`.
+- **`ui/OptionSheet`**:
+  - `options[{value, title, subtitle?, icon?, tone?}]`.
+  - `multiple` mode, with Done.
+- **`DatePickerField look="pill"`**: the calendar pill. It uses `UnifiedDatePicker`, with mode `day` or `month`.
+- **`PocketPickerField`**:
+  - Sectioned and searchable.
+  - Props: `goals?`, `onGoalChange?`, `only="goals"`, `look="row"`.
+- **`savings-v3/MoneySourceField`**:
+  - `value {kind: 'account'|'pocket'|'outside', id?}`, `onChange`, `paymentMethods`, `accounts?`, `pockets`, `excludePocketIds?`, `onAddPocket?`.
+  - `children` = rows above it in the same group.
+- **`payments/accountFormParts` `Last4Tiles`**: `value`, `onChange`, `label?`, `optional?`.
+- **`IconButton` variants `sheetAction` and `sheetActionDanger`**:
+  - `V3SheetHeader.Action` / `actions`.
+  - `SheetFrame headerActions`.
+- **`formatCurrency(..., 'smart')`**: drops `.00` when there are no cents.
+- **`CardFace`**: metal shows the full masked number and the contactless mark.
+- **Strings**: the shared foundation strings are in `src/lib/i18n/lightTouchCopy.ts`. **Don't edit it.** Each area makes its own copy module.
