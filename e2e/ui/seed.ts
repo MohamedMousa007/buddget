@@ -19,7 +19,7 @@ import { addAccount, addBorrow, addExpense, addMoneyIn } from '../journeys/lib/u
   const step = async (n: string, f: () => Promise<void>) => { try { await f(); console.log('ok', n) } catch (e) { console.log('FAIL', n, String(e).slice(0, 160)) } }
   await step('cash', () => addAccount(page, { kind: 'Cash', balance: 1500 }))
   await step('bank', () => addAccount(page, { kind: 'Bank', provider: /^CIB/, balance: 25000 }))
-  await step('wallet', () => addAccount(page, { kind: 'Wallet', provider: /^Vodafone Cash/, balance: 800 }))
+  await step('wallet', () => addAccount(page, { kind: 'Wallet', provider: /Vodafone Cash/, balance: 800 }))
   await page.goto('/flow', { waitUntil: 'domcontentloaded' }); await expect(page.getByRole('button', { name: 'Quick add' })).toBeVisible()
   await step('income', () => addMoneyIn(page, { amount: 12000, name: 'Salary' }))
   for (const [a, d, c] of [[250, 'Groceries run', 'Food'], [90, 'Taxi', 'Transport'], [430, 'Electricity', 'Utilities']] as const)

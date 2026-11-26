@@ -301,7 +301,10 @@ test('L1 one user, the whole money lifecycle: pockets, goal, reserve cap, lendin
     const d = await openSetAside(page, /^CIB/, RAINY, 6001)
     await expect(d).toContainText(/More than what is free \(6,000(\.00)?\)/)
     await expect(d.getByRole('button', { name: 'Set aside', exact: true })).toBeDisabled()
-    await page.keyboard.press('Escape')
+    // blur() left focus on the page body, where the sheet's Escape handler cannot hear it; close as a user taps.
+    await d.getByRole('button', { name: 'Close' }).first().click()
+    // Light touch guards a typed amount: "Discard this?" → Discard.
+    await page.getByRole('button', { name: 'Discard', exact: true }).click()
     await expect(d).toBeHidden()
     // Nothing was written.
     await check(page, user.id, ids, { cib: [17000, 11000], qnb: [13000, 7000], pockets: { [RAINY]: 11000, [GOAL]: 7000, [TRIP]: 0 }, netWorth: 30000 })
@@ -319,7 +322,7 @@ test('L1 one user, the whole money lifecycle: pockets, goal, reserve cap, lendin
     await blur(page)
     await d.getByRole('button', { name: /^Paid from/ }).click()
     await pickMethod(page, /^CIB/)
-    await expect(d.getByRole('radiogroup', { name: 'Did this money leave CIB now?' }).getByRole('radio', { name: 'Yes' })).toBeChecked()
+    await expect(d.getByRole('switch', { name: /^Left CIB now/ })).toBeChecked()
     await d.getByRole('button', { name: 'Add borrow' }).click()
     await expect(d).toBeHidden()
     const debt = await localWait(page, (s) => s.debts.find((x: any) => x.name === 'QA L1 lend'))
