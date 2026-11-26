@@ -143,6 +143,11 @@ interface ModalShellProps {
    * until the top sheet closes. Off by default.
    */
   behind?: boolean
+  /**
+   * This sheet opens over another open sheet whose scrim already dims the page: its own backdrop stays clear (it still
+   * catches the tap that closes it), so the page is not dimmed twice. Off by default.
+   */
+  overSheet?: boolean
 }
 
 /**
@@ -160,6 +165,7 @@ export function ModalShell({
   anchor = 'center',
   ariaLabel,
   behind = false,
+  overSheet = false,
 }: ModalShellProps) {
   const dragControls = useDragControls()
   const zStack = zIndexClassName ?? OVERLAY_Z
@@ -295,7 +301,7 @@ export function ModalShell({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
             onClick={guardedDismiss}
-            className={cn('fixed inset-0', corner ? 'bg-black/60 backdrop-blur-sm lg:bg-black/20 lg:backdrop-blur-none' : 'bg-black/60 backdrop-blur-sm', zStack)}
+            className={cn('fixed inset-0', overSheet ? 'bg-transparent' : corner ? 'bg-black/60 backdrop-blur-sm lg:bg-black/20 lg:backdrop-blur-none' : 'bg-black/60 backdrop-blur-sm', zStack)}
           />
           <ExitInertPanel
             ref={panelRef}

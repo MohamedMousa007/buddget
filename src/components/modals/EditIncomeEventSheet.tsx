@@ -17,7 +17,7 @@ import { AmountHero } from '@/components/ui/AmountHero'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { PickerRow } from '@/components/ui/PickerRow'
-import { PillButton } from '@/components/ui/PillButton'
+import { HEADER_PILL, PillButton } from '@/components/ui/PillButton'
 import { OptionSheet } from '@/components/ui/OptionSheet'
 import { UnifiedDatePicker, formatDatePillLabel } from '@/components/ui/UnifiedDatePicker'
 import { SelectPaymentMethodSheet } from '@/components/features/payments/SelectPaymentMethodSheet'
@@ -246,7 +246,7 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
       <V3SheetHeader
         onClose={handleX}
         leading={
-          <PillButton icon={<Calendar />} onClick={() => setCalOpen(true)} aria-haspopup="dialog" aria-expanded={calOpen} className="h-9 border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] font-semibold">
+          <PillButton icon={<Calendar />} onClick={() => setCalOpen(true)} aria-haspopup="dialog" aria-expanded={calOpen} className={HEADER_PILL}>
             <span dir="auto">{`${formatDatePillLabel(receivedDate, locale, t.expenseForm.today)}${time ? ` · ${time}` : ''}`}</span>
           </PillButton>
         }

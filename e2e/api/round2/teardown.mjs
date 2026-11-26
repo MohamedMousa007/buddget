@@ -1,4 +1,5 @@
 // S8c round 2: delete the synthetic users (cascades): qa-api-1..3 and the legacy qa-sec-1..3 ids. 404 = already gone.
+// Usage: QA_PW_FILE=<same file as setup> node e2e/api/round2/teardown.mjs   (../lib.mjs reads QA_PW_FILE on import)
 import { readFileSync } from 'node:fs'
 import { SB_URL, USERS } from '../lib.mjs'
 const env = Object.fromEntries(readFileSync(new URL('../../../.env.local', import.meta.url), 'utf8').split(/\r?\n/).filter((l) => /^[A-Z_]+=/.test(l)).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1).replace(/^"|"$/g, '')]))

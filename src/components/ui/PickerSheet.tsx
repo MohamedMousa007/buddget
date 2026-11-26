@@ -14,12 +14,14 @@ export interface PickerSheetProps {
   children: ReactNode
   /** Stacking class: a picker opens over the sheet that owns the field. */
   zIndexClassName?: string
+  /** Opens over another sheet that already dims the page: no second scrim (see ModalShell `overSheet`). Default off. */
+  overSheet?: boolean
 }
 
 /** The frame every small picker sheet shares (day, number, option): the standard header, the body, an optional Done. */
-export function PickerSheet({ open, onClose, title, subtitle, footer, children, zIndexClassName = 'z-[110]' }: PickerSheetProps) {
+export function PickerSheet({ open, onClose, title, subtitle, footer, children, zIndexClassName = 'z-[110]', overSheet = false }: PickerSheetProps) {
   return (
-    <ModalShell open={open} onBackdropClick={onClose} zIndexClassName={zIndexClassName} panelClassName="md:w-[440px]" padContent>
+    <ModalShell open={open} onBackdropClick={onClose} zIndexClassName={zIndexClassName} panelClassName="md:w-[440px]" padContent overSheet={overSheet}>
       <div className="flex min-h-0 flex-1 flex-col gap-3">
         <V3SheetHeader title={title} subtitle={subtitle} onClose={onClose} />
         {children}

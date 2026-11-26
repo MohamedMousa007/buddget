@@ -7,11 +7,11 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { mkdirSync } from 'node:fs'
 import { resolve } from 'node:path'
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { LOCAL } from '../../lib/apiShim'
 import { expect, goto, localWait, test } from '../../lib/fixtures'
 import { serverNow, serverRows } from '../../lib/server'
-import { addExpense } from '../../lib/ui'
+import { addExpense, openAccount } from '../../lib/ui'
 import { bank, seed } from './seed'
 import { insertRows } from '../../lib/admin'
 
@@ -190,24 +190,24 @@ test('J10 evidence: the account sheet and card menu icons for the owner [QA bug 
   const [qnb] = await seed(page, user.id, 'payment_methods', [bank('QNB Alahli', 4000)])
   await seed(page, user.id, 'payment_methods', [{ name: 'QNB Alahli', type: 'debit_card', currency: 'EGP', color: '#1f6feb', parent_id: qnb.id, last4: '1111' }])
   await localWait(page, (s) => s.paymentMethods.find((m: any) => m.parentId === qnb.id))
-  await goto(page, '/accounts')
-  await page.getByRole('button', { name: /QNB Alahli/ }).first().click()
-  const sheet = page.getByRole('dialog').filter({ has: page.getByRole('button', { name: 'Update' }) }).last()
+  const sheet = await openAccount(page, /QNB Alahli/)
   const header = sheet.getByRole('button', { name: 'More actions' }).first()
-  const card = sheet.getByRole('button', { name: 'Manage' }).first()
   await expect(header).toHaveAttribute('aria-haspopup', 'menu')
-  await expect(card).toHaveAttribute('aria-haspopup', 'menu')
-  // The card's button is drawn at 32 px; IconButton's invisible ::after overlay keeps its tap area at 44 px.
-  for (const b of [header, card]) {
-    const tap = await b.evaluate((el) => {
-      const a = getComputedStyle(el, '::after'), r = el.getBoundingClientRect()
-      return Math.min(Math.max(r.width, parseFloat(a.minWidth) || 0), Math.max(r.height, parseFloat(a.minHeight) || 0))
-    })
-    expect(tap).toBeGreaterThanOrEqual(44)
-  }
+  // Both menu buttons are drawn at 32 px; IconButton's invisible ::after overlay keeps the tap area at 44 px.
+  const tapArea = (b: Locator) => b.evaluate((el) => {
+    const a = getComputedStyle(el, '::after'), r = el.getBoundingClientRect()
+    return Math.min(Math.max(r.width, parseFloat(a.minWidth) || 0), Math.max(r.height, parseFloat(a.minHeight) || 0))
+  })
+  expect(await tapArea(header)).toBeGreaterThanOrEqual(44)
   mkdirSync(EVIDENCE, { recursive: true })
   await page.waitForTimeout(500)
   await sheet.screenshot({ path: `${EVIDENCE}/bug10-account-sheet-menus.png` })
+  // Light touch: a card is a row in the account sheet; its menu sits in the card's own sheet.
+  await sheet.getByRole('button', { name: 'QNB Alahli 1111' }).click()
+  const cardSheet = page.getByRole('dialog').filter({ hasText: '••1111' }).last()
+  const card = cardSheet.getByRole('button', { name: 'More actions' }).first()
+  await expect(card).toHaveAttribute('aria-haspopup', 'menu')
+  expect(await tapArea(card)).toBeGreaterThanOrEqual(44)
   await card.click()
   await expect(page.getByRole('menuitem').first()).toBeVisible()
   await page.screenshot({ path: `${EVIDENCE}/bug10-card-menu-open.png` })

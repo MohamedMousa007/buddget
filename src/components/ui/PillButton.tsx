@@ -8,6 +8,13 @@ const PILL =
   'inline-flex h-8 max-w-full items-center gap-1.5 rounded-full bg-[var(--color-brand-elevated)] px-3 text-[0.875rem] font-medium text-[var(--color-brand-text-primary)] ' +
   "[&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
 
+/**
+ * The outlined date chip a money sheet's header starts with ("Today · 12:00"): card fill, hairline border, secondary
+ * text, as the light-touch sheets draw it. Pass as `className` to {@link PillButton} / {@link Pill} or DatePickerField.
+ */
+export const HEADER_PILL =
+  'h-9 border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[0.8125rem] font-semibold text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]'
+
 /** The soft pill a picker row shows its value in: a date, a day, a number, a frequency. Icon first (calendar, repeat). */
 export function Pill({ icon, children, className }: { icon?: ReactNode; children: ReactNode; className?: string }) {
   return (

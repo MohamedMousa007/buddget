@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/components/auth/auth-context'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import { createClient } from '@/lib/supabase/client'
+import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { computeBalances } from './balance'
 import { detectGap, type BalanceReport, type GapResult } from './gap'
 import { useLedgerInput } from './useAccounts'
@@ -17,6 +18,19 @@ function readSnoozed(): Record<string, string> {
 /** "Not sure": hides this gap until a newer bank report arrives. */
 export function snoozeGap(accountId: string, reportedAt: string): void {
   try { localStorage.setItem(SNOOZE_KEY, JSON.stringify({ ...readSnoozed(), [accountId]: reportedAt })) } catch { /* private mode */ }
+}
+
+type ReportRow = { payment_method_id: string; balance: number; reported_at: string }
+
+/** The latest SMS balance reports, or null when they cannot be read. Never throws: it runs from an effect on Accounts. */
+export async function fetchLatestBalanceReports(): Promise<ReportRow[] | null> {
+  if (!isSupabaseConfigured()) return null
+  try {
+    const { data } = await createClient().rpc('latest_balance_reports')
+    return (data as ReportRow[] | null) ?? null
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -33,7 +47,7 @@ export function useAccountGaps(): { gaps: Record<string, GapResult>; refresh: ()
   useEffect(() => {
     if (!online || !user) return
     let off = false
-    void createClient().rpc('latest_balance_reports').then(({ data }) => {
+    void fetchLatestBalanceReports().then((data) => {
       if (off || !data) return
       const grouped: Record<string, BalanceReport[]> = {}
       for (const r of data) (grouped[r.payment_method_id] ??= []).push({ balance: r.balance, reportedAt: r.reported_at })

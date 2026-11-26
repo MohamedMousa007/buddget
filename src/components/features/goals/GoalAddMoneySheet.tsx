@@ -6,6 +6,7 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import { AmountHero } from '@/components/ui/AmountHero'
 import { Button } from '@/components/ui/button'
 import { DatePickerField } from '@/components/ui/DatePickerField'
+import { HEADER_PILL } from '@/components/ui/PillButton'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { useDiscardPrompt } from '@/components/features/savings-v3/useDiscardPrompt'
@@ -39,12 +40,13 @@ const isSaveGoal = (g: Goal) => g.category !== 'debt_freedom' && g.category !== 
  * Money into a goal: the goal's icon over the amount, the goal (goals-only picker) and where the money comes from.
  * The goal's pocket is created (and linked) when it has none yet.
  */
-export function GoalAddMoneySheet({ goal, onClose }: { goal: Goal | null; onClose: () => void }) {
+/** `overSheet`: opened from the goal's own sheet, which already dims the page (one scrim, as the mockup shows). */
+export function GoalAddMoneySheet({ goal, onClose, overSheet = false }: { goal: Goal | null; onClose: () => void; overSheet?: boolean }) {
   if (!goal) return null
-  return <GoalMoney key={goal.id} goal={goal} onClose={onClose} />
+  return <GoalMoney key={goal.id} goal={goal} onClose={onClose} overSheet={overSheet} />
 }
 
-function GoalMoney({ goal: initial, onClose }: { goal: Goal; onClose: () => void }) {
+function GoalMoney({ goal: initial, onClose, overSheet }: { goal: Goal; onClose: () => void; overSheet: boolean }) {
   const t = useT()
   const tMoney = t.wealthSheets.money
   const sf = t.savingsForms
@@ -118,10 +120,10 @@ function GoalMoney({ goal: initial, onClose }: { goal: Goal; onClose: () => void
   }
 
   return (
-    <ModalShell open onBackdropClick={onClose} scrollChild>
+    <ModalShell open onBackdropClick={onClose} scrollChild overSheet={overSheet}>
       {discard.prompt}
       <div className="flex min-h-0 flex-1 flex-col">
-        <V3SheetHeader onClose={discard.close} leading={<DatePickerField look="pill" value={date} onChange={setDate} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: true }} />}>
+        <V3SheetHeader onClose={discard.close} leading={<DatePickerField look="pill" className={HEADER_PILL} value={date} onChange={setDate} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: true }} />}>
           <span className="sr-only"><V3SheetHeader.Title>{t.goals.home.addMoneyTitle(goal.name)}</V3SheetHeader.Title></span>
         </V3SheetHeader>
 

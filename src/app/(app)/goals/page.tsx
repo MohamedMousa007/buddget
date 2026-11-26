@@ -214,7 +214,7 @@ export default function GoalsPage() {
         <GoalDetailSheet row={detailRow} onClose={() => setDetailId(null)} onAddMoney={() => setMoneyGoal(detailRow.goal)} />
       ) : null}
       <NewGoalFlow open={flow !== false} seed={flow || null} onClose={() => setFlow(false)} />
-      <GoalAddMoneySheet goal={moneyGoal} onClose={() => setMoneyGoal(null)} />
+      <GoalAddMoneySheet goal={moneyGoal} onClose={() => setMoneyGoal(null)} overSheet={!!detailRow} />
     </div>
   )
 }

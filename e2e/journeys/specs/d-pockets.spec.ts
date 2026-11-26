@@ -1,14 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- test code reads untyped store and PostgREST JSON */
 import type { Page } from '@playwright/test'
-import { expect, goto, localWait, test, tile } from '../lib/fixtures'
+import { expect, goto, localWait, test, tile, netWorth } from '../lib/fixtures'
 import { serverRows } from '../lib/server'
-import { addAccount, addBorrow, blur, dialog, pickPocket } from '../lib/ui'
+import { addAccount, addBorrow, blur, dialog, pickPocket, withdrawFor } from '../lib/ui'
 
-const netWorthFlow = async (page: Page) => { await goto(page, '/flow'); return tile(page, 'Net worth') }
+const netWorthFlow = async (page: Page) => { await goto(page, '/flow'); return netWorth(page) }
 const qnbBalance = async (page: Page) => {
   await goto(page, '/accounts')
+  // Light touch row: "QNB Alahli · 1 account · 0 cards · 5,000 EGP · 500 set aside"; the balance is the EGP amount.
   const t = await page.getByRole('button', { name: /QNB Alahli/ }).first().textContent()
-  return Number((t ?? '').match(/[\d,]+\.\d\d/)?.[0].replace(/,/g, ''))
+  return Number((t ?? '').match(/(-?[\d,]+(?:\.\d+)?) EGP/)?.[1].replace(/,/g, ''))
 }
 
 async function newPocket(page: Page, o: { kind: RegExp; name?: string; amount: number }) {
@@ -26,7 +27,7 @@ async function newPocket(page: Page, o: { kind: RegExp; name?: string; amount: n
 }
 
 test('D savings pocket allocate > withdraw > balances > net worth', async ({ page, user }) => {
-  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 5000 })
+  await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: 5000 })
   const qnb = await localWait(page, (s) => s.paymentMethods.find((m: any) => m.name === 'QNB Alahli' && m.openingBalance === 5000))
   expect(await netWorthFlow(page)).toBe(5000)
 
@@ -41,9 +42,9 @@ test('D savings pocket allocate > withdraw > balances > net worth', async ({ pag
     const d = dialog(page, 'Add money')
     await pickPocket(page, d, 'Into', /QA Pocket/)
     await d.getByRole('textbox', { name: 'Amount' }).fill('1000')
-    await expect(d.getByRole('button', { name: /From account QNB Alahli/ })).toBeVisible()
+    await expect(d.getByRole('button', { name: 'From: QNB Alahli' })).toBeVisible()
     await blur(page)
-    await d.getByRole('button', { name: /^Add [\d,]+ to QA Pocket/ }).click()
+    await d.getByRole('button', { name: 'Add money', exact: true }).click()
     await expect(d).toBeHidden()
     await expect(page.getByRole('button', { name: /QA Pocket/ }).first()).toContainText('1,000')
     expect(await qnbBalance(page)).toBe(4000)
@@ -61,10 +62,10 @@ test('D savings pocket allocate > withdraw > balances > net worth', async ({ pag
     await pickPocket(page, d, 'From', /QA Pocket/)
     await d.getByRole('textbox', { name: 'Amount' }).fill('300')
     // 'Income: back into this month' is the purpose that returns money to an account (AccountLegRow 'to account').
-    await d.getByRole('radio').filter({ hasText: 'Back into this month' }).click()
+    await withdrawFor(page, d, /^Income Back into this month/)
     await expect(d).toContainText('QNB')
     await blur(page)
-    await d.getByRole('button', { name: /300 .*QA Pocket/ }).click()
+    await d.getByRole('button', { name: 'Withdraw 300' }).click()
     await expect(d).toBeHidden()
     await expect(page.getByRole('button', { name: /QA Pocket/ }).first()).toContainText('700')
     expect(await qnbBalance(page)).toBe(4300)
@@ -74,7 +75,7 @@ test('D savings pocket allocate > withdraw > balances > net worth', async ({ pag
 })
 
 test('D2 pocket created from an account you already have keeps net worth [QA-013]', async ({ page, user }) => {
-  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 5000 })
+  await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: 5000 })
   await localWait(page, (s) => s.paymentMethods.find((m: any) => m.name === 'QNB Alahli' && m.openingBalance === 5000))
   expect(await netWorthFlow(page)).toBe(5000)
   await newPocket(page, { kind: /^QNB Alahli/, amount: 500 })
@@ -86,7 +87,7 @@ test('D2 pocket created from an account you already have keeps net worth [QA-013
 })
 
 test('D3 money leaving a pocket held in an account moves the account [S-2]', async ({ page, user }) => {
-  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 5000 })
+  await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: 5000 })
   await localWait(page, (s) => s.paymentMethods.find((m: any) => m.name === 'QNB Alahli' && m.openingBalance === 5000))
   await newPocket(page, { kind: /^QNB Alahli/, name: 'QA Held Pocket', amount: 500 })
   const pocket = await localWait(page, (s) => s.savingsAccounts.find((a: any) => a.heldInPaymentMethodId && a.currentBalance === 500))
@@ -99,12 +100,12 @@ test('D3 money leaving a pocket held in an account moves the account [S-2]', asy
     // The app-seeded Monthly Savings vault is listed too: pick the test's pocket by its own name (pickPocket checks the pick took).
     await pickPocket(page, d, 'From', /QA Held Pocket/)
     await d.getByRole('textbox', { name: 'Amount' }).fill(String(amount))
-    await d.getByRole('radio').filter({ hasText: purpose }).click()
+    await withdrawFor(page, d, new RegExp(`^${purpose}`))
     return { d, cta }
   }
 
   await test.step('Spending 200: net worth and the account drop by 200, free stays', async () => {
-    const { d, cta } = await withdraw('Spending', 200, /Spend 200 from/)
+    const { d, cta } = await withdraw('Spending', 200, /^Withdraw 200$/)
     await blur(page)
     await d.getByRole('button', { name: cta }).click()
     await expect(d).toBeHidden()
@@ -118,11 +119,11 @@ test('D3 money leaving a pocket held in an account moves the account [S-2]', asy
     await addBorrow(page, { person: 'Ahmed', what: 'QA D loan', amount: 1000 })
     const before = await netWorthFlow(page)
     const accountBefore = await qnbBalance(page)
-    const { d } = await withdraw('Pay a debt', 100, /Pay 100 from/)
-    await d.getByRole('button', { name: 'Pick a debt' }).click()
-    await d.getByRole('radio', { name: /QA D loan/ }).click()
+    const { d } = await withdraw('Pay a debt', 100, /^Withdraw 100$/)
+    await d.getByRole('button', { name: /^Debt / }).click()
+    await page.getByRole('dialog').last().getByRole('radio', { name: /QA D loan/ }).click()
     await blur(page)
-    await d.getByRole('button', { name: /Pay 100 from/ }).click()
+    await d.getByRole('button', { name: 'Withdraw 100' }).click()
     await expect(d).toBeHidden()
     expect(await qnbBalance(page)).toBe(accountBefore - 100)
     expect(await netWorthFlow(page)).toBe(before)
@@ -132,14 +133,14 @@ test('D3 money leaving a pocket held in an account moves the account [S-2]', asy
 
 test('D4 Add pocket from Add money keeps the amount and selects the new pocket [BDG-026]', async ({ page, user }) => {
   void user
-  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 5000 })
+  await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: 5000 })
   await goto(page, '/wealth')
   await page.getByRole('button', { name: 'Add money' }).first().click()
   const d = dialog(page, 'Add money')
   await d.getByRole('textbox', { name: 'Amount' }).fill('250')
   await blur(page)
   await d.getByRole('button', { name: /^Into/ }).click()
-  const picker = dialog(page, 'Choose a pocket')
+  const picker = dialog(page, 'Which pocket?')
   await picker.getByRole('button', { name: 'New pocket' }).click()
   await expect(picker).toBeHidden()
   const add = dialog(page, 'Add to Wealth')
@@ -153,7 +154,7 @@ test('D4 Add pocket from Add money keeps the amount and selects the new pocket [
   await expect(add).toBeHidden()
   await expect(d.getByRole('button', { name: /^Into: QA New Pocket/ })).toBeVisible()
   await expect(d.getByRole('textbox', { name: 'Amount' })).toHaveValue(/250/)
-  await d.getByRole('button', { name: /^Add [\d,]+ to QA New Pocket/ }).click()
+  await d.getByRole('button', { name: 'Add money', exact: true }).click()
   await expect(d).toBeHidden()
   const pocket = await localWait(page, (s) => s.savingsAccounts.find((a: any) => a.name === 'QA New Pocket'))
   await localWait(page, (s) => s.savingsTransactions.find((t: any) => t.accountId === pocket.id && Number(t.amount) === 250))
@@ -162,7 +163,7 @@ test('D4 Add pocket from Add money keeps the amount and selects the new pocket [
 const availableNow = async (page: Page) => { await goto(page, '/accounts'); return tile(page, 'Available now') }
 
 test('D5 reserve cap: setting aside more than the account has free is refused with the amount, up to free is allowed [Phase 0.2]', async ({ page, user }) => {
-  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 5000 })
+  await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: 5000 })
   await localWait(page, (s) => s.paymentMethods.find((m: any) => m.name === 'QNB Alahli' && m.openingBalance === 5000))
   await newPocket(page, { kind: /^QNB Alahli/, name: 'QA Cap Pocket', amount: 500 })
   const pocket = await localWait(page, (s) => s.savingsAccounts.find((a: any) => a.name === 'QA Cap Pocket' && a.heldInPaymentMethodId && a.currentBalance === 500))
@@ -174,13 +175,13 @@ test('D5 reserve cap: setting aside more than the account has free is refused wi
   await pickPocket(page, d, 'Into', /QA Cap Pocket/)
   await d.getByRole('textbox', { name: 'Amount' }).fill('4501')
   await blur(page)
-  await expect(d.getByRole('alert')).toHaveText('Only 4,500.00 EGP is available in QNB Alahli.')
-  await expect(d.getByRole('button', { name: /^Add [\d,]+ to QA Cap Pocket/ })).toBeDisabled()
+  await expect(d.getByRole('alert')).toHaveText(/^Only 4,500(\.00)? EGP is available in QNB Alahli\.$/)
+  await expect(d.getByRole('button', { name: 'Add money', exact: true })).toBeDisabled()
 
   await d.getByRole('textbox', { name: 'Amount' }).fill('4500')
   await blur(page)
   await expect(d.getByRole('alert')).toHaveCount(0)
-  await d.getByRole('button', { name: /^Add [\d,]+ to QA Cap Pocket/ }).click()
+  await d.getByRole('button', { name: 'Add money', exact: true }).click()
   await expect(d).toBeHidden()
   await serverRows('savings_accounts', user.id, `id=eq.${pocket.id}`, (r: any[]) => Number(r[0]?.current_balance) === 5000)
   expect(await qnbBalance(page)).toBe(5000)
@@ -189,7 +190,7 @@ test('D5 reserve cap: setting aside more than the account has free is refused wi
 })
 
 test('D6 release at zero available: taking money back from a pocket that holds all of the account is allowed [R8]', async ({ page, user }) => {
-  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 5000 })
+  await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: 5000 })
   await localWait(page, (s) => s.paymentMethods.find((m: any) => m.name === 'QNB Alahli' && m.openingBalance === 5000))
   await newPocket(page, { kind: /^QNB Alahli/, name: 'QA Full Pocket', amount: 5000 })
   const pocket = await localWait(page, (s) => s.savingsAccounts.find((a: any) => a.name === 'QA Full Pocket' && a.heldInPaymentMethodId && a.currentBalance === 5000))
@@ -200,10 +201,10 @@ test('D6 release at zero available: taking money back from a pocket that holds a
   const d = page.getByRole('dialog').filter({ has: page.getByRole('textbox', { name: 'Amount' }) }).last()
   await pickPocket(page, d, 'From', /QA Full Pocket/)
   await d.getByRole('textbox', { name: 'Amount' }).fill('1000')
-  await d.getByRole('radio').filter({ hasText: 'Back into this month' }).click()
+  await withdrawFor(page, d, /^Income Back into this month/)
   await blur(page)
   await expect(d.getByRole('alert')).toHaveCount(0)
-  await d.getByRole('button', { name: /1,000 .*QA Full Pocket/ }).click()
+  await d.getByRole('button', { name: 'Withdraw 1,000' }).click()
   await expect(d).toBeHidden()
   await serverRows('savings_accounts', user.id, `id=eq.${pocket.id}`, (r: any[]) => Number(r[0]?.current_balance) === 4000)
   expect(await qnbBalance(page)).toBe(5000)

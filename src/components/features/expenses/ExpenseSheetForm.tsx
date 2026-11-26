@@ -17,7 +17,7 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { AmountHero } from '@/components/ui/AmountHero'
 import { PickerRow } from '@/components/ui/PickerRow'
-import { PillButton } from '@/components/ui/PillButton'
+import { HEADER_PILL, PillButton } from '@/components/ui/PillButton'
 import { DatePickerField } from '@/components/ui/DatePickerField'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
 import { SelectPaymentMethodSheet } from '@/components/features/payments/SelectPaymentMethodSheet'
@@ -331,7 +331,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
         <V3SheetHeader
           onClose={handleX}
           leading={
-            <PillButton icon={<Calendar />} onClick={() => setCalOpen(true)} aria-haspopup="dialog" aria-expanded={calOpen} className="h-9 border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] font-semibold">
+            <PillButton icon={<Calendar />} onClick={() => setCalOpen(true)} aria-haspopup="dialog" aria-expanded={calOpen} className={HEADER_PILL}>
               <span dir="auto">{datePill}</span>
             </PillButton>
           }

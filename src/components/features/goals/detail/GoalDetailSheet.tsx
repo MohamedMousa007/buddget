@@ -165,7 +165,7 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
         open
         onBackdropClick={onClose}
         scrollChild
-        panelClassName="h-[calc(100dvh-40px)] max-h-[calc(100dvh-40px)] md:h-[min(46rem,calc(100dvh-4rem))] md:max-h-[calc(100dvh-4rem)] md:w-[min(28rem,calc(100vw-2rem))] md:rounded-3xl"
+        panelClassName="max-h-[calc(100dvh-40px)] md:max-h-[min(46rem,calc(100dvh-4rem))] md:w-[min(28rem,calc(100vw-2rem))] md:rounded-3xl"
       >
         <div className="flex min-h-0 flex-1 flex-col">
           <V3SheetHeader

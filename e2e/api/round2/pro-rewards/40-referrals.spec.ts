@@ -240,7 +240,9 @@ test('F14 the Invite page shows a friend by first name only, never their email o
   const inviter = await user('f14i'); const code = await codeOf(inviter)
   const f = await user('f14f')
   await svcPatch('profiles', `id=eq.${f.id}`, { display_name: 'Layla Hassan Omar' })
-  await redeem(f, code)
+  // This checks what the Invite page shows, not the redeem route: redeem through the RPC (as F15/F16 do) so the route's
+  // per-address limit, which F17 and the earlier tests use up from the same runner IP, cannot turn this into a 429.
+  expect((await svcRpc('referral_redeem', { p_user: f.id, p_code: code, p_mailbox_key: `${f.id}@qa.test` })).json.status).toBe('ok')
   const s = (await rpc(inviter.token, 'referral_my_summary')).json
   expect(s.friends.length).toBe(1)
   expect(s.friends[0].name).toBe('Layla')

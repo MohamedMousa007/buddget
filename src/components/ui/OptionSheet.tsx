@@ -24,6 +24,8 @@ interface BaseProps<T extends string> {
   subtitle?: ReactNode
   options: readonly OptionSheetOption<T>[]
   zIndexClassName?: string
+  /** Opens over another sheet that already dims the page: no second scrim (PickerSheet `overSheet`). Default off. */
+  overSheet?: boolean
 }
 
 interface SingleProps<T extends string> extends BaseProps<T> {
@@ -63,7 +65,7 @@ function Tick({ on, multi }: { on: boolean; multi: boolean }) {
  * it. Single-select closes on tap; `multiple` ticks several and confirms with Done.
  */
 export function OptionSheet<T extends string>(props: OptionSheetProps<T>) {
-  const { open, onClose, title, subtitle, options, zIndexClassName } = props
+  const { open, onClose, title, subtitle, options, zIndexClassName, overSheet = false } = props
   const t = useT()
   const initial = (): T[] => (props.multiple ? [...props.value] : [])
   const [picked, setPicked] = useState<T[]>(initial)
@@ -90,6 +92,7 @@ export function OptionSheet<T extends string>(props: OptionSheetProps<T>) {
       title={title}
       subtitle={subtitle}
       zIndexClassName={zIndexClassName}
+      overSheet={overSheet}
       footer={props.multiple ? <Button size="cta-block" onClick={() => { props.onChange(picked); onClose() }}>{t.common.done}</Button> : undefined}
     >
       <div

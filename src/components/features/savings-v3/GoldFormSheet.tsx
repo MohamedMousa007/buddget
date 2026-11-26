@@ -137,6 +137,7 @@ export function GoldFormSheet({ open, onClose, onDone }: GoldFormSheetProps) {
                       value={
                         <AmountTextInput
                           aria-label={g.paid}
+                          grouped
                           value={paid}
                           onChange={setPaid}
                           currency={payCurrency}

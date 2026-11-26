@@ -93,7 +93,7 @@ export function AddConfigureStep({ form }: { form: AddSubscriptionFormReturn }) 
           label={draft.trial ? ui.add.trialEnd : c.firstCharge}
           value={<DatePickerField look="pill" value={draft.firstCharge} onChange={(v) => patch({ firstCharge: v })} />}
         />
-        <PickerRow label={c.every} value={<Pill icon={<Repeat />}>{ui.cycles[draft.cycle]}</Pill>} chevron={false} onClick={() => setEveryOpen(true)} />
+        <PickerRow label={c.every} value={<Pill icon={<Repeat />}>{c.everyUnit[draft.cycle]}</Pill>} chevron={false} onClick={() => setEveryOpen(true)} />
         {form.paymentMethods.length > 0 ? (
           <MethodPickerRow label={c.paidWith} value={draft.paymentMethodId ?? ''} onChange={(id) => patch({ paymentMethodId: id })} paymentMethods={form.paymentMethods} />
         ) : null}

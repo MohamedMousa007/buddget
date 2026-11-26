@@ -54,7 +54,7 @@ export function ProviderCard({ group, base, masked, alert = false, onOpen, onFac
       <BrandMark name={group.name} color={providerColor(group)} alert={alert} logo={bankLogoForName(group.name)} />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-base font-bold text-[var(--color-brand-text-primary)]">{group.name}</span>
-        <span className="mt-0.5 block text-[0.8125rem] text-[var(--color-brand-text-muted)] [text-wrap:pretty]">{meta}</span>
+        <span className="mt-0.5 block truncate whitespace-nowrap text-[0.8125rem] text-[var(--color-brand-text-muted)]">{meta}</span>
       </span>
       <span className="shrink-0 text-end">
         <span className="block whitespace-nowrap font-mono-numbers text-base font-semibold tracking-[-0.02em] text-[var(--color-brand-text-primary)]">

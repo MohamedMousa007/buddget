@@ -1,8 +1,11 @@
+import { existsSync } from 'node:fs'
 import type { Page } from '@playwright/test'
 import { expect, goto, test } from '../lib/fixtures'
 
-// A fake microphone so holding the + can really start recording in headless Chromium.
-test.use({ launchOptions: { args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] } })
+// A fake microphone so holding the + can really start recording in headless Chromium. `test.use` replaces the config's
+// launchOptions whole, so keep the browser path the config picks (QA_CHROME, else the cloud image's Chromium).
+const chrome = process.env.QA_CHROME ?? (existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined)
+test.use({ launchOptions: { ...(chrome ? { executablePath: chrome } : {}), args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] } })
 
 async function holdFab(page: Page) {
   const box = (await page.getByRole('button', { name: 'Quick add' }).first().boundingBox())!

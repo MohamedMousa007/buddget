@@ -23,12 +23,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Invalid or unexpected token",
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "page-accounts": {
       "captured": true,
@@ -37,7 +36,7 @@
       "offline": true,
       "state": "full",
       "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif",
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
         "hero": {
           "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
@@ -53,11 +52,42 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
+    },
+    "page-provider": {
+      "captured": true,
+      "route": "/accounts",
+      "steps": [
+        "CIB, 2 accounts · 3 cards"
+      ],
+      "offline": true,
+      "state": "full",
+      "checks": {
+        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
+        "geist": true,
+        "hero": {
+          "selector": "section.overflow-hidden.rounded-3xl.px-[18px].pb-4",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
+        "horizontalOverflow": false,
+        "scrollWidth": 390,
+        "viewportWidth": 390,
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
+      },
+      "pageErrors": []
     },
     "page-budget": {
       "captured": true,
@@ -72,11 +102,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "page-debts": {
       "captured": true,
@@ -101,11 +131,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "page-goals": {
       "captured": true,
@@ -130,11 +160,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "page-insights": {
       "captured": true,
@@ -159,11 +189,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "page-paydays": {
       "captured": true,
@@ -188,12 +218,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Loading chunk app/(app)/layout failed.\n(error: http://localhost:3001/_next/static/chunks/app/(app)/layout.js)",
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "page-subs": {
       "captured": true,
@@ -218,11 +247,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "page-wealth": {
       "captured": true,
@@ -249,11 +278,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-expense": {
       "captured": true,
@@ -280,11 +309,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-income": {
       "captured": true,
@@ -301,11 +330,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-scan": {
       "captured": true,
@@ -332,11 +361,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_held": {
       "captured": false,
@@ -346,7 +375,7 @@
       "captured": true,
       "route": "/accounts",
       "steps": [
-        "CIB, 2 accounts · 2 cards",
+        "CIB, 2 accounts · 3 cards",
         "CIB Current"
       ],
       "offline": true,
@@ -368,17 +397,17 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-card": {
       "captured": true,
       "route": "/accounts",
       "steps": [
-        "CIB, 2 accounts · 2 cards",
+        "CIB, 2 accounts · 3 cards",
         "CIB Credit"
       ],
       "offline": true,
@@ -400,11 +429,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-addaccount": {
       "captured": true,
@@ -431,17 +460,17 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-addcard": {
       "captured": true,
       "route": "/accounts",
       "steps": [
-        "CIB, 2 accounts · 2 cards",
+        "CIB, 2 accounts · 3 cards",
         "CIB Current",
         "Add card"
       ],
@@ -464,19 +493,22 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
       "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
+        "Loading chunk app/global-error failed.\n(timeout: http://localhost:3001/_next/static/chunks/app/global-error.js)"
       ]
     },
     "sheet-cashout": {
       "captured": true,
       "route": "/accounts",
       "steps": [
-        "CIB, 2 accounts · 2 cards",
+        "CIB, 2 accounts · 3 cards",
         "CIB Current",
-        "Cash out"
+        "Cash out",
+        "async (page) => {\n  const input = page.locator('[role=dialog"
       ],
       "offline": true,
       "state": "full",
@@ -497,19 +529,20 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-setaside": {
       "captured": true,
       "route": "/accounts",
       "steps": [
-        "CIB, 2 accounts · 2 cards",
+        "CIB, 2 accounts · 3 cards",
         "CIB Current",
-        "Set aside"
+        "Set aside",
+        "async (page) => {\n  const input = page.locator('[role=dialog"
       ],
       "offline": true,
       "state": "full",
@@ -530,11 +563,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-cashhand": {
       "captured": true,
@@ -551,11 +584,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "state-cashoff": {
       "captured": true,
@@ -570,17 +603,21 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
       "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
+        "Invalid or unexpected token",
+        "Loading chunk app/(app)/layout failed.\n(missing: http://localhost:3001/_next/static/chunks/app/(app)/layout.js)"
       ]
     },
     "sheet-deposit": {
       "captured": true,
       "route": "/wealth",
       "steps": [
-        "Add money"
+        "Add money",
+        "async (page) => {\n  const input = page.locator('[role=dialog"
       ],
       "offline": false,
       "state": "full",
@@ -601,17 +638,24 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_withdraw": {
       "captured": true,
       "route": "/wealth",
       "steps": [
-        "Withdraw"
+        "Withdraw",
+        "css=[role=dialog] button[aria-label^=\"From:\"]",
+        "async (page) => {\n  // The picker row's or option's own labe",
+        "async (page) => {\n  // The picker row's or option's own labe",
+        "async (page) => {\n  // The picker row's or option's own labe",
+        "async (page) => {\n  // The picker row's or option's own labe",
+        "async (page) => {\n  // The picker row's or option's own labe",
+        "async (page) => {\n  const input = page.locator('[role=dialog"
       ],
       "offline": false,
       "state": "full",
@@ -632,42 +676,32 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_ef": {
       "captured": true,
       "route": "/wealth",
       "steps": [
-        "Emergency fund"
+        "async (page) => {\n  const row = page.locator('button', { has"
       ],
       "offline": false,
       "state": "full",
       "checks": {
         "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
-        "hero": {
-          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
-          "borderRadius": "24px",
-          "marginLeft": "0px",
-          "marginRight": "0px",
-          "left": 16,
-          "right": 16,
-          "width": 358,
-          "viewportWidth": 390,
-          "shape": "rounded card"
-        },
+        "hero": null,
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-efmonth": {
       "captured": true,
@@ -685,11 +719,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_gold": {
       "captured": true,
@@ -698,7 +732,9 @@
         "async (page) => {\n  await page.evaluate(() => {\n    const no",
         "Add pocket or asset",
         "Investment",
-        "css=[role=dialog] button:has-text(\"Bars, coins\")"
+        "css=[role=dialog] button:has-text(\"Bars, coins\")",
+        "async (page) => {\n  const input = page.locator('[role=dialog",
+        "async (page) => {\n  const input = page.locator('[role=dialog"
       ],
       "offline": false,
       "state": "full",
@@ -719,11 +755,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_zakat": {
       "captured": true,
@@ -741,11 +777,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_goal": {
       "captured": true,
@@ -772,18 +808,19 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-goal": {
       "captured": true,
       "route": "/goals",
       "steps": [
         "Trip to Dahab",
-        "Add money"
+        "Add money",
+        "async (page) => {\n  const input = page.locator('[role=dialog"
       ],
       "offline": false,
       "state": "full",
@@ -804,11 +841,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-addgoalC": {
       "captured": true,
@@ -835,11 +872,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-celebrate": {
       "captured": true,
@@ -866,11 +903,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_borrow": {
       "captured": true,
@@ -898,11 +935,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_install": {
       "captured": true,
@@ -930,11 +967,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_vault": {
       "captured": true,
@@ -947,15 +984,25 @@
       "checks": {
         "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
-        "hero": null,
+        "hero": {
+          "selector": "section.text-[var(--flow-band-fg)].overflow-hidden.rounded-3xl",
+          "borderRadius": "24px",
+          "marginLeft": "0px",
+          "marginRight": "0px",
+          "left": 16,
+          "right": 16,
+          "width": 358,
+          "viewportWidth": 390,
+          "shape": "rounded card"
+        },
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-debtpay": {
       "captured": true,
@@ -984,11 +1031,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-repaid": {
       "captured": true,
@@ -1016,19 +1063,19 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
       "pageErrors": [
-        "Loading chunk app/(app)/layout failed.\n(error: http://localhost:3001/_next/static/chunks/app/(app)/layout.js)",
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
+        "Invalid or unexpected token",
+        "Internal Next.js error: Router action dispatched before initialization."
       ]
     },
     "sheet-received": {
       "captured": true,
       "route": "/paydays",
       "steps": [
-        "Paydays and pay cycle",
-        "Upwork",
         "Log a payday"
       ],
       "offline": false,
@@ -1050,13 +1097,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Invalid or unexpected token",
-        "Loading chunk app/(app)/layout failed.\n(missing: http://localhost:3001/_next/static/chunks/app/(app)/layout.js)",
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_payday": {
       "captured": true,
@@ -1084,11 +1129,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-sub": {
       "captured": true,
@@ -1115,18 +1160,19 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_subadd": {
       "captured": true,
       "route": "/subscriptions",
       "steps": [
         "Add subscription",
-        "Netflix EGP"
+        "Netflix EGP",
+        "css=[role=dialog] button:text-is(\"Premium\")"
       ],
       "offline": false,
       "state": "full",
@@ -1147,11 +1193,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_subcancel": {
       "captured": true,
@@ -1179,11 +1225,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_line": {
       "captured": true,
@@ -1210,11 +1256,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": true
+        "sheetOpen": true,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "sheet-s_fixgap": {
       "captured": false,
@@ -1233,18 +1279,18 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "state-emptyflow": {
       "captured": true,
       "route": "/flow",
       "steps": [],
       "offline": false,
-      "state": "empty",
+      "state": "emptyMonth",
       "checks": {
         "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
         "geist": true,
@@ -1262,11 +1308,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "state-emptysubs": {
       "captured": true,
@@ -1281,11 +1327,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "state-insfree": {
       "captured": true,
@@ -1310,11 +1356,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "state-inslearn": {
       "captured": true,
@@ -1339,11 +1385,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "state-insnoinc": {
       "captured": true,
@@ -1368,11 +1414,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "state-loading": {
       "captured": true,
@@ -1389,11 +1435,11 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "state-noresults": {
       "captured": true,
@@ -1423,47 +1469,16 @@
         "horizontalOverflow": false,
         "scrollWidth": 390,
         "viewportWidth": 390,
-        "sheetOpen": false
+        "sheetOpen": false,
+        "dir": "ltr",
+        "lang": "en"
       },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
+      "pageErrors": []
     },
     "state-buddgy": {
       "captured": false,
       "reason": "Buddgy quick-add card comes from an AI reply; the AI route needs a signed-in Supabase session and a model key."
-    },
-    "page-provider": {
-      "captured": true,
-      "route": "/accounts",
-      "steps": [
-        "CIB, 2 accounts · 2 cards"
-      ],
-      "offline": true,
-      "state": "full",
-      "checks": {
-        "bodyFont": "Geist, \"Geist Fallback\", ui-sans-serif, system-ui, sans-serif, ui-sans-serif, system-ui, sans-serif",
-        "geist": true,
-        "hero": {
-          "selector": "section.overflow-hidden.rounded-3xl.px-[18px].pb-4",
-          "borderRadius": "24px",
-          "marginLeft": "0px",
-          "marginRight": "0px",
-          "left": 16,
-          "right": 16,
-          "width": 358,
-          "viewportWidth": 390,
-          "shape": "rounded card"
-        },
-        "horizontalOverflow": false,
-        "scrollWidth": 390,
-        "viewportWidth": 390,
-        "sheetOpen": false
-      },
-      "pageErrors": [
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      ]
     }
   },
-  "generatedAt": "2026-11-26T14:46:37.968Z"
+  "generatedAt": "2026-11-26T21:59:35.166Z"
 }

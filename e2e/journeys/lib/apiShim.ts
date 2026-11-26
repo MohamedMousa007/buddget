@@ -8,6 +8,7 @@ import type { BrowserContext } from '@playwright/test'
  */
 export const LOCAL = process.env.QA_BASE ?? 'http://localhost:3100'
 export async function installApiShim(ctx: BrowserContext) {
+  await isolateEmailCheck(ctx)
   await ctx.route(/^https:\/\/(www\.)?buddget\.app\/api\//, async (route) => {
     const req = route.request()
     const origin = req.headers()['origin'] ?? LOCAL
@@ -46,4 +47,15 @@ export async function forceFlags(ctx: BrowserContext, flags: Record<string, bool
       body: JSON.stringify({ flags: { ...base, ...flags } }),
     })
   })
+}
+
+/**
+ * Every journey signs in through the email-first modal, which asks `/api/auth/check-email`; that route caps each address at
+ * 300 a day (QA-99). All suites run from one machine, so a full run plus re-runs exhausts the cap and a sign-up then reads
+ * as "Welcome back" (A1). Give each browser context its own rate bucket on that one route via `x-real-ip` (the platform
+ * header the route trusts). This isolates the journeys from the limit; the limit itself is covered by the API suites.
+ */
+export async function isolateEmailCheck(ctx: BrowserContext) {
+  const ip = `10.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${1 + Math.floor(Math.random() * 250)}`
+  await ctx.route(/\/api\/auth\/check-email(\?|$)/, (route) => route.continue({ headers: { ...route.request().headers(), 'x-real-ip': ip } }))
 }

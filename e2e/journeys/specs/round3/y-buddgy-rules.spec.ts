@@ -6,7 +6,7 @@
 // the store and server rows are asserted.
 import { expect, goto, localState, localWait, test } from '../../lib/fixtures'
 import { serverRows } from '../../lib/server'
-import { dialog } from '../../lib/ui'
+import { dialog, shown } from '../../lib/ui'
 import { bank, localMethod, seed } from './seed'
 
 test('J9 Buddgy refuses to set aside more than an account has free and sets a smaller saved amount aside in it', async ({ page, user }) => {
@@ -46,6 +46,6 @@ test('J9 Buddgy refuses to set aside more than an account has free and sets a sm
   await test.step('QNB still shows its 5,000 balance (the money was already there)', async () => {
     await chat.getByRole('button', { name: 'Close chat' }).click()
     await goto(page, '/accounts')
-    await expect(page.getByRole('button', { name: /QNB Alahli/ }).first()).toContainText('5,000.00')
+    await expect(page.getByRole('button', { name: /QNB Alahli/ }).first()).toContainText(shown('5,000'))
   })
 })

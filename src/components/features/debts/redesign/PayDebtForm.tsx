@@ -6,6 +6,7 @@ import { ChevronDown, Landmark, Undo2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { AddDebtHook } from '@/hooks/useAddDebtSheet'
 import { AmountHero } from '@/components/ui/AmountHero'
+import { OptionSheet } from '@/components/ui/OptionSheet'
 import { PickerRow } from '@/components/ui/PickerRow'
 import { SettingsSwitchRow } from '@/components/features/settings/SettingsSwitchRow'
 import { NoteRow } from '@/components/features/savings-v3/MoneySheetParts'
@@ -17,6 +18,13 @@ import { useLocale, useT } from '@/lib/i18n'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 import { useLightTouchCopy } from '@/lib/i18n/lightTouchCopy'
+
+/** "Car loan · CIB": the debt's name, then the lender when it has one of its own. */
+export function payDebtTitle(debt: { name?: string; person?: string; creditor?: string; installmentProviderName?: string }): string {
+  const name = (debt.name || debt.person || '').trim()
+  const lender = (debt.creditor || debt.installmentProviderName || '').trim()
+  return lender && lender.toLowerCase() !== name.toLowerCase() ? `${name} · ${lender}` : name
+}
 
 /**
  * Record a payment (Light touch `debtpay`): icon tile, the signed amount, what is left after it, then Debt · Paid from ·
@@ -38,6 +46,9 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
   const unit = debt?.isGold ? ' g' : ''
   const { locale } = useLocale()
   const [more, setMore] = useState(false)
+  const [pickDebt, setPickDebt] = useState(false)
+  // The debts this payment can go to (the "Which debt?" picker, mockup debtpay): the open ones you owe.
+  const otherDebts = d.payableRows.filter((r) => !isOwedToUser(r.debt))
   const showExtras = !receiving || more || d.paymentScheduleMode === 'recurring' || d.paymentNotes !== ''
   const what = debt?.description?.trim()
   const since = debt?.startDate ? formatLocalized(parseISO(debt.startDate.slice(0, 10)), 'MMM d', locale) : ''
@@ -64,7 +75,7 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
       />
       {debt ? (
         <div className="-mt-1 text-center">
-          <p dir="auto" className="text-[1.0625rem] font-semibold text-[var(--color-brand-text-primary)]">{receiving ? c.paidBack(debt.person || debt.name) : debt.name || debt.person}</p>
+          <p dir="auto" className="text-[1.0625rem] font-semibold text-[var(--color-brand-text-primary)]">{receiving ? c.paidBack(debt.person || debt.name) : payDebtTitle(debt)}</p>
           <p dir="auto" className="mt-0.5 font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
             {receiving
               ? [what && since ? c.forOn(what, since) : '', thisOf].filter(Boolean).join(' · ')
@@ -78,8 +89,8 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
         {receiving && !d.isPayDebtFlow ? null : (
           <PickerRow
             label={c.debt}
-            onClick={d.isPayDebtFlow ? d.backToPayDebtList : undefined}
-            value={<span dir="auto" className="truncate">{debt?.name || debt?.person}</span>}
+            onClick={d.isPayDebtFlow ? d.backToPayDebtList : !receiving && otherDebts.length > 1 ? () => setPickDebt(true) : undefined}
+            value={<span dir="auto" className="truncate">{debt ? (receiving ? debt.name || debt.person : payDebtTitle(debt)) : ''}</span>}
           />
         )}
         <MethodPickerRow label={receiving ? c.into : c.paidFrom} value={d.paymentMethodId} onChange={d.setPaymentMethodId} paymentMethods={d.paymentMethods} accountsOnly={receiving} />
@@ -101,6 +112,15 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
           <ChevronDown aria-hidden />
         </Button>
       )}
+      <OptionSheet
+        open={pickDebt}
+        onClose={() => setPickDebt(false)}
+        title={c.debt}
+        value={debt?.id ?? null}
+        onChange={(id) => { d.selectDebtForPayFlow(id); setPickDebt(false) }}
+        options={otherDebts.map((r) => ({ value: r.debt.id, title: payDebtTitle(r.debt), subtitle: c.leftOnly(`${formatFlex(r.remaining)}${r.debt.isGold ? ' g' : ''} ${r.debt.isGold ? '' : r.debt.currency}`.trim()) }))}
+        zIndexClassName="z-[110]"
+      />
     </div>
   )
 }

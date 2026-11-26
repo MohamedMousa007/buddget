@@ -8,7 +8,7 @@ import { resolve } from 'node:path'
 import type { Locator, Page } from '@playwright/test'
 import { env } from '../../lib/env'
 import { expect, localWait, test } from '../../lib/fixtures'
-import { blur, dialog } from '../../lib/ui'
+import { blur, dialog, pickMethod } from '../../lib/ui'
 import { bank, localMethod, seed } from './seed'
 
 const EVIDENCE = resolve(__dirname, '../../../../docs/qa/round3/evidence')
@@ -20,8 +20,8 @@ const hourAgo = () => new Date(Date.now() - 3_600_000).toISOString()
 const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' })
 
 const COPY = {
-  en: { addMoney: 'Add money', del: 'Delete', fromAccount: 'From account', transfer: 'Transfer from QNB Alahli to CIB', over: /Only 1,000(\.00)? EGP is available in QNB Alahli/, stays: 'stays in CIB', leaves: 'will leave your net worth', notIncome: 'Not income' },
-  ar: { addMoney: 'إضافة مال', del: 'حذف', fromAccount: 'من حساب', transfer: 'تحويل من QNB Alahli إلى CIB', over: /المتاح في QNB Alahli هو/, stays: 'في CIB ويعود متاحًا', leaves: 'من صافي ثروتك', notIncome: 'ليس دخلًا' },
+  en: { addMoney: 'Add money', del: 'Delete', from: 'From', transfer: 'From QNB Alahli', over: /Only 1,000(\.00)? EGP is available in QNB Alahli/, stays: 'stays in CIB', leaves: 'will leave your net worth', notIncome: 'Not income' },
+  ar: { addMoney: 'إضافة مال', del: 'حذف', from: 'من', transfer: 'من QNB Alahli', over: /المتاح في QNB Alahli هو/, stays: 'في CIB ويعود متاحًا', leaves: 'من صافي ثروتك', notIncome: 'ليس دخلًا' },
 }
 type Lang = keyof typeof COPY
 
@@ -90,14 +90,15 @@ for (const lang of ['en', 'ar'] as const) {
     const d = dialog(page, c.addMoney)
     await d.getByRole('textbox').first().fill('2000')
     await blur(page)
-    const from = d.getByRole('button', { name: new RegExp(`^${c.fromAccount}`) })
+    // Light touch: the source is one "From: <account>" field that opens the method carousel.
+    const from = d.getByRole('button', { name: new RegExp(`^${c.from}:`) })
     await expect(from).toContainText('CIB')
     await expect(d.getByRole('alert')).toHaveCount(0)
     await shot(page, `l1a-add-money-held-default-cib-${lang}`)
 
     // A: another source is a transfer, refused past its own free money.
     await from.click()
-    await d.getByRole('option', { name: /^QNB Alahli/ }).click()
+    await pickMethod(page, /^QNB Alahli/)
     await expect(d).toContainText(c.transfer)
     await expect(d.getByRole('alert')).toContainText(c.over)
     await shot(page, `l1a-add-money-transfer-refused-${lang}`)

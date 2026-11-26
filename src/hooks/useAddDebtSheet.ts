@@ -350,12 +350,17 @@ export function useAddDebtSheet() {
   // The default method is seeded once per opening: a later paymentMethods change (a sync pull, a balance refresh)
   // must not overwrite the account the user already picked.
   const methodSeeded = useRef(false)
+  const prefillSeeded = useRef<string | null>(null)
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- apply payment-only intent and defaults when sheet opens */
-    if (!isOpen) { methodSeeded.current = false; return }
+    if (!isOpen) { methodSeeded.current = false; prefillSeeded.current = null; return }
     if (debtSheetPaymentOnly && debtSheetPrefillDebtId) {
       setMode('payment')
-      setSelectedDebtId(debtSheetPrefillDebtId)
+      // Once per asked-for debt: a debt picked in the sheet ("Which debt?") must survive a later paymentMethods change.
+      if (prefillSeeded.current !== debtSheetPrefillDebtId) {
+        prefillSeeded.current = debtSheetPrefillDebtId
+        setSelectedDebtId(debtSheetPrefillDebtId)
+      }
     } else if (!debtSheetPaymentOnly && !isPayDebtFlow) {
       setMode('new')
     }

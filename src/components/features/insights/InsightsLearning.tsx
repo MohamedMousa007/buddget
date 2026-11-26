@@ -47,7 +47,7 @@ export function InsightsLearning({ progress }: { progress: LearningProgress }) {
         {c.items.map((item, i) => {
           const { Icon, tone } = EXAMPLE_LOOK[i] ?? EXAMPLE_LOOK[0]
           return (
-            <li key={item.title} className="flex items-center gap-3 rounded-2xl border border-dashed border-[var(--color-brand-border-strong)] px-4 py-3 opacity-80">
+            <li key={item.title} className="flex items-center gap-3 rounded-2xl border border-dashed border-[var(--color-brand-border-strong)] px-4 py-3">
               <ToneTile tone={tone}><Icon /></ToneTile>
               <span className="min-w-0 flex-1">
                 <span className="flex items-center justify-between gap-2">
