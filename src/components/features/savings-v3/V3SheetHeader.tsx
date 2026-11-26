@@ -8,29 +8,30 @@ import { useModalTitleId } from '@/components/modals/ModalShell'
 import { IconButton } from '@/components/ui/IconButton'
 
 /**
- * `size="compact"` is the 20px title for sheets whose names are long or user-typed (a subscription, a goal): it wraps to
+ * Titles are 15px/700, as the approved light-touch screens render them (the mockup frame sets every sheet h2 to 15px).
+ * `size="compact"` is the title for sheets whose names are long or user-typed (a subscription, a goal): it wraps to
  * two lines at most, keeps the full name on the element, and follows the text's own direction. The default is unchanged.
  */
 function Title({ children, size = 'default' }: { children: ReactNode; size?: 'default' | 'compact' }) {
   const id = useModalTitleId()
   if (size === 'compact') {
     return (
-      <h2 id={id} dir="auto" title={typeof children === 'string' ? children : undefined} className="line-clamp-2 break-words text-lg font-bold leading-snug text-[var(--color-brand-text-primary)]">
+      <h2 id={id} dir="auto" title={typeof children === 'string' ? children : undefined} className="line-clamp-2 break-words text-[0.9375rem] font-bold leading-snug text-[var(--color-brand-text-primary)]">
         {children}
       </h2>
     )
   }
-  return <h2 id={id} className="break-words text-lg font-bold leading-snug text-[var(--color-brand-text-primary)]">{children}</h2>
+  return <h2 id={id} className="break-words text-[0.9375rem] font-bold leading-snug text-[var(--color-brand-text-primary)]">{children}</h2>
 }
 
 /**
- * The title of a decision dialog (a confirm, a permission ask, a celebration, an instruction card): centred 22px/700,
+ * The title of a decision dialog (a confirm, a permission ask, a celebration, an instruction card): centred 15px/700 (light touch),
  * no close, because its explicit action (Cancel, Not now, Done) IS the dismissal and a second dismiss path would
  * diverge from it. Wired to the dialog's name like `Title`, so it is never left unnamed.
  */
 function DialogTitle({ children, align = 'center' }: { children: ReactNode; align?: 'center' | 'start' }) {
   return (
-    <h2 id={useModalTitleId()} className={cn('break-words text-lg font-bold leading-snug text-[var(--color-brand-text-primary)]', align === 'center' && 'text-center')}>
+    <h2 id={useModalTitleId()} className={cn('break-words text-[0.9375rem] font-bold leading-snug text-[var(--color-brand-text-primary)]', align === 'center' && 'text-center')}>
       {children}
     </h2>
   )
