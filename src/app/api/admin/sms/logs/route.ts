@@ -2,6 +2,7 @@ import { guardAdmin, json, bad, maskIf, readJson } from '@/lib/server/admin/guar
 import { AUDIT_REFUSAL } from '@/lib/server/admin/audit'
 import { UUID_RE } from '@/lib/server/admin/targets'
 import { grantedUsers, hasFinancialGrant } from '@/lib/server/admin/financialAccess'
+import { formatTimeIdCursor, parseTimeIdCursor, timeIdBefore } from '@/lib/server/admin/timeIdCursor'
 import { can } from '@/lib/admin/permissions'
 
 const COLUMNS =
@@ -22,10 +23,10 @@ export async function GET(req: Request) {
   const status = url.searchParams.get('status')
   const userId = url.searchParams.get('userId')
   const sender = url.searchParams.get('sender')
-  const cursor = url.searchParams.get('cursor')
+  const cursor = parseTimeIdCursor(url.searchParams.get('cursor'))
   const limit = Math.min(Math.max(Math.floor(Number(url.searchParams.get('limit'))) || 50, 1), 200)
 
-  let q = ctx.service.from('sms_parse_log').select(COLUMNS).order('received_at', { ascending: false }).limit(limit)
+  let q = ctx.service.from('sms_parse_log').select(COLUMNS).order('received_at', { ascending: false }).order('id', { ascending: false }).limit(limit)
   if (queue === 'errors') {
     const stale = new Date(Date.now() - 2 * 60_000).toISOString()
     const stuck = new Date(Date.now() - 10 * 60_000).toISOString()
@@ -36,7 +37,7 @@ export async function GET(req: Request) {
   if (status) q = q.eq('status', status)
   if (userId && UUID_RE.test(userId)) q = q.eq('user_id', userId)
   if (sender) q = q.ilike('sender', `%${sender.replace(/[%,()]/g, '')}%`)
-  if (cursor && !Number.isNaN(Date.parse(cursor))) q = q.lt('received_at', cursor)
+  if (cursor) q = q.or(timeIdBefore('received_at', cursor))
 
   const { data, error } = await q
   if (error) {
@@ -74,7 +75,7 @@ export async function GET(req: Request) {
       }
     }),
     canRequest: can(ctx.permissions, 'financial.request'),
-    nextCursor: rows.length === limit ? rows[rows.length - 1]!.received_at : null,
+    nextCursor: rows.length === limit ? formatTimeIdCursor(rows[rows.length - 1]!.received_at, rows[rows.length - 1]!.id) : null,
   })
 }
 

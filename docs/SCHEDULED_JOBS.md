@@ -27,7 +27,7 @@ Rules: nothing runs more often than every 15 minutes unless the migration says w
 
 Removed in database load phase A: `admin-metrics` (refreshed on admin view instead), `sms-pending-discards`, `sms-heal-stuck`, `sms-stats-drain` (merged into `sms-tick`).
 
-## Vercel crons (`vercel.json`, all daily, region sin1)
+## Vercel crons (`vercel.json`, all daily, region fra1)
 
 | Path | Schedule (UTC) | Purpose | Cost |
 |---|---|---|---|
@@ -36,7 +36,7 @@ Removed in database load phase A: `admin-metrics` (refreshed on admin view inste
 | `/api/cron/data-retention` | 04:40 | Application-level retention | Low |
 | `/api/cron/month-carry` | 05:00 | Month-end carry and goal allocation, one user at a time (candidate for batching) | Medium, loops users |
 | `/api/cron/loyalty` | 05:20 | Loyalty week roll-up | Low |
-| `/api/cron/integrations` | 05:30 | Drains the integration outbox | Low |
+| `/api/cron/integrations` | not scheduled | Drains the integration outbox. Unscheduled on purpose since QA-57 (Linear escalation postponed); call it by hand if rows ever queue | None |
 | `/api/cron/sms-canary` | 06:50 | Daily SMS parsing canary | Low |
 | `/api/cron/ios-crashes` | 07:20 | Pulls iOS crash reports from App Store Connect | Low |
 

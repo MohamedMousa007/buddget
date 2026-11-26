@@ -9,11 +9,16 @@
  * write live in the shared {@link runPriceRefresh}; every write is idempotent.
  */
 import { NextResponse } from 'next/server'
+import { clientIp, rateBucketIp } from '@/lib/server/clientIp'
+import { memoryGateOk, tooManyRequests } from '@/lib/server/publicApiRateLimit'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { claimPriceRefresh } from '@/lib/prices/claimPriceRefresh'
 import { runPriceRefresh } from '@/lib/prices/runPriceRefresh'
 
 export const maxDuration = 60
+
+const IP_WINDOW_SECONDS = 60
+const IP_MAX_PER_WINDOW = 6
 
 // At most one attempt per hour, however many clients ask.
 const DEBOUNCE_MS = 60 * 60 * 1000 // 1h
@@ -21,7 +26,8 @@ const DEBOUNCE_MS = 60 * 60 * 1000 // 1h
 // ponytail: per-instance inflight lock; the DB debounce is the real stampede guard across instances.
 let inflight: Promise<{ ok: boolean; written: number; reason?: string; error?: string }> | null = null
 
-export async function POST() {
+export async function POST(request: Request) {
+  if (!memoryGateOk(`prices-refresh:${rateBucketIp(clientIp(request))}`, IP_MAX_PER_WINDOW, IP_WINDOW_SECONDS)) return tooManyRequests(IP_WINDOW_SECONDS)
   try {
     const service = createServiceRoleClient()
     // Debounce on the last ATTEMPT (kept in platform_settings), not on the oldest row: a symbol nobody can update any

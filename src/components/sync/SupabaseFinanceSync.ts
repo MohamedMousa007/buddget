@@ -114,6 +114,34 @@ export function syncFinanceNow(): Promise<void> {
 let syncSuspended = false
 export function suspendFinanceSync(): void {
   syncSuspended = true
+  cancelDeltaRetry()
+}
+
+const DELTA_RETRY_MS = [2_000, 8_000, 30_000]
+let deltaFailures = 0
+let deltaRetryTimer: ReturnType<typeof setTimeout> | null = null
+
+/** Counts a failed delta pull: the wait before retrying it, or null once the full pull must take over (the count restarts). */
+export function recordDeltaFailure(): number | null {
+  if (deltaFailures >= DELTA_RETRY_MS.length - 1) {
+    deltaFailures = 0
+    return null
+  }
+  return DELTA_RETRY_MS[deltaFailures++]
+}
+export function recordDeltaSuccess(): void {
+  deltaFailures = 0
+}
+function cancelDeltaRetry(): void {
+  if (deltaRetryTimer) clearTimeout(deltaRetryTimer)
+  deltaRetryTimer = null
+}
+function scheduleDeltaRetry(ms: number): void {
+  if (deltaRetryTimer) return
+  deltaRetryTimer = setTimeout(() => {
+    deltaRetryTimer = null
+    if (!syncSuspended) void syncFinanceNow().catch(() => undefined)
+  }, ms)
 }
 
 /**
@@ -666,6 +694,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       removeAppStateListener?.()
       if (timer.current) clearTimeout(timer.current)
       if (retryTimer) clearTimeout(retryTimer)
+      cancelDeltaRetry()
       if (gateTimer) clearTimeout(gateTimer)
       if (pendingFlush === flushAcked) pendingFlush = null
       pendingSync = null
@@ -730,6 +759,7 @@ async function pullAndMerge(
     // One cheap probe first: when nothing changed since the last pull, skip the full pull (any doubt answers "changed").
     if (since && !(await hasChangesSince(supabase, since))) {
       if (!stale()) useSettingsStore.getState().markServerSynced(userId)
+      recordDeltaSuccess()
       return { incoming: [], serverBaseline: delivered }
     }
     const delta = await pullDelta(supabase, since)
@@ -748,11 +778,18 @@ async function pullAndMerge(
     if (hasUnpersistedWrites()) clearSyncCursors()
     else writeSyncCursor(userId, storeVersion(), delta.cursor)
     useSettingsStore.getState().markServerSynced(userId)
+    recordDeltaSuccess()
     return { incoming: delta.expenses.upserts, serverBaseline: delivered ? applyDelta(delivered, delta, delivered) : null }
   } catch (e) {
-    console.warn('[finance sync] delta pull failed, using the full pull', e)
-    clearSyncCursors()
     if (stale()) return { incoming: [], serverBaseline: null }
+    const retryIn = since ? recordDeltaFailure() : null
+    if (retryIn !== null) {
+      console.warn('[finance sync] delta pull failed, retrying', e)
+      scheduleDeltaRetry(retryIn)
+      return { incoming: [], serverBaseline: null }
+    }
+    console.warn('[finance sync] delta pull failed repeatedly, using the full pull', e)
+    clearSyncCursors()
     return runLegacyFullSync(supabase, userId, stale)
   }
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { clientIp, rateBucketIp } from '@/lib/server/clientIp'
+import { memoryGateOk } from '@/lib/server/publicApiRateLimit'
 import { isRateLimited } from '@/lib/server/rateLimit'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
@@ -55,6 +56,11 @@ export async function POST(req: Request) {
 
     const ip = rateBucketIp(clientIp(req))
 
+    if (!memoryGateOk(`check-email:${ip}`, RATE_MAX_HITS, RATE_WINDOW_SECONDS)) {
+      await sleepUntil(deadline)
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: { 'Retry-After': String(RATE_WINDOW_SECONDS) } })
+    }
+
     const admin = createServiceRoleClient()
     // QA-99: the email-first modal needs the answer, so it stays; a daily cap bounds bulk enumeration, and a counter outage fails closed.
     if (
@@ -62,7 +68,7 @@ export async function POST(req: Request) {
       (await isRateLimited(admin, `check-email-day:${ip}`, DAY_SECONDS, DAY_MAX_HITS))
     ) {
       await sleepUntil(deadline)
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: { 'Retry-After': String(RATE_WINDOW_SECONDS) } })
     }
 
     const { data, error } = await admin.rpc('check_email_status', { p_email: email })

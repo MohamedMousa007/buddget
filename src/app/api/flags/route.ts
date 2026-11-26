@@ -3,9 +3,11 @@ import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
 import { getUserEntitlements } from '@/lib/entitlements/server'
 import { flagOn } from '@/lib/flags/evaluate'
+import { cachedSetting } from '@/lib/server/platformCache'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
 const PLATFORMS = ['ios', 'android', 'web']
+const FLAGS_TTL_SECONDS = 60
 
 /** Which feature flags are on for the signed-in user, after rollout, platform and plan targeting. */
 export async function GET(request: Request) {
@@ -18,11 +20,15 @@ export async function GET(request: Request) {
   const platform = PLATFORMS.includes(asked) ? asked : 'web'
   const service = createServiceRoleClient()
   const [rows, staff, ent] = await Promise.all([
-    service.from('feature_flags').select('key, enabled, rollout_pct, platforms, plan_keys'),
+    cachedSetting(['feature-flags'], async () => {
+      const { data, error } = await service.from('feature_flags').select('key, enabled, rollout_pct, platforms, plan_keys')
+      if (error) throw error
+      return data
+    }, FLAGS_TTL_SECONDS).catch(() => []),
     service.from('admin_staff').select('id').eq('user_id', uid).eq('status', 'active').maybeSingle(),
     getUserEntitlements(service, uid),
   ])
   const ctx = { userId: uid, platform, planKey: ent.planKey, isStaff: staff.data != null }
-  const flags = Object.fromEntries((rows.data ?? []).map((r) => [r.key, flagOn(r, ctx)]))
+  const flags = Object.fromEntries(rows.map((r) => [r.key, flagOn(r, ctx)]))
   return NextResponse.json({ flags }, { headers: { 'Cache-Control': 'private, no-store' } })
 }

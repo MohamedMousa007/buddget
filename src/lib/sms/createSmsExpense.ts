@@ -373,18 +373,22 @@ async function resolvePaymentMethodByProvider(
   userId: string,
   ...tokens: (string | null | undefined)[]
 ): Promise<string | null> {
+  let wallets: { id: string; name: string | null; last4: string | null }[] | null = null
   for (const token of tokens) {
     const brandId = resolvePaymentBrandKey(token)
     if (!brandId) continue
     const brand = PAYMENT_BRANDS[brandId]
     if (brand.type !== 'wallet' || brand.passThrough || brand.alsoMerchant) continue
-    const { data } = await service
-      .from('payment_methods')
-      .select('id, name, last4')
-      .eq('user_id', userId)
-      .eq('type', 'wallet')
-      .is('deleted_at', null)
-    const hit = (data ?? []).find((m) => {
+    if (!wallets) {
+      const { data } = await service
+        .from('payment_methods')
+        .select('id, name, last4')
+        .eq('user_id', userId)
+        .eq('type', 'wallet')
+        .is('deleted_at', null)
+      wallets = data ?? []
+    }
+    const hit = wallets.find((m) => {
       const provider = decomposePaymentMethodName(
         ((m.name as string | null) ?? '').trim(),
         (m.last4 as string | null) ?? undefined,

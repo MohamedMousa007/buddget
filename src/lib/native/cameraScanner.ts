@@ -154,7 +154,7 @@ async function captureWeb(source: 'camera' | 'gallery' = 'camera'): Promise<Capt
   })
 }
 
-// 2048px keeps Arabic item lines legible inside Gemini's 768px tiles — 1600px
+// 1800px keeps Arabic item lines legible inside Gemini's 768px tiles — 1600px
 // left dense receipt text too small to OCR reliably (misread Arabic, missed lines).
 const MAX_EDGE = 1800
 const JPEG_QUALITY = 0.8

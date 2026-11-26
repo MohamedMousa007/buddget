@@ -1,4 +1,5 @@
 import { bad, guardAdmin, json, maskIf } from '@/lib/server/admin/guard'
+import { formatTimeIdCursor, parseTimeIdCursor, timeIdBefore } from '@/lib/server/admin/timeIdCursor'
 import { auditPiiRead } from '@/lib/server/admin/staffActionGuards'
 
 const STATUSES = ['queued', 'sent', 'delivered', 'bounced', 'complained', 'failed'] as const
@@ -16,13 +17,14 @@ export async function GET(req: Request) {
   const from = p.get('from')
   const to = p.get('to')
   const q = p.get('q')?.trim().replace(/[%,()]/g, '')
-  const cursor = p.get('cursor')
+  const cursor = parseTimeIdCursor(p.get('cursor'))
   if (status && !(STATUSES as readonly string[]).includes(status)) return bad('Unknown status.')
 
   let rows = ctx.service
     .from('email_log')
     .select('id, created_at, user_id, to_email, template_key, locale, provider_message_id, status, error, latency_ms, source, is_test')
     .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
     .limit(PAGE + 1)
   if (template) rows = rows.eq('template_key', template)
   if (locale) rows = rows.eq('locale', locale)
@@ -30,7 +32,7 @@ export async function GET(req: Request) {
   if (from) rows = rows.gte('created_at', from)
   if (to) rows = rows.lte('created_at', to)
   if (q && ctx.canSeePii) rows = rows.ilike('to_email', `%${q}%`)
-  if (cursor) rows = rows.lt('created_at', cursor)
+  if (cursor) rows = rows.or(timeIdBefore('created_at', cursor))
 
   // Counts follow every filter except status, so the chips always show how the window splits: one grouped query.
   const [list, grouped] = await Promise.all([
@@ -49,7 +51,7 @@ export async function GET(req: Request) {
 
   return json({
     rows: page.map((r) => ({ ...r, to_email: maskIf(ctx, r.to_email) })),
-    nextCursor: (list.data?.length ?? 0) > PAGE ? page[page.length - 1]!.created_at : null,
+    nextCursor: (list.data?.length ?? 0) > PAGE ? formatTimeIdCursor(page[page.length - 1]!.created_at, page[page.length - 1]!.id) : null,
     counts: byStatus,
     total,
     failureRate: total ? failed / total : 0,

@@ -16,7 +16,7 @@ The portal has **its own sign-in**. It never reads the buddget app session: bein
 
 **No SSO.** The "stay unlocked while signed in to buddget" switch and `/api/admin/auth/sso` are removed (2026-11-17); `admin_credentials.sso_enabled` is unused (kept, not dropped). The profile menu still shows **Admin portal** to staff (from the `is_staff` claim), but it only opens the portal's sign-in.
 
-Details: scrypt password hashes; 5 failed unlocks or step-ups lock the account 15 minutes; login, code sending, biometric, setup and step-up are rate limited through `admin_rate_hit`.
+Details: scrypt password hashes; 5 failed unlocks or step-ups lock the account 15 minutes; login, code sending, biometric, setup and step-up are rate limited through `admin_rate_hit` (sign-in IP limit per IPv6 /64). A locked account gets the same reply as an unknown address. Sign-in fails closed when the rate-limit RPC errors, so a database stall blocks staff sign-in until it recovers (deliberate).
 
 **Biometric sign-in (iOS/Android apps).** Enrolled from a signed-in admin session (`/api/admin/auth/biometric/device`); the device keeps a secret behind the OS biometric prompt and the server stores only its hash. The enrolled device names the staff member; password + emailed code remain the fallback.
 
@@ -96,8 +96,8 @@ Admin > Emails (`emails.view` to read, `emails.manage` to edit; admin and engine
 - **In the apps:** the portal is the bundled `/admin` page (shield icon in the profile menu, staff only). It talks to the production API with the app session; "Back to buddget" reloads the app shell.
 
 ## Performance notes (2026-10-20)
-- Admin reads: identity is verified locally from the JWT and staff, role and credentials are remembered for 20 s per instance; every write skips that and asks the Auth server and the database fresh.
-- Overview and analytics are served from `admin_metrics_cache` (refreshed every 15 minutes by pg_cron; anything missing or older than 45 minutes is computed live). Activity numbers read `app_activity_days` (daily rollup plus not-yet-rolled raw events); DAU is "active today (UTC)".
+- Admin reads: identity is verified locally from the JWT and staff, role and credentials are remembered for 5 s per instance; every write skips that and asks the Auth server and the database fresh.
+- Overview and analytics are served from `admin_metrics_cache` (no cron since migration 0300: a view older than 15 minutes is served stale and refreshed in the background by one advisory-locked refresher; only a missing key is computed live). Activity numbers read `app_activity_days` (daily rollup plus not-yet-rolled raw events); DAU is "active today (UTC)".
 - Minimum app version (Platform): releases below it are refused (426) by the database and by the API, and the app shows an update screen with the links entered there.
 
 

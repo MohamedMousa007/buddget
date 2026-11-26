@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
-import { clientIp } from '@/lib/server/clientIp'
+import { clientIp, rateBucketIp } from '@/lib/server/clientIp'
 import { z } from 'zod'
 import { SITE_LOCALES } from '@/lib/site/config'
 import { listRoutes } from '@/lib/site/routes'
+import { memoryGateOk, tooManyRequests } from '@/lib/server/publicApiRateLimit'
 import { isRateLimited } from '@/lib/server/rateLimit'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
@@ -20,9 +21,10 @@ const bodySchema = z.object({
 
 /** Cookieless counter: stores a daily total per page and event, never anything about the visitor. */
 export async function POST(request: Request) {
-  const ip = clientIp(request)
+  const ip = rateBucketIp(clientIp(request))
+  if (!memoryGateOk(`site-event:${ip}`, MAX_PER_WINDOW, WINDOW_SECONDS)) return tooManyRequests(WINDOW_SECONDS)
   const service = createServiceRoleClient()
-  if (await isRateLimited(service, `site-event:${ip}`, WINDOW_SECONDS, MAX_PER_WINDOW, true)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  if (await isRateLimited(service, `site-event:${ip}`, WINDOW_SECONDS, MAX_PER_WINDOW, true)) return tooManyRequests(WINDOW_SECONDS)
 
   let json: unknown
   try { json = await request.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }

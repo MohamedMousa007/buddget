@@ -15,6 +15,7 @@ export async function GET(request: Request) {
     .select('id, number, board_title, board_summary, board_state, votes')
     .neq('board_state', 'hidden')
     .order('votes', { ascending: false })
+    .order('id', { ascending: false })
     .limit(100)
   if (error) return NextResponse.json({ error: 'Could not load the board' }, { status: 500 })
   const ids = (data ?? []).map((t) => t.id)

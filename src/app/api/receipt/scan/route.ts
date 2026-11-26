@@ -17,7 +17,8 @@ import { LEGACY_MAX_AMOUNT } from '@/lib/ai/legacyGuards'
 import { resolveActiveApiIdentity } from '@/lib/auth/resolveApiUser'
 import { TIER_MODELS, configFor, geminiUrl, usageFromPayload } from '@/lib/server/ai/gemini'
 import { tooLargeByHeader } from '@/lib/server/ai/bodyLimit'
-import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
+import { quotaDeniedResponse, releaseAiQuota, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
+import { sniffImageMime } from '@/lib/receipt/sniffImageMime'
 import { SUPPORTED_CATEGORIES, SUPPORTED_CURRENCIES } from '@/lib/receipt/normaliseReceipt'
 import { addUsage, estimateUnits, EMPTY_USAGE, type TokenUsage } from '@/lib/server/ai/units'
 
@@ -103,6 +104,9 @@ const MIN_ATTEMPT_MS = 5_000
 const MAX_TOTAL_BYTES = 4_000_000
 /** Multipart framing on top of the images. */
 const MAX_BODY_BYTES = MAX_TOTAL_BYTES + 65_536
+/** One photo is about this many bytes after the client resize; sizes the reservation before the body is read. */
+const BYTES_PER_IMAGE_ESTIMATE = 500_000
+const MAX_IMAGES = 5
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'])
 
 const money = z.number().finite().min(-LEGACY_MAX_AMOUNT).max(LEGACY_MAX_AMOUNT)
@@ -236,31 +240,39 @@ export async function POST(request: NextRequest) {
   const tooLarge = tooLargeByHeader(request, MAX_BODY_BYTES)
   if (tooLarge) return tooLarge
 
+  const declaredBytes = Number(request.headers.get('content-length')) || BYTES_PER_IMAGE_ESTIMATE
+  const estImages = Math.min(MAX_IMAGES, Math.max(1, Math.ceil(declaredBytes / BYTES_PER_IMAGE_ESTIMATE)))
+  const quota = await reserveAiQuota({ userId: user.id, feature: 'receipt', estUnits: estimateUnits(SYSTEM_PROMPT.length + estImages * TOKENS_PER_IMAGE * 4, MAX_OUTPUT_TOKENS) })
+  if (!quota.allowed) return quotaDeniedResponse(quota)
+
+  const rejected = async (error: string, status: number) => {
+    await releaseAiQuota(quota)
+    return NextResponse.json({ error }, { status })
+  }
+
   let form: FormData
   try {
     form = await request.formData()
   } catch {
-    return NextResponse.json({ error: 'Invalid form data' }, { status: 400 })
+    return rejected('Invalid form data', 400)
   }
 
   const images = form.getAll('image').filter((f): f is File => f instanceof File)
-  if (images.length === 0) {
-    return NextResponse.json({ error: 'Missing image' }, { status: 400 })
-  }
-  if (images.length > 5) {
-    return NextResponse.json({ error: 'Too many images (max 5)' }, { status: 400 })
-  }
+  if (images.length === 0) return rejected('Missing image', 400)
+  if (images.length > MAX_IMAGES) return rejected('Too many images (max 5)', 400)
 
   const mimeOf = (img: File) => (!img.type || img.type === 'image/jpg' ? 'image/jpeg' : img.type)
-  if (images.some((img) => !ALLOWED_MIME.has(mimeOf(img)))) {
-    return NextResponse.json({ error: 'Unsupported image type' }, { status: 415 })
+  if (images.some((img) => !ALLOWED_MIME.has(mimeOf(img)))) return rejected('Unsupported image type', 415)
+  if (images.reduce((sum, img) => sum + img.size, 0) > MAX_TOTAL_BYTES) return rejected('Images exceed 4 MB total', 413)
+  let buffers: Buffer[]
+  try {
+    buffers = await Promise.all(images.map(async (img) => Buffer.from(await img.arrayBuffer())))
+  } catch {
+    return rejected('Invalid form data', 400)
   }
-  if (images.reduce((sum, img) => sum + img.size, 0) > MAX_TOTAL_BYTES) {
-    return NextResponse.json({ error: 'Images exceed 4 MB total' }, { status: 413 })
-  }
-  const imageParts = await Promise.all(
-    images.map(async (img) => ({ inlineData: { mimeType: mimeOf(img), data: Buffer.from(await img.arrayBuffer()).toString('base64') } })),
-  )
+  const sniffed = buffers.map(sniffImageMime)
+  if (sniffed.some((mime) => !mime)) return rejected('Unsupported image type', 415)
+  const imageParts = buffers.map((buf, i) => ({ inlineData: { mimeType: sniffed[i]!, data: buf.toString('base64') } }))
 
   const requestBody = {
     contents: [
@@ -286,9 +298,6 @@ export async function POST(request: NextRequest) {
       responseSchema: RESPONSE_SCHEMA,
     }),
   }
-
-  const quota = await reserveAiQuota({ userId: user.id, feature: 'receipt', estUnits: estimateUnits(SYSTEM_PROMPT.length + images.length * TOKENS_PER_IMAGE * 4, MAX_OUTPUT_TOKENS) })
-  if (!quota.allowed) return quotaDeniedResponse(quota)
 
   const startedAt = Date.now()
   const spent = { usage: EMPTY_USAGE }

@@ -37,10 +37,13 @@ export async function sendNativePush(args: SendNativePushArgs): Promise<SendNati
   }
 
   const service = createServiceRoleClient()
-  const { data: rows, error } = await service
-    .from('push_tokens')
-    .select('token, platform, device_id')
-    .eq('user_id', args.userId)
+  const [{ data: rows, error }, devsRes, { data: prefs, error: prefsError }] = await Promise.all([
+    service.from('push_tokens').select('token, platform, device_id').eq('user_id', args.userId),
+    args.onlyDeviceId
+      ? Promise.resolve({ data: null })
+      : service.from('user_devices').select('device_id, is_main, notify, push_permission, revoked_at').eq('user_id', args.userId),
+    service.from('user_settings').select('privacy, language').eq('user_id', args.userId).maybeSingle(),
+  ])
 
   if (error) {
     console.error('[sendNativePush] fetch tokens failed', error)
@@ -55,12 +58,10 @@ export async function sendNativePush(args: SendNativePushArgs): Promise<SendNati
   if (args.onlyDeviceId) {
     targets = rows.filter((r) => r.device_id === args.onlyDeviceId)
   } else {
-    const { data: devs } = await service.from('user_devices').select('device_id, is_main, notify, push_permission, revoked_at').eq('user_id', args.userId)
-    targets = pushTargets(rows, new Map<string, DevicePrefs>((devs ?? []).map((d) => [d.device_id, d])))
+    targets = pushTargets(rows, new Map<string, DevicePrefs>((devsRes.data ?? []).map((d) => [d.device_id, d])))
   }
   if (targets.length === 0) return { ok: true, sent: 0, failed: 0 }
   const tokens = targets.map((r) => r.token)
-  const { data: prefs, error: prefsError } = await service.from('user_settings').select('privacy, language').eq('user_id', args.userId).maybeSingle()
   const { title, body, data } = maskPush(
     { title: args.title, body: args.body, data: args.data },
     prefsError ? null : ((prefs?.privacy ?? undefined) as PrivacySettings | undefined),

@@ -48,9 +48,10 @@ export function useSubscriptionDetector(): SubscriptionDetection {
         .eq('parsed_ok', true)
         .in('kind', ['purchase', 'online_purchase'])
         .gte('created_at', since)
-        // Ascending so the last row is genuinely the LATEST sighting, not arbitrary DB order.
-        .order('received_at', { ascending: true })
-      return data
+        .order('received_at', { ascending: false })
+        .limit(1000)
+      // Newest-first bounds the read; the detector wants the last row to be the LATEST sighting.
+      return data ? [...data].reverse() : data
     }).then((data) => {
       if (!data) return
       setRows(data.map((r) => ({ ...r, day: (r.received_at ?? r.created_at)?.slice(0, 10) ?? null })) as ChargeRow[])

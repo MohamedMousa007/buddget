@@ -31,15 +31,29 @@ export function expensesForTail(
   return unplacedSmsExpenses(expenses).filter((e) => ids.has(e.id))
 }
 
+const ID_CHUNK = 100
+
+type LogRow = { expense_id: string | null; account_last4: string | null; bank_name: string | null; sender: string | null }
+
+/** The source messages of these expenses, read 100 ids per request. A failed read throws: it is not "no messages". */
+async function readLogs(ids: readonly string[], withNumberOnly: boolean): Promise<LogRow[]> {
+  const supabase = createClient()
+  const out: LogRow[] = []
+  for (let i = 0; i < ids.length; i += ID_CHUNK) {
+    let q = supabase.from('sms_parse_log').select('expense_id, account_last4, bank_name, sender').in('expense_id', ids.slice(i, i + ID_CHUNK))
+    if (withNumberOnly) q = q.not('account_last4', 'is', null)
+    const { data, error } = await q
+    if (error) throw new Error(error.message)
+    out.push(...(data ?? []))
+  }
+  return out
+}
+
 /** Reads which messages named this number, then picks the matching unplaced expenses from `expenses`. */
 export async function findUnplacedForTail(expenses: readonly Expense[], tail: string, accountBrand: string | null = null): Promise<Expense[]> {
   const unplaced = unplacedSmsExpenses(expenses)
   if (unplaced.length === 0) return []
-  const { data } = await createClient().from('sms_parse_log')
-    .select('expense_id, account_last4, bank_name, sender')
-    .in('expense_id', unplaced.map((e) => e.id))
-    .not('account_last4', 'is', null)
-  return expensesForTail(expenses, data ?? [], tail, accountBrand)
+  return expensesForTail(expenses, await readLogs(unplaced.map((e) => e.id), true), tail, accountBrand)
 }
 
 export interface UnplacedLog { expense_id: string | null; account_last4: string | null; bank_name: string | null; sender: string | null }
@@ -63,8 +77,5 @@ export function expensesForAccount(expenses: readonly Expense[], logs: readonly 
 export async function findUnplacedForAccount(expenses: readonly Expense[], account: Pick<PaymentMethod, 'name' | 'last4' | 'last4Aliases' | 'currency'>): Promise<Expense[]> {
   const unplaced = unplacedSmsExpenses(expenses)
   if (unplaced.length === 0) return []
-  const { data } = await createClient().from('sms_parse_log')
-    .select('expense_id, account_last4, bank_name, sender')
-    .in('expense_id', unplaced.map((e) => e.id))
-  return expensesForAccount(expenses, data ?? [], account)
+  return expensesForAccount(expenses, await readLogs(unplaced.map((e) => e.id), false), account)
 }

@@ -1,5 +1,5 @@
 import { isPermission, OWNER_ROLE } from '@/lib/admin/permissions'
-import { allowAttempt } from './credentials'
+import { allowAttempt, rateHitState } from './credentials'
 import type { AdminContext } from './guard'
 
 interface Limit {
@@ -41,11 +41,11 @@ export function holdsAllPermissions(ctx: Pick<AdminContext, 'role' | 'permission
 }
 
 /**
- * Writes one audit row for a read of unmasked personal data, at most once per staff member, subject and 10 minutes,
+ * Writes one audit row for a read of unmasked personal data, at most once per staff member, subject and 10 minutes (and always when the rate-limit check itself fails),
  * so browsing a list is visible in the log without flooding it.
  */
 export async function auditPiiRead(ctx: AdminContext, subject: string, targetType: string, targetId: string | null, opts: { onlyWithPii?: boolean } = {}): Promise<void> {
   if (opts.onlyWithPii !== false && !ctx.canSeePii) return
-  if (!(await allowAttempt(ctx.service, `piiread:${ctx.staff.id}:${subject}:${targetId ?? '-'}`, 600, 1))) return
+  if ((await rateHitState(ctx.service, `piiread:${ctx.staff.id}:${subject}:${targetId ?? '-'}`, 600, 1)) === 'limited') return
   await ctx.audit(`pii.${subject}`, { targetType, targetId: targetId ?? undefined, summary: `Viewed ${subject.replace(/_/g, ' ')}${ctx.canSeePii ? ' with personal details unmasked' : ''}` })
 }

@@ -47,7 +47,7 @@ export function ProviderBadge({ slug, name, color, size = 40, className }: Provi
         style={{ width: size, height: size, borderRadius: size * 0.26 }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element -- static provider logo, no optimization needed */}
-        <img src={logo} alt={t.common.logoAlt(label)} onError={() => setFailed(logo)} className="h-full w-full object-contain" style={{ padding: size * 0.12 }} />
+        <img src={logo} loading="lazy" decoding="async" alt={t.common.logoAlt(label)} onError={() => setFailed(logo)} className="h-full w-full object-contain" style={{ padding: size * 0.12 }} />
       </span>
     )
   }

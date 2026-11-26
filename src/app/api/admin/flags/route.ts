@@ -1,5 +1,6 @@
 import { flagsBody, readValidated } from '@/lib/server/admin/bodySchemas'
 import { bad, guardAdmin, json } from '@/lib/server/admin/guard'
+import { invalidatePlatformSettings } from '@/lib/server/platformCache'
 
 const KEY_RE = /^[a-z][a-z0-9_.-]{1,63}$/
 const PLATFORMS = ['ios', 'android', 'web']
@@ -35,6 +36,7 @@ export async function POST(req: Request) {
       updated_by: ctx.staff.id,
     })
     if (error) return bad('Could not save the flag.', 500)
+    invalidatePlatformSettings()
     await ctx.audit('flags.upsert', {
       targetType: 'flag',
       targetId: f.key,
@@ -48,6 +50,7 @@ export async function POST(req: Request) {
     const { data: before } = await ctx.service.from('feature_flags').select('*').eq('key', body.key).maybeSingle()
     const { error } = await ctx.service.from('feature_flags').delete().eq('key', body.key)
     if (error) return bad('Could not delete the flag.', 500)
+    invalidatePlatformSettings()
     await ctx.audit('flags.delete', { targetType: 'flag', targetId: body.key, summary: `Deleted flag ${body.key}`, metadata: { before } })
     return json({ ok: true })
   }

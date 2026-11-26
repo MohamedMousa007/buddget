@@ -38,7 +38,7 @@ export function BrandMark({ name, color, size = 44, alert, icon, logo: src, logo
     >
       {logo ? (
         // eslint-disable-next-line @next/next/no-img-element -- static bank logo from public/, no optimisation in the static export
-        <img src={logo} alt="" draggable={false} onError={() => setFailed(logo)} className="size-full object-contain" style={{ padding: size * 0.14, borderRadius: radius }} />
+        <img src={logo} alt="" loading="lazy" decoding="async" draggable={false} onError={() => setFailed(logo)} className="size-full object-contain" style={{ padding: size * 0.14, borderRadius: radius }} />
       ) : (icon ?? monogram(name))}
       {alert ? (
         <span className="absolute -end-1 -top-1 flex size-[18px] items-center justify-center rounded-full border-2 border-[var(--color-brand-card)] bg-[var(--color-brand-amber)] text-[0.625rem] font-extrabold text-[var(--color-brand-card)]">!</span>

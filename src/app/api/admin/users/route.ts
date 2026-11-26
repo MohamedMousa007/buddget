@@ -9,7 +9,7 @@ interface DirectoryRow {
 }
 
 /** `offset=1e999` parses to Infinity, which the RPC rejects with a 500. */
-const MAX_OFFSET = 1_000_000
+const MAX_OFFSET = 10_000
 const ORDERS = new Set(['created_desc', 'created_asc', 'active_desc', 'expenses_desc', 'email_asc'])
 const STATES = new Set(['banned', 'unconfirmed', 'sms', 'inactive'])
 
@@ -31,12 +31,13 @@ export async function GET(req: Request) {
     p_order: ORDERS.has(order) ? order : 'created_desc',
     p_plan: url.searchParams.get('plan') || undefined,
     p_state: state && STATES.has(state) ? state : undefined,
+    p_with_total: url.searchParams.get('total') !== '0',
   })
   if (error) {
     console.error('[admin/users] directory failed', error.message)
     return json({ error: 'Could not load users.' }, 500)
   }
-  const result = data as { total: number; rows: DirectoryRow[] }
+  const result = data as { total: number | null; rows: DirectoryRow[] }
   await auditPiiRead(ctx, 'user_list', 'user', null)
   if (search) await auditPiiRead(ctx, 'user_search', 'user', null, { onlyWithPii: false })
   return json({ total: result.total, rows: result.rows.map((r) => ({ ...r, email: maskIf(ctx, r.email) })) })

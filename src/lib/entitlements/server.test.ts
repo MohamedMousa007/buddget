@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('server-only', () => ({}))
+vi.mock('@/lib/server/platformCache', () => ({ cachedSetting: (_keys: string[], read: () => Promise<unknown>) => read() }))
 vi.mock('@/lib/supabase/service', () => ({ createServiceRoleClient: () => ({}) }))
 
 import { requireFeature } from './server'

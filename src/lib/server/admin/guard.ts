@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { clientIp } from '@/lib/server/clientIp'
+import { clientIp, rateBucketIp } from '@/lib/server/clientIp'
 import type { User } from '@supabase/supabase-js'
 import { OWNER_EMAIL, can, canAny, type Permission } from '@/lib/admin/permissions'
 import { createServiceRoleClient, type ServiceClient } from '@/lib/supabase/service'
@@ -123,7 +123,7 @@ export const SIGN_IN_ERROR = 'Those details did not match. Check them and try ag
 export async function guardSignIn(req: Request, who: { email?: unknown; userId?: string | null }): Promise<GuardResult> {
   if (req.headers.get(ADMIN_CSRF_HEADER) !== ADMIN_CSRF_VALUE) return deny(403, 'Missing request header.', 'csrf')
   const service = createServiceRoleClient()
-  if (!(await allowAttempt(service, `admin-signin-ip:${clientIp(req)}`, 900, 40))) return deny(429, 'Too many attempts. Try again later.', 'throttled')
+  if (!(await allowAttempt(service, `admin-signin-ip:${rateBucketIp(clientIp(req))}`, 900, 40))) return deny(429, 'Too many attempts. Try again later.', 'throttled')
 
   const refused: GuardResult = { ok: false, res: bad(SIGN_IN_ERROR, 401) }
   let userId = who.userId ?? null

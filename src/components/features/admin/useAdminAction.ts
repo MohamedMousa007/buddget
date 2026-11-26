@@ -3,7 +3,7 @@
 import { useCallback, useState } from 'react'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
-import { adminPost, errorMessage } from './adminClient'
+import { adminPost, errorMessage, invalidate } from './adminClient'
 
 interface RunOptions {
   /** Ask before doing it. */
@@ -25,6 +25,7 @@ export function useAdminAction(path: string, onDone?: () => void | Promise<void>
       setBusy(key)
       try {
         const res = await adminPost<never>(path, body)
+        invalidate('/api/admin')
         opts.then?.(res)
         toast(opts.success ?? 'Done')
         await onDone?.()

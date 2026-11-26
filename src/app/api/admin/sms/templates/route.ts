@@ -1,3 +1,4 @@
+import { STEP_UP_ERROR, stepUp } from '@/lib/server/admin/stepUp'
 import { bad, guardAdmin, json, readJson } from '@/lib/server/admin/guard'
 import { isSafeRegexPattern } from '@/lib/sms/safeRegex'
 import { can } from '@/lib/admin/permissions'
@@ -12,6 +13,9 @@ type Body = {
   op?: string
   id?: string
   patch?: { ai_enabled?: boolean; regex_pattern?: string }
+  code?: string
+  stepUpPassword?: string
+  confirmed?: boolean
 }
 
 const READ_OPS = new Set(['list', 'keyword_pool', 'check_eligibility', 'candidates'])
@@ -78,12 +82,13 @@ export async function POST(req: Request) {
   }
 
   if (op === 'bulk_toggle' && typeof patch?.ai_enabled === 'boolean') {
+    if (!(await stepUp(ctx, body))) return bad(STEP_UP_ERROR, 401)
     const q = service.from(TABLE).update({ ai_enabled: patch.ai_enabled, updated_at: now })
     // Enabling must not revive quarantined, retired, exported or switched-off templates; `kill` leaves no mark that tells a killed row from a disabled one, so only active rows are touched.
-    const { error } = await (patch.ai_enabled ? q.eq('status', 'active') : q.neq('id', '00000000-0000-0000-0000-000000000000'))
+    const { data: changed, error } = await (patch.ai_enabled ? q.eq('status', 'active') : q.neq('id', '00000000-0000-0000-0000-000000000000')).select('id')
     if (error) return bad('Bulk update failed.', 500)
     invalidateCuratedDbCache()
-    await ctx.audit('sms.template_bulk_toggle', { summary: patch.ai_enabled ? 'AI enabled on every active template' : 'AI disabled on every template' })
+    await ctx.audit('sms.template_bulk_toggle', { summary: patch.ai_enabled ? 'AI enabled on every active template' : 'AI disabled on every template', metadata: { count: changed?.length ?? 0 } })
     return json({ ok: true })
   }
 
