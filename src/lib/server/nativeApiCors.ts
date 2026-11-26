@@ -6,6 +6,15 @@ const CAPACITOR_ORIGINS = new Set(['https://localhost', 'capacitor://localhost']
 const DEV_ORIGIN = 'http://localhost:3000'
 
 export const NATIVE_ALLOWED_HEADERS = 'Content-Type, Authorization, X-Buddget-Device-Id, X-Buddget-Device-Secret, X-Requested-With, X-App-Platform, X-App-Version, X-Sms-Event-Id'
+/**
+ * The native admin portal holds its session in the app's own storage and sends it as this header (no cookie crosses
+ * origins: the admin cookie is __Host- and SameSite=Strict). Only admin routes, only the app origins: a page that does not
+ * already hold the token gains nothing from being allowed to send it.
+ */
+export const NATIVE_ADMIN_ALLOWED_HEADERS = `${NATIVE_ALLOWED_HEADERS}, X-Admin-Session`
+
+const allowedHeadersFor = (request: NextRequest) =>
+  request.nextUrl.pathname.startsWith('/api/admin/') ? NATIVE_ADMIN_ALLOWED_HEADERS : NATIVE_ALLOWED_HEADERS
 
 export function isCapacitorApiOrigin(origin: string | null): boolean {
   if (!origin) return false
@@ -19,7 +28,7 @@ export function withNativeApiCors(request: NextRequest, response: NextResponse):
   response.headers.set('Access-Control-Allow-Origin', origin!)
   response.headers.set('Access-Control-Allow-Credentials', 'true')
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS')
-  response.headers.set('Access-Control-Allow-Headers', NATIVE_ALLOWED_HEADERS)
+  response.headers.set('Access-Control-Allow-Headers', allowedHeadersFor(request))
   response.headers.set('Access-Control-Expose-Headers', 'X-Grounding')
   response.headers.append('Vary', 'Origin')
   return response
