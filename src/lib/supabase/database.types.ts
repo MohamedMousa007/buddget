@@ -1647,6 +1647,7 @@ export type Database = {
       }
       debts: {
         Row: {
+          default_payment_method_id: string | null
           amount: number
           cleared_at: string | null
           created_at: string
@@ -1701,6 +1702,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          default_payment_method_id?: string | null
           amount: number
           cleared_at?: string | null
           created_at?: string
@@ -1755,6 +1757,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          default_payment_method_id?: string | null
           amount?: number
           cleared_at?: string | null
           created_at?: string
