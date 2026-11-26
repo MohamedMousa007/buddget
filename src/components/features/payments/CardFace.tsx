@@ -53,8 +53,8 @@ export interface CardFaceProps {
 }
 
 /**
- * The large card face from the approved design board: 340×214, radius 13, in Metal (brushed, engraved type, steel chip,
- * short number) or Bank-issued (printed guilloche lines, gold chip, contactless mark, full masked number). Drawn at
+ * The large card face from the approved design board: 340×214, radius 13, in Metal (brushed, engraved type, steel chip)
+ * or Bank-issued (printed guilloche lines, gold chip). Both carry the contactless mark and the full masked number. Drawn at
  * 340 and scaled, so every size keeps the board's proportions. Always LTR, like a physical card.
  */
 export function CardFace({
@@ -65,7 +65,7 @@ export function CardFace({
   const engrave = f.metal
     ? (f.lightInk ? '0 1px 0 rgba(0,0,0,.8), 0 -1px 0 rgba(255,255,255,.08)' : '0 1px 0 rgba(255,255,255,.55)')
     : (f.lightInk ? '0 1px 0 rgba(0,0,0,.45), 0 -1px 0 rgba(255,255,255,.16)' : '0 1px 0 rgba(255,255,255,.5)')
-  const numberText = last4 ? (f.metal ? `•••• ${last4}` : `•••• •••• •••• ${last4}`) : '••••'
+  const numberText = `•••• •••• •••• ${last4 || '••••'}`
   const face: CSSProperties = {
     width: FACE_W, height: FACE_H, padding: '18px 20px', borderRadius: 13, color: f.ink, background: f.background,
     boxShadow: `0 24px 40px -18px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,${f.lightInk ? '.14' : '.55'}), inset 0 -1px 0 rgba(0,0,0,.25)`,
@@ -111,11 +111,9 @@ export function CardFace({
         </div>
         <div className="relative mt-4 flex items-center gap-3">
           <i aria-hidden className="h-[34px] w-11 shrink-0 rounded-md" style={{ background: chip, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.28)' }} />
-          {!f.metal ? (
-            <svg width="18" height="22" viewBox="0 0 18 22" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden>
-              <path d="M3 7.5c1.2 2.2 1.2 4.8 0 7" /><path d="M7 5c2 3.6 2 8.4 0 12" /><path d="M11 2.5c2.8 5.2 2.8 11.8 0 17" />
-            </svg>
-          ) : null}
+          <svg width="18" height="22" viewBox="0 0 18 22" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden>
+            <path d="M3 7.5c1.2 2.2 1.2 4.8 0 7" /><path d="M7 5c2 3.6 2 8.4 0 12" /><path d="M11 2.5c2.8 5.2 2.8 11.8 0 17" />
+          </svg>
           {defaultLabel ? (
             <span
               className="ms-auto rounded-full px-[9px] py-[3px] text-[0.625rem] font-bold uppercase tracking-[0.06em]"
@@ -128,7 +126,7 @@ export function CardFace({
         <div className="relative mt-auto">
           <span
             className="block whitespace-nowrap font-mono-numbers font-medium"
-            style={{ fontSize: f.metal ? 16 : 17, letterSpacing: f.metal ? '.2em' : '.14em', textShadow: engrave }}
+            style={{ fontSize: 17, letterSpacing: '.14em', textShadow: engrave }}
           >
             {numberText}
           </span>

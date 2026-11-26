@@ -45,11 +45,22 @@ function Extra({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
+/** A header icon action beside the close (delete, settings, more): the same 32px circle as the close. */
+function Action({ icon, label, onClick, tone = 'default' }: { icon: ReactNode; label: string; onClick: () => void; tone?: 'default' | 'danger' }) {
+  return (
+    <IconButton onClick={onClick} aria-label={label} variant={tone === 'danger' ? 'sheetActionDanger' : 'sheetAction'}>
+      {icon}
+    </IconButton>
+  )
+}
+
 interface V3HeaderProps {
   onClose: () => void
   children: ReactNode
   /** Control rendered before the title (e.g. a back button). */
   leading?: ReactNode
+  /** Icon actions before the close, usually `V3SheetHeader.Action`s. */
+  actions?: ReactNode
 }
 
 interface TitledHeaderProps {
@@ -63,11 +74,13 @@ interface TitledHeaderProps {
   extra?: ReactNode
   /** `compact` for long or user-typed titles. */
   titleSize?: 'default' | 'compact'
+  /** Icon actions before the close, usually `V3SheetHeader.Action`s. */
+  actions?: ReactNode
 }
 
 export type SheetHeaderProps = V3HeaderProps | TitledHeaderProps
 
-function Header({ onClose, children, leading, flush }: { onClose: () => void; children: ReactNode; leading?: ReactNode; flush?: boolean }) {
+function Header({ onClose, children, leading, actions, flush }: { onClose: () => void; children: ReactNode; leading?: ReactNode; actions?: ReactNode; flush?: boolean }) {
   const t = useT()
   const kids = Children.toArray(children)
   const extra = kids.find((c) => isValidElement(c) && c.type === Extra)
@@ -80,12 +93,11 @@ function Header({ onClose, children, leading, flush }: { onClose: () => void; ch
       <div className="min-w-0 flex-1">{rest}</div>
       <div className="flex shrink-0 items-center gap-3">
         {extra}
+        {actions}
         <IconButton
           onClick={onClose}
           aria-label={t.common.close}
-          variant="tinted"
-          size="sm"
-          shape="round"
+          variant="sheetAction"
           className="shrink-0"
         >
           <X size={16} />
@@ -99,14 +111,14 @@ function Header({ onClose, children, leading, flush }: { onClose: () => void; ch
 function V3SheetHeaderBase(props: SheetHeaderProps) {
   if ('title' in props) {
     return (
-      <Header onClose={props.onClose} leading={props.leading} flush>
+      <Header onClose={props.onClose} leading={props.leading} actions={props.actions} flush>
         <Title size={props.titleSize}>{props.title}</Title>
         {props.subtitle ? <Subtitle>{props.subtitle}</Subtitle> : null}
         {props.extra ? <Extra>{props.extra}</Extra> : null}
       </Header>
     )
   }
-  return <Header onClose={props.onClose} leading={props.leading}>{props.children}</Header>
+  return <Header onClose={props.onClose} leading={props.leading} actions={props.actions}>{props.children}</Header>
 }
 
-export const V3SheetHeader = Object.assign(V3SheetHeaderBase, { Title, DialogTitle, Subtitle, Extra })
+export const V3SheetHeader = Object.assign(V3SheetHeaderBase, { Title, DialogTitle, Subtitle, Extra, Action })

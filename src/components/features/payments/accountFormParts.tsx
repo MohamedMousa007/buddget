@@ -1,11 +1,13 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { toLatinDigits } from '@/lib/utils/formatters'
 import { X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
+import { useLightTouchCopy } from '@/lib/i18n/lightTouchCopy'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { useT } from '@/lib/i18n'
-import { MAX_ACCOUNT_DIGITS } from '@/lib/accounts/identity/accountRef'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 
 /** Trigger styling for the shared `CurrencyField` inside the account and card sheets, so both pick a currency the same way. */
@@ -48,11 +50,11 @@ export function AccountIdentifierField({ mode, onModeChange, allowsLast4, last4,
       </div>
       {mode === 'last4' ? (
         <>
-          <Input
+          <Last4Tiles
             value={last4}
-            onChange={(e) => onLast4Change(toLatinDigits(e.target.value).replace(/\D/g, '').slice(0, MAX_ACCOUNT_DIGITS))}
-            dir="ltr" inputMode="numeric" pattern="[0-9]*" maxLength={MAX_ACCOUNT_DIGITS} placeholder="e.g. 1234" aria-label={t.fourDigits}
-            size="brand" className="mt-2.5 font-mono-numbers text-[0.9375rem] tracking-[0.1em] text-[var(--color-brand-text-primary)] text-start"
+            onChange={onLast4Change}
+            label={t.fourDigits}
+            className="mt-2.5 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]"
           />
           <div className="mt-2 px-0.5 text-[0.71875rem] text-[var(--color-brand-text-muted)]">{t.last4Help}</div>
         </>
@@ -69,6 +71,55 @@ export function AccountIdentifierField({ mode, onModeChange, allowsLast4, last4,
         </>
       ) : null}
     </div>
+  )
+}
+
+/**
+ * The last four digits as four small tiles on one 52px row, typed through one hidden input (digits only, Arabic-Indic
+ * converted). A stored tail longer than four (banks print up to six) shows all its digits and is never cut.
+ */
+export function Last4Tiles({ value, onChange, label, optional = false, className }: {
+  value: string
+  onChange: (digits: string) => void
+  /** The row's label; defaults to "Last 4 digits". */
+  label?: ReactNode
+  /** Appends "· optional" to the label. */
+  optional?: boolean
+  className?: string
+}) {
+  const c = useLightTouchCopy().last4
+  const size = Math.max(4, value.length)
+  return (
+    <label className={cn('relative flex min-h-[52px] items-center gap-3 px-4', className)}>
+      <span className="min-w-0 flex-1 text-[0.84375rem] text-[var(--color-brand-text-secondary)]">
+        {label ?? c.label}
+        {optional ? <span className="text-[var(--color-brand-text-muted)]"> · {c.optional}</span> : null}
+      </span>
+      <span aria-hidden dir="ltr" className="flex gap-1.5">
+        {Array.from({ length: size }, (_, i) => (
+          <span
+            key={i}
+            className={cn(
+              'flex h-9 w-8 items-center justify-center rounded-lg border-[1.5px] bg-[var(--color-brand-elevated)] font-mono-numbers text-base font-semibold text-[var(--color-brand-text-primary)]',
+              i === value.length ? 'border-[var(--color-brand-primary)]' : 'border-[var(--color-brand-border)]',
+            )}
+          >
+            {value[i] ?? ''}
+          </span>
+        ))}
+      </span>
+      <input
+        value={value}
+        onChange={(e) => onChange(toLatinDigits(e.target.value).replace(/\D/g, '').slice(0, size))}
+        dir="ltr"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        maxLength={size}
+        autoComplete="off"
+        aria-label={typeof label === 'string' ? label : c.label}
+        className="absolute inset-0 w-full cursor-text bg-transparent text-transparent caret-transparent outline-none"
+      />
+    </label>
   )
 }
 

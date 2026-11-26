@@ -8,11 +8,12 @@ import { microClassName } from '@/lib/ui/microLabelStyle'
 import { IconButton } from '@/components/ui/IconButton'
 import { useT } from '@/lib/i18n'
 
-function Header({ title, onClose, onBack }: { title: string; onClose: () => void; onBack?: () => void }) {
+function Header({ title, onClose, onBack, actions }: { title: string; onClose: () => void; onBack?: () => void; actions?: ReactNode }) {
   const t = useT()
   return (
     <V3SheetHeader
       onClose={onClose}
+      actions={actions}
       leading={
         onBack ? (
           <IconButton aria-label={t.common.back} onClick={onBack} className="-ms-3">
@@ -39,6 +40,7 @@ export function SheetFrame({
   footer,
   children,
   zClassName,
+  headerActions,
 }: {
   open: boolean
   onClose: () => void
@@ -49,6 +51,8 @@ export function SheetFrame({
   children: ReactNode
   /** Stacking class, to open one sheet over another. */
   zClassName?: string
+  /** Icon actions before the close (delete, settings, more), usually `V3SheetHeader.Action`s. */
+  headerActions?: ReactNode
 }) {
   return (
     <ModalShell
@@ -59,7 +63,7 @@ export function SheetFrame({
       panelClassName="h-[calc(100dvh-48px)] max-h-[calc(100dvh-48px)] md:h-[min(46rem,calc(100dvh-4rem))] md:max-h-[calc(100dvh-4rem)] md:w-[min(28rem,calc(100vw-2rem))] md:rounded-3xl"
     >
       <div className="flex min-h-0 flex-1 flex-col">
-        <Header title={title} onClose={onClose} onBack={onBack} />
+        <Header title={title} onClose={onClose} onBack={onBack} actions={headerActions} />
         <div className="native-scroll flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-4 pt-1 md:px-6 [&>*]:shrink-0">{children}</div>
         {footer ? (
           <div className="sheet-cta flex shrink-0 flex-col gap-2.5 border-t border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-5 pb-6 pt-3 md:px-6">

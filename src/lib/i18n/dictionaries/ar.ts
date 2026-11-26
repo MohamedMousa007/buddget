@@ -2737,7 +2737,7 @@ export const ar: Dictionary = {
     selectHint: 'اسحب بطاقاتك · اضغط للاختيار',
     addNewMethod: 'إضافة طريقة جديدة',
     provider: 'المزوّد',
-    providerPlaceholder: 'اختر المزوّد — مثال: CIB، InstaPay',
+    providerPlaceholder: 'اختر المزوّد — مثال: CIB، فودافون كاش',
   },
 
   goldPurity: {

@@ -140,7 +140,7 @@ test('D4 Add pocket from Add money keeps the amount and selects the new pocket [
   await blur(page)
   await d.getByRole('button', { name: /^Into/ }).click()
   const picker = dialog(page, 'Choose a pocket')
-  await picker.getByRole('button', { name: 'Add pocket' }).click()
+  await picker.getByRole('button', { name: 'New pocket' }).click()
   await expect(picker).toBeHidden()
   const add = dialog(page, 'Add to Wealth')
   await add.getByRole('radio', { name: /^Cash At home/ }).click()

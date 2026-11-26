@@ -47,6 +47,12 @@ const iconButtonVariants = cva(
           'border-[var(--flow-band-mix)] bg-[var(--flow-band-mix)] text-[var(--flow-band-fg)] hover:bg-[color-mix(in_oklab,var(--flow-band-fg)_30%,transparent)]',
         /** A glyph on Flow's teal band with no resting fill — month arrows. */
         onBandGhost: 'text-[var(--flow-band-fg)] hover:bg-[var(--flow-band-mix)]',
+        /** A sheet header action (close, settings, more): one 32px tinted circle for all of them. */
+        sheetAction:
+          'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-sunken)]',
+        /** The sheet header's delete: the same circle as `sheetAction`, with a red glyph. */
+        sheetActionDanger:
+          'bg-[var(--color-brand-elevated)] text-[var(--color-brand-red)] hover:bg-[var(--color-brand-sunken)]',
       },
       size: {
         /** 32px visual, 44px hit area. Dense rows, chip dismissals. */
@@ -118,6 +124,9 @@ export type IconButtonProps = Omit<
  * <IconButton aria-label={t.common.close} onClick={onClose}><X /></IconButton>
  * <IconButton aria-label="Delete" variant="danger" size="sm"><Trash2 /></IconButton>
  * ```
+ *
+ * `sheetAction` / `sheetActionDanger` default to `size="sm"` and `shape="round"`, so every sheet header action
+ * (close, delete, settings, more) is the same 32px circle.
  */
 export function IconButton({
   className,
@@ -128,12 +137,13 @@ export function IconButton({
   type = 'button',
   ...props
 }: IconButtonProps) {
+  const sheetAction = variant === 'sheetAction' || variant === 'sheetActionDanger'
   return (
     <button
       data-slot="icon-button"
       type={type}
       className={cn(
-        iconButtonVariants({ variant, size, shape }),
+        iconButtonVariants({ variant, size: size ?? (sheetAction ? 'sm' : undefined), shape: shape ?? (sheetAction ? 'round' : undefined) }),
         !hitArea && 'after:hidden',
         className
       )}

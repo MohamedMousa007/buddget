@@ -2727,7 +2727,7 @@ export const en: Dictionary = {
     selectHint: 'Swipe your cards · tap to select',
     addNewMethod: 'Add new method',
     provider: 'Provider',
-    providerPlaceholder: 'Select provider — e.g. CIB, InstaPay',
+    providerPlaceholder: 'Select provider — e.g. CIB, Vodafone Cash',
   },
 
   goldPurity: {

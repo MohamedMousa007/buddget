@@ -80,7 +80,11 @@ function withSign(negative: boolean, body: string): string {
   return negative ? `-${body}` : body
 }
 
-export function formatCurrency(rawAmount: number, currency: Currency | string, showCents = true): string {
+/**
+ * `showCents`: true (default) always shows the currency's decimals, false none, `'smart'` only when the amount has
+ * cents ("1,250" but "1,250.50"); crypto keeps its own precision.
+ */
+export function formatCurrency(rawAmount: number, currency: Currency | string, showCents: boolean | 'smart' = true): string {
   const amount = finite(rawAmount)
   const loc = numberLocale()
   if (currency === 'XAU') {
@@ -91,8 +95,10 @@ export function formatCurrency(rawAmount: number, currency: Currency | string, s
   const symbol = CURRENCY_SYMBOLS[currency] || currency
   const abs = Math.abs(amount)
   const fiatDigits = THREE_DECIMAL_CURRENCIES.has(currency as string) ? 3 : 2
-  const maxDigits = !showCents ? 0 : CRYPTO_CURRENCIES.has(currency as string) ? 8 : fiatDigits
-  const minDigits = showCents ? fiatDigits : 0
+  const crypto = CRYPTO_CURRENCIES.has(currency as string)
+  const cents = showCents === 'smart' ? crypto || Math.round(abs * 10 ** fiatDigits) % 10 ** fiatDigits !== 0 : showCents
+  const maxDigits = !cents ? 0 : crypto ? 8 : fiatDigits
+  const minDigits = cents ? fiatDigits : 0
   const formatted = abs.toLocaleString(loc, { minimumFractionDigits: minDigits, maximumFractionDigits: maxDigits })
   const negative = amount < 0 && Math.round(abs * 10 ** maxDigits) !== 0
 

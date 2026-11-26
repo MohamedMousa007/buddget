@@ -193,6 +193,8 @@ export interface PaymentBrand {
   passThrough?: PassThroughBrand
   /** See {@link AlsoMerchantBrand}. Absent = you cannot buy goods from this brand. */
   alsoMerchant?: AlsoMerchantBrand
+  /** No longer offered as a new payment method; kept so existing rows and SMS matching still resolve it. */
+  retired?: true
 }
 
 type CatEntry = {
@@ -204,12 +206,13 @@ type CatEntry = {
   aliases?: string[]
   passThrough?: PassThroughBrand
   alsoMerchant?: AlsoMerchantBrand
+  retired?: true
 }
 
 const CAT_RAW: Record<string, CatEntry> = {
   // ── Egypt ──────────────────────────────────────────────────────────────────
   // The CBE's instant bank-to-bank rail (IPN), addressed by IPA — not a balance.
-  instapay: { name: 'InstaPay', type: 'wallet', colors: ['#12A594', '#0C6E63'], country: 'EG', aliases: ['instant payment', 'ipn'], passThrough: true },
+  instapay: { name: 'InstaPay', type: 'wallet', colors: ['#12A594', '#0C6E63'], country: 'EG', aliases: ['instant payment', 'ipn'], passThrough: true, retired: true },
   vodafone: { name: 'Vodafone Cash', type: 'wallet', colors: ['#E60000', '#8A1520'], country: 'EG', aliases: ['vodafone', 'vf cash', 'فودافون كاش'], alsoMerchant: true },
   orangecash: { name: 'Orange Cash', type: 'wallet', colors: ['#FF7900', '#B35500'], country: 'EG', aliases: ['orange money', 'اورنج كاش'], alsoMerchant: true },
   wepay: { name: 'WE Pay', type: 'wallet', colors: ['#5B2C91', '#371A57'], country: 'EG', aliases: ['we pay', 'telecom egypt'], alsoMerchant: true },
@@ -437,14 +440,14 @@ export function prefillPaymentType(
 }
 
 export const QUICK_ADD: Record<'EG' | 'SA' | 'AE', string[]> = {
-  EG: ['instapay', 'vodafone', 'nbe', 'cib', 'meeza', 'valu', 'fawry', 'telda'],
+  EG: ['vodafone', 'nbe', 'cib', 'meeza', 'valu', 'fawry', 'telda'],
   SA: ['mada', 'stcpay', 'urpay', 'alrajhi', 'tabby', 'tamara', 'applepay'],
   AE: ['enbd', 'adcb', 'fab', 'careempay', 'eand', 'nol', 'applepay'],
 }
 
 /** Blended cross-country popular set (when the user has no country). */
 export const QUICK_ADD_BLEND: string[] = [
-  'instapay', 'mada', 'enbd', 'vodafone', 'stcpay', 'cib', 'careempay', 'tabby', 'nbe', 'valu',
+  'mada', 'enbd', 'vodafone', 'stcpay', 'cib', 'careempay', 'tabby', 'nbe', 'valu',
 ]
 
 /** Card-colour slider swatches (handoff §3.2). */
