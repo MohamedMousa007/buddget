@@ -561,8 +561,11 @@ function planPayment(args: Record<string, unknown>, ctx: ToolContext) {
   }
   const date = args.date === undefined ? localTodayISO(ctx.now) : parseIsoDate(args.date)
   if (!date) return { error: fail('The date must be a real date like 2026-10-19.') }
-  const method = resolveMethod(s, args.method)
-  if (method.error) return { error: method.error }
+  // No card named: the plan's own default card (installments), like the pay sheet; else the usual method.
+  const own = debt.defaultPaymentMethodId
+  const useOwn = (args.method === undefined || args.method === null || args.method === '') && !!own && s.paymentMethods.some((m) => m.id === own && !m.closedAt)
+  const method = useOwn ? { id: own as string } : resolveMethod(s, args.method)
+  if ('error' in method) return { error: method.error }
   const computed = computeDebtPaymentRecord(debt, amount, payCur, base, s.exchangeRates, s.goldPricePerGram, s.debtPayments, ledger)
   if (!computed.ok) return { error: fail(computed.error) }
   const remaining = calculateDebtRemainingRaw(debt, s.debtPayments, ledger)

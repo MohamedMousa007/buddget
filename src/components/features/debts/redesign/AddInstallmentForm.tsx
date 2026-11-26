@@ -1,206 +1,160 @@
 'use client'
 
 import { useState } from 'react'
-import { Lock } from 'lucide-react'
+import { parseISO } from 'date-fns'
+import { Repeat } from 'lucide-react'
 import type { AddDebtHook } from '@/hooks/useAddDebtSheet'
 import type { Currency } from '@/lib/store/types'
-import { AmountField } from '@/components/ui/AmountField'
-import { CurrencyField } from '@/components/ui/CurrencyField'
+import { AmountHero } from '@/components/ui/AmountHero'
 import { DatePickerField } from '@/components/ui/DatePickerField'
-import { FieldButton } from '@/components/ui/FieldButton'
-import { Input } from '@/components/ui/input'
+import { NumberPickerSheet } from '@/components/ui/NumberPickerSheet'
+import { OptionSheet } from '@/components/ui/OptionSheet'
+import { Pill } from '@/components/ui/PillButton'
+import { PickerRow } from '@/components/ui/PickerRow'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { MethodPickerRow } from '@/components/features/debts/lt/MethodPickerRow'
+import { SheetGroup, TextRow } from '@/components/features/debts/lt/SheetParts'
 import { InstallmentProviderPickerSheet } from './InstallmentProviderPickerSheet'
 import { ProviderBadge } from './ProviderBadge'
 import { coarseProvider } from '@/lib/constants/installmentProviders'
+import { addByFrequency } from '@/lib/debts/installmentSchedule'
+import { totalFromPer, type PlanFrequency } from '@/lib/debts/installmentPlan'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { microClassName as MICRO } from '@/lib/ui/microLabelStyle'
-import {
-  lengthForPayments,
-  paymentsForLength,
-  totalFromPer,
-  type PlanFrequency,
-  type PlanLengthUnit,
-} from '@/lib/debts/installmentPlan'
-import { useT } from '@/lib/i18n'
+import { formatFlex } from '@/lib/utils/formatters'
+import { useLocale, useT } from '@/lib/i18n'
+import { formatLocalized } from '@/lib/i18n/dateFormat'
+import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 
-type PlanMode = 'total' | 'installment'
+type PlanMode = 'total' | 'per'
+const PAYMENT_PRESETS = [3, 6, 9, 12, 18, 24, 36, 60] as const
+const EVERY: PlanFrequency[] = ['weekly', 'monthly', 'quarterly']
 
+/** New / edit installment (Light touch `s_install`): amount hero, Total · Per payment, Item → Paid with, then the plan. */
 export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; locked?: boolean }) {
   const dict = useT()
   const t = dict.debts
-  const freqOptions = [
-    { value: 'weekly' as const, label: t.fWeekly },
-    { value: 'monthly' as const, label: t.fMonthly },
-    { value: 'quarterly' as const, label: t.fQuarterly },
-  ]
-  const modeOptions = [
-    { value: 'total' as const, label: t.fModeTotal },
-    { value: 'installment' as const, label: t.fModeInstallment },
-  ]
-  const unitOptions = [
-    { value: 'months' as const, label: t.fMonths },
-    { value: 'years' as const, label: t.fYears },
-  ]
+  const all = useDebtsSubsLtCopy()
+  const c = all.install
+  const { locale } = useLocale()
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
-  const [providerOpen, setProviderOpen] = useState(false)
+  const [sheet, setSheet] = useState<'provider' | 'count' | 'every' | null>(null)
   const [mode, setMode] = useState<PlanMode>('total')
   const [perStr, setPerStr] = useState('')
-  const [lengthStr, setLengthStr] = useState('')
-  const [unit, setUnit] = useState<PlanLengthUnit>('months')
 
   const frequency = d.installmentFrequency as PlanFrequency
-  const count = parseInt(d.installmentCount, 10)
+  const count = Math.max(1, parseInt(d.installmentCount, 10) || 12)
   const total = parseFloat(d.startingBalance)
-
-  const pushTotal = (per: string, n: number) => {
-    const p = parseFloat(per)
-    d.setStartingBalance(p > 0 && n > 0 ? String(totalFromPer(p, n)) : '')
-  }
+  const per = total > 0 ? Math.round((total / count) * 100) / 100 : 0
 
   const switchMode = (next: PlanMode) => {
-    if (next === 'installment') {
-      setPerStr(total > 0 && count > 0 ? String(Math.round((total / count) * 100) / 100) : '')
-      setLengthStr(count > 0 ? String(lengthForPayments(count, unit, frequency)) : '')
-    }
+    if (next === 'per') setPerStr(per > 0 ? String(per) : '')
     setMode(next)
   }
-
-  const changePer = (v: string) => {
-    setPerStr(v)
-    pushTotal(v, count)
+  const pushTotal = (p: string, n: number) => {
+    const v = parseFloat(p)
+    d.setStartingBalance(v > 0 && n > 0 ? String(totalFromPer(v, n)) : '')
+  }
+  const changePer = (v: string) => { setPerStr(v); pushTotal(v, count) }
+  const changeCount = (n: number) => {
+    d.setInstallmentCount(String(n))
+    if (mode === 'per') pushTotal(perStr, n)
   }
 
-  const changeLength = (v: string, u: PlanLengthUnit, f: PlanFrequency) => {
-    setLengthStr(v)
-    const len = parseFloat(v)
-    const n = len > 0 ? paymentsForLength(len, u, f) : 0
-    d.setInstallmentCount(n > 0 ? String(n) : '')
-    pushTotal(perStr, n)
-  }
+  const line = mode === 'total' ? c.perLine(per > 0 ? formatFlex(per) : '—') : c.totalLine(total > 0 ? formatFlex(total) : '—')
+  const last = d.installmentStartDate ? addByFrequency(parseISO(d.installmentStartDate), frequency, count - 1) : null
+  const planNote = per > 0
+    ? `${c.planNote(count, formatFlex(per))}${last ? ` · ${formatLocalized(last, 'MMM yyyy', locale)}` : ''}`
+    : undefined
 
-  const changeFrequency = (f: PlanFrequency) => {
-    d.setInstallmentFrequency(f)
-    if (mode === 'installment') changeLength(lengthStr, unit, f)
-  }
-
-  const changeUnit = (u: PlanLengthUnit) => {
-    setUnit(u)
-    const len = parseFloat(lengthStr)
-    if (!(len > 0)) return
-    const converted = u === 'years' ? len / 12 : len * 12
-    changeLength(String(Math.round(converted * 100) / 100), u, frequency)
-  }
-
-  const periodLabel = frequency === 'weekly' ? t.fPerWeek : frequency === 'quarterly' ? t.fPerQuarter : t.fPerMonth
-  const summary =
-    mode === 'total'
-      ? d.installmentPreview != null ? t.fApprox(d.installmentPreview.toLocaleString('en-US'), d.currency, periodLabel) : '—'
-      : total > 0 ? t.fTotalApprox(total.toLocaleString('en-US'), d.currency) : '—'
-
-  const providerLabel =
-    d.installmentProvider === 'credit_card'
-      ? (d.creditCardDebts.find((c) => c.id === d.linkedCreditCardDebtId)?.name ?? t.debtTypeCreditCard)
-      : d.installmentProviderName || t.chooseProvider
+  const providerName = d.installmentProvider === 'credit_card'
+    ? (d.creditCardDebts.find((x) => x.id === d.linkedCreditCardDebtId)?.name ?? t.debtTypeCreditCard)
+    : d.installmentProviderName
 
   return (
-    <div className="flex flex-col gap-[18px] pt-1">
-      {/* Provider (locked in Edit) */}
-      <div>
-        <div className={`${MICRO} mb-2 flex items-center gap-1.5`}>{t.fProvider} {locked ? <Lock className="h-3 w-3" /> : null}</div>
-        <FieldButton
-          disabled={locked}
-          onClick={() => setProviderOpen(true)}
-          className="bg-[var(--color-brand-elevated)] px-3 disabled:opacity-70"
-          valueClassName="text-sm font-semibold"
-          value={providerLabel}
-          icon={
-            d.installmentProvider === 'credit_card' ? (
-              <span className="flex h-7 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[var(--color-cat-6)]/20 text-[0.6875rem] font-extrabold text-[var(--color-cat-6)]">CC</span>
-            ) : d.installmentProviderName ? (
-              <ProviderBadge slug={d.installmentProviderSlug} name={d.installmentProviderName} size={28} />
-            ) : null
-          }
+    <div className="flex flex-col gap-4 pt-1">
+      <AmountHero
+        value={mode === 'total' ? d.startingBalance : perStr}
+        onChange={mode === 'total' ? d.setStartingBalance : changePer}
+        currency={d.currency}
+        onCurrencyChange={d.currencyLocked ? undefined : (code) => d.setCurrency(code as Currency)}
+        base={d.settings.baseCurrency}
+        line={line}
+        aria-label={mode === 'total' ? t.fTotalAmount : t.fPerPayment}
+        className="px-0 pb-0"
+      />
+      {d.currencyLocked ? <p className="-mt-2 text-center text-xs text-[var(--color-brand-text-muted)]">{dict.moneyFlows.debtLocked}</p> : null}
+
+      <SegmentedControl<PlanMode>
+        ariaLabel={t.fModeAria}
+        value={mode}
+        onChange={switchMode}
+        options={[
+          { value: 'total', label: c.total },
+          { value: 'per', label: c.per },
+        ]}
+      />
+
+      <SheetGroup note={c.paidWithNote}>
+        <TextRow label={c.item} value={d.installmentItemName} onChange={d.setInstallmentItemName} placeholder={c.itemPh} />
+        <PickerRow
+          label={c.provider}
+          onClick={locked ? undefined : () => setSheet('provider')}
+          value={providerName ? (
+            <>
+              {d.installmentProvider !== 'credit_card' ? <ProviderBadge slug={d.installmentProviderSlug} name={providerName} size={24} /> : null}
+              <span dir="auto" className="truncate">{providerName}</span>
+            </>
+          ) : <span className="text-[var(--color-brand-text-muted)]">{c.chooseProvider}</span>}
         />
-        <InstallmentProviderPickerSheet
-          open={providerOpen}
-          valueSlug={d.installmentProviderSlug}
-          valueCardId={d.installmentProvider === 'credit_card' ? d.linkedCreditCardDebtId : undefined}
-          creditCards={d.creditCardDebts
-            .map((cd) => {
-              const pm = d.paymentMethods.find((m) => m.id === cd.linkedPaymentMethodId)
-              return pm ? { debtId: cd.id, pm } : null
-            })
-            .filter((x): x is { debtId: string; pm: (typeof d.paymentMethods)[number] } => x !== null)}
-          onPickBrand={(slug, name) => { d.setInstallmentProvider(coarseProvider(slug)); d.setInstallmentProviderName(name); d.setInstallmentProviderSlug(slug); d.setLinkedCreditCardDebtId('') }}
-          onPickCard={(cardId, name) => { d.setInstallmentProvider('credit_card'); d.setInstallmentProviderName(name); d.setInstallmentProviderSlug(undefined); d.setLinkedCreditCardDebtId(cardId) }}
-          onCustom={(name) => { d.setInstallmentProvider('other'); d.setInstallmentProviderName(name); d.setInstallmentProviderSlug(undefined); d.setLinkedCreditCardDebtId('') }}
-          onAddCreditCard={() => setActiveModal('addCreditCard')}
-          onClose={() => setProviderOpen(false)}
+        <PickerRow label={c.starts} value={<DatePickerField look="pill" value={d.installmentStartDate} onChange={d.setInstallmentStartDate} />} />
+        <MethodPickerRow label={c.paidWith} value={d.installmentPaidWith || (d.isEditFlow ? '' : d.paymentMethodId)} onChange={d.setInstallmentPaidWith} paymentMethods={d.paymentMethods} />
+      </SheetGroup>
+
+      <SheetGroup label={c.plan} note={planNote}>
+        <PickerRow label={c.payments} value={<Pill>{count}</Pill>} chevron={false} onClick={() => setSheet('count')} />
+        <PickerRow
+          label={all.borrow.every}
+          value={<Pill icon={<Repeat />}>{all.borrow.everyValue[d.installmentFrequency] ?? all.borrow.everyValue.monthly}</Pill>}
+          chevron={false}
+          onClick={() => setSheet('every')}
         />
-      </div>
+      </SheetGroup>
 
-      {/* Item */}
-      <div>
-        <div className={`${MICRO} mb-2`}>{t.fItem}</div>
-        <Input size="brand" value={d.installmentItemName} onChange={(e) => d.setInstallmentItemName(e.target.value)} placeholder={t.fItemPh} />
-      </div>
-
-      {/* Plan: two ways in, same stored fields (total, count, frequency). */}
-      <SegmentedControl<PlanMode> options={modeOptions} value={mode} onChange={switchMode} ariaLabel={t.fModeAria} />
-
-      <div>
-        <div className={`${MICRO} mb-2`}>{mode === 'total' ? t.fTotalAmount : t.fPerPayment}</div>
-        <div className="flex gap-2">
-          <div className="min-w-0 flex-1">
-            {mode === 'total' ? (
-              <AmountField value={d.startingBalance} onChange={d.setStartingBalance} mode="decimal" decimalsFor={d.currency} aria-label={t.fTotalAmount} placeholder="0" />
-            ) : (
-              <AmountField value={perStr} onChange={changePer} mode="decimal" decimalsFor={d.currency} aria-label={t.fPerPayment} placeholder="0" />
-            )}
-          </div>
-          <CurrencyField
-            compact
-            value={d.currency}
-            onChange={(c) => d.setCurrency(c as unknown as Currency)}
-            disabled={d.currencyLocked}
-            className="h-[52px] w-24 shrink-0 rounded-[14px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3"
-          />
-        </div>
-        {d.currencyLocked ? <p className="mt-2 px-0.5 text-[0.75rem] text-[var(--color-brand-text-muted)]">{dict.moneyFlows.debtLocked}</p> : null}
-      </div>
-
-      <div>
-        <div className={`${MICRO} mb-2`}>{t.fFrequency}</div>
-        <SegmentedControl<PlanFrequency> options={freqOptions} value={frequency} onChange={changeFrequency} ariaLabel={t.fFrequency} />
-      </div>
-
-      {mode === 'total' ? (
-        <div>
-          <div className={`${MICRO} mb-2`}>{t.fCount}</div>
-          <AmountField value={d.installmentCount} onChange={d.setInstallmentCount} mode="integer" aria-label={t.fCount} placeholder="12" />
-        </div>
-      ) : (
-        <div>
-          <div className={`${MICRO} mb-2`}>{t.fPlanLength}</div>
-          <div className="flex gap-2">
-            <div className="min-w-0 flex-1">
-              <AmountField value={lengthStr} onChange={(v) => changeLength(v, unit, frequency)} mode="decimal" aria-label={t.fPlanLength} placeholder="12" />
-            </div>
-            <SegmentedControl<PlanLengthUnit> fill={false} options={unitOptions} value={unit} onChange={changeUnit} ariaLabel={t.fPlanLength} size="field" className="shrink-0" />
-          </div>
-        </div>
-      )}
-
-      <div>
-        <div className={`${MICRO} mb-2`}>{t.fStartDate}</div>
-        <DatePickerField value={d.installmentStartDate} onChange={d.setInstallmentStartDate} />
-      </div>
-
-      <div className="min-h-[68px] rounded-[14px] bg-[var(--color-brand-primary-soft)] px-4 py-3">
-        <p className="font-mono-numbers text-[0.9375rem] font-bold text-[var(--color-brand-primary-ink)]">{summary}</p>
-        <p className="mt-0.5 text-[0.75rem] text-[var(--color-brand-text-muted)]">{t.fNoInterest}</p>
-      </div>
+      <InstallmentProviderPickerSheet
+        open={sheet === 'provider'}
+        valueSlug={d.installmentProviderSlug}
+        valueCardId={d.installmentProvider === 'credit_card' ? d.linkedCreditCardDebtId : undefined}
+        creditCards={d.creditCardDebts
+          .map((cd) => {
+            const pm = d.paymentMethods.find((m) => m.id === cd.linkedPaymentMethodId)
+            return pm ? { debtId: cd.id, pm } : null
+          })
+          .filter((x): x is { debtId: string; pm: (typeof d.paymentMethods)[number] } => x !== null)}
+        onPickBrand={(slug, name) => { d.setInstallmentProvider(coarseProvider(slug)); d.setInstallmentProviderName(name); d.setInstallmentProviderSlug(slug); d.setLinkedCreditCardDebtId('') }}
+        onPickCard={(cardId, name) => { d.setInstallmentProvider('credit_card'); d.setInstallmentProviderName(name); d.setInstallmentProviderSlug(undefined); d.setLinkedCreditCardDebtId(cardId) }}
+        onCustom={(name) => { d.setInstallmentProvider('other'); d.setInstallmentProviderName(name); d.setInstallmentProviderSlug(undefined); d.setLinkedCreditCardDebtId('') }}
+        onAddCreditCard={() => setActiveModal('addCreditCard')}
+        onClose={() => setSheet(null)}
+      />
+      <NumberPickerSheet
+        open={sheet === 'count'}
+        onClose={() => setSheet(null)}
+        title={c.paymentsTitle}
+        value={count}
+        presets={PAYMENT_PRESETS}
+        unit={c.paymentsUnit}
+        onChange={changeCount}
+        zIndexClassName="z-[110]"
+      />
+      <OptionSheet
+        open={sheet === 'every'}
+        onClose={() => setSheet(null)}
+        title={all.borrow.everyTitle}
+        value={frequency}
+        onChange={(f) => d.setInstallmentFrequency(f)}
+        options={EVERY.map((f) => ({ value: f, title: all.borrow.everyValue[f as 'weekly' | 'monthly' | 'quarterly'] }))}
+        zIndexClassName="z-[110]"
+      />
     </div>
   )
 }

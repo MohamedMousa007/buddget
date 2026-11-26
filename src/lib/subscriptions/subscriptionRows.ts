@@ -9,6 +9,7 @@ import {
 } from './subscriptionForecast'
 import { fxEstimate, FX_DRIFT_THRESHOLD, lastCharge, priceChange, type PriceChange } from './subscriptionPricing'
 import { cycleWindow } from './subscriptionOccurrence'
+import { subscriptionStatus, type SubscriptionDisplayStatus } from './subscriptionStatus'
 import { subscriptionToMonthlyPlannerAmount } from './subscriptionRecurring'
 
 export type GroupKey = 'overdue' | 'week' | 'month' | 'later' | 'yearly'
@@ -61,6 +62,8 @@ export interface RowModel {
   /** ISO date shown on the row; null while paused. */
   date: string | null
   chip: Chip
+  /** The derived status badge (the same one the subscription sheet shows). */
+  status: SubscriptionDisplayStatus
   group: GroupKey | null
   /** The amount is a forecast that is not being charged (trial, paused, cancelled). */
   struck: boolean
@@ -164,6 +167,7 @@ export function buildRow(
     cycle,
     date,
     chip,
+    status: subscriptionStatus(sub, expenses, now),
     group: cycle ? groupFor(cycle, yearly) : life === 'trial' ? trialGroup(sub, now, yearly) : null,
     struck: life === 'trial' || life === 'paused' || life === 'cancelled' || life === 'ended',
     amount: shownAmount,

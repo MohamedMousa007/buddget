@@ -2,7 +2,10 @@
 
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { ChevronLeft, Pencil } from 'lucide-react'
+import { ArrowUpRight, ChevronLeft, Pencil, Plus } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { isRealizedOccurrence } from '@/lib/utils/incomeOccurrences'
+import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 import { IconButton } from '@/components/ui/IconButton'
 import { Badge } from '@/components/ui/badge'
 import { PaydayTimeline } from '@/components/features/income/PaydayTimeline'
@@ -51,6 +54,8 @@ export function PaydayDetail({ source, onBack }: { source: IncomeSource; onBack:
       setEditingIncomeId: s.setEditingIncomeId,
           })),
   )
+  const openAmountReceived = useSettingsStore((s) => s.openAmountReceived)
+  const lt = useDebtsSubsLtCopy().payday
   const today = useMemo(() => new Date(), [])
   const weekendFirst = useWeekendFirstDay()
   // An unanswered payday stays "late" until the user says Received or Missed — "missed"
@@ -63,6 +68,7 @@ export function PaydayDetail({ source, onBack }: { source: IncomeSource; onBack:
     [source, incomeEvents, monthFilter, monthStartDay, today, weekendFirst],
   )
   const occ = all.slice(-TIMELINE_LEN)
+  const toLog = all.find((o) => o.actionable && !isRealizedOccurrence(o))
   // Nothing is selected until a payday is tapped (timeline or history); tapping it again,
   // or anywhere else on the page, clears it — and with it the actions card.
   const [picked, setPicked] = useState<string | null>(null)
@@ -157,7 +163,7 @@ export function PaydayDetail({ source, onBack }: { source: IncomeSource; onBack:
         </IconButton>
       </div>
 
-      <section className="mt-1.5 border-y border-[var(--flow-band-line)] text-[var(--flow-band-fg)]" style={{ background: FLOW_BAND_BG }}>
+      <section className="mx-4 mt-1.5 overflow-hidden rounded-3xl text-[var(--flow-band-fg)]" style={{ background: FLOW_BAND_BG }}>
         <div className="px-[18px] pb-1.5 pt-3.5">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[0.6875rem] font-bold uppercase tracking-[0.08em]">
@@ -182,6 +188,31 @@ export function PaydayDetail({ source, onBack }: { source: IncomeSource; onBack:
           <div className="h-3.5" />
         </div>
       </section>
+
+      {/* Light touch `page-paydays`: log the oldest payday still waiting (the Amount received sheet), or edit the payday. */}
+      <div className="mx-4 mt-3 grid grid-cols-2 gap-2.5" onClick={(e) => e.stopPropagation()}>
+        <Button
+          size="touch"
+          disabled={!toLog}
+          onClick={() => toLog && openAmountReceived(source.id, toLog.key, toLog.dueDate.slice(0, 7))}
+          className="rounded-2xl"
+        >
+          <Plus aria-hidden />
+          {lt.logPayday}
+        </Button>
+        <Button
+          variant="secondary"
+          size="touch"
+          onClick={() => {
+            setEditingIncomeId(source.id)
+            setActiveModal('editIncome')
+          }}
+          className="rounded-2xl"
+        >
+          <ArrowUpRight aria-hidden />
+          {lt.editPayday}
+        </Button>
+      </div>
 
       {selected ? (
         <div onClick={(e) => e.stopPropagation()}>

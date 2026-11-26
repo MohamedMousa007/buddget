@@ -10,4 +10,14 @@ describe('debt mapper', () => {
     expect(back.goal).toEqual(goal)
     expect(back.emoji).toBe('🚗')
   })
+
+  it('keeps an installment default card across a round trip, and sends Cash or none as NULL', () => {
+    const base = { id: 'd', name: 'iPhone', person: 'Installment', startingBalance: 30000, currency: 'EGP', createdAt: '2026-01-01T00:00:00.000Z', debtType: 'installment' } as unknown as Debt
+    const pm = '0b8f2c1e-1111-4222-8333-944455556666'
+    const row = debtToRow({ ...base, defaultPaymentMethodId: pm }, 'u')
+    expect(row.default_payment_method_id).toBe(pm)
+    expect(debtFromRow({ ...row, user_id: 'u' } as never).defaultPaymentMethodId).toBe(pm)
+    expect(debtToRow(base, 'u').default_payment_method_id).toBeNull()
+    expect(debtFromRow({ ...debtToRow(base, 'u'), user_id: 'u' } as never).defaultPaymentMethodId).toBeUndefined()
+  })
 })

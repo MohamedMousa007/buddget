@@ -81,11 +81,16 @@ export default function SubscriptionsPage() {
 
   const empty = dataReady && subscriptions.length === 0
   const period = formatMonth(format(home.today, 'yyyy-MM'))
+  // A legacy paused row bills nothing and lists with Cancelled; nothing can pause any more.
   const { groups, paused, cancelled, activeCount } = home.lists
 
   return (
     <div>
-      <SubscriptionsHero hero={dataReady ? home.hero : null} base={home.base} loading={!dataReady} />
+      {empty ? null : (
+        <div className="px-4 pt-4 lg:px-6">
+          <SubscriptionsHero hero={dataReady ? home.hero : null} base={home.base} loading={!dataReady} />
+        </div>
+      )}
       <PageGrid
         wide={empty}
         primary={
@@ -127,7 +132,7 @@ export default function SubscriptionsPage() {
                     {groups.length === 0 && segment === 'ended' ? (
                       <p className="py-6 text-center text-sm text-[var(--color-brand-text-secondary)]">{ui.emptyTab}</p>
                     ) : (
-                      <SubscriptionGroups groups={groups} paused={paused} cancelled={cancelled} onOpen={setDetailId} />
+                      <SubscriptionGroups groups={groups} cancelled={[...paused, ...cancelled]} onOpen={setDetailId} />
                     )}
                   </>
                 )}

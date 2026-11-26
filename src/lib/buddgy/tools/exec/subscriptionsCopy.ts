@@ -21,7 +21,6 @@ interface SubLabels {
   newPrice: string
   addSub: string
   changeSub: string
-  pauseSub: string
   resumeSub: string
   resubscribeSub: string
   cancelSub: string
@@ -31,7 +30,6 @@ interface SubLabels {
   duplicate: string
   trialEffect: string
   impact: (monthly: string, after: string) => string
-  pauseEffect: string
   resumeEffect: string
   resubscribeEffect: string
   cancelEffect: (name: string) => string
@@ -63,7 +61,6 @@ const EN: SubLabels = {
   newPrice: 'New price',
   addSub: 'Add subscription',
   changeSub: 'Change subscription',
-  pauseSub: 'Pause subscription',
   resumeSub: 'Resume subscription',
   resubscribeSub: 'Re-subscribe',
   cancelSub: 'Cancel subscription',
@@ -73,7 +70,6 @@ const EN: SubLabels = {
   duplicate: 'You already track a subscription with this name.',
   trialEffect: 'Free until the trial ends; nothing is charged before then.',
   impact: (m, a) => `Adds ${m} a month. Committed becomes ${a}.`,
-  pauseEffect: 'No charges are expected while it is paused.',
   resumeEffect: 'Charges are expected again.',
   resubscribeEffect: 'It becomes active and charges are expected again.',
   cancelEffect: (n) => `This only stops tracking. You still need to cancel with ${n} yourself.`,
@@ -105,7 +101,6 @@ const AR: SubLabels = {
   newPrice: 'السعر الجديد',
   addSub: 'إضافة اشتراك',
   changeSub: 'تعديل اشتراك',
-  pauseSub: 'إيقاف الاشتراك مؤقتًا',
   resumeSub: 'استئناف الاشتراك',
   resubscribeSub: 'إعادة الاشتراك',
   cancelSub: 'إلغاء الاشتراك',
@@ -115,7 +110,6 @@ const AR: SubLabels = {
   duplicate: 'عندك اشتراك بنفس الاسم بالفعل.',
   trialEffect: 'مجاني حتى تنتهي التجربة ولا يُخصم شيء قبل ذلك.',
   impact: (m, a) => `يضيف ${m} شهريًا. تصبح الالتزامات ${a}.`,
-  pauseEffect: 'لا تُتوقع أي خصومات أثناء الإيقاف.',
   resumeEffect: 'تُتوقع الخصومات من جديد.',
   resubscribeEffect: 'يصبح الاشتراك نشطًا وتُتوقع الخصومات من جديد.',
   cancelEffect: (n) => `هذا يوقف التتبع فقط. لازم تلغي الاشتراك بنفسك من ${n}.`,

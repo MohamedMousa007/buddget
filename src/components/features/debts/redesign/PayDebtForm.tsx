@@ -1,120 +1,77 @@
 'use client'
 
-import { Input } from '@/components/ui/input'
-import { Repeat, Users } from 'lucide-react'
+import { Landmark, Undo2 } from 'lucide-react'
 import type { AddDebtHook } from '@/hooks/useAddDebtSheet'
-import { AmountCurrencyRow } from '@/components/features/savings-v3/MoneySheetParts'
-import { DatePickerField } from '@/components/ui/DatePickerField'
-import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
-import { defaultColorForPaymentMethodType, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
-import { accountIdentifier } from '@/components/features/accounts/accountDisplay'
+import { AmountHero } from '@/components/ui/AmountHero'
+import { PickerRow } from '@/components/ui/PickerRow'
+import { SettingsSwitchRow } from '@/components/features/settings/SettingsSwitchRow'
+import { NoteRow } from '@/components/features/savings-v3/MoneySheetParts'
+import { MethodPickerRow } from '@/components/features/debts/lt/MethodPickerRow'
+import { SheetGroup } from '@/components/features/debts/lt/SheetParts'
+import { isOwedToUser } from '@/lib/debts/debtDirection'
+import { formatFlex } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
-import type { Currency } from '@/lib/store/types'
-import { fmtWhole, soft } from './heroCardShared'
-import { OptionChip } from '@/components/ui/OptionChip'
-import { pickablePaymentMethods } from '@/lib/accounts/kinds'
-import { Switch } from '@/components/ui/switch'
+import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 
-const MICRO = 'font-semibold text-[0.625rem] tracking-[0.08em] uppercase text-[var(--color-brand-text-muted)]'
-
-/** Pay modal: a payment on a debt you owe, or money received on one owed to you. */
+/** Record a payment (Light touch `debtpay`): icon tile, the signed amount, what is left after it, then Debt · Paid from · Repeat. */
 export function PayDebtForm({ d }: { d: AddDebtHook }) {
   const dict = useT()
   const t = dict.debts
+  const c = useDebtsSubsLtCopy().pay
   const debt = d.selectedDebt
-  const owedLabel = debt?.direction === 'they_owe' ? t.fOwedToYou : t.fYouOwe
-  const accent = debt?.direction === 'they_owe' ? 'var(--color-brand-green)' : debt?.isGold ? 'var(--color-brand-gold)' : 'var(--color-brand-red)'
-  const initial = (debt?.name || debt?.person || '?').trim().charAt(0).toUpperCase()
+  const receiving = debt ? isOwedToUser(debt) : false
+  const tone = receiving ? 'var(--color-brand-green)' : 'var(--color-brand-primary)'
+  const Icon = receiving ? Undo2 : Landmark
+  const paid = parseFloat(d.paymentAmount)
+  const sameUnit = debt ? d.paymentCurrency === (debt.isGold ? 'XAU' : debt.currency) : false
+  const after = Math.max(0, d.selectedRemaining - (sameUnit && paid > 0 ? paid : 0))
+  const unit = debt?.isGold ? ' g' : ''
 
   return (
-    <div className="flex flex-col gap-[18px] pt-1">
-      {/* Summary card */}
-      {debt ? (
-        <div className="flex items-center gap-3 rounded-[16px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-4">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[16px] font-bold" style={{ background: soft(accent, 16), color: accent }}>
-            {debt.debtType === 'personal' || debt.debtType === 'general' ? initial : <Users className="h-5 w-5" />}
+    <div className="flex flex-col gap-4 pt-1">
+      <AmountHero
+        value={d.paymentAmount}
+        onChange={(v) => { d.setPaymentAmount(v); d.setPaymentRateError('') }}
+        currency={d.paymentCurrency}
+        onCurrencyChange={(code) => { d.setPaymentCurrency(code); d.setPaymentRateError('') }}
+        includeGold={debt?.isGold}
+        base={d.settings.baseCurrency}
+        sign={receiving ? '+' : '−'}
+        aria-label={t.fAmount}
+        top={
+          <span aria-hidden className="flex size-[52px] items-center justify-center rounded-2xl [&_svg]:size-6" style={{ background: `color-mix(in oklab, ${tone} 14%, transparent)`, color: tone }}>
+            <Icon />
           </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[16px] font-bold text-[var(--color-brand-text-primary)]">{debt.name || debt.person}</p>
-            <p className="mt-0.5 font-mono-numbers text-[0.75rem] text-[var(--color-brand-text-muted)]">
-              {t.fPayLine(owedLabel, fmtWhole(d.selectedRemaining), debt.currency)}
-            </p>
-          </div>
+        }
+        line={d.paymentPreview() ?? ''}
+        className="px-0 pb-0"
+      />
+      {debt ? (
+        <div className="-mt-1 text-center">
+          <p dir="auto" className="text-[1.0625rem] font-semibold text-[var(--color-brand-text-primary)]">{debt.name || debt.person}</p>
+          <p dir="auto" className="mt-0.5 font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
+            {c.left(`${formatFlex(d.selectedRemaining)}${unit}`, `${formatFlex(after)}${unit}`)}
+          </p>
         </div>
       ) : null}
+      {d.paymentRateError ? <p role="alert" className="text-center text-xs text-[var(--color-brand-red)]">{d.paymentRateError}</p> : null}
 
-      {/* Amount */}
-      <div>
-        <AmountCurrencyRow
-          amount={d.paymentAmount}
-          onAmount={(v) => { d.setPaymentAmount(v); d.setPaymentRateError('') }}
-          currency={d.paymentCurrency as Currency}
-          onCurrency={(c) => { d.setPaymentCurrency(c); d.setPaymentRateError('') }}
-          amountLabel={t.fAmount}
-          currencyLabel={dict.moneyFlows.currency}
-          includeGold={debt?.isGold}
+      <SheetGroup>
+        <PickerRow
+          label={c.debt}
+          onClick={d.isPayDebtFlow ? d.backToPayDebtList : undefined}
+          value={<span dir="auto" className="truncate">{debt?.name || debt?.person}</span>}
         />
-        {d.paymentPreview() ? <p className="mt-2 px-0.5 font-mono-numbers text-[0.75rem] text-[var(--color-brand-text-muted)]">{d.paymentPreview()}</p> : null}
-        {d.paymentRateError ? <p role="alert" className="mt-2 px-0.5 text-[0.75rem] text-[var(--color-brand-red)]">{d.paymentRateError}</p> : null}
-      </div>
-
-      {/* Date */}
-      <div>
-        <div className={`${MICRO} mb-2`}>{d.paymentScheduleMode === 'recurring' ? t.fNextDue : t.fDate}</div>
-        <DatePickerField value={d.paymentDate} onChange={d.setPaymentDate} />
-      </div>
-
-      {/* Payment method — horizontal chips */}
-      <div>
-        <div className={`${MICRO} mb-2`}>{debt?.direction === 'they_owe' ? t.fReceivedInto : t.fPaymentMethod}</div>
-        <div className="native-scroll -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
-          {pickablePaymentMethods(d.paymentMethods, d.paymentMethodId).map((m) => {
-            const on = d.paymentMethodId === m.id
-            const c = m.color || defaultColorForPaymentMethodType(m.type)
-            const Icon = paymentTypeIcon(m.type)
-            return (
-              <OptionChip
-                key={m.id}
-                selected={on}
-                onClick={() => d.setPaymentMethodId(m.id)}
-                className="h-11"
-                style={on
-                  ? { background: soft(accent, 14), borderColor: soft(accent, 60), color: 'var(--color-brand-text-primary)' }
-                  : undefined}
-              >
-                <span className="flex h-6 w-6 items-center justify-center rounded-md" style={{ background: soft(c, 18), color: c }}>
-                  <Icon className="h-3.5 w-3.5" />
-                </span>
-                {decomposePaymentMethodName(m.name, m.last4).provider}
-                {accountIdentifier(m) ? <span className="font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-muted)]">{accountIdentifier(m)}</span> : null}
-              </OptionChip>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Recurring toggle-card */}
-      <div className="flex items-center gap-3 rounded-[16px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-4 text-start">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-brand-card)] text-[var(--color-brand-text-secondary)]">
-          <Repeat className="h-[18px] w-[18px]" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-bold text-[var(--color-brand-text-primary)]">{t.fRecurring}</span>
-          <span className="mt-0.5 block text-[0.75rem] text-[var(--color-brand-text-muted)]">{t.fRecurringHint}</span>
-        </span>
-        <Switch
-          size="touch"
-          aria-label={t.fRecurring}
+        <MethodPickerRow label={receiving ? c.into : c.paidFrom} value={d.paymentMethodId} onChange={d.setPaymentMethodId} paymentMethods={d.paymentMethods} />
+        <SettingsSwitchRow
+          label={t.fRecurring}
+          hint={t.fRecurringHint}
           checked={d.paymentScheduleMode === 'recurring'}
-          onCheckedChange={(on) => d.setPaymentScheduleMode(on ? 'recurring' : 'one_time')}
+          onChange={(on) => d.setPaymentScheduleMode(on ? 'recurring' : 'one_time')}
         />
-      </div>
+      </SheetGroup>
 
-      {/* Notes */}
-      <div>
-        <div className={`${MICRO} mb-2`}>{t.fNotes}</div>
-        <Input size="brand" value={d.paymentNotes} onChange={(e) => d.setPaymentNotes(e.target.value)} placeholder={t.fOptionalNote} />
-      </div>
+      <NoteRow value={d.paymentNotes} onChange={d.setPaymentNotes} placeholder={c.note} />
     </div>
   )
 }

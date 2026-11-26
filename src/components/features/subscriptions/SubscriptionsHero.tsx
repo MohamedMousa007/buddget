@@ -1,45 +1,34 @@
 'use client'
 
 import { format } from 'date-fns'
-import { BAND_FG2, BAND_MIX, BandScale, HeroBand, type HeroBandCell } from '@/components/features/hero/HeroBand'
+import { BAND_FG2, BAND_MIX, BandScale, HeroBand } from '@/components/features/hero/HeroBand'
 import { useSubscriptionDates } from '@/hooks/useSubscriptionDates'
-import { useT } from '@/lib/i18n'
+import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 import type { HeroNumbers } from '@/lib/subscriptions/subscriptionForecast'
-import { formatFixed2, formatFlex } from '@/lib/utils/formatters'
+import { formatFlex } from '@/lib/utils/formatters'
 
 /**
- * Subscriptions' hero is the shared `HeroBand` (Flow, Wealth and Debts use it too), so its
- * size and rhythm are theirs. Only the content is ours: due in 30 days, paid vs left, and
- * the monthly / yearly / next-charge strip. Same height while loading, empty or populated.
+ * Subscriptions' hero, the shared `HeroBand` drawn as a rounded card (Light touch `page-subs`): what subscriptions cost a
+ * month, paid vs still due this month, then one line with the next charge and the yearly total.
  */
 export function SubscriptionsHero({ hero, base, loading }: { hero: HeroNumbers | null; base: string; loading: boolean }) {
-  const t = useT()
-  const ui = t.subscriptions.ui.hero
+  const c = useDebtsSubsLtCopy().subs.hero
   const { shortDate } = useSubscriptionDates()
   const blank = loading || !hero
-  const empty = !blank && hero.monthlyEquivalent === 0 && hero.due30 === 0
   const dash = '—'
   const total = blank ? 0 : hero.paid + hero.left
   const pct = total > 0 && hero ? Math.min(100, (hero.paid / total) * 100) : 0
-
-  const cells: [HeroBandCell, HeroBandCell, HeroBandCell] = [
-    { label: ui.monthlyEquivalent, value: blank || empty ? dash : formatFlex(hero.monthlyEquivalent) },
-    { label: ui.perYear, value: blank || empty ? dash : formatFlex(hero.perYear) },
-    {
-      label: ui.nextCharge,
-      value: blank || !hero.next ? dash : shortDate(format(hero.next.due, 'yyyy-MM-dd')),
-    },
-  ]
+  const next = !blank && hero.next ? c.next(hero.next.sub.name, shortDate(format(hero.next.due, 'yyyy-MM-dd'))) : ''
+  const year = !blank && hero.perYear > 0 ? c.aYear(formatFlex(hero.perYear)) : ''
 
   return (
     <HeroBand
-      label={ui.label}
+      label={c.label}
+      contained
       numbers={
         <p className="flex min-w-0 items-baseline gap-1.5">
-          <span className="font-mono-numbers text-[32px] font-semibold leading-none tracking-[-0.03em]">
-            {blank ? dash : formatFixed2(hero.due30)}
-          </span>
-          <span className={`min-w-0 truncate whitespace-nowrap text-[0.8125rem] ${BAND_FG2}`}>{base}</span>
+          <span className="font-mono-numbers text-[32px] font-semibold leading-none tracking-[-0.03em]">{blank ? dash : formatFlex(hero.monthlyEquivalent)}</span>
+          <span className={`min-w-0 truncate whitespace-nowrap text-[0.8125rem] ${BAND_FG2}`}>{base} {c.aMonth}</span>
         </p>
       }
       bar={
@@ -48,13 +37,18 @@ export function SubscriptionsHero({ hero, base, loading }: { hero: HeroNumbers |
             <div className="h-full rounded-full bg-[var(--flow-band-fg)]" style={{ width: `${pct}%` }} />
           </div>
           <BandScale>
-            <span className="min-w-0 truncate whitespace-nowrap">{ui.paid(blank ? '0' : formatFlex(hero.paid))}</span>
-            <span className="min-w-0 shrink-0 truncate whitespace-nowrap">{ui.left(blank ? '0' : formatFlex(hero.left))}</span>
+            <span dir="auto" className="min-w-0 truncate whitespace-nowrap">{c.paid(blank ? '0' : formatFlex(hero.paid))}</span>
+            <span dir="auto" className="min-w-0 shrink-0 truncate whitespace-nowrap">{c.due(blank ? '0' : formatFlex(hero.left))}</span>
           </BandScale>
         </>
       }
-      cells={cells}
-      fitCells
+      note={next || year ? (
+        <span dir="auto">
+          {next ? <b className="font-semibold text-[var(--flow-band-fg)]">{next}</b> : null}
+          {next && year ? '  ' : ''}
+          {year}
+        </span>
+      ) : dash}
     />
   )
 }

@@ -8,7 +8,7 @@ import { microClassName } from '@/lib/ui/microLabelStyle'
 import { IconButton } from '@/components/ui/IconButton'
 import { useT } from '@/lib/i18n'
 
-function Header({ title, onClose, onBack, actions }: { title: string; onClose: () => void; onBack?: () => void; actions?: ReactNode }) {
+function Header({ title, onClose, onBack, actions, start }: { title: string; onClose: () => void; onBack?: () => void; actions?: ReactNode; start?: ReactNode }) {
   const t = useT()
   return (
     <V3SheetHeader
@@ -22,7 +22,14 @@ function Header({ title, onClose, onBack, actions }: { title: string; onClose: (
         ) : undefined
       }
     >
-      <V3SheetHeader.Title size="compact">{title}</V3SheetHeader.Title>
+      {start ? (
+        <>
+          {start}
+          <span className="sr-only"><V3SheetHeader.Title size="compact">{title}</V3SheetHeader.Title></span>
+        </>
+      ) : (
+        <V3SheetHeader.Title size="compact">{title}</V3SheetHeader.Title>
+      )}
     </V3SheetHeader>
   )
 }
@@ -41,6 +48,7 @@ export function SheetFrame({
   children,
   zClassName,
   headerActions,
+  headerStart,
 }: {
   open: boolean
   onClose: () => void
@@ -53,6 +61,8 @@ export function SheetFrame({
   zClassName?: string
   /** Icon actions before the close (delete, settings, more), usually `V3SheetHeader.Action`s. */
   headerActions?: ReactNode
+  /** Shown in place of the visible title (a "Next charge" date pill); the title stays as the sheet's accessible name. */
+  headerStart?: ReactNode
 }) {
   return (
     <ModalShell
@@ -63,7 +73,7 @@ export function SheetFrame({
       panelClassName="h-[calc(100dvh-48px)] max-h-[calc(100dvh-48px)] md:h-[min(46rem,calc(100dvh-4rem))] md:max-h-[calc(100dvh-4rem)] md:w-[min(28rem,calc(100vw-2rem))] md:rounded-3xl"
     >
       <div className="flex min-h-0 flex-1 flex-col">
-        <Header title={title} onClose={onClose} onBack={onBack} actions={headerActions} />
+        <Header title={title} onClose={onClose} onBack={onBack} actions={headerActions} start={headerStart} />
         <div className="native-scroll flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-4 pt-1 md:px-6 [&>*]:shrink-0">{children}</div>
         {footer ? (
           <div className="sheet-cta flex shrink-0 flex-col gap-2.5 border-t border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-5 pb-6 pt-3 md:px-6">

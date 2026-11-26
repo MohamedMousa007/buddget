@@ -1,57 +1,49 @@
 'use client'
 
-import { MessageSquare, Plus } from 'lucide-react'
+import { Repeat } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { IconButton } from '@/components/ui/IconButton'
 import { findBrandByKey, type CatalogRegion } from '@/lib/constants/subscriptionCatalog'
-import { defaultPlan, tilePrice } from '@/lib/subscriptions/catalogDisplay'
-import { useLocale, useT } from '@/lib/i18n'
-import { BrandPriceTile } from './BrandPriceTile'
-import { tilePriceText } from './subscriptionLabels'
+import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
+import { BrandTile } from './BrandTile'
 
-const FIRST_RUN = ['netflix', 'shahid_vip', 'spotify', 'anghami', 'youtube_premium', 'apple_music'] as const
+const FIRST_RUN = ['netflix', 'spotify', 'shahid_vip'] as const
 
-/** First run: six services with their usual price, then the one primary action and the SMS scan. */
+/** First run (Light touch `emptysubs`): three services to tap for their usual price, Scan my SMS, then Add one myself. */
 export function SubscriptionsEmpty({
-  region,
   onPickBrand,
   onAdd,
   onScan,
 }: {
-  region: CatalogRegion | null
+  region?: CatalogRegion | null
   onPickBrand: (brandKey: string) => void
   onAdd: () => void
   onScan: () => void
 }) {
-  const t = useT()
-  const { locale } = useLocale()
-  const ui = t.subscriptions.ui
-  const tiles = FIRST_RUN.flatMap((key) => {
+  const c = useDebtsSubsLtCopy().subs.empty
+  const brands = FIRST_RUN.flatMap((key) => {
     const brand = findBrandByKey(key)
-    const plan = brand && defaultPlan(brand, region)
-    return brand && plan ? [{ brand, price: tilePriceText(tilePrice(plan, region), locale) }] : []
+    return brand ? [brand] : []
   })
   return (
     <EmptyState
       variant="card"
-      title={ui.empty.title}
-      description={ui.empty.sub}
+      icon={<Repeat strokeWidth={1.8} />}
+      title={c.title}
+      description={c.body}
       action={
-        <div className="flex w-full flex-col gap-3.5 lg:flex-row lg:justify-center">
-          <Button size="cta-block" className="lg:w-72" onClick={onAdd}>
-            <Plus aria-hidden />
-            {t.subscriptions.addSubscription}
-          </Button>
-          <Button size="cta-block" variant="outline" className="lg:w-72" onClick={onScan}>
-            <MessageSquare aria-hidden />
-            {ui.empty.scan}
-          </Button>
+        <div className="flex w-full flex-col items-stretch gap-1 lg:items-center">
+          <Button size="cta-block" className="lg:w-72" onClick={onScan}>{c.scan}</Button>
+          <Button variant="link" size="touch" className="font-semibold text-[var(--color-brand-primary-ink)]" onClick={onAdd}>{c.addMyself}</Button>
         </div>
       }
     >
-      <div className="grid grid-cols-3 gap-2 lg:grid-cols-6 lg:gap-3">
-        {tiles.map(({ brand, price }) => (
-          <BrandPriceTile key={brand.key} brand={brand} price={price} variant="quick" onPick={() => onPickBrand(brand.key)} />
+      <div className="flex justify-center gap-1">
+        {brands.map((brand) => (
+          <IconButton key={brand.key} aria-label={brand.name} onClick={() => onPickBrand(brand.key)} size="lg">
+            <BrandTile brandKey={brand.key} name={brand.name} size={40} />
+          </IconButton>
         ))}
       </div>
     </EmptyState>

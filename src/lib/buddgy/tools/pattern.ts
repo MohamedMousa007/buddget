@@ -14,7 +14,6 @@ const BY_NAME: Record<string, ProposalPattern> = {
   mark_subscription_paid: 'record',
   transfer_between_pockets: 'move',
   withdraw_from_savings: 'move',
-  pause_subscription: 'status',
   resume_subscription: 'status',
   achieve_goal: 'status',
   activate_budget_plan: 'status',
