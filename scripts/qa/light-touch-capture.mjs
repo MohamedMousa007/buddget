@@ -1,0 +1,240 @@
+/**
+ * Captures the running app next to every approved light-touch mockup screen.
+ *
+ *   node scripts/qa/light-touch-capture.mjs [name-filter ...]
+ *
+ * Needs the dev server from .claude/launch.json "buddget-qa-local" (auth bypass, empty Supabase env) on
+ * BASE_URL (default http://localhost:3001). Writes:
+ *   docs/mockups/light-touch/app-screens/<name>.png   the app at 390x844 @2x
+ *   docs/mockups/light-touch/compare/<name>.png       mockup left, app right, same height
+ *   docs/mockups/light-touch/compare/checks.json      computed-style checks + skipped screens with reasons
+ */
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import sharp from 'sharp'
+import { launch, phoneContext, seededState, go, tap, settle } from './light-touch-lib.mjs'
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
+const DIR = path.join(ROOT, 'docs/mockups/light-touch')
+const MOCK = path.join(DIR, 'screens')
+const APP = path.join(DIR, 'app-screens')
+const CMP = path.join(DIR, 'compare')
+
+/**
+ * Data variants: each screen picks one; each is seeded once into its own storage state.
+ * The billing plan (`__qa.plan`) is not persisted, so it is applied after every load. `everyLoad` re-runs `mutate`
+ * after load too: DevAuthBypassSeed re-adds demo income on mount when there is none.
+ */
+const STATES = {
+  full: { seed: true, plan: 'active' },
+  free: { seed: true, plan: 'free' },
+  empty: { seed: false, plan: 'active', mutate: () => {
+    const s = window.__finance.getState()
+    for (const e of [...s.incomeEvents]) s.deleteIncomeEvent(e.id)
+  } },
+  learning: { seed: false, plan: 'active', mutate: () => {
+    const s = window.__finance.getState()
+    const pm = s.paymentMethods[0]?.id ?? 'pm_default_cash'
+    const today = new Date().toISOString().slice(0, 10)
+    s.addExpense({ description: 'Talabat', category: 'Food', amount: 245, currency: 'EGP', paymentMethodId: pm, isRecurring: false, date: today })
+  } },
+  noIncome: { seed: true, plan: 'active', everyLoad: true, mutate: () => {
+    const s = window.__finance.getState()
+    for (const e of [...s.incomeEvents]) s.deleteIncomeEvent(e.id)
+    for (const src of [...s.incomeSources]) s.deleteIncomeSource(src.id)
+  } },
+}
+
+/**
+ * Mockup screen -> how to reach it. `offline` = fake offline (Accounts crashes online with empty Supabase env).
+ * `steps` are tap labels (aria-label, role name or text) or functions. `blocked` = cannot be reached, with the reason.
+ */
+const SCREENS = [
+  { name: 'page-flow', route: '/flow' },
+  { name: 'page-accounts', route: '/accounts', offline: true },
+  { name: 'page-budget', route: '/budget' },
+  { name: 'page-debts', route: '/debts' },
+  { name: 'page-goals', route: '/goals' },
+  { name: 'page-insights', route: '/reports' },
+  { name: 'page-paydays', route: '/paydays', steps: ['Salary · Nexta'] },
+  { name: 'page-subs', route: '/subscriptions' },
+  { name: 'page-wealth', route: '/wealth' },
+
+  { name: 'sheet-expense', route: '/flow', steps: ['Talabat'] },
+  { name: 'sheet-income', route: '/flow', steps: ['Salary · Nexta'] },
+  { name: 'sheet-scan', route: '/flow', steps: ['Carrefour'] },
+  { name: 'sheet-s_held', blocked: 'Held bank messages are fetched from Supabase (HeldMessagesSheet); with empty Supabase env there are none, so the Flow row never shows.' },
+
+  { name: 'sheet-account', route: '/accounts', offline: true, steps: ['CIB, 2 accounts · 2 cards', 'CIB Current'] },
+  { name: 'sheet-card', route: '/accounts', offline: true, steps: ['CIB, 2 accounts · 2 cards', 'CIB Credit'] },
+  { name: 'sheet-addaccount', route: '/accounts', offline: true, steps: ['Add account'] },
+  { name: 'sheet-addcard', route: '/accounts', offline: true, steps: ['CIB, 2 accounts · 2 cards', 'CIB Current', 'Add card'] },
+  { name: 'sheet-cashout', route: '/accounts', offline: true, steps: ['CIB, 2 accounts · 2 cards', 'CIB Current', 'Cash out'] },
+  { name: 'sheet-setaside', route: '/accounts', offline: true, steps: ['CIB, 2 accounts · 2 cards', 'CIB Current', 'Set aside'] },
+  { name: 'sheet-cashhand', route: '/accounts', offline: true, steps: ['Start tracking'] },
+  { name: 'state-cashoff', route: '/accounts', offline: true, scroll: 'Start tracking' },
+
+  { name: 'sheet-deposit', route: '/wealth', steps: ['Add money'] },
+  { name: 'sheet-s_withdraw', route: '/wealth', steps: ['Withdraw'] },
+  { name: 'sheet-s_ef', route: '/wealth', steps: ['Emergency fund'] },
+  { name: 'sheet-efmonth', route: '/wealth', steps: ['Emergency fund', 'A simple month'] },
+  { name: 'sheet-s_gold', route: '/wealth', steps: ['Add pocket or asset', 'Gold'] },
+  { name: 'sheet-s_zakat', blocked: 'The Zakat badge on the Wealth hero only shows when nisab > 0, which needs live gold prices from the Supabase asset_prices table (empty Supabase env: "Gold prices unavailable").' },
+  { name: 'sheet-s_goal', route: '/goals', steps: ['Trip to Dahab'] },
+  { name: 'sheet-goal', route: '/goals', steps: ['Trip to Dahab', 'Add money'] },
+  { name: 'sheet-addgoalC', route: '/goals', steps: ['New goal'] },
+  { name: 'sheet-celebrate', route: '/goals', steps: ['Achieved goals, 1', 'Wedding gift'] },
+
+  { name: 'sheet-s_borrow', route: '/debts', steps: ['Add', 'Borrowed money'] },
+  { name: 'sheet-s_install', route: '/debts', steps: ['Add', 'Installment plan'] },
+  { name: 'sheet-s_vault', route: '/debts', steps: ['1 cleared debt · 18,000 paid off'] },
+  { name: 'sheet-debtpay', route: '/debts', steps: ['Installments', 'Car loan', 'Record a payment'] },
+  { name: 'sheet-repaid', route: '/debts', steps: ['Owed to you', 'Record a payment'] },
+  { name: 'sheet-received', route: '/paydays', steps: ['Upwork', 'Side hustle Nov 18 payday'] },
+  { name: 'sheet-s_payday', route: '/paydays', steps: ['Add'] },
+
+  { name: 'sheet-sub', route: '/subscriptions', steps: ['Netflix'] },
+  { name: 'sheet-s_subadd', route: '/subscriptions', steps: ['Add subscription', 'Netflix EGP'] },
+  { name: 'sheet-s_subcancel', route: '/subscriptions', steps: ['Netflix', 'Cancel subscription'] },
+  { name: 'sheet-s_line', route: '/budget', steps: ['Utilities'] },
+  { name: 'sheet-s_fixgap', blocked: 'Needs an SMS balance report: useAccountGaps reads latest_balance_reports from Supabase, which this server has no URL for.' },
+
+  { name: 'state-emptydebts', route: '/debts', state: 'empty' },
+  { name: 'state-emptyflow', route: '/flow', state: 'empty' },
+  { name: 'state-emptysubs', route: '/subscriptions', state: 'empty' },
+  { name: 'state-insfree', route: '/reports', state: 'free' },
+  { name: 'state-inslearn', route: '/reports', state: 'learning', offline: true },
+  { name: 'state-insnoinc', route: '/reports', state: 'noIncome' },
+  { name: 'state-loading', route: '/flow', steps: [async (page) => { await page.evaluate(() => window.__finance.getState().setDataReady(false)); await page.waitForTimeout(800) }] },
+  { name: 'state-noresults', route: '/flow', steps: ['Open filters', 'Today', 'css=[role=dialog] :text("Rent")', async (page) => {
+    await page.getByRole('button', { name: /^Show \d+ results?$|^No results$/ }).first().click()
+    await settle(page, 800)
+  }] },
+  { name: 'state-buddgy', blocked: 'Buddgy quick-add card comes from an AI reply; the AI route needs a signed-in Supabase session and a model key.' },
+]
+
+/**
+ * Computed-style checks for the visible page. The hero is the first dark or gradient block (outside any open sheet)
+ * of at least 75% width that starts within 260px under the app header.
+ */
+function checksInPage() {
+  const body = getComputedStyle(document.body)
+  const vw = document.documentElement.clientWidth
+  const header = document.querySelector('header')
+  const headerBottom = header ? header.getBoundingClientRect().bottom : 0
+  const transparent = (c) => !c || c === 'transparent' || /rgba\(.*,\s*0\)$/.test(c)
+  const bodyBg = body.backgroundColor
+  const luminance = (c) => {
+    const n = (c.match(/[\d.]+/g) ?? ['1', '1', '1']).map(Number)
+    if (/^ok?lch|^ok?lab/.test(c)) return c.includes('%') && n[0] > 1 ? n[0] / 100 : n[0]
+    const scale = c.startsWith('color(') ? 1 : 255
+    return (0.2126 * n[0] + 0.7152 * n[1] + 0.0722 * n[2]) / scale
+  }
+  let hero = null
+  const root = document.querySelector('main') ?? document.body
+  for (const el of root.querySelectorAll('section, div')) {
+    const r = el.getBoundingClientRect()
+    if (r.top < headerBottom - 1 || r.top > 260 || r.height < 90 || r.width < vw * 0.75) continue
+    if (el.closest('[role=dialog]')) continue
+    const cs = getComputedStyle(el)
+    const painted = /gradient|url\(/.test(cs.backgroundImage) || (!transparent(cs.backgroundColor) && cs.backgroundColor !== bodyBg && luminance(cs.backgroundColor) < 0.45)
+    if (!painted) continue
+    hero = {
+      selector: `${el.tagName.toLowerCase()}.${[...el.classList].slice(0, 4).join('.')}`,
+      borderRadius: cs.borderRadius,
+      marginLeft: cs.marginLeft,
+      marginRight: cs.marginRight,
+      left: Math.round(r.left),
+      right: Math.round(vw - r.right),
+      width: Math.round(r.width),
+      viewportWidth: vw,
+      shape: parseFloat(cs.borderTopLeftRadius) > 0 && r.left > 0 ? 'rounded card' : r.left <= 0 && r.width >= vw - 1 ? 'full bleed' : 'other',
+    }
+    break
+  }
+  const sw = Math.max(document.documentElement.scrollWidth, document.body.scrollWidth)
+  return {
+    bodyFont: body.fontFamily,
+    geist: /geist/i.test(body.fontFamily),
+    hero,
+    horizontalOverflow: sw > vw,
+    scrollWidth: sw,
+    viewportWidth: vw,
+    sheetOpen: Boolean(document.querySelector('[role=dialog]')),
+  }
+}
+
+async function composite(name) {
+  const mock = path.join(MOCK, `${name}.png`)
+  const app = path.join(APP, `${name}.png`)
+  const H = 1688
+  const left = await sharp(mock).resize({ height: H }).png().toBuffer()
+  const right = await sharp(app).resize({ height: H }).png().toBuffer()
+  const lw = (await sharp(left).metadata()).width
+  const rw = (await sharp(right).metadata()).width
+  const GAP = 40, TOP = 64
+  const label = (x, text) => `<text x="${x}" y="44" font-family="Helvetica, Arial" font-size="30" font-weight="700" fill="#333">${text}</text>`
+  const svg = Buffer.from(`<svg width="${lw + GAP + rw}" height="${TOP}" xmlns="http://www.w3.org/2000/svg">${label(8, `${name} · mockup`)}${label(lw + GAP + 8, 'app')}</svg>`)
+  await sharp({ create: { width: lw + GAP + rw, height: H + TOP, channels: 3, background: '#e6e6e6' } })
+    .composite([{ input: svg, left: 0, top: 0 }, { input: left, left: 0, top: TOP }, { input: right, left: lw + GAP, top: TOP }])
+    .png()
+    .toFile(path.join(CMP, `${name}.png`))
+}
+
+async function main() {
+  const filters = process.argv.slice(2)
+  const screens = SCREENS.filter((s) => !filters.length || filters.some((f) => s.name.includes(f)))
+  fs.mkdirSync(APP, { recursive: true })
+  fs.mkdirSync(CMP, { recursive: true })
+  const checksPath = path.join(CMP, 'checks.json')
+  const report = fs.existsSync(checksPath) && filters.length ? JSON.parse(fs.readFileSync(checksPath, 'utf8')) : { screens: {} }
+  report.generatedAt = new Date().toISOString()
+
+  const browser = await launch()
+  const states = {}
+  try {
+    for (const s of screens) {
+      if (s.blocked) {
+        report.screens[s.name] = { captured: false, reason: s.blocked }
+        console.log(`SKIP ${s.name}: ${s.blocked}`)
+        continue
+      }
+      const key = s.state ?? 'full'
+      states[key] ??= await seededState(browser, STATES[key])
+      const { ctx, page } = await phoneContext(browser, { storageState: states[key], offline: s.offline })
+      const errors = []
+      page.on('pageerror', (e) => errors.push(e.message.slice(0, 160)))
+      try {
+        await go(page, s.route)
+        await page.evaluate((p) => window.__qa.plan(p), STATES[key].plan)
+        if (STATES[key].everyLoad) await page.evaluate(STATES[key].mutate)
+        await settle(page, 600)
+        if (s.scroll) {
+          await page.getByRole('button', { name: s.scroll }).first().evaluate((el) => el.scrollIntoView({ block: 'center' }))
+          await page.waitForTimeout(500)
+        }
+        for (const step of s.steps ?? []) {
+          if (typeof step === 'function') await step(page)
+          else await tap(page, step)
+        }
+        await settle(page, 1000)
+        await page.screenshot({ path: path.join(APP, `${s.name}.png`) })
+        await composite(s.name)
+        report.screens[s.name] = { captured: true, route: s.route, steps: (s.steps ?? []).map(String).map((x) => x.slice(0, 60)), offline: Boolean(s.offline), state: key, checks: await page.evaluate(checksInPage), pageErrors: [...new Set(errors)] }
+        console.log(`OK   ${s.name}`)
+      } catch (e) {
+        const reason = e.message.split('\n')[0]
+        report.screens[s.name] = { captured: false, route: s.route, reason, pageErrors: [...new Set(errors)] }
+        console.log(`FAIL ${s.name}: ${reason}`)
+      } finally {
+        await ctx.close()
+      }
+    }
+  } finally {
+    await browser.close()
+  }
+  fs.writeFileSync(checksPath, JSON.stringify(report, null, 2) + '\n')
+}
+
+await main()
