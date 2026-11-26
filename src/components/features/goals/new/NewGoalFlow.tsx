@@ -5,7 +5,8 @@ import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { CategoryGlyph } from '@/components/dashboard/CategoryIcon'
 import { SelectField } from '@/components/ui/SelectField'
 import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
-import { ArrowUp, ChevronLeft, Coins, Pencil, Sparkles, X } from 'lucide-react'
+import { ArrowUp, ChevronLeft, Coins, MoonStar, Pencil, Sparkles, X } from 'lucide-react'
+import { defaultGoalName } from '@/lib/goals/defaultGoalCopy'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { GoalChat } from '@/components/features/goals/new/GoalChat'
 import { CostSheet } from '@/components/features/goals/new/CostSheet'
@@ -104,6 +105,7 @@ function SavedBlock({ form }: { form: Form }) {
         paymentMethods={form.homeAccounts.map((h) => h.method)}
         pockets={pockets}
         labels={{ title: c.whereIsIt, from: c.keptIn, fromPocket: c.keptIn }}
+        look="grouped"
       >
         <PickerRow
           label={c.alreadySaved}
@@ -202,10 +204,23 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
   const summary = fundSummary(plan, money)
   const name = form.name.trim() || c.namePlaceholder
   const canCreate = form.canNext2
+  const hajj = custom && form.icon === 'moon-star'
   const pickSave = (k: GoalCategory) => {
     setPreset(null)
+    if (hajj) {
+      if (k === 'custom') form.setIcon(null)
+      if (form.name === c.hajjChip) form.setName('')
+    }
     if (form.kind === 'save') form.chooseCategory(k)
     else form.pickCategory(k)
+  }
+  const pickHajj = () => {
+    setPreset(null)
+    const named = form.name.trim() && form.name !== defaultGoalName(form.category, t.catalogs.goalNames)
+    if (form.kind === 'save') form.chooseCategory('custom')
+    else form.pickCategory('custom')
+    form.setIcon('moon-star')
+    if (!named) form.setName(c.hajjChip)
   }
   const pickOther = (key: OtherKey) => {
     setPreset(key)
@@ -279,13 +294,21 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
 
         <div role="group" aria-label={f.s1.groupSave} className="hide-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
           {SAVE.map((k) => {
-            const Icon = k === 'custom' && customIcon ? customIcon : goalVisual(k).icon
-            return (
-              <OptionChip key={k} selected={form.kind === 'save' && form.category === k} onClick={() => pickSave(k)} className="shrink-0">
+            const Icon = k === 'custom' && customIcon && !hajj ? customIcon : goalVisual(k).icon
+            const chip = (
+              <OptionChip key={k} selected={form.kind === 'save' && form.category === k && !hajj} onClick={() => pickSave(k)} className="shrink-0">
                 <Icon aria-hidden />
                 {t.goals[goalCategoryLabelKey(k)] as string}
               </OptionChip>
             )
+            // Hajj & Umrah has no category of its own: a goal of your own wearing the moon-star icon.
+            return k !== 'phone_device' ? chip : [
+              chip,
+              <OptionChip key="hajj" selected={form.kind === 'save' && hajj} onClick={pickHajj} className="shrink-0">
+                <MoonStar aria-hidden />
+                {c.hajjChip}
+              </OptionChip>,
+            ]
           })}
         </div>
         <div role="group" aria-label={`${f.s1.groupPay} · ${f.s1.groupControl}`} className="hide-scrollbar -mx-5 -mt-1 flex items-center gap-2 overflow-x-auto px-5 pb-1">
@@ -356,7 +379,12 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
               />
               <PickerRow
                 label={c.fundIt}
-                onClick={() => setFundOpen(true)}
+                onClick={() => {
+                  // iOS leaves focus in the name or amount field when a row is tapped; Fund it would hand focus back to it
+                  // on close, raising the keyboard and hiding Create goal under the first tap.
+                  if (document.activeElement instanceof HTMLInputElement) document.activeElement.blur()
+                  setFundOpen(true)
+                }}
                 value={<span className="truncate font-mono-numbers">{saved > 0 ? c.fundSummarySaved(summary, money(saved)) : summary}</span>}
               />
             </Card>

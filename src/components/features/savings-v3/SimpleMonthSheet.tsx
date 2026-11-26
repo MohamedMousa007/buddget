@@ -11,7 +11,7 @@ import { PickerSheet } from '@/components/ui/PickerSheet'
 import { useT } from '@/lib/i18n'
 import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
 import { estimateEmergencyFund } from '@/lib/savings/estimateEmergencyFund'
-import { SIMPLE_MONTH_LINES, simpleMonthSum, type SimpleMonth, type SimpleMonthLine } from '@/lib/savings/simpleMonth'
+import { SIMPLE_MONTH_DEFAULT_OFF, SIMPLE_MONTH_LINES, simpleMonthSum, type SimpleMonth, type SimpleMonthLine } from '@/lib/savings/simpleMonth'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { cn } from '@/lib/utils'
 
@@ -44,7 +44,7 @@ export interface SimpleMonthSheetProps {
 export function SimpleMonthSheet({ open, onClose, month, currency, initialOwn, debtsLine, onUse }: SimpleMonthSheetProps) {
   const ef = useT().wealthSheets.ef
   const c = useGoalsLtCopy().ef
-  const [off, setOff] = useState<ReadonlySet<SimpleMonthLine>>(new Set())
+  const [off, setOff] = useState<ReadonlySet<SimpleMonthLine>>(SIMPLE_MONTH_DEFAULT_OFF)
   const [own, setOwn] = useState(initialOwn)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)

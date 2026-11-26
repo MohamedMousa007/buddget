@@ -6,7 +6,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { Minus, Plus, ShieldCheck } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { deriveSimpleMonth, simpleMonthDebts } from '@/lib/savings/simpleMonth'
+import { deriveSimpleMonth, simpleMonthDebts, simpleMonthSum, SIMPLE_MONTH_DEFAULT_OFF } from '@/lib/savings/simpleMonth'
 import { computeEmergencyFund } from '@/lib/savings/emergencyFund'
 import { savingsAccountBalanceInBase } from '@/lib/savings/savingsConversions'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
@@ -63,8 +63,10 @@ export function EmergencyFundSheet({ open, onClose, onAddMoney }: EmergencyFundS
     () => simpleMonthDebts(debts, currency, exchangeRates).map((d) => `${d.name} ${fmtNum(d.amount)}`).join(' · '),
     [debts, currency, exchangeRates],
   )
-  // The user's figure (or the sum they chose in the breakdown) wins; with none yet, the derived simple month.
-  const essentials = cfg?.monthlyEssentials && cfg.monthlyEssentials > 0 ? cfg.monthlyEssentials : derived.total
+  // The user's figure (or the sum they chose in the breakdown) wins; with none yet, the derived simple month as the
+  // breakdown first shows it (debt minimums left out until ticked).
+  const derivedSum = simpleMonthSum(derived, SIMPLE_MONTH_DEFAULT_OFF)
+  const essentials = cfg?.monthlyEssentials && cfg.monthlyEssentials > 0 ? cfg.monthlyEssentials : derivedSum
 
   const goldOk = goldPriceAvailable !== false
   const cover = useMemo(() => {
@@ -190,7 +192,7 @@ export function EmergencyFundSheet({ open, onClose, onAddMoney }: EmergencyFundS
           onClose={() => setMonthOpen(false)}
           month={derived}
           currency={currency}
-          initialOwn={cfg?.monthlyEssentials && Math.round(cfg.monthlyEssentials) !== Math.round(derived.total) ? String(cfg.monthlyEssentials) : ''}
+          initialOwn={cfg?.monthlyEssentials && Math.round(cfg.monthlyEssentials) !== Math.round(derivedSum) ? String(cfg.monthlyEssentials) : ''}
           debtsLine={debtsLine || undefined}
           onUse={(figure) => save(targetMonths, figure)}
         />
