@@ -253,6 +253,7 @@ export default function FlowPage() {
                 <div className="mx-4 mt-6">
                   <EmptyState
                     variant="card"
+                    size="page"
                     icon={<Receipt />}
                     title={lt.page.emptyTitle(monthName)}
                     description={lt.page.emptyBody}
@@ -274,6 +275,7 @@ export default function FlowPage() {
                 <div className="mx-4 mt-6">
                   <EmptyState
                     variant="card"
+                    size="page"
                     icon={<Receipt />}
                     title={segment === 'in' ? t.flow.emptySegmentInTitle(monthName) : t.flow.emptySegmentOutTitle(monthName)}
                     description={segment === 'in' ? t.flow.emptySegmentInBody : t.flow.emptySegmentOutBody}
@@ -290,9 +292,10 @@ export default function FlowPage() {
                   />
                 </div>
               ) : empty === 'noMatch' ? (
-                <div className="mx-4 mt-4">
+                <div className="mx-4 mt-3">
                   <EmptyState
                     variant="card"
+                    size="section"
                     icon={<SearchX />}
                     iconTone="neutral"
                     title={t.flow.noMatchTitle}

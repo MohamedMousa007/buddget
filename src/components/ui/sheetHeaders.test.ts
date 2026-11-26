@@ -17,6 +17,7 @@ type Category = 'popover-menu' | 'wrapper' | 'flow-chrome' | 'primitive'
 const EXEMPT: Record<string, { category: Category; reason: string }> = {
   'src/components/modals/QuickAddFAB.tsx': { category: 'popover-menu', reason: 'content-height menu anchored to the add button; no close, tap-outside dismisses' },
   'src/components/modals/AddExpenseSheet.tsx': { category: 'wrapper', reason: 'thin shell around ExpenseSheetForm, whose header is the standard one' },
+  'src/components/modals/AddIncomeSheet.tsx': { category: 'wrapper', reason: 'thin shell around AddIncomeForm and IncomeSheetForm, whose headers are the standard one' },
   'src/components/modals/EditExpenseSheet.tsx': { category: 'wrapper', reason: 'thin shell around ExpenseSheetForm, whose header is the standard one' },
   'src/components/receipt/ReceiptScanSheet.tsx': { category: 'flow-chrome', reason: 'a capture and review flow with its own camera and step chrome' },
   'src/components/voice/VoiceRecordSheet.tsx': { category: 'flow-chrome', reason: 'a recording flow with its own record and cancel controls' },

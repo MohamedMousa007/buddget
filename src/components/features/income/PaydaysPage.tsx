@@ -249,7 +249,7 @@ export function PaydaysPage() {
                       <span className="font-mono-numbers">{formatFlex(s.amount)}</span> {s.currency}{acct ? ` → ${acct}` : ''}
                     </span>
                   </span>
-                  <button
+                  <button data-raw-button-ok="a drag handle sized to the 44px touch target"
                     type="button"
                     aria-label={`${t.paydays.dragHandle}: ${s.name}`}
                     onPointerDown={startDrag(s.id)}
@@ -428,7 +428,7 @@ function MonthCircles({ occ, today, locale, selectedKey, onSelect }: {
         return (
           <li key={o.key}>
             {/* Tapping a payday opens its actions under the buttons (log, mark missed, undo), as the old timeline did. */}
-            <button
+            <button data-raw-button-ok="a payday month circle on the hero, sized by the mockup check row"
               type="button"
               aria-label={c.monthCircle(label, state)}
               aria-pressed={selectedKey === o.key}

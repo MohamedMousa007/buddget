@@ -32,7 +32,7 @@ function LineRow({ lv, month, base, onOpen }: { lv: LineView; month: boolean; ba
   const sub = !month ? c.planned(Math.round(lv.percent)) : over ? c.over(formatWhole(-left), formatWhole(lv.amount)) : c.leftOf(formatWhole(left), formatWhole(lv.amount))
   const fill = Math.min(100, Math.max(0, lv.usedPercent))
   return (
-    <button type="button" onClick={onOpen} className="flex min-h-[60px] w-full items-center gap-3 px-4 py-2.5 text-start transition-colors hover:bg-[var(--color-brand-elevated)]">
+    <button data-raw-button-ok="a whole budget line row, sized to the mockup 60px list row" type="button" onClick={onOpen} className="flex min-h-[60px] w-full items-center gap-3 px-4 py-2.5 text-start transition-colors hover:bg-[var(--color-brand-elevated)]">
       <LineTile line={lv.line} block={lv.block} className="size-10 rounded-[11px] [&_svg]:size-5" />
       <span className="min-w-0 flex-1">
         <span dir="auto" className="block truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{catLabel(lv.line.name)}</span>

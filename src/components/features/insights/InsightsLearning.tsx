@@ -1,6 +1,6 @@
 'use client'
 
-import { CalendarDays, Repeat, Sparkles, TrendingUp } from 'lucide-react'
+import { Calendar, Repeat, Sparkles, TrendingUp } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { BAND_FG2, BAND_MIX } from '@/components/features/hero/HeroBand'
 import { useInsightsLtCopy } from '@/lib/i18n/insightsLtCopy'
@@ -10,7 +10,7 @@ import { ToneTile, type Tone } from './InsightsParts'
 
 const EXAMPLE_LOOK: { Icon: typeof TrendingUp; tone: Tone }[] = [
   { Icon: TrendingUp, tone: 'amber' },
-  { Icon: CalendarDays, tone: 'teal' },
+  { Icon: Calendar, tone: 'teal' },
   { Icon: Repeat, tone: 'teal' },
 ]
 
@@ -50,7 +50,7 @@ export function InsightsLearning({ progress }: { progress: LearningProgress }) {
             <li key={item.title} className="flex items-center gap-3 rounded-2xl border border-dashed border-[var(--color-brand-border-strong)] px-4 py-3 opacity-80">
               <ToneTile tone={tone}><Icon /></ToneTile>
               <span className="min-w-0 flex-1">
-                <span className="flex items-start justify-between gap-2">
+                <span className="flex items-center justify-between gap-2">
                   <span className="text-[0.875rem] font-semibold text-[var(--color-brand-text-primary)]">{item.title}</span>
                   <Badge tone="neutral" size="xs">{c.example}</Badge>
                 </span>

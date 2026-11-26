@@ -45,7 +45,7 @@ export function PlanPickerRow({ planName, state, onOpenPlans, expanded, classNam
   const c = useBudgetChromeCopy().planBar
   const lt = useBudgetLtCopy()
   return (
-    <button
+    <button data-raw-button-ok="the quiet plan-picker row, full width with a 44px target"
       type="button"
       onClick={onOpenPlans}
       aria-label={`${c.switchPlan}: ${planName}`}

@@ -309,19 +309,12 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
             onClick={typeLocked ? undefined : openPayday}
             value={
               recurring ? (
-                <span className="truncate">{[source?.name ?? incomeSourceTypeLabel(t.income, event.sourceType), shortDate(payday)].join(' · ')}</span>
+                <span className="truncate">{[incomeSourceTypeLabel(t.income, event.sourceType ?? source?.sourceType), shortDate(payday)].join(' · ')}</span>
               ) : (
                 <span className="text-[var(--color-brand-text-muted)]">{lt.income.notLinked}</span>
               )
             }
           />
-          {recurring ? (
-            <PickerRow
-              label={t.income.statusLabel}
-              onClick={typeLocked ? undefined : () => setStatusOpen(true)}
-              value={<span className="truncate">{statusText[status]}</span>}
-            />
-          ) : null}
           <PickerRow
             label={lt.expense.recordedFrom}
             value={
@@ -337,8 +330,28 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
           />
         </Card>
 
+        <label className="mx-4 mt-3 flex min-h-12 items-start gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-3">
+          <StickyNote className="mt-[3px] size-[18px] shrink-0 text-[var(--color-brand-text-muted)]" aria-hidden />
+          <textarea
+            id="ie-notes"
+            ref={noteRef}
+            rows={1}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            aria-label={t.addIncome.labelNotes}
+            placeholder={t.expenseForm.notePlaceholder}
+            dir="auto"
+            className="block min-h-6 w-full resize-none overflow-hidden bg-transparent text-[0.9375rem] leading-6 text-[var(--color-brand-text-primary)] outline-none placeholder:text-[var(--color-brand-text-muted)]"
+          />
+        </label>
+        {/* Not in the mockup: the payday status, Unlink and the one-time actions stay reachable as quiet links under the note. */}
         {recurring || event.exclusion === 'pass_through' || !typeLocked ? (
           <div className="mx-4 mt-1 flex flex-wrap justify-center gap-x-2">
+            {recurring && !typeLocked ? (
+              <Button variant="link" size="touch" className="text-[var(--color-brand-text-secondary)]" aria-haspopup="dialog" onClick={() => setStatusOpen(true)}>
+                {t.income.statusLabel}: {statusText[status]}
+              </Button>
+            ) : null}
             {recurring ? (
               <Button
                 variant="link"
@@ -378,20 +391,6 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
           </div>
         ) : null}
 
-        <label className="mx-4 mt-2 flex min-h-12 items-start gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-3">
-          <StickyNote className="mt-[3px] size-[18px] shrink-0 text-[var(--color-brand-text-muted)]" aria-hidden />
-          <textarea
-            id="ie-notes"
-            ref={noteRef}
-            rows={1}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            aria-label={t.addIncome.labelNotes}
-            placeholder={t.expenseForm.notePlaceholder}
-            dir="auto"
-            className="block min-h-6 w-full resize-none overflow-hidden bg-transparent text-[0.9375rem] leading-6 text-[var(--color-brand-text-primary)] outline-none placeholder:text-[var(--color-brand-text-muted)]"
-          />
-        </label>
       </div>
 
       <div className="sheet-cta shrink-0 border-t border-[var(--color-brand-border)] px-4 pb-6 pt-3">
