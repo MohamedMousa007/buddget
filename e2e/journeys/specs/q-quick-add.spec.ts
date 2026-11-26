@@ -82,7 +82,7 @@ test('Q3 Savings opens Add money directly on Wealth, once, and saves', async ({ 
     await page.waitForTimeout(1000)
     await expect(dialog(page, 'Add money')).toBeHidden()
   })
-  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 5000 })
+  await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: 5000 })
   await test.step('with an account: deposit 500 from the + on another screen', async () => {
     await goto(page, '/reports')
     await openTile(page, /^Savings/)
@@ -105,7 +105,12 @@ test('Q4 Pay debt: empty state leads to adding one; with a debt it pays', async 
     const picker = childSheet(page)
     await expect(picker).toContainText('No active debts')
     await picker.getByRole('button', { name: 'Add a debt' }).click()
-    await expect(dialog(page, 'Add debt')).toBeVisible()
+    // The light-touch "Add a debt" option sheet opens over the picker (the same one as on Debts), and its choice leads to the form.
+    const add = dialog(page, 'Add a debt')
+    await expect(add).toContainText('What are you tracking?')
+    for (const family of [/^Borrowed money/, /^Installment plan/, /^Credit card/]) await expect(add.getByRole('radio', { name: family })).toBeVisible()
+    await add.getByRole('radio', { name: /^Borrowed money/ }).click()
+    await expect(dialog(page, 'New borrow')).toBeVisible()
     await closeAll(page)
   })
   await addBorrow(page, { person: 'QA Sami', what: 'QA loan', amount: 1000 })
@@ -125,7 +130,7 @@ test('Q4 Pay debt: empty state leads to adding one; with a debt it pays', async 
 test('Q5 Subscription, Receipt and voice work from a page with no add button', async ({ page, user, context }) => {
   void user
   await context.grantPermissions(['microphone', 'camera'])
-  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 3000 })
+  await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: 3000 })
   await test.step('Subscription lands on Subscriptions with the add sheet open, and saves', async () => {
     await goto(page, '/budget-history')
     await openTile(page, /^Subscription/)

@@ -30,7 +30,7 @@ const balanceOf = async (page: Page, name: RegExp) => {
 }
 
 test('H1 card added from an account: linked to it, provider switch re-links, lands under the right account; edit moves it', async ({ page, user }) => {
-  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 5000 })
+  await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: 5000 })
   await addAccount(page, { kind: 'Bank', provider: /^CIB/, balance: 3000 })
   const qnb = await localWait(page, (s) => s.paymentMethods.find((m: any) => m.name === 'QNB Alahli' && m.openingBalance === 5000))
   const cib = await localWait(page, (s) => s.paymentMethods.find((m: any) => m.name === 'CIB' && m.openingBalance === 3000))

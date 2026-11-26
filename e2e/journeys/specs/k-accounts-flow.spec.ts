@@ -5,7 +5,7 @@
 import type { Page } from '@playwright/test'
 import { expect, goto, localWait, test } from '../lib/fixtures'
 import { serverRows } from '../lib/server'
-import { addAccount, addExpense, blur, dialog } from '../lib/ui'
+import { addAccount, addExpense, blur, dialog, shown } from '../lib/ui'
 
 async function openAccount(page: Page, name: RegExp | string) {
   await goto(page, '/accounts')
@@ -14,7 +14,7 @@ async function openAccount(page: Page, name: RegExp | string) {
 }
 
 test('K1 Flow hides own-account moves with no "Not counted" chip; the account Recent row opens the expense editor', async ({ page, user }) => {
-  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 5000 })
+  await addAccount(page, { kind: 'Bank', provider: /^QNB Alahli/, balance: 5000 })
   const qnb = await localWait(page, (s) => s.paymentMethods.find((m: any) => m.name === 'QNB Alahli' && m.openingBalance === 5000))
 
   await test.step('cash out 500 from QNB (an own-account move) and spend 120 on QNB', async () => {
@@ -82,7 +82,7 @@ test('K2 Cash changes currency: with money in it, the amount is asked again in t
     await serverRows('payment_methods', user.id, `id=eq.${cash.id}`, (r: any[]) => r[0]?.currency === 'USD')
     await goto(page, '/accounts')
     const row = page.getByRole('button', { name: 'Cash', exact: true })
-    await expect(row).toContainText('20.00')
+    await expect(row).toContainText(shown('20'))
     await expect(row).toContainText(/USD|\$/)
   })
 })

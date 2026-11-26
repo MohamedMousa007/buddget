@@ -9,9 +9,9 @@ A cloud session gets a short brief ("follow `docs/QA_CLOUD.md`, check X") and no
 
 ## Run the app (dev auth bypass, signed-in stand-in, no Supabase)
 ```bash
-NEXT_PUBLIC_SUPABASE_URL= NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY= NEXT_PUBLIC_DEV_AUTH_BYPASS=1 npm run dev -- -p 3001
+NEXT_PUBLIC_SUPABASE_URL= NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY= SUPABASE_SECRET_KEY= NEXT_PUBLIC_API_BASE_URL= NEXT_PUBLIC_DEV_AUTH_BYPASS=1 npm run dev -- -p 3001
 ```
-The first page compile is slow; wait for it before screenshots. Use a mobile viewport (375x667, 375x812) and 1440.
+Blank every Supabase variable, the secret key too, and the API base: a cloud environment sets them, and with them set the bypass talks to the live project (or sends `/api` calls to the native host). The first page compile is slow; wait for it before screenshots. Use a mobile viewport (375x667, 375x812) and 1440.
 
 ## Seed state from the browser console
 ```js

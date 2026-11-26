@@ -5,7 +5,7 @@ import { MessagesSquare, SquarePen, X } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { BuddgyIcon, type BuddgyMood } from '@/components/ai/BuddgyIcon'
 import { useBuddgyMood } from '@/lib/ai/useBuddgyMood'
-import { IconButton } from '@/components/ui/IconButton'
+import { ChatHeaderButton } from '@/components/features/ai-chat/ChatHeaderButton'
 import type { BuddgyBeat } from '@/lib/buddgy/client/chatTypes'
 import { useBuddgyChatCopy } from '@/lib/i18n/buddgyChatCopy'
 
@@ -87,24 +87,18 @@ export function AIChatHeader({ onClose, onNewChat, canReset, beat, isLoading, st
         </p>
       </div>
       {onShowChats ? (
-        <IconButton onClick={onShowChats} aria-label={copy.list.open} variant="tinted" size="sm" shape="round">
+        <ChatHeaderButton onClick={onShowChats} label={copy.list.open}>
           <MessagesSquare className="h-4 w-4" strokeWidth={2.2} />
-        </IconButton>
+        </ChatHeaderButton>
       ) : null}
       {canReset ? (
-        <IconButton onClick={onNewChat} aria-label={copy.newChat} variant="tinted" size="sm" shape="round">
+        <ChatHeaderButton onClick={onNewChat} label={copy.newChat}>
           <SquarePen className="h-4 w-4" strokeWidth={2.2} />
-        </IconButton>
+        </ChatHeaderButton>
       ) : null}
-      <IconButton
-        onClick={onClose}
-        aria-label={copy.close}
-        variant="tinted"
-        size="sm"
-        shape="round"
-      >
+      <ChatHeaderButton onClick={onClose} label={copy.close}>
         <X className="h-4 w-4" strokeWidth={2.2} />
-      </IconButton>
+      </ChatHeaderButton>
     </div>
   )
 }
