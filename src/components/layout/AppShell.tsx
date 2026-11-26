@@ -146,7 +146,7 @@ function SmsStartupSync() {
       const { reportSmsQueue } = await import('@/lib/devices/client')
       const { getLastDrainOutcome } = await import('@/lib/native/smsTracker')
       const after = await getSmsBridgeStatus()
-      await reportSmsQueue(after && { ...after, lastResult: getLastDrainOutcome() ?? after.lastResult })
+      await reportSmsQueue(after && { ...after, drainOutcome: getLastDrainOutcome() })
     }
 
     let cancelled = false

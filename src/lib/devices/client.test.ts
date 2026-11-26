@@ -4,7 +4,7 @@ const fetchMock = vi.hoisted(() => vi.fn())
 vi.mock('@/lib/apiBase', () => ({ apiFetchAuth: fetchMock }))
 vi.mock('@/lib/native/isNative', () => ({ isNative: () => true, isIOS: () => true, isAndroid: () => false }))
 
-import { setDeviceCollectsSms, readPendingSmsRole, resolveStartIntent } from '@/lib/devices/client'
+import { setDeviceCollectsSms, readPendingSmsRole, resolveStartIntent, smsLastResult } from '@/lib/devices/client'
 
 beforeEach(() => {
   fetchMock.mockReset()
@@ -53,5 +53,15 @@ describe('resolveStartIntent', () => {
     expect(resolveStartIntent(null, true, false)).toBe(true)
     expect(resolveStartIntent(null, null, false)).toBe(false)
     expect(resolveStartIntent(null, null, null)).toBeNull()
+  })
+})
+
+describe('smsLastResult', () => {
+  it('keeps the Shortcut result and adds a failed replay after it', () => {
+    expect(smsLastResult('delivered', 'http_401')).toBe('delivered drain:http_401')
+    expect(smsLastResult('skipped_not_money', 'delivered')).toBe('skipped_not_money')
+    expect(smsLastResult(undefined, 'network')).toBe('drain:network')
+    expect(smsLastResult('', null)).toBeNull()
+    expect(smsLastResult('x'.repeat(80), null)).toHaveLength(60)
   })
 })

@@ -50,4 +50,14 @@ describe('capActiveIngestTokens', () => {
     await capActiveIngestTokens(service, 'u1', null)
     expect(rows.filter((r) => !r.is_active).map((r) => r.id)).toEqual(['a'])
   })
+
+  it('keeps every token of a burst active, so whichever one the phone saved last still works', async () => {
+    const now = Date.parse('2026-11-26T18:19:30Z')
+    const at = (s: number) => new Date(now - s * 1000).toISOString()
+    const burst = ['t1', 't2', 't3', 't4', 't5'].map((id, i) => ({ ...row(id, 'd1', 1), created_at: at(7 - i) }))
+    const rows = [{ ...row('old', 'd1', 1), created_at: '2026-11-20T00:00:00Z' }, ...burst]
+    const { service } = fakeService(rows)
+    await capActiveIngestTokens(service, 'u1', 'd1', now)
+    expect(rows.filter((r) => !r.is_active).map((r) => r.id)).toEqual(['old'])
+  })
 })
