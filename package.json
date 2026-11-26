@@ -47,7 +47,7 @@
     "@capgo/capacitor-social-login": "^8.3.26",
     "@revenuecat/purchases-capacitor": "14.1.0",
     "@sentry/capacitor": "4.4.0",
-    "@sentry/react": "10.69.0",
+    "@sentry/react": "11.16.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.119.0",
     "class-variance-authority": "^0.7.1",
