@@ -13,6 +13,7 @@ import { nextSegmentIndex } from './segmentedNav'
 import { ROUTE_TITLE_SELECTOR, documentTitleFor, headingFor, shouldMoveFocus } from '@/components/layout/routeAnnounce'
 import { RouteAnnouncer } from '@/components/layout/RouteAnnouncer'
 import { SkipLink } from '@/components/layout/SkipLink'
+import { SettingsSwitchRow } from '@/components/features/settings/SettingsSwitchRow'
 import { WealthHeroBadges } from '@/components/features/savings-v3/WealthHeroBadges'
 
 const SRC = join(__dirname, '../..')
@@ -57,13 +58,22 @@ describe('A11-3 OTP inputs have names', () => {
 })
 
 describe('A11-4 Zakat and amount inputs have names', () => {
-  it('every per-asset and debts input is built with a label', () => {
+  it('the trade-goods amount and every per-holding and per-debt switch have a name', () => {
     const src = read('components/features/savings-v3/ZakatSheet.tsx')
-    expect(src).toMatch(/lineInput = \(id: LineId, live: number, label: string\)/)
-    expect(src).toContain("'aria-label': label")
-    const calls = src.match(/lineInput\([^)]*\)/g)!.filter((c) => !c.includes('LineId'))
-    expect(calls.length).toBeGreaterThanOrEqual(2)
-    for (const c of calls) expect(c.split(',').length, c).toBe(3)
+    expect(src).toMatch(/<AmountHero[^>]*aria-label=\{zc\.tradeGoods\}/)
+    const rows = src.match(/<SettingsSwitchRow[\s\S]*?\/>/g)!
+    expect(rows.length).toBeGreaterThanOrEqual(2)
+    expect(rows.find((r) => r.includes('label={zc.worn}'))).toContain('ariaLabel={`${zc.worn}: ${h.name}`}')
+    expect(rows.find((r) => r.includes('label={zc.likelyRepaid}'))).toContain('ariaLabel={`${zc.likelyRepaid}: ${d.name}`}')
+  })
+
+  it('SettingsSwitchRow names its switch with ariaLabel, else its label', () => {
+    const name = (props: { label: string; ariaLabel?: string }) => {
+      const html = renderToStaticMarkup(h(SettingsSwitchRow, { ...props, checked: false, onChange: () => {} }))
+      return html.match(/<[^>]*role="switch"[^>]*>/)![0].match(/aria-label="([^"]*)"/)![1]
+    }
+    expect(name({ label: 'Worn', ariaLabel: 'Worn: Ring' })).toBe('Worn: Ring')
+    expect(name({ label: 'Worn' })).toBe('Worn')
   })
 
   it('amount-received and year-search inputs are named', () => {

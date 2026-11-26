@@ -11,7 +11,7 @@ import { computeEmergencyFund } from '@/lib/savings/emergencyFund'
 import { savingsAccountBalanceInBase } from '@/lib/savings/savingsConversions'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { SimpleMonthSheet } from '@/components/features/savings-v3/SimpleMonthSheet'
-import { formatWhole as fmtNum } from '@/lib/utils/formatters'
+import { formatWhole as fmtNum, toLatinDigits } from '@/lib/utils/formatters'
 import { micro } from '@/lib/ui/microLabelStyle'
 import { useT } from '@/lib/i18n'
 import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
@@ -90,7 +90,7 @@ export function EmergencyFundSheet({ open, onClose, onAddMoney }: EmergencyFundS
     save(v, essentials)
   }
   const typeMonths = (raw: string) => {
-    const digits = raw.replace(/\D/g, '').slice(0, 2)
+    const digits = toLatinDigits(raw).replace(/\D/g, '').slice(0, 2)
     setMonthsDraft(digits)
     const n = Number(digits)
     if (n >= MIN_MONTHS && n <= MAX_MONTHS) {

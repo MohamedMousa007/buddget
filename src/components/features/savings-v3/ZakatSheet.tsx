@@ -194,6 +194,7 @@ export function ZakatSheet({ open, onClose, sources, year, hawlDate }: ZakatShee
                   <SettingsSwitchRow
                     key={h.id}
                     label={zc.worn}
+                    ariaLabel={`${zc.worn}: ${h.name}`}
                     hint={zc.wornHint(h.name, fmtNum(h.grams))}
                     checked={h.worn}
                     onChange={(on) => save({ jewelleryHoldingIds: toggleIn(useFinanceStore.getState().profile.zakatConfig?.jewelleryHoldingIds, h.id, on) })}
@@ -203,6 +204,7 @@ export function ZakatSheet({ open, onClose, sources, year, hawlDate }: ZakatShee
                   <SettingsSwitchRow
                     key={d.id}
                     label={zc.likelyRepaid}
+                    ariaLabel={`${zc.likelyRepaid}: ${d.name}`}
                     hint={zc.likelyRepaidHint(d.name, `${fmtNum(d.value)} ${unit}`)}
                     checked={d.counted}
                     onChange={(on) => save({ doubtfulDebtIds: toggleIn(useFinanceStore.getState().profile.zakatConfig?.doubtfulDebtIds, d.id, !on) })}

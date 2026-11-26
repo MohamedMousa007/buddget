@@ -1,9 +1,10 @@
+import { parseISO } from 'date-fns'
 import type { Goal, SavingsTransaction } from '@/lib/store/types'
 
 /** Whole months from creation to completion, at least 1. */
 export function monthsTaken(goal: Pick<Goal, 'createdAt' | 'achievedAt'>): number {
-  const a = new Date(goal.createdAt)
-  const b = new Date(goal.achievedAt ?? goal.createdAt)
+  const a = parseISO(goal.createdAt)
+  const b = parseISO(goal.achievedAt ?? goal.createdAt)
   return Math.max(1, (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth()))
 }
 
