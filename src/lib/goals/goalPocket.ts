@@ -28,17 +28,30 @@ export function savedHomeProblem(ledger: LedgerInput, currency: Currency, saved:
   return saved > availableIn(home, ledger) + balanceEpsilon(currency) ? 'over_available' : null
 }
 
-type GoalPocketStore = Pick<FinanceStore, 'addSavingsAccount' | 'updateGoal' | 'depositToSavings' | 'paymentMethods'>
+type GoalPocketStore = Pick<FinanceStore, 'addSavingsAccount' | 'updateGoal' | 'depositToSavings' | 'paymentMethods'> &
+  Partial<Pick<FinanceStore, 'savingsAccounts' | 'transferBetweenPockets'>>
 
 /**
  * A new goal's pocket and its already-saved money, the one writer behind the goal form and Buddgy's add_goal.
  * In a tracked account the pocket is set aside inside it (net worth unchanged, capped by the store at what is
- * available); elsewhere it stands on its own and the money is counted once as new.
+ * available); elsewhere it stands on its own and the money is counted once as new. With `fromPocketId` the money
+ * moves out of that pocket (same currency) into the new one, which is kept where the source is, so net worth stays
+ * the same.
  */
 export function createGoalPocket(
   s: GoalPocketStore,
-  input: { goalId: string; pocketName: string; goalName: string; currency: Currency; saved: number; home?: SavedHome | null },
+  input: { goalId: string; pocketName: string; goalName: string; currency: Currency; saved: number; home?: SavedHome | null; fromPocketId?: string },
 ): { pocketId: string; savedRecorded: boolean } {
+  if (input.fromPocketId && input.saved > 0) {
+    const source = s.savingsAccounts?.find((a) => a.id === input.fromPocketId)
+    const pocketId = s.addSavingsAccount({
+      name: input.pocketName, category: 'savings', type: 'vault', currency: input.currency,
+      ...(source?.heldInPaymentMethodId ? { heldInPaymentMethodId: source.heldInPaymentMethodId } : {}),
+    })
+    s.updateGoal(input.goalId, { linkedSavingsAccountIds: [pocketId] })
+    const moved = !!source && source.currency === input.currency && !!s.transferBetweenPockets?.(source.id, pocketId, input.saved, input.goalName)
+    return { pocketId, savedRecorded: moved }
+  }
   const holder = input.saved > 0 && input.home && input.home !== ELSEWHERE && goalHomeAccounts(s.paymentMethods, input.currency).some((a) => a.id === input.home)
     ? input.home
     : undefined

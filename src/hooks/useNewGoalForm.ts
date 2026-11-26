@@ -13,6 +13,8 @@ import { averageMonthlySpend, fieldAdvice } from '@/lib/goals/fieldAdvice'
 import { trackedDebtIds } from '@/lib/goals/debtGoal'
 import { clearDraft, loadDraft, saveDraft, type NewGoalDraft } from '@/lib/goals/newGoalDraft'
 import { createGoalPocket, goalHomeAccounts, savedHomeProblem } from '@/lib/goals/goalPocket'
+import { isGoalIconKey, type GoalIconKey } from '@/lib/goals/goalVisual'
+import { balanceEpsilon } from '@/lib/savings/balanceMath'
 import { useLedgerInput } from '@/lib/accounts/useAccounts'
 import { computeBalances } from '@/lib/accounts/balance'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -72,6 +74,9 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
   const [frequency, setFrequency] = useState(draft?.frequency ?? 'monthly')
   const [alreadySaved, setAlreadySaved] = useState(draft?.alreadySaved ?? '')
   const [savedHome, setSavedHome] = useState<string | null>(draft?.savedHome ?? null)
+  // Add goal (version C): the saved money can also sit in another pocket, and a goal of your own picks its icon.
+  const [savedPocketId, setSavedPocketId] = useState<string | null>(draft?.savedPocketId ?? null)
+  const [icon, setIcon] = useState<GoalIconKey | null>(isGoalIconKey(draft?.icon) ? draft.icon : null)
   const [fundingMode, setFundingMode] = useState(draft?.fundingMode ?? 'share')
   const [sharePicked, setSharePicked] = useState<number | null>(draft?.sharePct ?? null)
   const [fixedAmount, setFixedAmount] = useState(draft?.fixedAmount ?? '')
@@ -89,7 +94,12 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
     const balances = computeBalances(ledger)
     return goalHomeAccounts(ledger.paymentMethods, currency).map((method) => ({ method, free: balances.get(method.id)?.free ?? 0 }))
   }, [ledger, currency])
-  const savedProblem = savedHomeProblem(ledger, currency, num(alreadySaved), savedHome)
+  const savedPocket = savedPocketId ? ledger.savingsAccounts.find((a) => a.id === savedPocketId) : undefined
+  const savedProblem = savedPocketId
+    ? num(alreadySaved) > 0 && (!savedPocket || savedPocket.currency !== currency || num(alreadySaved) > savedPocket.currentBalance + balanceEpsilon(currency))
+      ? 'over_available' as const
+      : null
+    : savedHomeProblem(ledger, currency, num(alreadySaved), savedHome)
 
   const activeDebts = useMemo(() => s.debts.filter((d) => d.status !== 'cleared'), [s.debts])
   const kind = goalKind(category)
@@ -156,6 +166,16 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
     [freeDebts, cat],
   )
 
+  /** Version C's category chips: switch the category, keeping what was typed; a default name follows the category. */
+  const chooseCategory = useCallback(
+    (c: GoalCategory) => {
+      setName((n) => (!n.trim() || n === defaultGoalName(category, cat.goalNames) ? defaultGoalName(c, cat.goalNames) : n))
+      setCategory(c)
+      setLinkedDebtIds([])
+    },
+    [category, cat],
+  )
+
   /** "Paying this off instead?": turn the goal into one that follows an existing debt, so nothing is duplicated. */
   const linkInstead = useCallback((debtId: string, debtName: string) => {
     setCategory('debt_freedom')
@@ -178,10 +198,10 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
   useEffect(() => {
     if (submitted.current) return
     saveDraft({
-      step, category, name, targetAmount, currency, targetDate, frequency, alreadySaved, savedHome, fundingMode, sharePct: sharePicked,
+      step, category, name, targetAmount, currency, targetDate, frequency, alreadySaved, savedHome, savedPocketId, icon, fundingMode, sharePct: sharePicked,
       fixedAmount, monthlySpendingLimit: limit, spendingCategory, linkedDebtIds,
     })
-  }, [step, category, name, targetAmount, currency, targetDate, frequency, alreadySaved, savedHome, fundingMode, sharePicked, fixedAmount, limit, spendingCategory, linkedDebtIds])
+  }, [step, category, name, targetAmount, currency, targetDate, frequency, alreadySaved, savedHome, savedPocketId, icon, fundingMode, sharePicked, fixedAmount, limit, spendingCategory, linkedDebtIds])
 
   const running = s.goals.filter((g) => g.status === 'active' && g.category !== 'spending_control' && g.category !== 'debt_freedom')
   const nextPriority = s.goals.reduce((m, g) => Math.max(m, g.priority + 1), 0)
@@ -200,7 +220,7 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
     try {
       const common = {
         name: goalName,
-        emoji: emojiFor(category),
+        emoji: category === 'custom' && icon ? icon : emojiFor(category),
         category,
         currency: ccy,
         priority: nextPriority,
@@ -226,9 +246,13 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
           fundingMode,
           sharePct: fundingMode === 'share' ? sharePct : null,
           monthlyContribution: fundingMode === 'fixed' && num(fixedAmount) > 0 ? num(fixedAmount) : null,
-          frequency,
+          // Only a fixed amount has a period; a share and "by hand" are checked monthly.
+          frequency: fundingMode === 'fixed' ? frequency : 'monthly',
         })
-        const made = createGoalPocket(st, { goalId, pocketName: cat.goalPocketName(goalName), goalName, currency: ccy, saved: num(alreadySaved), home: savedHome })
+        const made = createGoalPocket(st, {
+          goalId, pocketName: cat.goalPocketName(goalName), goalName, currency: ccy, saved: num(alreadySaved),
+          home: savedPocketId ? null : savedHome, ...(savedPocketId ? { fromPocketId: savedPocketId } : {}),
+        })
         // The saved amount was refused (the account changed since the step was validated): never keep a goal showing 0.
         if (!made.savedRecorded) {
           st.deleteGoal(goalId)
@@ -244,13 +268,13 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
     submitted.current = true
     clearDraft()
     onDone()
-  }, [name, category, currency, nextPriority, kind, limit, spendingCategory, target, debtsOwed, linkedDebtIds, alreadySaved, savedHome, savedProblem, targetDate, fundingMode, sharePct, fixedAmount, frequency, onDone, cat, submitOnce])
+  }, [name, category, icon, currency, nextPriority, kind, limit, spendingCategory, target, debtsOwed, linkedDebtIds, alreadySaved, savedHome, savedPocketId, savedProblem, targetDate, fundingMode, sharePct, fixedAmount, frequency, onDone, cat, submitOnce])
 
   return {
     now, step, setStep, category, pickCategory, kind, name, setName, targetAmount, setTargetAmount,
     currency, setCurrency: (c: Currency) => setCurrency(clampFiatToAllowed(s.settings, c)),
     targetDate, setTargetDate, frequency, setFrequency, alreadySaved, setAlreadySaved,
-    savedHome, setSavedHome, homeAccounts, savedProblem,
+    savedHome, setSavedHome, homeAccounts, savedProblem, savedPocketId, setSavedPocketId, icon, setIcon, chooseCategory,
     fundingMode, setFundingMode, sharePct, setSharePct, fixedAmount, setFixedAmount,
     limit, setLimit, spendingCategory, setSpendingCategory,
     advice, activeDebts, tracked, linkable, linkInstead, linkedDebtIds, toggleDebt, debtsOwed,

@@ -25,7 +25,8 @@ import { navigate } from '@/lib/navigation/navigate'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Goal } from '@/lib/store/types'
 import { microClassName } from '@/lib/ui/microLabelStyle'
-import { Badge } from '@/components/ui/badge'
+import { GoalsHero } from '@/components/features/goals/GoalsHero'
+import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
 
 type View = 'all' | 'active' | 'paused' | 'achieved'
 const VIEW_KEY = 'goals-view'
@@ -41,6 +42,7 @@ function readView(): View {
 
 export default function GoalsPage() {
   const t = useT().goals
+  const lt = useGoalsLtCopy()
   const { dataReady, baseCurrency, rates, updateGoal } = useFinanceStore(
     useShallow((s) => ({ dataReady: s.dataReady, baseCurrency: s.settings.baseCurrency, rates: s.exchangeRates, updateGoal: s.updateGoal })),
   )
@@ -75,6 +77,15 @@ export default function GoalsPage() {
     [running],
   )
 
+  // The trophy room's nudge: the running saving goal closest to its target.
+  const nextToFinish = useMemo(
+    () =>
+      running
+        .filter((r) => r.goal.status === 'active' && r.goal.category !== 'spending_control' && r.goal.category !== 'debt_freedom' && r.percent < 100)
+        .sort((a, b) => b.percent - a.percent)[0] ?? null,
+    [running],
+  )
+
   const openAdd = (seed: FlowSeed = {}) => setFlow(seed)
   const openDetail = (g: Goal) => setDetailId(g.id)
   const onAction = (g: Goal, a: GoalCardAction) => {
@@ -100,7 +111,7 @@ export default function GoalsPage() {
               <GoalsEmpty onStart={openAdd} />
             ) : (
               <>
-                <GoalsInsight rows={rows} className="lg:hidden" />
+                {view === 'achieved' ? null : <div className="lg:hidden"><GoalsHero rows={rows} /></div>}
                 <div className="flex items-center gap-2">
                   <SegmentedControl<'all' | 'active' | 'paused'>
                     ariaLabel={t.home.viewLabel}
@@ -120,7 +131,9 @@ export default function GoalsPage() {
                   <PromptBanner
                     tone="warning"
                     icon={<AlertTriangle />}
-                    title={t.home.bannerBehind(worstBehind.goal.name, worstBehind.status.params.count ?? 2, worstBehind.goal.frequency === 'quarterly')}
+                    title={worstBehind.goal.frequency === 'yearly'
+                      ? lt.frequency.bannerBehind(worstBehind.goal.name, worstBehind.status.params.count ?? 2)
+                      : t.home.bannerBehind(worstBehind.goal.name, worstBehind.status.params.count ?? 2, worstBehind.goal.frequency === 'quarterly')}
                     confirmLabel={t.home.bannerReplan(worstBehind.goal.name)}
                     onConfirm={() => openDetail(worstBehind.goal)}
                     dismissLabel={t.home.dismiss}
@@ -128,33 +141,33 @@ export default function GoalsPage() {
                   />
                 ) : null}
 
-                <div className="flex min-h-11 items-center justify-between gap-3">
-                  <h2 className="flex items-center gap-2 text-lg font-bold text-[var(--color-brand-text-primary)]">
-                    {titleByView[view]}
-                    <Badge tone="soft" bordered={false} className="min-w-6 font-mono-numbers font-semibold">{count}</Badge>
-                  </h2>
-                  <Button size="touch" onClick={() => openAdd()}>
-                    <Plus aria-hidden />
-                    {t.home.newGoal}
-                  </Button>
-                </div>
+                {view === 'achieved' ? null : (
+                  <div className="mt-2.5 flex min-h-11 items-center gap-2 px-1">
+                    <h2 className="text-[0.8125rem] font-bold text-[var(--color-brand-text-primary)]">{titleByView[view]}</h2>
+                    <span className="font-mono-numbers text-[0.8125rem] font-semibold text-[var(--color-brand-text-muted)]">{count}</span>
+                    <Button variant="link" size="touch" onClick={() => openAdd()} className="ms-auto gap-1 px-1 font-semibold no-underline">
+                      <Plus className="size-4" aria-hidden />
+                      {t.home.newGoal}
+                    </Button>
+                  </div>
+                )}
 
                 {view === 'paused' ? (
                   <p className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{t.home.pausedHelper}</p>
                 ) : null}
 
                 {view === 'achieved' ? (
-                  <AchievedView goals={achieved} base={baseCurrency} rates={rates} onNewGoal={() => openAdd()} />
+                  <AchievedView goals={achieved} base={baseCurrency} rates={rates} next={nextToFinish} onOpen={openDetail} onNewGoal={() => openAdd()} />
                 ) : visible.length === 0 ? (
                   <p className="py-6 text-center text-sm text-[var(--color-brand-text-secondary)]">{t.home.emptyFilter}</p>
                 ) : (
-                  <div className="flex flex-col gap-3.5 lg:grid lg:grid-cols-2">
+                  <div className="-mt-1.5 flex flex-col gap-2 lg:grid lg:grid-cols-2">
                     {visible.map((r, i) => (
                       <div key={r.goal.id} className="contents">
                         {view === 'all' && paused.length > 0 && i === running.length ? (
                           <h3 className={`${microClassName} lg:col-span-2`}>{t.home.viewPaused}</h3>
                         ) : null}
-                        <GoalCard row={r} onOpen={openDetail} onAction={onAction} />
+                        <GoalCard look="light" row={r} onOpen={openDetail} onAction={onAction} />
                       </div>
                     ))}
                   </div>

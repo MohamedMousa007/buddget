@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
-import { Plus, X } from 'lucide-react'
+import { Plus, StickyNote, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
 import { Input } from '@/components/ui/input'
@@ -24,7 +24,8 @@ import { PickerRow } from '@/components/ui/PickerRow'
 /** A translucent wash of a (CSS-variable or hex) colour. */
 export const tint = (color: string, pct: number) => `color-mix(in oklab, ${color} ${pct}%, transparent)`
 
-function PocketTile({ account, className, iconClassName = 'size-5' }: { account: SavingsAccount; className: string; iconClassName?: string }) {
+/** A pocket's own icon on its own tint. */
+export function PocketTile({ account, className, iconClassName = 'size-5' }: { account: SavingsAccount; className: string; iconClassName?: string }) {
   const color = pocketColor(account)
   return (
     <span className={`flex shrink-0 items-center justify-center ${className}`} style={{ background: tint(color, 14), color }}>
@@ -257,5 +258,23 @@ export function NoteField({ open, onOpen, onClose, value, onChange, labels }: {
     <Button variant="link" size="sm" onClick={onOpen} className="font-semibold no-underline hover:underline">
       <Plus size={14} /> {labels.add}
     </Button>
+  )
+}
+
+/** The slim note of a Light touch money sheet: one card-row with a note icon and a growing text line. */
+export function NoteRow({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
+  return (
+    <label className="flex min-h-12 items-start gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-3">
+      <StickyNote className="mt-[3px] size-[18px] shrink-0 text-[var(--color-brand-text-muted)]" aria-hidden />
+      <textarea
+        rows={1}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        aria-label={placeholder}
+        dir="auto"
+        className="block min-h-6 w-full resize-none bg-transparent text-[0.9375rem] leading-6 text-[var(--color-brand-text-primary)] outline-none [field-sizing:content] placeholder:text-[var(--color-brand-text-muted)]"
+      />
+    </label>
   )
 }

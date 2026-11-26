@@ -4,13 +4,15 @@
  */
 import { format } from 'date-fns'
 import type { Dictionary } from '@/lib/i18n/types'
+import { GOALS_FREQUENCY_COPY } from '@/lib/i18n/goalsFrequencyCopy'
 import { CHECKPOINTS, coachView } from '@/lib/goals/goalDetail'
+import { periodMonths } from '@/lib/goals/goalPlan'
 import type { AllocationRun } from '@/lib/goals/goalStatus'
 import type { Goal } from '@/lib/store/types'
 import { formatFixed2 } from '@/lib/utils/formatters'
 
 export type GoalAlert =
-  | { type: 'goal_behind'; dedupeKey: string; severity: 'warning'; goalId: string; name: string; count: number; quarterly: boolean; moveTo: string | null; raise: string | null }
+  | { type: 'goal_behind'; dedupeKey: string; severity: 'warning'; goalId: string; name: string; count: number; quarterly: boolean; /** Counted in years (a yearly plan); `quarterly` is then false. */ yearly?: boolean; moveTo: string | null; raise: string | null }
   | { type: 'goal_milestone'; dedupeKey: string; severity: 'success'; goalId: string; name: string; pct: number; amount: string }
   | { type: 'goal_achieved'; dedupeKey: string; severity: 'success'; goalId: string; name: string; amount: string }
 
@@ -31,13 +33,12 @@ export function evaluateGoalAlerts(i: EvaluateGoalAlertsInput): GoalAlert[] {
   for (const goal of i.goals) {
     if (goal.status !== 'active') continue
     const keep = i.usualKeepFor(goal)
-    const q = goal.frequency === 'quarterly'
     const coach = coachView({
       goal,
       current: i.currentFor(goal),
       runs: i.runsByGoal[goal.id] ?? [],
       usualKeep: keep,
-      periodSavings: keep === null ? null : keep * (q ? 3 : 1),
+      periodSavings: keep === null ? null : keep * periodMonths(goal.frequency),
       now: i.today,
     })
     if (!coach || coach.behindCount < 2) continue
@@ -48,7 +49,8 @@ export function evaluateGoalAlerts(i: EvaluateGoalAlertsInput): GoalAlert[] {
       goalId: goal.id,
       name: goal.name,
       count: coach.behindCount,
-      quarterly: false,
+      quarterly: goal.frequency === 'quarterly',
+      ...(goal.frequency === 'yearly' ? { yearly: true } : {}),
       moveTo: coach.options.moveDate ? format(new Date(`${coach.options.moveDate.targetDate}T00:00:00`), 'MMM yyyy') : null,
       raise: `${goal.currency} ${formatFixed2(Math.ceil(coach.options.keepDate.perPeriod))}`,
     })
@@ -73,7 +75,12 @@ export function renderGoalAlert(dict: Dictionary, a: GoalAlert): { title: string
   const n = dict.goals.notify
   switch (a.type) {
     case 'goal_behind':
-      return { title: n.behindTitle(a.name), body: n.behindBody(a.name, a.count, a.quarterly, a.moveTo, a.raise) }
+      return {
+        title: n.behindTitle(a.name),
+        body: a.yearly
+          ? GOALS_FREQUENCY_COPY[dict.locale === 'ar' ? 'ar' : 'en'].behindBody(a.name, a.count, a.moveTo, a.raise)
+          : n.behindBody(a.name, a.count, a.quarterly, a.moveTo, a.raise),
+      }
     case 'goal_milestone':
       return { title: n.milestoneTitle(a.name, a.pct), body: n.milestoneBody(a.name, a.pct, a.amount) }
     case 'goal_achieved':

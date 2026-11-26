@@ -38,6 +38,8 @@ export interface MoneySourceFieldProps {
   onAddPocket?: () => void
   /** Rows shown above the source row, in the same group (e.g. "Into"). */
   children?: ReactNode
+  /** Other words for the caption and the row's name ("Where is it?", "Kept in"); the defaults are unchanged. */
+  labels?: { title?: string; from?: string; fromPocket?: string }
 }
 
 /**
@@ -45,8 +47,8 @@ export interface MoneySourceFieldProps {
  * opens the payment-method sheet (or the inline account list), Pocket the pocket picker, Outside has nothing to pick.
  * Switching tabs brings back the account or pocket chosen before.
  */
-export function MoneySourceField({ value, onChange, paymentMethods, accounts, pockets, excludePocketIds, onAddPocket, children }: MoneySourceFieldProps) {
-  const c = useLightTouchCopy().moneySource
+export function MoneySourceField({ value, onChange, paymentMethods, accounts, pockets, excludePocketIds, onAddPocket, children, labels }: MoneySourceFieldProps) {
+  const c = { ...useLightTouchCopy().moneySource, ...labels }
   const [last, setLast] = useState<Partial<Record<MoneySourceKind, string>>>(() => (value.id ? { [value.kind]: value.id } : {}))
   const [methodSheet, setMethodSheet] = useState(false)
   const pick = (kind: MoneySourceKind, id?: string) => {

@@ -311,3 +311,36 @@ describe('the whole chat counts when the model sends "elsewhere"', () => {
     expect(p.ok && p.proposal.preview.rows.find((r) => r.label === 'Where it is')?.value).toBe('Set aside in QNB Alahli')
   })
 })
+
+describe('a new goal’s saved money can come from another pocket', () => {
+  const seedPocket = (over: Partial<import('@/lib/store/types').SavingsAccount> = {}) =>
+    useFinanceStore.setState({
+      goals: [],
+      savingsTransactions: [],
+      savingsAccounts: [{ id: 'trip', name: 'Trip', category: 'savings', type: 'vault', currency: 'EGP', currentBalance: 5000, createdAt: '2026-01-01', ...over }],
+    })
+  const fromPocket = (saved: number) => createGoalPocket(S(), { goalId: newGoal(), pocketName: 'Car pocket', goalName: 'Car', currency: 'EGP', saved, fromPocketId: 'trip' })
+
+  it('moves the money (two non-cash-flow legs) and leaves net worth where it was', () => {
+    seedPocket()
+    const before = netWorth()
+    const made = fromPocket(2000)
+    expect(made.savedRecorded).toBe(true)
+    expect(S().savingsAccounts.find((a) => a.id === 'trip')!.currentBalance).toBe(3000)
+    expect(S().savingsAccounts.find((a) => a.id === made.pocketId)!.currentBalance).toBe(2000)
+    expect(S().savingsTransactions.every((t) => t.isCashFlow === false)).toBe(true)
+    expect(netWorth()).toBe(before)
+  })
+
+  it('the new pocket is kept where the source pocket is (set aside in the same account)', () => {
+    seedPocket({ heldInPaymentMethodId: 'CIB' })
+    const made = fromPocket(1000)
+    expect(S().savingsAccounts.find((a) => a.id === made.pocketId)!.heldInPaymentMethodId).toBe('CIB')
+  })
+
+  it('more than the source holds is not recorded, so the form can undo the goal', () => {
+    seedPocket()
+    expect(fromPocket(9000).savedRecorded).toBe(false)
+    expect(S().savingsAccounts.find((a) => a.id === 'trip')!.currentBalance).toBe(5000)
+  })
+})

@@ -5,6 +5,7 @@ import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { Button } from '@/components/ui/button'
 import { useLocale, useT } from '@/lib/i18n'
 import type { CoachView } from '@/lib/goals/goalDetail'
+import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
 import { formatCurrency } from '@/lib/utils/formatters'
 
 function CoachRow({ title, sub, cta, variant, onPress }: { title: string; sub: string; cta: string; variant: 'default' | 'outline'; onPress: () => void }) {
@@ -27,6 +28,7 @@ export function CoachCard({
   currency,
   targetDate,
   quarterly,
+  yearly = false,
   onMove,
   onKeep,
 }: {
@@ -34,10 +36,13 @@ export function CoachCard({
   currency: string
   targetDate: string
   quarterly: boolean
+  /** A yearly plan: counted and worded in years. */
+  yearly?: boolean
   onMove: () => void
   onKeep: () => void
 }) {
   const t = useT().goals.detail
+  const fq = useGoalsLtCopy().frequency
   const { locale } = useLocale()
   const month = (iso: string) =>
     new Date(`${iso.slice(0, 7)}-01T00:00:00`).toLocaleDateString(intlTag(locale), { month: 'short', year: 'numeric' })
@@ -53,14 +58,14 @@ export function CoachCard({
       <div className="flex items-start gap-2.5">
         <BuddgyIcon size={24} mood="worried" />
         <div>
-          <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{t.coachTitle(coach.behindCount, false)}</p>
+          <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{yearly ? fq.coachTitleYears(coach.behindCount) : t.coachTitle(coach.behindCount, quarterly)}</p>
           <p className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{t.coachShort(money(coach.shortfall), sinceLabel)}</p>
         </div>
       </div>
       {moveDate ? (
         <CoachRow
           title={t.moveTitle(month(moveDate.targetDate))}
-          sub={t.moveSub(money(moveDate.perPeriod), quarterly)}
+          sub={yearly ? fq.moveSubYear(money(moveDate.perPeriod)) : t.moveSub(money(moveDate.perPeriod), quarterly)}
           cta={t.moveCta}
           variant="default"
           onPress={onMove}
@@ -68,7 +73,7 @@ export function CoachCard({
       ) : null}
       <CoachRow
         title={t.keepTitle(month(targetDate))}
-        sub={t.keepSub(money(keepDate.perPeriod), keepDate.sharePct, quarterly)}
+        sub={yearly ? fq.keepSubYear(money(keepDate.perPeriod), keepDate.sharePct) : t.keepSub(money(keepDate.perPeriod), keepDate.sharePct, quarterly)}
         cta={t.keepCta}
         variant={moveDate ? 'outline' : 'default'}
         onPress={onKeep}

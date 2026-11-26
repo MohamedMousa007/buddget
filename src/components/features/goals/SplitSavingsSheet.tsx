@@ -9,7 +9,7 @@ import { SheetFrame } from '@/components/features/subscriptions/SheetFrame'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
 import { fundingBasis } from '@/lib/goals/fundingBasis'
-import { goalVisual } from '@/lib/goals/goalVisual'
+import { goalVisualFor } from '@/lib/goals/goalVisual'
 import { useT } from '@/lib/i18n'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Goal } from '@/lib/store/types'
@@ -23,7 +23,7 @@ function Row({
   // `keep` arrives in the goal's own currency
   const t = useT().goals.split
   const controls = useDragControls()
-  const { icon: Icon, cat } = goalVisual(goal.category)
+  const { icon: Icon, cat } = goalVisualFor(goal)
   const pct = goal.sharePct ?? 0
   return (
     <Reorder.Item
@@ -115,7 +115,7 @@ export function SplitSavingsSheet({ onClose }: { onClose: () => void }) {
       open
       onClose={onClose}
       title={t.title}
-      zClassName="z-[120]"
+      zClassName="z-[130]"
       footer={<Button size="cta-block" onClick={save}>{t.save}</Button>}
     >
       <p className="text-sm text-[var(--color-brand-text-secondary)]">{t.sub}</p>

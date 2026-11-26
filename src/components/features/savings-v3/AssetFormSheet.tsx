@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { DatePickerField } from '@/components/ui/DatePickerField'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
+import { GoldFormSheet } from '@/components/features/savings-v3/GoldFormSheet'
 import { ArrowDownLeft, Gem } from 'lucide-react'
 import { AmountField } from '@/components/ui/AmountField'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
@@ -33,7 +34,13 @@ export interface AssetFormSheetProps {
   onDone?: () => void
 }
 
-export function AssetFormSheet({ open, type, onClose, onDone }: AssetFormSheetProps) {
+/** Gold has its own Light touch sheet; crypto, stocks and property keep this form. */
+export function AssetFormSheet(props: AssetFormSheetProps) {
+  if (props.type === 'gold') return <GoldFormSheet open={props.open} onClose={props.onClose} onDone={props.onDone} />
+  return <OtherAssetFormSheet {...props} />
+}
+
+function OtherAssetFormSheet({ open, type, onClose, onDone }: AssetFormSheetProps) {
   const t = useT().addHolding
   const a = useT().savingsForms.asset
   const UNIT_SUFFIX = a.unitSuffix

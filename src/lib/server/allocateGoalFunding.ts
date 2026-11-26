@@ -1,5 +1,6 @@
 import type { createServiceRoleClient } from '@/lib/supabase/service'
 import { allocateMonth } from '@/lib/goals/allocateMonth'
+import { periodMonths } from '@/lib/goals/goalPlan'
 import { crossedCheckpoints } from '@/lib/notifications/evaluateGoalAlerts'
 import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
 import { convertCurrency, tryConvertCurrency } from '@/lib/utils/currency'
@@ -27,7 +28,7 @@ interface Ctx {
 
 /**
  * Pays funded goals (share / fixed) from the cycle's savings, priority order, one deposit per goal.
- * Every goal is funded each cycle (a quarterly goal only changes how its pace is shown); one run row
+ * Every goal is funded each cycle (a quarterly or yearly goal only changes how its pace is shown); one run row
  * per (goal, cycle) is the idempotency key and the history behind "behind"/streak.
  *
  * Safe to re-run: a goal that already has its run row is not paid again and its amount is deducted from
@@ -57,8 +58,8 @@ export async function allocateGoalFunding(c: Ctx): Promise<number> {
       return [{
         ...g,
         targetAmount: target,
-        // A quarterly goal's fixed amount is per quarter; it is funded monthly.
-        monthlyContribution: fixed === null ? null : fixed / (g.frequency === 'quarterly' ? 3 : 1),
+        // A quarterly or yearly goal's fixed amount is per period; it is funded monthly.
+        monthlyContribution: fixed === null ? null : fixed / periodMonths(g.frequency),
       }]
     })
   if (due.length === 0) return c.carry

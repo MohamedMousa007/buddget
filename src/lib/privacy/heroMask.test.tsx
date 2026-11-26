@@ -22,7 +22,7 @@ const setPrivacy = (privacy: { preset: 'off' | 'hero' | 'all' }) =>
 
 afterEach(() => setPrivacy({ preset: 'off' }))
 
-const trophy = h(TrophyHero, { stats: { count: 2, totalLabel: 'EGP 98,765', avgMonths: 4, early: 1, checkpoints: 8 } })
+const trophy = h(TrophyHero, { stats: { count: 2, totalLabel: '98,765', currency: 'EGP', deposits: 4, fastestMonths: 1, bestStreak: 8 } })
 const wealth = h(SavingsHero, {
   total: '123,456', currency: 'EGP', netWorth: '654,321', split: [{ key: 'a', label: 'Cash', value: '111,222', pct: 100 }], badges: null,
 })
