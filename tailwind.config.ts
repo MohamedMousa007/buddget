@@ -48,9 +48,11 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['var(--font-geist)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        heading: ['var(--font-geist)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        mono: ['var(--font-jetbrains)', 'ui-monospace', 'monospace'],
+        // Same as globals.css @theme: the stacks are defined on <body> next to next/font's variables
+        // (app: Geist for text and numbers; marketing site: its own --font-* classes win).
+        sans: ['var(--font-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-heading)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
       },
     },
   },
