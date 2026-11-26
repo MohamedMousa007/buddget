@@ -115,10 +115,10 @@ export async function text(l: Locator): Promise<string> {
 export async function addBorrow(page: Page, o: { person: string; what: string; amount: number }) {
   await page.goto('/debts', { waitUntil: 'domcontentloaded' })
   await page.getByRole('button', { name: /^(Add a debt|New debt)$/ }).first().click()
-  await dialog(page, 'Add debt').getByRole('button', { name: /^Borrow / }).click()
+  await dialog(page, 'Add a debt').getByRole('radio', { name: /^Borrowed money/ }).click()
   const d = dialog(page, 'New borrow')
-  await d.getByRole('textbox', { name: 'e.g. Ahmed' }).fill(o.person)
-  await d.getByRole('textbox', { name: 'e.g. Rent help' }).fill(o.what)
+  await d.getByRole('textbox', { name: 'Person' }).fill(o.person)
+  await d.getByRole('textbox', { name: 'For', exact: true }).fill(o.what)
   await d.getByRole('textbox', { name: 'Amount' }).fill(String(o.amount))
   await blur(page)
   await d.getByRole('button', { name: 'Add borrow' }).click()

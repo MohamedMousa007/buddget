@@ -6,7 +6,7 @@ import { PageHero } from '@/components/layout/PageHero'
 import { DebtGoalPrompt } from '@/components/features/goals/DebtGoalPrompt'
 import { GoalLensList } from '@/components/features/goals/GoalLensList'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Award, ChevronRight, CreditCard, Pencil, ReceiptText, ShieldCheck, Smartphone, Trash2, Undo2, User, Wallet } from 'lucide-react'
+import { Award, ChevronRight, Pencil, ReceiptText, ShieldCheck, Trash2, Undo2, Wallet } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -29,9 +29,9 @@ import { formatCurrency, formatWhole } from '@/lib/utils/formatters'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { OptionSheet } from '@/components/ui/OptionSheet'
+import { AddDebtOptionSheet } from '@/components/features/debts/redesign/AddDebtOptionSheet'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 
-type AddKind = 'borrow' | 'installment' | 'credit_card'
 type RowAction = 'pay' | 'edit' | 'charges' | 'delete'
 
 export default function DebtsPage() {
@@ -67,11 +67,6 @@ export default function DebtsPage() {
     return formatCurrency(convertCurrency(data.owed, data.base, settings.secondaryCurrency, exchangeRates), settings.secondaryCurrency)
   }, [settings.showSecondaryCurrency, settings.secondaryCurrency, data.owed, data.base, exchangeRates])
 
-  const addDebt = (kind: AddKind) =>
-    requireAuth(() => {
-      if (kind === 'credit_card') setActiveModal('addCreditCard')
-      else openDebtSheetNew(kind === 'installment' ? 'installment' : 'personal')
-    }, t.debts.requireAuthNew)
   const assignPayment = (a: AssignCandidate) =>
     requireAuth(() => (a.debtId ? openDebtSheetRecordPayment(a.debtId) : openDebtSheetNew('installment')), t.debts.requireAuthPayment)
 
@@ -187,19 +182,7 @@ export default function DebtsPage() {
           }
         />
 
-      <OptionSheet<AddKind>
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
-        title={c.addTitle}
-        subtitle={c.addSub}
-        value={null}
-        onChange={addDebt}
-        options={[
-          { value: 'borrow', title: c.addBorrow.title, subtitle: c.addBorrow.sub, icon: <User />, tone: 'var(--color-brand-amber)' },
-          { value: 'installment', title: c.addInstallment.title, subtitle: c.addInstallment.sub, icon: <Smartphone />, tone: 'var(--color-brand-primary)' },
-          { value: 'credit_card', title: c.addCard.title, subtitle: c.addCard.sub, icon: <CreditCard />, tone: 'var(--color-brand-green)' },
-        ]}
-      />
+      <AddDebtOptionSheet open={addOpen} onClose={() => setAddOpen(false)} />
 
       <OptionSheet<RowAction>
         open={rowDebt !== undefined}

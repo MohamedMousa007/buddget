@@ -105,7 +105,12 @@ test('Q4 Pay debt: empty state leads to adding one; with a debt it pays', async 
     const picker = childSheet(page)
     await expect(picker).toContainText('No active debts')
     await picker.getByRole('button', { name: 'Add a debt' }).click()
-    await expect(dialog(page, 'Add debt')).toBeVisible()
+    // The light-touch "Add a debt" option sheet opens over the picker (the same one as on Debts), and its choice leads to the form.
+    const add = dialog(page, 'Add a debt')
+    await expect(add).toContainText('What are you tracking?')
+    for (const family of [/^Borrowed money/, /^Installment plan/, /^Credit card/]) await expect(add.getByRole('radio', { name: family })).toBeVisible()
+    await add.getByRole('radio', { name: /^Borrowed money/ }).click()
+    await expect(dialog(page, 'New borrow')).toBeVisible()
     await closeAll(page)
   })
   await addBorrow(page, { person: 'QA Sami', what: 'QA loan', amount: 1000 })

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { ChevronRight, Trash2, Plus, CircleCheck, Landmark, CreditCard, CalendarClock } from 'lucide-react'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useAddDebtSheet } from '@/hooks/useAddDebtSheet'
+import { AddDebtOptionSheet } from '@/components/features/debts/redesign/AddDebtOptionSheet'
 import { ModalShell, useDismissGuard } from '@/components/modals/ModalShell'
 import { UnsavedChangesDialog } from '@/components/features/expenses/UnsavedChangesDialog'
 import { DebtFamilyStep } from '@/components/features/debts/redesign/DebtFamilyStep'
@@ -58,13 +59,15 @@ export function AddDebtSheet() {
   const isCardEdit = d.isEditFlow && d.editingDebt?.debtType === 'credit_card'
   const open = d.isOpen && !isCardEdit
   const [asking, setAsking] = useState(false)
+  // The Pay debt picker's "Add a debt" / "Add new debt": the same option sheet as the Debts page, over this one.
+  const [addPickOpen, setAddPickOpen] = useState(false)
   const requestClose = () => (d.hasUnsavedDraft ? setAsking(true) : d.closeSheet())
 
   const presetFamily = useSettingsStore((s) => s.debtSheetPresetFamily)
   const [familyStep, setFamilyStep] = useState<'pick' | 'form'>('pick')
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- reset/preset step when the sheet toggles */
-    if (!d.isOpen) { setFamilyStep('pick'); setAsking(false); return }
+    if (!d.isOpen) { setFamilyStep('pick'); setAsking(false); setAddPickOpen(false); return }
     // A preset (e.g. the Installments empty-state CTA) jumps straight to that form.
     if (presetFamily) { d.setDebtType(presetFamily); setFamilyStep('form') }
     /* eslint-enable react-hooks/set-state-in-effect */
@@ -115,6 +118,7 @@ export function AddDebtSheet() {
   const showFooter = isFormUI || (isPayUI && !payShowsSelect)
 
   return (
+    <>
     <ModalShell open={open} onBackdropClick={d.closeSheet} scrollChild>
       {open ? <HydrateDebtsWhileOpen /> : null}
       {open ? <DraftDismissGuard dirty={d.hasUnsavedDraft} asking={asking} setAsking={setAsking} /> : null}
@@ -153,7 +157,7 @@ export function AddDebtSheet() {
                   title={tp.emptyTitle}
                   description={tp.emptyBody}
                   action={
-                    <Button size="cta" className="w-full" onClick={() => useSettingsStore.getState().openDebtSheetNew()}>
+                    <Button size="cta" className="w-full" onClick={() => setAddPickOpen(true)}>
                       <Plus /> {tp.emptyCta}
                     </Button>
                   }
@@ -191,7 +195,7 @@ export function AddDebtSheet() {
                     variant="outline"
                     size="touch"
                     className="mt-1 w-full border-dashed"
-                    onClick={() => useSettingsStore.getState().openDebtSheetNew()}
+                    onClick={() => setAddPickOpen(true)}
                   >
                     <Plus /> {tp.addNew}
                   </Button>
@@ -235,5 +239,7 @@ export function AddDebtSheet() {
         onKeep={() => setAsking(false)}
       />
     </ModalShell>
+    <AddDebtOptionSheet open={open && addPickOpen} onClose={() => setAddPickOpen(false)} overSheet />
+    </>
   )
 }
