@@ -170,10 +170,12 @@ test('R06 paydays: add salary on the 25th, listed, server row has the day and am
   await blur(page)
   await d.getByRole('button', { name: 'Add payday' }).click()
   await expect(d).toBeHidden()
-  await expect(page.locator('main')).toContainText('QA R06 Payroll')
+  // Light touch: the Paydays hero names the payday by its type and account ("Salary · Monthly → …") and its amount; the
+  // name lives on the server row and in the payday's own sheet.
+  await expect(page.locator('main')).toContainText(/7,000 EGP each month/)
   await serverRows('income_sources', user.id, 'name=eq.QA R06 Payroll&deleted_at=is.null', (r: any[]) => r.length === 1 && r[0].day_of_month === 25 && Number(r[0].amount) === 7000)
   await page.reload({ waitUntil: 'domcontentloaded' })
-  await expect(page.locator('main')).toContainText('QA R06 Payroll')
+  await expect(page.locator('main')).toContainText(/7,000 EGP each month/)
 })
 
 test('R07 budget: manual builder and budget history open for a new user without errors; Zakat prompt absent when it changes nothing', async ({ page, user }) => {

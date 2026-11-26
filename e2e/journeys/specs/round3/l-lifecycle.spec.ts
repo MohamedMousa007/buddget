@@ -336,11 +336,11 @@ test('L1 one user, the whole money lifecycle: pockets, goal, reserve cap, lendin
     // Light touch: the debt row opens its actions; "Record money back" is the receipt sheet, its account behind "Into".
     await page.getByRole('button', { name: /^QA L1 lend/ }).first().click()
     await dialog(page, 'QA L1 lend').getByRole('radio', { name: 'Record money back' }).click()
-    const r = page.getByRole('dialog').filter({ has: page.getByRole('button', { name: /^Mark repaid$/ }) }).last()
+    const r = dialog(page, /^Record money (received|back)$/)
     await r.getByRole('textbox', { name: 'Amount' }).fill('5000')
     await chooseMethod(page, r, 'CIB')
     await blur(page)
-    await r.getByRole('button', { name: 'Mark repaid', exact: true }).click()
+    await r.getByRole('button', { name: /^(Mark repaid|Record|Receive [\d,]+ EGP|Save)$/ }).click()
     await expect(r).toBeHidden()
     await serverRows('debt_payments', user.id, `debt_id=eq.${debt.id}`, (rows: any[]) => rows.length === 1 && Number(rows[0].amount) === 5000)
     // Back: CIB 12,000 + 5,000 = 17,000 (free 6,000); net worth 30,000. No expense row anywhere.
@@ -412,6 +412,9 @@ test('L2 Wealth > Add money into a pocket held in CIB sets aside CIB\'s own mone
 test('L3 a pocket deleted from Wealth stays deleted [finding L1-B, fixed]', async ({ page, user }) => {
   const [cib] = await seed(page, user.id, 'payment_methods', [bank('CIB', 20000, { opening_at: new Date(Date.now() - 3_600_000).toISOString() })])
   await localMethod(page, cib.id)
+  // A pocket that stays: the app refuses to delete the only pocket left ("Keep at least one pocket"), and the default
+  // Monthly Savings pocket is not always there yet, so the fourth delete must not be the last pocket.
+  await newPocket(page, { kind: /^Cash At home/, name: 'QA L3 keep', amount: 0 })
   const made = []
   for (const n of ['QA L3 one', 'QA L3 two', 'QA L3 three', 'QA L3 four']) made.push(await newPocket(page, { kind: /^Cash At home/, name: n, amount: 0 }))
   await page.waitForTimeout(3000)
