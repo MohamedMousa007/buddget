@@ -28,10 +28,49 @@ const CMP = path.join(DIR, 'compare')
  */
 const STATES = {
   full: { seed: true, plan: 'active' },
-  free: { seed: true, plan: 'free' },
+  // Free (mockup state-insfree): enough history for two Pro findings, so their tiles show locked and the band says
+  // "2 more findings are in Pro". Eight weeks of small daily buys with Thursdays heavier (Your big day) and six earlier
+  // Shopping buys under one large one this cycle (Unusual buy).
+  free: { seed: true, plan: 'free', mutate: () => {
+    const s = window.__finance.getState()
+    const pm = s.paymentMethods.find((m) => m.type === 'debit_card')?.id ?? s.paymentMethods[0].id
+    const pad = (n) => String(n).padStart(2, '0')
+    const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+    const add = (description, category, amount, d) => s.addExpense({ description, category, amount, currency: 'EGP', paymentMethodId: pm, isRecurring: false, date: iso(d), occurredAt: `${iso(d)}T13:20:00` })
+    for (let back = 1; back <= 60; back++) {
+      const d = new Date()
+      d.setDate(d.getDate() - back)
+      add('Koshary', 'Food', 80, d)
+      if (d.getDay() === 4) add('Dinner out', 'Food', 420, d)
+    }
+    const cycleStart = new Date()
+    cycleStart.setDate(1)
+    for (let k = 0; k < 6; k++) {
+      const d = new Date(cycleStart)
+      d.setDate(d.getDate() - 5 - k * 7)
+      add('H&M', 'Shopping', 900 + k * 50, d)
+    }
+    add('Sofa · IKEA', 'Shopping', 9000, new Date())
+  } },
   empty: { seed: false, plan: 'active', mutate: () => {
     const s = window.__finance.getState()
     for (const e of [...s.incomeEvents]) s.deleteIncomeEvent(e.id)
+  } },
+  // A member past setup with nothing this month yet (mockup state-emptyflow "Nothing in November yet"): one expense last
+  // month is the history that turns the setup card into the empty-month state. Idempotent, so it can run on every load.
+  emptyMonth: { seed: false, plan: 'active', everyLoad: true, mutate: () => {
+    const s = window.__finance.getState()
+    for (const e of [...s.incomeEvents]) s.deleteIncomeEvent(e.id)
+    const fp = s.profile.financialProfile ?? {}
+    if (!fp.onboarding?.doneAt) {
+      const now = new Date().toISOString()
+      s.updateProfile({ financialProfile: { ...fp, onboarding: { v: 1, step: 99, startedAt: now, doneAt: now } } })
+    }
+    if (s.expenses.length) return
+    const d = new Date()
+    d.setDate(0)
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    s.addExpense({ description: 'Talabat', category: 'Food', amount: 245, currency: 'EGP', paymentMethodId: s.paymentMethods[0]?.id ?? 'pm_default_cash', isRecurring: false, date: iso })
   } },
   learning: { seed: false, plan: 'active', mutate: () => {
     const s = window.__finance.getState()
@@ -60,6 +99,16 @@ const livePrices = () => async (page) => {
   })
   await page.waitForTimeout(800)
 }
+/**
+ * Types an amount into the open sheet's nth visible decimal field, as the mockup fills its add sheets ("2,000 EGP").
+ * An empty add sheet reading 0 is not a difference worth flagging, so the comparison starts from the mockup's figure.
+ */
+const amount = (value, nth = 0) => async (page) => {
+  const input = page.locator('[role=dialog] input[inputmode=decimal]').locator('visible=true').nth(nth)
+  await input.click()
+  await input.fill(value)
+  await settle(page, 500)
+}
 /** Taps a Wealth plan row (emergency fund, zakat) at the end of the page. */
 const planRow = (text) => async (page) => {
   const row = page.locator('button', { hasText: text }).last()
@@ -76,7 +125,7 @@ const SCREENS = [
   { name: 'page-flow', route: '/flow' },
   { name: 'page-accounts', route: '/accounts', offline: true },
   // No mockup png: the mockup draws this view when S.st.prov is set (lt-accounts.js providerView). App shot only.
-  { name: 'page-provider', route: '/accounts', offline: true, steps: ['CIB, 2 accounts · 2 cards'] },
+  { name: 'page-provider', route: '/accounts', offline: true, steps: ['CIB, 2 accounts · 3 cards'] },
   { name: 'page-budget', route: '/budget' },
   { name: 'page-debts', route: '/debts' },
   { name: 'page-goals', route: '/goals' },
@@ -90,23 +139,24 @@ const SCREENS = [
   { name: 'sheet-scan', route: '/flow', steps: ['Carrefour'] },
   { name: 'sheet-s_held', blocked: 'Held bank messages are fetched from Supabase (HeldMessagesSheet); with empty Supabase env there are none, so the Flow row never shows.' },
 
-  { name: 'sheet-account', route: '/accounts', offline: true, steps: ['CIB, 2 accounts · 2 cards', 'CIB Current'] },
-  { name: 'sheet-card', route: '/accounts', offline: true, steps: ['CIB, 2 accounts · 2 cards', 'CIB Credit'] },
+  { name: 'sheet-account', route: '/accounts', offline: true, steps: ['CIB, 2 accounts · 3 cards', 'CIB Current'] },
+  { name: 'sheet-card', route: '/accounts', offline: true, steps: ['CIB, 2 accounts · 3 cards', 'CIB Credit'] },
   { name: 'sheet-addaccount', route: '/accounts', offline: true, steps: ['Add account'] },
-  { name: 'sheet-addcard', route: '/accounts', offline: true, steps: ['CIB, 2 accounts · 2 cards', 'CIB Current', 'Add card'] },
-  { name: 'sheet-cashout', route: '/accounts', offline: true, steps: ['CIB, 2 accounts · 2 cards', 'CIB Current', 'Cash out'] },
-  { name: 'sheet-setaside', route: '/accounts', offline: true, steps: ['CIB, 2 accounts · 2 cards', 'CIB Current', 'Set aside'] },
+  { name: 'sheet-addcard', route: '/accounts', offline: true, steps: ['CIB, 2 accounts · 3 cards', 'CIB Current', 'Add card'] },
+  { name: 'sheet-cashout', route: '/accounts', offline: true, steps: ['CIB, 2 accounts · 3 cards', 'CIB Current', 'Cash out', amount('2000')] },
+  { name: 'sheet-setaside', route: '/accounts', offline: true, steps: ['CIB, 2 accounts · 3 cards', 'CIB Current', 'Set aside', amount('2000')] },
   { name: 'sheet-cashhand', route: '/accounts', offline: true, steps: ['Start tracking'] },
   { name: 'state-cashoff', route: '/accounts', offline: true, scroll: 'Start tracking' },
 
-  { name: 'sheet-deposit', route: '/wealth', steps: ['Add money'] },
-  { name: 'sheet-s_withdraw', route: '/wealth', steps: ['Withdraw'] },
+  { name: 'sheet-deposit', route: '/wealth', steps: ['Add money', amount('5000')] },
+  // The mockup's state: from the Trip pocket, paying a debt (the app opens on Spending; both are one tap).
+  { name: 'sheet-s_withdraw', route: '/wealth', steps: ['Withdraw', 'css=[role=dialog] button[aria-label^="From:"]', 'Trip to Dahab', 'css=[role=dialog] button:has-text("For")', 'Pay a debt', amount('2000')] },
   { name: 'sheet-s_ef', route: '/wealth', steps: [planRow(/months covered|Not set up yet/)] },
   { name: 'sheet-efmonth', route: '/wealth', steps: [planRow(/months covered|Not set up yet/), 'A simple month'] },
-  { name: 'sheet-s_gold', route: '/wealth', steps: [livePrices(), 'Add pocket or asset', 'Investment', 'css=[role=dialog] button:has-text("Bars, coins")'] },
+  { name: 'sheet-s_gold', route: '/wealth', steps: [livePrices(), 'Add pocket or asset', 'Investment', 'css=[role=dialog] button:has-text("Bars, coins")', amount('8'), amount('32200', 1)] },
   { name: 'sheet-s_zakat', route: '/wealth', steps: [livePrices(), planRow(/ due/)] },
   { name: 'sheet-s_goal', route: '/goals', steps: ['Trip to Dahab'] },
-  { name: 'sheet-goal', route: '/goals', steps: ['Trip to Dahab', 'Add money'] },
+  { name: 'sheet-goal', route: '/goals', steps: ['Trip to Dahab', 'Add money', amount('2000')] },
   { name: 'sheet-addgoalC', route: '/goals', steps: ['New goal'] },
   { name: 'sheet-celebrate', route: '/goals', steps: [async (page) => {
     // "You did it" shows when a goal crosses 100% after it was seen: fill Umrah 2027's pocket to its target.
@@ -120,17 +170,18 @@ const SCREENS = [
   { name: 'sheet-s_vault', route: '/debts', steps: ['1 cleared debt · 18,000 paid off'] },
   { name: 'sheet-debtpay', route: '/debts', steps: ['Installments', 'Car loan', 'Record a payment'] },
   { name: 'sheet-repaid', route: '/debts', steps: ['Owed to you', 'Record money back'] },
-  { name: 'sheet-received', route: '/paydays', steps: ['Paydays and pay cycle', 'Upwork', 'Log a payday'] },
+  // The mockup logs the salary payday, straight from the Paydays hero.
+  { name: 'sheet-received', route: '/paydays', steps: ['Log a payday'] },
   { name: 'sheet-s_payday', route: '/paydays', steps: ['Paydays and pay cycle', 'Add a payday'] },
 
   { name: 'sheet-sub', route: '/subscriptions', steps: ['Netflix'] },
-  { name: 'sheet-s_subadd', route: '/subscriptions', steps: ['Add subscription', 'Netflix EGP'] },
+  { name: 'sheet-s_subadd', route: '/subscriptions', steps: ['Add subscription', 'Netflix EGP', 'Premium'] },
   { name: 'sheet-s_subcancel', route: '/subscriptions', steps: ['Netflix', 'Cancel subscription'] },
   { name: 'sheet-s_line', route: '/budget', steps: ['Utilities'] },
   { name: 'sheet-s_fixgap', blocked: 'Needs an SMS balance report: useAccountGaps reads latest_balance_reports from Supabase, which this server has no URL for.' },
 
   { name: 'state-emptydebts', route: '/debts', state: 'empty' },
-  { name: 'state-emptyflow', route: '/flow', state: 'empty' },
+  { name: 'state-emptyflow', route: '/flow', state: 'emptyMonth' },
   { name: 'state-emptysubs', route: '/subscriptions', state: 'empty' },
   { name: 'state-insfree', route: '/reports', state: 'free' },
   { name: 'state-inslearn', route: '/reports', state: 'learning', offline: true },

@@ -37,7 +37,23 @@ export function weekdayNames(locale: AppLocale, width: 'long' | 'short' | 'narro
   return Array.from({ length: 7 }, (_, d) => fmt.format(new Date(Date.UTC(2024, 0, 7 + d))))
 }
 
-/** Locale-aware, digit-safe time ("3:30 PM" / "3:30 م"). Follows the app language, not the device's. */
-export function formatClock(date: Date, locale: AppLocale): string {
-  return new Intl.DateTimeFormat(intlTag(locale), { hour: 'numeric', minute: '2-digit' }).format(date)
+let deviceH12: boolean | undefined
+/** Whether the device's own locale writes a 12-hour clock (en-US: yes; en-GB, de, most of the world: no). */
+export function deviceUses12Hour(): boolean {
+  if (deviceH12 === undefined) {
+    try {
+      deviceH12 = new Intl.DateTimeFormat(undefined, { hour: 'numeric' }).resolvedOptions().hour12 ?? true
+    } catch {
+      deviceH12 = true
+    }
+  }
+  return deviceH12
+}
+
+/**
+ * Compact, digit-safe time of day, never with seconds: "3:30 PM" on a 12-hour device, "15:30" on a 24-hour one.
+ * Names (AM/PM, ص/م) follow the app language; the 12/24-hour choice follows the device locale.
+ */
+export function formatClock(date: Date, locale: AppLocale, hour12: boolean = deviceUses12Hour()): string {
+  return new Intl.DateTimeFormat(intlTag(locale), hour12 ? { hour: 'numeric', minute: '2-digit', hour12: true } : { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(date)
 }

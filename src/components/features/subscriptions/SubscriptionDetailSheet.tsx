@@ -10,7 +10,7 @@ import { useActionToast } from '@/components/ui/ActionToast'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { IconButton } from '@/components/ui/IconButton'
 import { OptionSheet } from '@/components/ui/OptionSheet'
-import { Pill } from '@/components/ui/PillButton'
+import { HEADER_PILL, Pill } from '@/components/ui/PillButton'
 import { PickerRow } from '@/components/ui/PickerRow'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { SettingsSwitchRow } from '@/components/features/settings/SettingsSwitchRow'
@@ -23,6 +23,7 @@ import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Currency, SubscriptionBillingCycle } from '@/lib/store/types'
 import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
+import { foreignSymbol } from '@/lib/constants/currencyMeta'
 import { chargeAmount, markPaidTarget, scheduledDates } from '@/lib/subscriptions/subscriptionForecast'
 import { priceHistoryNewestFirst } from '@/lib/subscriptions/subscriptionPricing'
 import { useSubsPageLtCopy } from '@/lib/i18n/subsPageLtCopy'
@@ -178,7 +179,7 @@ export function SubscriptionDetailSheet({
         open
         title={sub.name}
         onClose={onClose}
-        headerStart={!ended && nextText ? <Pill icon={<Calendar />}>{c.nextCharge(nextText)}</Pill> : undefined}
+        headerStart={!ended && nextText ? <Pill icon={<Calendar />} className={HEADER_PILL}>{c.nextCharge(nextText)}</Pill> : undefined}
         headerActions={<V3SheetHeader.Action tone="danger" icon={<Trash2 />} label={t.common.delete} onClick={remove} />}
         footer={
           ended ? (
@@ -188,7 +189,8 @@ export function SubscriptionDetailSheet({
           ) : (
             <>
               <Button size="cta-block" disabled={!dirty} onClick={save}>{c.save}</Button>
-              <Button variant="ghost" size="touch" className="text-[var(--color-brand-red)]" onClick={() => onCancel(sub.id)}>{c.cancelLink}</Button>
+              {/* The approved sheet's footer is Save changes alone; cancelling stays one tap away as a quiet link, not a red one. */}
+              <Button variant="ghost" size="touch" className="text-[0.8125rem] font-medium text-[var(--color-brand-text-secondary)]" onClick={() => onCancel(sub.id)}>{c.cancelLink}</Button>
             </>
           )
         }
@@ -199,7 +201,7 @@ export function SubscriptionDetailSheet({
           currency={cur}
           onCurrencyChange={shared || ended ? undefined : (code) => setCurrency(code as Currency)}
           base={s.base}
-          sign="−"
+          sign={`−${foreignSymbol(cur, s.base)}`}
           aria-label={ui.add.amount}
           top={
             <div className="flex flex-col items-center">

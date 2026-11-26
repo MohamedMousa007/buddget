@@ -109,7 +109,7 @@ export interface DebtsSubsLtCopy {
     providerKind: Record<ProviderCategory, string>
   }
   pay: {
-    debt: string; paidFrom: string; into: string; left: (left: string, after: string) => string; note: string; repeat: string; repeatHint: (day: string) => string
+    debt: string; paidFrom: string; into: string; left: (left: string, after: string) => string; leftOnly: (left: string) => string; note: string; repeat: string; repeatHint: (day: string) => string
     /** CTAs (mockup `debtpay` / `repaid`). */
     record: string
     markRepaid: string
@@ -154,6 +154,8 @@ export interface DebtsSubsLtCopy {
     firstCharge: string
     every: string
     trackedNote: string
+    /** The pill after "Every" on Add a subscription ("Every · Month"). */
+    everyUnit: Record<'weekly' | 'monthly' | 'quarterly' | 'semiannual' | 'yearly', string>
     addCta: (name: string) => string
     cancelTitle: (name: string) => string
     cancelLine: (plan: string, every: string, base: string) => string
@@ -327,7 +329,7 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
       cta: 'Add plan',
       providerKind: { bnpl_short: 'Pay in a few months', installment_long: 'Long installment plans', bank_epp: 'Bank installments', other: 'Other plans' },
     },
-    pay: { debt: 'Debt', paidFrom: 'Paid from', into: 'Into', left: (l, a) => `${l} left · ${a} after this`, note: 'Add a note', repeat: 'Repeat monthly', repeatHint: (d) => `Logs it on the ${d}`, record: 'Record payment', markRepaid: 'Mark repaid', paidBack: (p) => `${p} paid you back`, forOn: (w, d) => `For ${w} on ${d}`, ofTotal: (a, t) => `${a} of ${t}`, more: 'More options' },
+    pay: { debt: 'Debt', paidFrom: 'Paid from', into: 'Into', left: (l, a) => `${l} left · ${a} after this`, leftOnly: (l) => `${l} left`, note: 'Add a note', repeat: 'Repeat monthly', repeatHint: (d) => `Logs it on the ${d}`, record: 'Record payment', markRepaid: 'Mark repaid', paidBack: (p) => `${p} paid you back`, forOn: (w, d) => `For ${w} on ${d}`, ofTotal: (a, t) => `${a} of ${t}`, more: 'More options' },
     vault: {
       title: 'Cleared debts',
       paidOff: 'Paid off so far',
@@ -368,6 +370,7 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
       firstCharge: 'First charge',
       every: 'Every',
       trackedNote: 'Tracked from your bank messages. If no message comes, Buddgy asks you on the due date whether you paid.',
+      everyUnit: { weekly: 'Week', monthly: 'Month', quarterly: 'Quarter', semiannual: '6 months', yearly: 'Year' },
       addCta: (n) => `Add ${n}`,
       cancelTitle: (n) => `Cancel ${n}?`,
       cancelLine: (p, e, b) => [p, e, b ? `≈ ${b}` : ''].filter(Boolean).join(' · '),
@@ -549,7 +552,7 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
       cta: 'إضافة الخطة',
       providerKind: { bnpl_short: 'ادفع على أشهر قليلة', installment_long: 'تقسيط طويل', bank_epp: 'تقسيط البنك', other: 'خطط أخرى' },
     },
-    pay: { debt: 'الدين', paidFrom: 'دفعته من', into: 'إلى', left: (l, a) => `باقي ${l} · ${a} بعد هذه`, note: 'أضف ملاحظة', repeat: 'كرّرها كل شهر', repeatHint: (d) => `تُسجَّل في ${d}`, record: 'سجّل الدفعة', markRepaid: 'تم السداد', paidBack: (p) => `${p} رجّع لك فلوسك`, forOn: (w, d) => `عن ${w} في ${d}`, ofTotal: (a, t) => `${a} من ${t}`, more: 'خيارات أكثر' },
+    pay: { debt: 'الدين', paidFrom: 'دفعته من', into: 'إلى', left: (l, a) => `باقي ${l} · ${a} بعد هذه`, leftOnly: (l) => `باقي ${l}`, note: 'أضف ملاحظة', repeat: 'كرّرها كل شهر', repeatHint: (d) => `تُسجَّل في ${d}`, record: 'سجّل الدفعة', markRepaid: 'تم السداد', paidBack: (p) => `${p} رجّع لك فلوسك`, forOn: (w, d) => `عن ${w} في ${d}`, ofTotal: (a, t) => `${a} من ${t}`, more: 'خيارات أكثر' },
     vault: {
       title: 'ديون مسددة',
       paidOff: 'اتسدد حتى الآن',
@@ -590,6 +593,7 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
       firstCharge: 'أول خصم',
       every: 'كل',
       trackedNote: 'نتابعه من رسائل البنك. لو لم تصل رسالة، يسألك Buddgy يوم الاستحقاق إن كنت دفعت.',
+      everyUnit: { weekly: 'أسبوع', monthly: 'شهر', quarterly: 'ربع سنة', semiannual: '6 أشهر', yearly: 'سنة' },
       addCta: (n) => `إضافة ${n}`,
       cancelTitle: (n) => `إلغاء ${n}؟`,
       cancelLine: (p, e, b) => [p, e, b ? `≈ ${b}` : ''].filter(Boolean).join(' · '),

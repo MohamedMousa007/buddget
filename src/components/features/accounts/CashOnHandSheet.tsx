@@ -6,7 +6,7 @@ import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Banknote, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AmountHero } from '@/components/ui/AmountHero'
-import { Pill } from '@/components/ui/PillButton'
+import { HEADER_PILL, Pill } from '@/components/ui/PillButton'
 import { ensureCashAccount, setOpeningBalance } from '@/lib/accounts/actions'
 import { CASH_ASK_KEY } from '@/lib/accounts/cashOnHand'
 import { cashCurrency } from '@/lib/accounts/resolve'
@@ -47,7 +47,7 @@ export function CashOnHandSheet() {
   return (
     <ModalShell open={open} onBackdropClick={close} scrollChild>
       <div className="flex min-h-0 flex-1 flex-col">
-        <V3SheetHeader onClose={close} leading={<Pill icon={<Calendar />}>{c.countedToday}</Pill>}>
+        <V3SheetHeader onClose={close} leading={<Pill icon={<Calendar />} className={HEADER_PILL}>{c.countedToday}</Pill>}>
           <V3SheetHeader.Title><span className="sr-only">{c.title}</span></V3SheetHeader.Title>
         </V3SheetHeader>
         <div className="min-h-0 flex-1 overflow-y-auto pb-3">

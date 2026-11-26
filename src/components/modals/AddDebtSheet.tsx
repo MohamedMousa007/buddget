@@ -15,6 +15,7 @@ import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { DatePickerField } from '@/components/ui/DatePickerField'
+import { HEADER_PILL } from '@/components/ui/PillButton'
 import { isOwedToUser } from '@/lib/debts/debtDirection'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Button } from '@/components/ui/button'
@@ -121,7 +122,7 @@ export function AddDebtSheet() {
         {/* Header */}
         <V3SheetHeader
           onClose={requestClose}
-          leading={payShowsForm ? <DatePickerField look="pill" value={d.paymentDate} onChange={d.setPaymentDate} time={{ value: d.paymentTime, onChange: d.setPaymentTime, label: timeLabel, defaultNow: true }} /> : undefined}
+          leading={payShowsForm ? <DatePickerField look="pill" className={HEADER_PILL} value={d.paymentDate} onChange={d.setPaymentDate} time={{ value: d.paymentTime, onChange: d.setPaymentTime, label: timeLabel, defaultNow: true }} /> : undefined}
           actions={d.isEditFlow ? (
             <V3SheetHeader.Action
               tone="danger"

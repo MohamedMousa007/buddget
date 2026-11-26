@@ -84,6 +84,7 @@ export function SimpleMonthSheet({ open, onClose, month, currency, initialOwn, d
       title={c.simpleTitle}
       subtitle={c.simpleSub}
       zIndexClassName="z-[120]"
+      overSheet
       footer={<Button size="cta-block" disabled={!(figure > 0)} onClick={() => { onUse(figure); onClose() }}>{c.use}</Button>}
     >
       <div className="native-scroll -mx-5 min-h-0 flex-1 space-y-3 overflow-y-auto px-5">

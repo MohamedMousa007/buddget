@@ -24,10 +24,12 @@ export function seedInPage() {
 
   // Accounts and cards
   const cib = st().addPaymentMethod({ name: 'CIB', label: 'CIB Current', type: 'bank_account', currency: 'EGP', last4: '1234', openingBalance: 120425, openingAt: monthDay(-2, 1), isDefault: true, color: '#0f4c81' })
-  const cibDebit = st().addPaymentMethod({ name: 'CIB', type: 'debit_card', currency: 'EGP', last4: '4410', parentId: cib, isDefault: false, cardStyle: 'bank' })
-  const cibCredit = st().addPaymentMethod({ name: 'CIB Platinum', type: 'credit_card', currency: 'EGP', last4: '7781', parentId: cib, isDefault: false, cardStyle: 'metal' })
+  // Card faces as the mockup draws them: dark green debit, black metal credit, navy debit, coral prepaid.
+  const cibDebit = st().addPaymentMethod({ name: 'CIB', label: 'CIB Debit', type: 'debit_card', currency: 'EGP', last4: '1234', parentId: cib, isDefault: false, cardStyle: 'bank', cardTheme: 'emerald' })
+  const cibCredit = st().addPaymentMethod({ name: 'CIB Platinum', type: 'credit_card', currency: 'EGP', last4: '7781', parentId: cib, isDefault: false, cardStyle: 'metal', cardTheme: 'blackMetal' })
+  st().addPaymentMethod({ name: 'CIB', label: 'CIB Prepaid', type: 'prepaid_card', currency: 'EGP', last4: '2290', parentId: cib, isDefault: false, cardStyle: 'bank', cardTheme: 'sunset' })
   const qnb = st().addPaymentMethod({ name: 'QNB', type: 'bank_account', currency: 'EGP', last4: '5512', openingBalance: 47500, openingAt: monthDay(-2, 1), isDefault: false })
-  st().addPaymentMethod({ name: 'QNB', type: 'debit_card', currency: 'EGP', last4: '6620', parentId: qnb, isDefault: false })
+  st().addPaymentMethod({ name: 'QNB', type: 'debit_card', currency: 'EGP', last4: '6620', parentId: qnb, isDefault: false, cardStyle: 'bank', cardTheme: 'navy' })
   const payroll = st().addPaymentMethod({ name: 'CIB Payroll', type: 'bank_account', currency: 'EGP', last4: '9001', openingBalance: 31500, openingAt: monthDay(-2, 1), isDefault: false })
   st().addPaymentMethod({ name: 'Vodafone Cash', type: 'wallet', currency: 'EGP', last4: '0082', openingBalance: 2400, openingAt: monthDay(-2, 1), isDefault: false })
 
@@ -70,8 +72,9 @@ export function seedInPage() {
   // Income: salary for the last two paydays
   const salary = st().incomeSources.find((s) => s.sourceType === 'salary')
   // Paydays hero names the account the salary lands in (mockup "Salary · Monthly → CIB Payroll").
-  if (salary) st().updateIncomeSource(salary.id, { paymentMethodId: payroll })
-  for (const m of [-1, 0]) {
+  // Six months of history (mockup "On time 6 of 6", May..Oct check row); the source has been counting since then.
+  if (salary) st().updateIncomeSource(salary.id, { paymentMethodId: payroll, effectiveStart: monthDay(-6, 1) })
+  for (const m of [-5, -4, -3, -2, -1, 0]) {
     const date = monthDay(m, 5)
     st().addIncomeEvent({ templateId: salary?.id ?? null, name: 'Salary · Nexta', amount: 42000, currency: 'EGP', sourceType: 'salary', receivedDate: date, occurrenceDate: date, status: 'confirmed', paymentMethodId: payroll })
   }
@@ -79,16 +82,16 @@ export function seedInPage() {
   // Pockets, emergency fund, gold
   const cert = st().addSavingsAccount({ name: 'CIB savings certificate', type: 'bank', currency: 'EGP', openingBalance: 96940, institution: 'CIB', yearlyReturn: 17.5 })
   const ef = st().addSavingsAccount({ name: 'Emergency fund', type: 'cash', currency: 'EGP', openingBalance: 18600, isEmergencyCover: true })
-  const dahab = st().addSavingsAccount({ name: 'Trip to Dahab', type: 'other', icon: 'Plane', currency: 'EGP', openingBalance: 15000, heldInPaymentMethodId: cib })
-  const umrah = st().addSavingsAccount({ name: 'Umrah 2027', type: 'other', icon: 'Moon', currency: 'EGP', openingBalance: 18000 })
-  const giftPocket = st().addSavingsAccount({ name: 'Wedding gift', type: 'other', icon: 'Gift', currency: 'EGP', openingBalance: 15000 })
+  const dahab = st().addSavingsAccount({ name: 'Trip to Dahab', type: 'vault', category: 'savings', currency: 'EGP', openingBalance: 15000, heldInPaymentMethodId: cib })
+  const umrah = st().addSavingsAccount({ name: 'Umrah 2027', type: 'vault', category: 'savings', currency: 'EGP', openingBalance: 18000 })
+  const giftPocket = st().addSavingsAccount({ name: 'Wedding gift', type: 'vault', category: 'savings', currency: 'EGP', openingBalance: 15000 })
   st().updateSettings({ emergencyFundConfig: { targetMonths: 3 }, zakatConfig: { nisabBasis: 'gold', nisabBasisChosen: true, holdsForTrading: false } })
   st().addInvestmentHolding({ assetType: 'gold', name: 'Gold 21k', quantity: 18, currency: 'EGP', karat: 21, goldUnit: 'grams', unitCost: 3200, purchaseDate: monthDay(-1, 12) })
 
   // Goals: active and achieved
   const target = (months) => monthDay(months, 1)
   st().addGoal({ name: 'Trip to Dahab', emoji: '✈️', category: 'vacation', targetAmount: 50000, currency: 'EGP', targetDate: target(16), linkedSavingsAccountIds: [dahab], linkedDebtIds: [], monthlySpendingLimit: null, priority: 1, status: 'active', monthlyContribution: null, fundingMode: 'share', sharePct: 20, notes: null })
-  st().addGoal({ name: 'Umrah 2027', emoji: '🕋', category: 'custom', targetAmount: 30000, currency: 'EGP', targetDate: target(16), linkedSavingsAccountIds: [umrah], linkedDebtIds: [], monthlySpendingLimit: null, priority: 2, status: 'active', monthlyContribution: 2000, fundingMode: 'fixed', notes: null })
+  st().addGoal({ name: 'Umrah 2027', emoji: 'moon-star', category: 'custom', targetAmount: 30000, currency: 'EGP', targetDate: target(16), linkedSavingsAccountIds: [umrah], linkedDebtIds: [], monthlySpendingLimit: null, priority: 2, status: 'active', monthlyContribution: 2000, fundingMode: 'fixed', notes: null })
   st().addGoal({ name: 'New car', emoji: '🚗', category: 'car', targetAmount: 400000, currency: 'EGP', targetDate: target(36), linkedSavingsAccountIds: [], linkedDebtIds: [], monthlySpendingLimit: null, priority: 3, status: 'active', monthlyContribution: 6000, fundingMode: 'fixed', manualCurrentAmount: 64000, notes: null })
   const gift = st().addGoal({ name: 'Wedding gift', emoji: '🎁', category: 'gift', targetAmount: 15000, currency: 'EGP', targetDate: target(-1), linkedSavingsAccountIds: [giftPocket], linkedDebtIds: [], monthlySpendingLimit: null, priority: 4, status: 'active', monthlyContribution: null, fundingMode: 'manual', notes: null })
   st().achieveGoal(gift)
@@ -107,9 +110,9 @@ export function seedInPage() {
   st().clearDebt(old, monthDay(-4, 1))
 
   // Subscriptions
-  const sub = (name, brandKey, amount, currency, billingDay, pm, expenseCategory = 'Subscription') =>
-    st().addSubscription({ name, brandKey, planName: null, planId: null, catalogRegion: null, pendingPlanId: null, pendingAmount: null, amount, currency, billingCycle: 'monthly', billingDay, startDate: monthDay(-6, billingDay), nextBillingDate: null, paymentMethodId: pm, expenseCategory, status: 'active', notes: null, tracking: 'sms', reminder: true })
-  sub('Netflix', 'netflix', 9.99, 'USD', 2, cibCredit)
+  const sub = (name, brandKey, amount, currency, billingDay, pm, expenseCategory = 'Subscription', planName = null) =>
+    st().addSubscription({ name, brandKey, planName, planId: null, catalogRegion: null, pendingPlanId: null, pendingAmount: null, amount, currency, billingCycle: 'monthly', billingDay, startDate: monthDay(-6, billingDay), nextBillingDate: null, paymentMethodId: pm, expenseCategory, status: 'active', notes: null, tracking: 'sms', reminder: true })
+  sub('Netflix', 'netflix', 9.99, 'USD', 2, cibCredit, 'Enjoyment', 'Premium')
   const spotify = sub('Spotify', 'spotify', 99, 'EGP', 4, cibDebit)
   const icloud = sub('iCloud+', 'icloud', 49, 'EGP', 9, cibDebit)
   // This month's charges for two of them, so Subscriptions shows "Paid this month" and the hero bar (mockup page-subs).

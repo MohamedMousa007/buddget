@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { AmountHero } from '@/components/ui/AmountHero'
 import { DatePickerField } from '@/components/ui/DatePickerField'
+import { HEADER_PILL } from '@/components/ui/PillButton'
 import { PickerRow } from '@/components/ui/PickerRow'
 import { PocketPickerField, PocketTile } from '@/components/features/savings-v3/MoneySheetParts'
 import { useDiscardPrompt } from '@/components/features/savings-v3/useDiscardPrompt'
@@ -106,7 +107,7 @@ export function MoveMoneySheet({ open, onClose, accounts, initialAccountId, init
       {discard.prompt}
       <div className="flex min-h-0 flex-1 flex-col">
         <V3SheetHeader onClose={discard.close}
-          leading={<DatePickerField look="pill" value={date} onChange={setDate} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: true }} />}>
+          leading={<DatePickerField look="pill" className={HEADER_PILL} value={date} onChange={setDate} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: true }} />}>
           <V3SheetHeader.Title><span className="sr-only">{title}</span></V3SheetHeader.Title>
         </V3SheetHeader>
         <div className="min-h-0 flex-1 overflow-y-auto pb-3">

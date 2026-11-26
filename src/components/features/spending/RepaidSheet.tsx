@@ -8,7 +8,7 @@ import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { AmountHero } from '@/components/ui/AmountHero'
 import { Button } from '@/components/ui/button'
 import { OptionSheet } from '@/components/ui/OptionSheet'
-import { Pill } from '@/components/ui/PillButton'
+import { HEADER_PILL, Pill } from '@/components/ui/PillButton'
 import { PickerRow } from '@/components/ui/PickerRow'
 import { MethodPickerRow } from '@/components/features/debts/lt/MethodPickerRow'
 import { SheetGroup, TxTile } from '@/components/features/debts/lt/SheetParts'
@@ -64,7 +64,7 @@ export function RepaidSheet({ open, onClose, expense, onDone }: RepaidSheetProps
   return (
     <ModalShell open={open} onBackdropClick={onClose} scrollChild>
       <div className="flex min-h-0 flex-1 flex-col">
-        <V3SheetHeader onClose={onClose} leading={<Pill icon={<Calendar />}>{formatDatePillLabel(localTodayISO(), locale, t.expenseForm.today)}</Pill>}>
+        <V3SheetHeader onClose={onClose} leading={<Pill icon={<Calendar />} className={HEADER_PILL}>{formatDatePillLabel(localTodayISO(), locale, t.expenseForm.today)}</Pill>}>
           <span className="sr-only"><V3SheetHeader.Title>{t.exclusion.repaidTitle}</V3SheetHeader.Title></span>
         </V3SheetHeader>
         <div className="native-scroll flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-4">

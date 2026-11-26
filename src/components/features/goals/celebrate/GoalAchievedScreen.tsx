@@ -41,7 +41,7 @@ export function GoalAchievedScreen({ goal, current, onClose }: { goal: Goal; cur
   }
 
   return (
-    <div ref={panelRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={t.youDidIt} className="outline-none fixed inset-0 z-[var(--z-dialog)] flex flex-col items-center overflow-y-auto bg-[var(--color-brand-primary)] px-6 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] pt-[calc(3rem+env(safe-area-inset-top,0px))] text-center text-[var(--color-brand-on-primary)]">
+    <div ref={panelRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={t.youDidIt} className="outline-none fixed inset-0 z-[var(--z-dialog)] flex flex-col items-center justify-center-safe overflow-y-auto bg-[var(--color-brand-primary)] px-6 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] pt-[calc(3rem+env(safe-area-inset-top,0px))] text-center text-[var(--color-brand-on-primary)]">
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         {CONFETTI.map((c, i) => (
           <span key={i} className="goal-confetti absolute top-0 h-2.5 w-1.5 rounded-sm" style={{ left: c.left, animationDelay: c.delay, background: c.color }} />
@@ -67,11 +67,6 @@ export function GoalAchievedScreen({ goal, current, onClose }: { goal: Goal; cur
             <p className="font-mono-numbers text-xl font-bold">{v}</p>
             <p className="text-[0.6875rem] font-semibold opacity-90">{label}</p>
           </div>
-        ))}
-      </div>
-      <div className="mt-5 grid w-full max-w-sm grid-cols-4 gap-1.5" aria-hidden>
-        {[0, 1, 2, 3].map((i) => (
-          <span key={i} className="h-1.5 rounded-full bg-[var(--color-brand-on-primary)]" />
         ))}
       </div>
       <div className="mt-8 flex w-full max-w-sm flex-col gap-2.5">

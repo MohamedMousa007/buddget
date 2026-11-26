@@ -6,6 +6,7 @@ import { useDiscardPrompt } from '@/components/features/savings-v3/useDiscardPro
 import { AmountHero } from '@/components/ui/AmountHero'
 import { Button } from '@/components/ui/button'
 import { DatePickerField } from '@/components/ui/DatePickerField'
+import { HEADER_PILL } from '@/components/ui/PillButton'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
@@ -125,7 +126,7 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
     <ModalShell open={open} onBackdropClick={onClose} scrollChild>
       {discard.prompt}
       <div className="flex min-h-0 flex-1 flex-col">
-        <V3SheetHeader onClose={discard.close} leading={<DatePickerField look="pill" value={date} onChange={setDate} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: true }} />}>
+        <V3SheetHeader onClose={discard.close} leading={<DatePickerField look="pill" className={HEADER_PILL} value={date} onChange={setDate} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: true }} />}>
           <span className="sr-only"><V3SheetHeader.Title>{c.title}</V3SheetHeader.Title></span>
         </V3SheetHeader>
 

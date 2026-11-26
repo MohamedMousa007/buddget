@@ -105,7 +105,7 @@ export function CancelSubscriptionSheet({ subId, onClose }: { subId: string | nu
         <PickerRow label={c.endsOn} value={<DatePickerField look="pill" value={endsOn} onChange={setEndsOn} />} />
         {hint?.url ? (
           <a href={hint.url} target="_blank" rel="noopener noreferrer" className="flex min-h-[52px] items-center gap-3 px-4">
-            <span className="min-w-0 flex-1 text-[0.9375rem] font-medium text-[var(--color-brand-text-primary)]">{c.cancelOn(hint.text)}</span>
+            <span className="min-w-0 flex-1 text-[0.9375rem] font-medium text-[var(--color-brand-text-primary)]">{c.cancelOn(hint.site)}</span>
             <span className="text-[0.84375rem] font-semibold text-[var(--color-brand-primary-ink)]">{c.open}</span>
           </a>
         ) : hint ? (

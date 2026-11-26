@@ -19,7 +19,7 @@ import { reportCycles, type ReportRangePreset } from '@/lib/reports/reportsPerio
 import { useBillingStore } from '@/lib/billing/billingStore'
 import { canSeeAdvancedInsights, rangeIsFree } from '@/lib/insights/access'
 import { useInsightSource, useInsights } from '@/lib/insights/useInsights'
-import { heroTiles, heroVerdict, learningProgress, type PlanFigures } from '@/lib/insights/analysis'
+import { heroTiles, heroVerdict, learningProgress, paceVerdict, type PlanFigures } from '@/lib/insights/analysis'
 import { buildInsightCharts, categorySlices, cumulative } from '@/lib/insights/charts'
 import { composeRead } from '@/lib/insights/narrative'
 import { InsightsHero } from '@/components/features/insights/InsightsHero'
@@ -117,12 +117,14 @@ export default function ReportsPage() {
   }
   const verdict = heroVerdict(input, hero, plan)
   const tiles = heroTiles(insights, advanced)
-  const read = advanced ? composeRead(verdict, insights) : null
+  // The chart and the read follow spending even with no income; only the hero waits for it.
+  const pace = paceVerdict(input, hero, plan)
+  const read = advanced ? composeRead(pace, insights) : null
   const slices = categorySlices(charts.categories)
   // The learning page is for a member with no spending history yet; an established one early in a cycle gets the hero's early state.
   const learning = hero.state === 'learning' && charts.months.slice(0, -1).every((m) => m.spent === 0)
   const addIncome = () => useSettingsStore.getState().setActiveModal('addIncome')
-  const projected = verdict.kind === 'budget' || verdict.kind === 'usual' || verdict.kind === 'projection' ? verdict.projected : null
+  const projected = pace.kind === 'budget' || pace.kind === 'usual' || pace.kind === 'projection' ? pace.projected : null
 
   const feed = (
     <section className="space-y-2">

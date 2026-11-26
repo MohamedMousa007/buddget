@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { heroTiles, heroVerdict, learningProgress, lockedFindings, type PlanFigures } from './analysis'
+import { heroTiles, heroVerdict, learningProgress, lockedFindings, paceVerdict, type PlanFigures } from './analysis'
 import { buildInsightCharts, categorySlices, CHART_MONTHS, cumulative, MAX_SLICES, monthsStory, OTHER_SLICE } from './charts'
 import type { InsightSource } from './buildInput'
 import { composeRead } from './narrative'
@@ -66,6 +66,24 @@ describe('heroVerdict', () => {
     expect(heroVerdict(early, heroAnswer(early), plan())).toMatchObject({ kind: 'early', daysMore: MIN_DAYS - 2 })
     const noInc = input({ incomeKnown: false })
     expect(heroVerdict(noInc, heroAnswer(noInc), plan()).kind).toBe('noIncome')
+  })
+})
+
+describe('paceVerdict (chart and read with no income, mockup state-insnoinc)', () => {
+  it('still projects against the budget when income is missing, while the hero waits for income', () => {
+    const noInc = input({ incomeKnown: false })
+    expect(heroVerdict(noInc, heroAnswer(noInc), plan()).kind).toBe('noIncome')
+    const v = paceVerdict(noInc, heroAnswer(noInc), plan())
+    expect(v).toMatchObject({ kind: 'budget', over: true, delta: 2020, projected: 26520 })
+    expect(composeRead(v, [])?.lines[0].key).toBe('paceBudget')
+  })
+  it('stays early (no projection) when the cycle has too little spending yet', () => {
+    const early = input({ incomeKnown: false, cycle: { daysElapsed: 2, daysLeft: 29, totalDays: 31 } })
+    expect(paceVerdict(early, heroAnswer(early), plan())).toMatchObject({ kind: 'early', daysMore: MIN_DAYS - 2 })
+  })
+  it('is the hero verdict whenever income is known', () => {
+    const i = input()
+    expect(paceVerdict(i, heroAnswer(i), plan())).toEqual(heroVerdict(i, heroAnswer(i), plan()))
   })
 })
 

@@ -9,7 +9,8 @@ const VIEWPORT = { width: 390, height: 844 }
 const HIDE_DEV_CSS = 'nextjs-portal, [data-nextjs-toast], [data-next-badge-root] { display: none !important; }'
 
 export async function launch() {
-  return chromium.launch({ channel: 'chrome' })
+  // CHROME_PATH: a bundled Chromium (cloud containers); otherwise the installed Chrome.
+  return chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : { channel: 'chrome' })
 }
 
 /**

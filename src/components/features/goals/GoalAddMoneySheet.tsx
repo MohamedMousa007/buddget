@@ -6,6 +6,7 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import { AmountHero } from '@/components/ui/AmountHero'
 import { Button } from '@/components/ui/button'
 import { DatePickerField } from '@/components/ui/DatePickerField'
+import { HEADER_PILL } from '@/components/ui/PillButton'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { useDiscardPrompt } from '@/components/features/savings-v3/useDiscardPrompt'
@@ -121,7 +122,7 @@ function GoalMoney({ goal: initial, onClose }: { goal: Goal; onClose: () => void
     <ModalShell open onBackdropClick={onClose} scrollChild>
       {discard.prompt}
       <div className="flex min-h-0 flex-1 flex-col">
-        <V3SheetHeader onClose={discard.close} leading={<DatePickerField look="pill" value={date} onChange={setDate} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: true }} />}>
+        <V3SheetHeader onClose={discard.close} leading={<DatePickerField look="pill" className={HEADER_PILL} value={date} onChange={setDate} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: true }} />}>
           <span className="sr-only"><V3SheetHeader.Title>{t.goals.home.addMoneyTitle(goal.name)}</V3SheetHeader.Title></span>
         </V3SheetHeader>
 

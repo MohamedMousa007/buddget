@@ -42,6 +42,18 @@ export function heroVerdict(input: InsightInput, hero: InsightHero, plan: PlanFi
   return { kind: 'projection', projected, dailyRate }
 }
 
+/**
+ * How the cycle ends on spending alone, for the pace chart and Buddgy's read. A missing income hides only the hero's
+ * "what you can spend each day" answer; where spending is heading against the budget needs no income (approved
+ * light-touch Insights, no-income state: the read and the "≈ N by month end" projection still show).
+ */
+export function paceVerdict(input: InsightInput, hero: InsightHero, plan: PlanFigures): HeroVerdict {
+  if (hero.state !== 'noIncome') return heroVerdict(input, hero, plan)
+  const { daysElapsed } = input.cycle
+  const enough = daysElapsed >= MIN_DAYS && input.expenseCount >= MIN_EXPENSES
+  return heroVerdict(input, { ...hero, state: enough ? 'ok' : 'learning', daysMore: Math.max(0, MIN_DAYS - daysElapsed) }, plan)
+}
+
 export type HeroTileKey = 'mainReason' | 'beforePayday' | 'unusualBuy' | 'bigDay'
 
 export interface HeroTile {

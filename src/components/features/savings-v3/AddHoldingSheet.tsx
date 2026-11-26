@@ -77,10 +77,11 @@ function AddHoldingBody({ onClose, initialTab, presetAssetType, pocketOnly, onPo
   }
 
   // Chooser and forms are sibling ModalShells so each registers its own back guard: hardware back
-  // peels the form first, then the chooser.
+  // peels the form first, then the chooser. The chooser steps aside while a form is up, so the page is dimmed once
+  // (one scrim, as the approved sheets show), and comes back with its choice when the form closes.
   return (
     <>
-      <ModalShell open onBackdropClick={onClose} scrollChild>
+      <ModalShell open={!formDef && !asset} onBackdropClick={onClose} scrollChild>
         <div className="flex min-h-0 flex-1 flex-col">
           <V3SheetHeader onClose={onClose}>
             <V3SheetHeader.Title>{t.title}</V3SheetHeader.Title>
