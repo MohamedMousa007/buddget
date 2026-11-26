@@ -19,6 +19,7 @@ import { useGoalRows } from '@/hooks/useGoalRows'
 import { useT } from '@/lib/i18n'
 import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
 import { goalAddHint } from '@/lib/goals/goalAddHint'
+import { depositIntoGoal } from '@/lib/goals/goalPocket'
 import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
 import { applyPocketDeposit } from '@/lib/savings/moneySourceDeposit'
 import { pocketDisplayName } from '@/lib/savings/pocketIdentity'
@@ -93,16 +94,12 @@ function GoalMoney({ goal: initial, onClose }: { goal: Goal; onClose: () => void
 
   const save = () => {
     if (!canSubmit) return
-    const s = useFinanceStore.getState()
-    let pocketId = pocket?.id
-    if (!pocketId) {
-      pocketId = s.addSavingsAccount({ name: t.catalogs.goalPocketName(goal.name), category: 'savings', type: 'vault', currency: goal.currency })
-      s.updateGoal(goal.id, { linkedSavingsAccountIds: [...goal.linkedSavingsAccountIds, pocketId] })
-    }
-    const ok = applyPocketDeposit(useFinanceStore.getState(), {
-      pocketId, amount: value, currency: goal.currency, source: effective, note: goal.name,
-      date: date !== localTodayISO() ? date : undefined,
-    })
+    const ok = depositIntoGoal(useFinanceStore.getState(), goal, pocket?.id, t.catalogs.goalPocketName(goal.name), (pocketId) =>
+      applyPocketDeposit(useFinanceStore.getState(), {
+        pocketId, amount: value, currency: goal.currency, source: effective, note: goal.name,
+        date: date !== localTodayISO() ? date : undefined,
+      }),
+    )
     if (!ok) return showToast(tMoney.moveFailed)
     onClose()
   }

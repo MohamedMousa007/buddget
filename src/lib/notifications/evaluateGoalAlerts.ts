@@ -1,5 +1,5 @@
 /**
- * Pure evaluation of goal notifications. The behind alert fires once a calendar month, and only after
+ * Pure evaluation of goal notifications. The behind alert fires once per goal cycle (month, quarter or year), and only after
  * the second missed cycle (never daily). Milestones and completion are emitted where the deposit lands.
  */
 import { format } from 'date-fns'
@@ -7,7 +7,7 @@ import type { Dictionary } from '@/lib/i18n/types'
 import { GOALS_FREQUENCY_COPY } from '@/lib/i18n/goalsFrequencyCopy'
 import { CHECKPOINTS, coachView } from '@/lib/goals/goalDetail'
 import { periodMonths } from '@/lib/goals/goalPlan'
-import type { AllocationRun } from '@/lib/goals/goalStatus'
+import { periodKey, type AllocationRun } from '@/lib/goals/goalStatus'
 import type { Goal } from '@/lib/store/types'
 import { formatFixed2 } from '@/lib/utils/formatters'
 
@@ -44,7 +44,7 @@ export function evaluateGoalAlerts(i: EvaluateGoalAlertsInput): GoalAlert[] {
     if (!coach || coach.behindCount < 2) continue
     out.push({
       type: 'goal_behind',
-      dedupeKey: `goal_behind:${goal.id}:${ym}`,
+      dedupeKey: `goal_behind:${goal.id}:${periodKey(ym, goal.frequency)}`,
       severity: 'warning',
       goalId: goal.id,
       name: goal.name,

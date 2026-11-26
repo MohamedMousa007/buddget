@@ -11,7 +11,7 @@ import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { useLocale, useT } from '@/lib/i18n'
 import { formatClock, intlTag } from '@/lib/i18n/dateFormat'
 import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
-import { clockOf, mergeDayTime } from '@/lib/time/occurredAt'
+import { clockOf, editedOccurredAt, mergeDayTime } from '@/lib/time/occurredAt'
 import type { Currency, IncomeEvent, IncomeEventStatus, IncomeSourceType } from '@/lib/store/types'
 import { AmountHero } from '@/components/ui/AmountHero'
 import { Button } from '@/components/ui/button'
@@ -203,8 +203,8 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
   /** Writes the edits; false when they are not valid yet. */
   const persist = (): boolean => {
     if (!valid) return false
-    // A picked time moves the instant; untouched, the store keeps its own rule for a re-dated row.
-    const occurredAt = clock && (clock !== savedClock || receivedDate !== event.receivedDate) ? mergeDayTime(receivedDate, clock) : undefined
+    // A picked time moves the instant, a cleared one drops it; untouched, the store keeps its own rule for a re-dated row.
+    const occurredAt = editedOccurredAt(receivedDate, clock, { day: event.receivedDate, clock: savedClock })
     updateIncomeEvent(event.id, {
       name: name.trim(),
       receivedDate,

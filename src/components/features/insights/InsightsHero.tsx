@@ -134,7 +134,7 @@ export function InsightsHero({ verdict, tiles, dayLabel, month, lockedCount, onS
             key={tile.key}
             label={label}
             value={c.tiles.unusual(String(p.description ?? ''), money(n('amount')))}
-            sub={c.tiles.unusualSub(n('typical') > 0 ? Math.round(n('amount') / n('typical')) : 0, name('category'))}
+            sub={tile.locked ? c.tiles.locked : c.tiles.unusualSub(n('typical') > 0 ? Math.round(n('amount') / n('typical')) : 0, name('category'))}
             locked={tile.locked}
           />
         )

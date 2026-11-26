@@ -15,7 +15,7 @@ import { usePlanCategories } from '@/hooks/usePlanCategories'
 import { useSubmitOnce } from '@/hooks/useSubmitOnce'
 import { canonicalAmount, currencyDecimals, parseLocalizedAmount } from '@/lib/ui/amountParse'
 import type { Expense, Currency, SpendExclusion } from '@/lib/store/types'
-import { clockOf, mergeDayTime } from '@/lib/time/occurredAt'
+import { clockOf, editedOccurredAt } from '@/lib/time/occurredAt'
 
 export function useEditExpenseForm(expense: Expense, onClose: () => void) {
   const { updateExpense, paymentMethods, settings, exchangeRates } = useFinanceStore(
@@ -65,8 +65,8 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
     setSubmitError('')
 
     const exclusion = paymentMethodId === expense.paymentMethodId ? spendExclusion : reconcileExclusion(spendExclusion, paymentMethods, paymentMethodId)
-    // A picked time moves the instant (and so the row's place in its day); untouched, the store keeps its own rule.
-    const occurredAt = clock && (clock !== savedClock || date !== expense.date) ? mergeDayTime(date, clock) : undefined
+    // A picked time moves the instant (and so the row's place in its day), a cleared one drops it; untouched, the store keeps its own rule.
+    const occurredAt = editedOccurredAt(date, clock, { day: expense.date, clock: savedClock })
     updateExpense(expense.id, {
       date,
       ...(occurredAt ? { occurredAt } : {}),

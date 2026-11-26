@@ -5,7 +5,7 @@ import { computeBalances } from '@/lib/accounts/balance'
 import { computeNetWorth } from '@/lib/savings/netWorth'
 import { ledgerOf } from '@/lib/savings/pocketHome'
 import { computeGoalProgress, buildGoalProgressContext } from '@/lib/goals/computeGoalProgress'
-import { createGoalPocket, ELSEWHERE, goalHomeAccounts, savedHomeProblem } from './goalPocket'
+import { createGoalPocket, depositIntoGoal, ELSEWHERE, goalHomeAccounts, savedHomeProblem } from './goalPocket'
 import type { PaymentMethod } from '@/lib/store/types'
 import { TOOLS } from '@/lib/buddgy/tools/exec'
 import { refOf } from '@/lib/buddgy/tools/refs'
@@ -342,5 +342,23 @@ describe('a new goal’s saved money can come from another pocket', () => {
     seedPocket()
     expect(fromPocket(9000).savedRecorded).toBe(false)
     expect(S().savingsAccounts.find((a) => a.id === 'trip')!.currentBalance).toBe(5000)
+  })
+})
+
+describe('depositIntoGoal', () => {
+  const goalOf = (id: string) => S().goals.find((g) => g.id === id)!
+  it('a refused deposit removes the pocket it made and leaves the goal unlinked', () => {
+    const id = newGoal()
+    const before = S().savingsAccounts.length
+    expect(depositIntoGoal(S(), goalOf(id), undefined, 'Car pocket', () => false)).toBe(false)
+    expect(S().savingsAccounts).toHaveLength(before)
+    expect(goalOf(id).linkedSavingsAccountIds).toEqual([])
+  })
+  it('an accepted deposit keeps the new pocket linked', () => {
+    const id = newGoal()
+    let into = ''
+    expect(depositIntoGoal(S(), goalOf(id), undefined, 'Car pocket', (p) => ((into = p), true))).toBe(true)
+    expect(goalOf(id).linkedSavingsAccountIds).toEqual([into])
+    expect(S().savingsAccounts.some((a) => a.id === into)).toBe(true)
   })
 })

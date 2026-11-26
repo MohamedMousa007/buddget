@@ -57,6 +57,11 @@ describe('applyPocketDeposit', () => {
     expect(S().savingsAccounts.find((a) => a.id === 'p1')!.currentBalance).toBe(200)
   })
 
+  it('pocket move carries the picked date on both legs', () => {
+    expect(applyPocketDeposit(S(), { pocketId: 'p1', amount: 50, currency: 'EGP', source: { kind: 'pocket', id: 'p2' }, date: '2026-03-04' })).toBe(true)
+    expect(S().savingsTransactions.map((t) => t.date)).toEqual(['2026-03-04', '2026-03-04'])
+  })
+
   it('pocket move typed in the destination currency is converted into the source pocket’s unit first', () => {
     // 1,000 EGP into p1 from a USD pocket = 20 USD out of it.
     expect(applyPocketDeposit(S(), { pocketId: 'p1', amount: 1000, currency: 'EGP', source: { kind: 'pocket', id: 'usd' } })).toBe(true)

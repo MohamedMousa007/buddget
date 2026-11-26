@@ -118,6 +118,11 @@ describe('getGoalStatus', () => {
     expect(getGoalStatus({ goal: goal(), current: 3000, runs, now }).kind).toBe('streak')
     expect(getGoalStatus({ goal: goal(), current: 11500, runs, now }).kind).toBe('oneDeposit')
   })
+  it('one deposit away measures a non-monthly cycle at its monthly deposit', () => {
+    const yearly = goal({ fundingMode: 'fixed', monthlyContribution: 1200, frequency: 'yearly' })
+    expect(getGoalStatus({ goal: yearly, current: 11900, runs: [], now }).kind).toBe('oneDeposit')
+    expect(getGoalStatus({ goal: yearly, current: 11000, runs: [], now }).kind).not.toBe('oneDeposit')
+  })
   it('next checkpoint', () => {
     const s = getGoalStatus({ goal: goal({ fundingMode: 'manual' }), current: 4000, runs: [], now })
     expect(s.params).toEqual({ pct: 50, toGo: 2000 })

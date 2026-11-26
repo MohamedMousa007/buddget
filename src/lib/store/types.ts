@@ -1362,8 +1362,9 @@ export interface FinanceStore {
   ) => boolean
   /** Move money between two pockets: two ledger legs sharing a transferGroupId, both
    *  non-cash-flow (net worth and left-to-spend unaffected). FX-converts fiat↔fiat; rejects
-   *  a move with no conversion path (e.g. into a gold/crypto pocket — that's a buy, not a transfer). */
-  transferBetweenPockets: (fromId: string, toId: string, amount: number, notes?: string) => boolean
+   *  a move with no conversion path (e.g. into a gold/crypto pocket — that's a buy, not a transfer).
+   *  `date` (`yyyy-MM-dd`, default today) dates both legs; a past date stays day-level (no exact time). */
+  transferBetweenPockets: (fromId: string, toId: string, amount: number, notes?: string, date?: string) => boolean
   /** False when refused: a reserved pocket cannot be raised above what its account has available. */
   correctSavingsBalance: (accountId: string, newBalance: number, notes?: string) => boolean
   /** Delete a savings ledger row and reverse its balance effect (both legs for a transfer). */

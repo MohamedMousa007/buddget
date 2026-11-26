@@ -2,7 +2,7 @@ import type { LedgerInput } from '@/lib/accounts/balance'
 import { DEFAULT_CASH_ID, isTracked } from '@/lib/accounts/kinds'
 import { balanceEpsilon } from '@/lib/savings/balanceMath'
 import { availableIn } from '@/lib/savings/pocketHome'
-import type { Currency, FinanceStore, PaymentMethod } from '@/lib/store/types'
+import type { Currency, FinanceStore, Goal, PaymentMethod } from '@/lib/store/types'
 
 /** "Somewhere else (not tracked here)": the saved money is outside every tracked account. */
 export const ELSEWHERE = 'elsewhere'
@@ -64,4 +64,23 @@ export function createGoalPocket(
     mode: 'declare', source: 'goal_opening', ...(holder ? { paymentMethodId: holder } : {}),
   })
   return { pocketId, savedRecorded }
+}
+
+/**
+ * Add money into a goal's pocket, creating and linking one when the goal has none. When `write` is refused, the pocket
+ * this call made is deleted again (which also unlinks it), so the goal is left as it was. False when refused.
+ */
+export function depositIntoGoal(
+  s: Pick<FinanceStore, 'addSavingsAccount' | 'updateGoal' | 'deleteSavingsAccount'>,
+  goal: Pick<Goal, 'id' | 'currency' | 'linkedSavingsAccountIds'>,
+  pocketId: string | undefined,
+  pocketName: string,
+  write: (pocketId: string) => boolean,
+): boolean {
+  if (pocketId) return write(pocketId)
+  const created = s.addSavingsAccount({ name: pocketName, category: 'savings', type: 'vault', currency: goal.currency })
+  s.updateGoal(goal.id, { linkedSavingsAccountIds: [...goal.linkedSavingsAccountIds, created] })
+  if (write(created)) return true
+  s.deleteSavingsAccount(created)
+  return false
 }

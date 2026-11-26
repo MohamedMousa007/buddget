@@ -1860,7 +1860,7 @@ export const useFinanceStore = create<FinanceStore>()(
         return ok
       },
 
-      transferBetweenPockets: (fromId, toId, amount, notes) => {
+      transferBetweenPockets: (fromId, toId, amount, notes, date) => {
         const raw = Math.max(0, Number(amount) || 0)
         if (raw <= 0 || fromId === toId) return false
         let ok = false
@@ -1876,18 +1876,19 @@ export const useFinanceStore = create<FinanceStore>()(
               : tryConvertWithGold(raw, from.currency, to.currency, state.exchangeRates, state.settings.baseCurrency, goldQuoteOf(state))
           if (toAmt === null || toAmt <= 0) return state
           const gid = generateId()
-          const today = localTodayISO()
-          const occurredAt = new Date().toISOString()
+          const day = date ?? localTodayISO()
+          // Like a deposit: today carries the exact time, a past day stays day-level.
+          const occurredAt = day === localTodayISO() ? new Date().toISOString() : undefined
           // Both legs are non-cash-flow: money moved between pockets, so neither net worth
           // nor left-to-spend changes.
           const outTx: SavingsTransaction = {
             id: generateId(), accountId: fromId, type: 'withdrawal', amount: raw,
-            currency: from.currency, date: today, occurredAt, notes, source: 'transfer',
+            currency: from.currency, date: day, occurredAt, notes, source: 'transfer',
             transferGroupId: gid, isCashFlow: false,
           }
           const inTx: SavingsTransaction = {
             id: generateId(), accountId: toId, type: 'deposit', amount: toAmt,
-            currency: to.currency, date: today, occurredAt, notes, source: 'transfer',
+            currency: to.currency, date: day, occurredAt, notes, source: 'transfer',
             transferGroupId: gid, isCashFlow: false,
           }
           const nextState: FinanceStore = {

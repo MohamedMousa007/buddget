@@ -50,14 +50,16 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
   const [currency, setCurrency] = useState<Currency>(
     () => pockets.find((p) => p.account.id === selectedId)?.account.currency ?? baseCurrency,
   )
+  const [addingPocket, setAddingPocket] = useState(false)
+  // An account with no id follows the pocket's default source (the account holding it first).
+  const [source, setSource] = useState<MoneySource>({ kind: 'account' })
   const pickPocket = (id: string | null, created?: Currency) => {
     setSelectedId(id)
     const cur = pocketCurrency(pockets, id, created)
     if (cur) setCurrency(cur)
+    // A pocket cannot fund itself: picking the source pocket as the target resets the source.
+    if (source.kind === 'pocket' && source.id === id) setSource({ kind: 'account' })
   }
-  const [addingPocket, setAddingPocket] = useState(false)
-  // An account with no id follows the pocket's default source (the account holding it first).
-  const [source, setSource] = useState<MoneySource>({ kind: 'account' })
   const [note, setNote] = useState('')
 
   const amountNum = parseFloat(amount) || 0
@@ -71,7 +73,7 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
     ? null
     : guard.refusalFor({ amount: amountNum, currency, mode: effective.kind === 'outside' ? 'declare' : 'allocate', fromAccountId: effective.id ?? null })
   const pocketShort = fromPocket && fromPocket.currency === currency && amountNum > fromPocket.currentBalance
-  const canSubmit = amountNum > 0 && !!selected && !refusal && !pocketShort && (effective.kind !== 'pocket' || !!fromPocket)
+  const canSubmit = amountNum > 0 && !!selected && !refusal && !pocketShort && (effective.kind !== 'pocket' || (!!fromPocket && fromPocket.id !== selected.account.id))
 
   const sourceLine = (() => {
     if (effective.kind === 'outside') return c.srcOutside

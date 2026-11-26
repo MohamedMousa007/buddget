@@ -130,7 +130,8 @@ export function getGoalStatus({ goal, current, runs: allRuns, now }: GoalStatusI
     }
   }
   const lastPlanned = [...runs].sort((a, b) => b.period.localeCompare(a.period))[0]?.planned ?? 0
-  const deposit = goal.fundingMode === 'fixed' ? (goal.monthlyContribution ?? 0) : lastPlanned
+  // Both amounts are per cycle; the cron deposits monthly, so one deposit is the cycle amount spread over its months.
+  const deposit = (goal.fundingMode === 'fixed' ? (goal.monthlyContribution ?? 0) : lastPlanned) / periodMonths(goal.frequency)
   const remaining = Math.max(0, target - current)
   if (hasPlan && deposit > 0 && remaining > 0 && remaining <= deposit) {
     return { kind: 'oneDeposit', icon: 'Check', tone: 'green', button: { action: 'addMoney', variant: 'default' }, params: {} }

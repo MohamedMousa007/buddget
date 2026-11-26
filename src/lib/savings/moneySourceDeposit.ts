@@ -55,7 +55,7 @@ export function applyPocketDeposit(
           available: store.goldPriceAvailable !== false,
         })
     if (inFrom === null || !(inFrom > 0)) return false
-    return store.transferBetweenPockets(plan.fromPocketId, input.pocketId, inFrom, input.note)
+    return store.transferBetweenPockets(plan.fromPocketId, input.pocketId, inFrom, input.note, input.date)
   }
   return store.depositToSavings(input.pocketId, input.amount, input.currency, input.note, {
     ...plan.opts,
