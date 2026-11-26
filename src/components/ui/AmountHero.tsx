@@ -40,6 +40,8 @@ export interface AmountHeroProps {
   /** One line under the amount (a conversion, what changes); pass '' to keep its height while empty. */
   line?: ReactNode
   mode?: 'decimal' | 'integer'
+  /** Shows the amount as plain text: no input, no pad, the unit not tappable (a system-linked amount). Default off. */
+  readOnly?: boolean
   id?: string
   'aria-label'?: string
   className?: string
@@ -51,7 +53,7 @@ export interface AmountHeroProps {
  */
 export function AmountHero({
   value, onChange, currency = '', onCurrencyChange, unit, onUnitClick, unitKind = 'currency', base, includeGold, codes,
-  sign, top, label, line, mode = 'decimal', id, 'aria-label': ariaLabel, className,
+  sign, top, label, line, mode = 'decimal', readOnly = false, id, 'aria-label': ariaLabel, className,
 }: AmountHeroProps) {
   const t = useT()
   const c = useLightTouchCopy().amountHero
@@ -60,7 +62,7 @@ export function AmountHero({
   const name = ariaLabel ?? t.common.amountLabel
   const { isOpen, openPad, pad } = useNumberPad({ value, onChange, mode, currency: currency || undefined, label: name, dir: 'ltr' })
   const unitText = unit ?? currency
-  const openUnit = onUnitClick ?? (onCurrencyChange ? () => setSheetOpen(true) : undefined)
+  const openUnit = readOnly ? undefined : onUnitClick ?? (onCurrencyChange ? () => setSheetOpen(true) : undefined)
   const width = `${Math.max(value.length, 1) + 0.4}ch`
   const digits = 'font-mono-numbers text-[2.5rem] font-semibold leading-none tracking-[-0.04em] tabular-nums text-[var(--color-brand-text-primary)]'
 
@@ -69,7 +71,12 @@ export function AmountHero({
       {top}
       {label ? <p className="mt-3 text-[0.8125rem] font-medium text-[var(--color-brand-text-secondary)]">{label}</p> : null}
       <div dir="ltr" className={cn('flex items-baseline justify-center gap-1.5', top || label ? 'mt-2' : 'mt-1')}>
-        {native ? (
+        {readOnly ? (
+          <span id={id} className={cn('flex items-baseline', digits)}>
+            {sign}
+            <span>{value || '0'}</span>
+          </span>
+        ) : native ? (
           <button
             id={id}
             type="button"
@@ -113,8 +120,8 @@ export function AmountHero({
         ) : null}
       </div>
       {line !== undefined ? <p className="mt-2 min-h-5 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{line}</p> : null}
-      {native ? pad : null}
-      {onCurrencyChange && !onUnitClick ? (
+      {native && !readOnly ? pad : null}
+      {onCurrencyChange && !onUnitClick && !readOnly ? (
         <CurrencySheet
           open={sheetOpen}
           value={currency}

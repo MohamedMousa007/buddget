@@ -20,6 +20,7 @@ import { bnplPlanDebt, bnplSplitIssue } from '@/lib/debts/bnplSplit'
 import { useSubmitOnce } from '@/hooks/useSubmitOnce'
 import { defaultMethodId } from '@/lib/accounts/resolve'
 import { canonicalAmount, currencyDecimals, parseLocalizedAmount } from '@/lib/ui/amountParse'
+import { mergeDayTime } from '@/lib/time/occurredAt'
 
 /** Default BNPL first-installment due: same day next month. */
 function firstOfNextMonth(): string {
@@ -54,6 +55,8 @@ export function useAddExpenseSheet() {
   const submit = useSubmitOnce(isOpen)
 
   const [date, setDate] = useState(localTodayISO())
+  /** A time picked in the date card (`HH:mm`); '' leaves the store's default (now for today, noon otherwise). */
+  const [clock, setClock] = useState('')
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
   const [currency, setCurrency] = useState<Currency>(settings.baseCurrency)
@@ -128,6 +131,7 @@ export function useAddExpenseSheet() {
 
   const resetForm = useCallback(() => {
     setDate(localTodayISO())
+    setClock('')
     setDescription('')
     setAmount('')
     setCurrency(settings.baseCurrency)
@@ -197,8 +201,10 @@ export function useAddExpenseSheet() {
       linkedDebtId = debtId
     }
 
+    const occurredAt = mergeDayTime(date, clock)
     addExpense({
       date,
+      ...(occurredAt ? { occurredAt } : {}),
       description: title,
       category,
       subcategory,
@@ -226,6 +232,7 @@ export function useAddExpenseSheet() {
     category,
     subcategory,
     date,
+    clock,
     description,
     notes,
     spendExclusion,
@@ -250,6 +257,8 @@ export function useAddExpenseSheet() {
     handleClose,
     date,
     setDate,
+    clock,
+    setClock,
     description,
     setDescription,
     amount,

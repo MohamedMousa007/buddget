@@ -42,21 +42,6 @@ export const FlowChipItem = memo(function FlowChipItem({ chip: c }: { chip: Flow
   )
 }, (a, b) => a.chip.key === b.chip.key && a.chip.label === b.chip.label && a.chip.selected === b.chip.selected && a.chip.ariaLabel === b.chip.ariaLabel && sameBudget(a.chip.budget, b.chip.budget))
 
-/** From lg the chips leave the row and live in this rail card beside the ledger. */
-export function FlowChipRail({ title, chips }: { title: string; chips: FlowChip[] }) {
-  if (chips.length === 0) return null
-  return (
-    <section className="hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4 lg:me-4 lg:block">
-      <h2 className="mb-3 text-[0.8125rem] font-bold text-[var(--color-brand-text-primary)]">{title}</h2>
-      <div className="flex flex-wrap gap-2">
-        {chips.map((c) => (
-          <FlowChipItem key={c.key} chip={c} />
-        ))}
-      </div>
-    </section>
-  )
-}
-
 /**
  * Filters first, then either the budget chips (All / Out), the income types (In), or —
  * once the sheet has narrowed things — the applied filters, each removable with its ✕.

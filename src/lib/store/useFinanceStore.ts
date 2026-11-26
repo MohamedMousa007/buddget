@@ -1206,9 +1206,6 @@ export const useFinanceStore = create<FinanceStore>()(
           return { subscriptions: subs, recurringExpenses: recurring }
         }),
 
-      pauseSubscription: (id) =>
-        get().updateSubscription(id, { status: 'paused', pausedAt: new Date().toISOString() }),
-
       resumeSubscription: (id) =>
         get().updateSubscription(id, { status: 'active', pausedAt: null, createdAt: new Date().toISOString() }),
 

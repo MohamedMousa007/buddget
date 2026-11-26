@@ -269,7 +269,9 @@ describe('QA-109 / QA-116 chips keep their tap area; the two money sheets share 
     expect(src).not.toMatch(/\bpx-4\b/)
     expect(src).toContain('t.expenseForm.cueAmount')
   })
-  it('Add note is a touch-size link', () => {
-    expect(read('components/features/expenses/ExpenseSheetForm.tsx')).toMatch(/variant="link"\s+size="touch"\s+onClick=\{\(\) => setNoteOpen\(true\)\}/)
+  it('the expense note is a labelled field that is always there (Light touch: no extra tap to open it)', () => {
+    const src = read('components/features/expenses/ExpenseSheetForm.tsx')
+    expect(src).toMatch(/<textarea[\s\S]*?aria-label=\{t\.expenseForm\.addNote\}/)
+    expect(src).not.toContain('setNoteOpen')
   })
 })

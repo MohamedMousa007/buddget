@@ -857,6 +857,8 @@ export interface Debt {
   installmentProviderName?: string
   /** When provider is `credit_card`, links to the card debt row. */
   linkedCreditCardDebtId?: string
+  /** The card or account this plan is usually paid with; preselected when a payment is recorded (installments). */
+  defaultPaymentMethodId?: string
 
   /**
    * Principal leg: the account the money left when lent (`they_owe`) or arrived in when borrowed (`i_owe`). Unset =
@@ -1071,7 +1073,7 @@ export type GoalCategory =
   | 'custom'
 
 export type GoalFundingMode = 'share' | 'fixed' | 'manual'
-export type GoalFrequency = 'monthly' | 'quarterly'
+export type GoalFrequency = 'monthly' | 'quarterly' | 'yearly'
 
 export interface Goal {
   id: string
@@ -1256,7 +1258,7 @@ export interface FinanceStore {
   dismissPendingPlanChange: (id: string) => void
   /** Cancel; access (and the Ended move) lasts until `endsOn` (default: today). */
   cancelSubscription: (id: string, endsOn?: string) => void
-  pauseSubscription: (id: string) => void
+  /** A legacy `paused` row back to active. Nothing pauses any more; the status stays readable for old data. */
   resumeSubscription: (id: string) => void
   /** Trial -> active: it now bills from the day after the trial. */
   convertTrial: (id: string) => void

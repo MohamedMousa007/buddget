@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { AlertCircle, Check, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -35,7 +36,12 @@ export interface FlowSummaryBandProps {
   /** Fill 0–100 and an optional pace tick 0–100. `ghost` = an empty track (no budget to fill). */
   bar: { pct: number; tick?: number; ghost?: boolean }
   scale: [string, string, string]
-  stats: FlowBandStat[]
+  /** The three-cell strip. Omitted (Light touch Flow): no strip, the in/out line rides in `note`. */
+  stats?: FlowBandStat[]
+  /** One line under the bar (money in and out). */
+  note?: ReactNode
+  /** A rounded card inside the page gutter instead of the full-bleed band. */
+  contained?: boolean
 }
 
 const STATUS_ICON = { check: Check, clock: Clock, alert: AlertCircle } as const
@@ -43,11 +49,11 @@ const STATUS_ICON = { check: Check, clock: Clock, alert: AlertCircle } as const
 const STATUS_TONE = { check: 'var(--flow-chip-ok)', clock: 'var(--flow-chip-warn)', alert: 'var(--flow-chip-over)' } as const
 
 /**
- * Flow's full-bleed teal summary, drawn through {@link HeroBand}. Its height never changes: a 22px
- * label row, a 34.5px number row, a 38.75px bar block and a 66px stats strip. Every state, filter
- * and segment fills the same slots, so only values move.
+ * Flow's teal summary, drawn through {@link HeroBand}: a 22px label row, a 34.5px number row and a 38.75px bar
+ * block, then either the 66px stats strip (`stats`) or a one-line `note`. `contained` draws it as a rounded card in
+ * the page gutter (Light touch Flow); without it, the full-bleed band. Every state fills the same slots.
  */
-export function FlowSummaryBand({ variant, label, status, setBudget, big, of, side, sideSub, bar, scale, stats }: FlowSummaryBandProps) {
+export function FlowSummaryBand({ variant, label, status, setBudget, big, of, side, sideSub, bar, scale, stats, note, contained }: FlowSummaryBandProps) {
   const StatusIcon = status ? STATUS_ICON[status.icon] : null
   const loading = variant === 'loading'
   const aside = setBudget ? (
@@ -73,7 +79,9 @@ export function FlowSummaryBand({ variant, label, status, setBudget, big, of, si
       label={label}
       aside={aside}
       fitCells
-      cells={stats as [FlowBandStat, FlowBandStat, FlowBandStat]}
+      contained={contained}
+      note={loading ? undefined : note}
+      cells={stats ? (stats as [FlowBandStat, FlowBandStat, FlowBandStat]) : undefined}
       numbers={loading ? (
         <div className="h-[30px] w-[180px] rounded-lg" style={{ background: MIX }} aria-hidden />
       ) : (

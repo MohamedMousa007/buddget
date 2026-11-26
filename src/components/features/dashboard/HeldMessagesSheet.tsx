@@ -8,7 +8,7 @@ import { paydayCandidates } from '@/lib/income/paydayResolution'
 import { methodLabel } from '@/components/features/flow/useFlowLedger'
 import { useShortDate } from '@/hooks/useShortDate'
 import type { Currency } from '@/lib/store/types'
-import { ResolveGroupLabel, ResolveRow, ResolveSheet, ResolveTile } from '@/components/modals/ResolveSheet'
+import { ResolveGroupLabel, ResolveList, ResolveRow, ResolveSheet, ResolveTile } from '@/components/modals/ResolveSheet'
 import { Button } from '@/components/ui/button'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { TOAST_UNDO_MS } from '@/components/ui/toastQueue'
@@ -18,7 +18,17 @@ import { useWeekendFirstDay } from '@/hooks/useWeekStart'
 import { categoryLabel } from '@/lib/i18n/categoryLabel'
 import type { PendingConfirmation } from '@/hooks/useSmsConfirmations'
 import { formatFixed2 } from '@/lib/utils/formatters'
-import { AI_QUOTA_HOLD, createDeferred, dismissKind, dismissNeedsUndo, groupHeld, isCredit, isCurrencyOnly, runBatch } from '@/lib/sms/heldReview'
+import { MoveHorizontal } from 'lucide-react'
+import { SwipeToDelete, type SwipeSide } from '@/components/expenses/SwipeToDelete'
+import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
+import { AI_QUOTA_HOLD, createDeferred, dismissNeedsUndo, groupHeld, isCredit, isCurrencyOnly, runBatch } from '@/lib/sms/heldReview'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { CategoryIcon } from '@/components/dashboard/CategoryIcon'
+import { categoryChipColors } from '@/lib/expenses/categoryChip'
+
+/** An outgoing transfer not booked yet, from a known sender: the message can't tell a transfer from a payment. */
+const isTransferAsk = (i: PendingConfirmation): boolean =>
+  i.kind === 'instant_transfer_out' && !isCurrencyOnly(i) && i.failure_code !== 'sender_mismatch'
 
 interface HeldMessagesSheetProps {
   open: boolean
@@ -39,7 +49,8 @@ export interface ReviewMatch {
 
 /**
  * Held bank messages: one selectable row per message, one footer. Nothing is chosen for the user (these were held for a
- * reason); "Select all ready" picks plain debits only, credits and currency checks are chosen one by one, and an
+ * reason) except the plain debits in Ready, which start ticked each time it opens; credits and currency checks are
+ * chosen one by one, every row has a bin (and swipes left) to remove it, and an
  * unverified sender can only be confirmed from its own detail. Two flavours per row:
  *  - provisional currency (transaction exists) → confirming locks the currency; dismissing only stops the question
  *  - add-failed rescue (nothing created yet)   → confirming creates it; dismissing means it is never added (Undo for 8 s)
@@ -58,6 +69,7 @@ export function HeldMessagesSheet({ open, onClose, items, confirmItem, dismissIt
   const shortDate = useShortDate()
   const t = useT()
   const s = t.smsReview
+  const lt = useFlowLtCopy()
   const toast = useActionToast()
   const { online } = useNetworkStatus()
   const weekendFirst = useWeekendFirstDay()
@@ -74,6 +86,7 @@ export function HeldMessagesSheet({ open, onClose, items, confirmItem, dismissIt
   const [failed, setFailed] = useState<Set<string>>(new Set())
   const [hidden, setHidden] = useState<Set<string>>(new Set())
   const [busy, setBusy] = useState(false)
+  const [swiped, setSwiped] = useState<{ id: string; side: SwipeSide } | null>(null)
 
   // "Don't add" is held back for the Undo window, then sent; a failure puts the rows back with the red chip.
   const [deferred] = useState(() =>
@@ -98,7 +111,25 @@ export function HeldMessagesSheet({ open, onClose, items, confirmItem, dismissIt
   }, [deferred])
 
   const visible = useMemo(() => items.filter((i) => !hidden.has(i.id)), [items, hidden])
-  const groups = useMemo(() => groupHeld(visible), [visible])
+  // An outgoing transfer moves to "Take a look" with its own question (transfer, or spending?), never pre-ticked.
+  const groups = useMemo(() => {
+    const g = groupHeld(visible)
+    return { ...g, ready: g.ready.filter((i) => !isTransferAsk(i)), check: [...g.ready.filter(isTransferAsk), ...g.check] }
+  }, [visible])
+
+  // "No, spending": confirm it, then open the expense it creates (once it has synced) so its category can be set.
+  const { expenses } = useFinanceStore(useShallow((st) => ({ expenses: st.expenses })))
+  const { setEditingExpenseId, setActiveModal } = useSettingsStore(useShallow((st) => ({ setEditingExpenseId: st.setEditingExpenseId, setActiveModal: st.setActiveModal })))
+  const [editAfter, setEditAfter] = useState<string | null>(null)
+  useEffect(() => {
+    if (!editAfter) return
+    const e = expenses.find((x) => x.smsLogId === editAfter)
+    if (!e) return
+    setEditingExpenseId(e.id)
+    setActiveModal('editExpense')
+    /* eslint-disable-next-line react-hooks/set-state-in-effect -- consume the expense that just landed */
+    setEditAfter(null)
+  }, [editAfter, expenses, setEditingExpenseId, setActiveModal])
 
   // Credits that plausibly fill an open payday are confirmed straight into it ("Confirm and link").
   const matches = useMemo(() => {
@@ -129,8 +160,15 @@ export function HeldMessagesSheet({ open, onClose, items, confirmItem, dismissIt
     if (open && items.length > 0 && visible.length === 0) onClose()
   }, [open, items.length, visible.length, onClose])
 
+  // Plain debits in Ready start ticked each time the sheet opens; credits, currency checks and unverified senders
+  // are still chosen one by one. Adjusted during render (not in an effect) so the first paint already shows the ticks.
+  const [wasOpen, setWasOpen] = useState(false)
+  if (open !== wasOpen) {
+    setWasOpen(open)
+    if (open) setSelected(new Set(groups.ready.map((i) => i.id)))
+  }
+
   const toggle = (id: string) => setSelected((p) => { const q = new Set(p); if (q.has(id)) q.delete(id); else q.add(id); return q })
-  const selectAllReady = () => setSelected((p) => new Set([...p, ...groups.ready.map((i) => i.id)]))
 
   const confirmMany = async (list: PendingConfirmation[]) => {
     if (busy || !online || list.length === 0) return
@@ -196,14 +234,57 @@ export function HeldMessagesSheet({ open, onClose, items, confirmItem, dismissIt
       : match
         ? ({ tone: 'positive', text: [s.matchedTo(shortDate(match.date)), match.daysLate ? s.arrivedLate(match.daysLate) : null].filter(Boolean).join(' · ') } as const)
         : undefined
+    const remove = () => {
+      setSwiped(null)
+      void dismissMany([item])
+    }
+    const ask = isTransferAsk(item)
+    const colors = !credit && item.category ? categoryChipColors(item.category) : null
     return (
-      <ResolveRow
+      <SwipeToDelete
         key={item.id}
-        state={locked ? 'locked' : isFailed ? 'failed' : selected.has(item.id) ? 'selected' : 'idle'}
-        onToggle={locked ? undefined : () => toggle(item.id)}
-        leading={<ResolveTile label={title} moneyIn={credit} />}
+        openSide={swiped?.id === item.id ? swiped.side : null}
+        onOpenChange={(side) => setSwiped(side ? { id: item.id, side } : null)}
+        onDelete={remove}
+        deleteLabel={t.common.delete}
+      >
+      <ResolveRow
+        look="list"
+        remove={{ label: lt.held.remove(title), onPress: remove, disabled: busy }}
+        state={locked ? 'locked' : ask && !isFailed ? 'plain' : isFailed ? 'failed' : selected.has(item.id) ? 'selected' : 'idle'}
+        onToggle={locked || ask ? undefined : () => toggle(item.id)}
+        leading={
+          colors && item.category ? (
+            <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-[11px]" style={{ background: colors.bg, color: colors.fg }}>
+              <CategoryIcon category={item.category} className="size-5" />
+            </span>
+          ) : (
+            <ResolveTile label={title} moneyIn={credit} />
+          )
+        }
         title={title}
-        sub={sub}
+        sub={ask ? lt.held.transferAsk : sub}
+        subTone={ask ? 'var(--color-brand-amber)' : undefined}
+        footer={
+          ask ? (
+            <div className="grid grid-cols-2 border-t border-[var(--color-brand-border)]">
+              <Button variant="ghost" className="h-11 rounded-none font-semibold text-[var(--color-brand-primary-ink)]" disabled={busy || !online} onClick={() => void confirmMany([item])}>
+                {lt.held.yesTransfer}
+              </Button>
+              <Button
+                variant="ghost"
+                className="h-11 rounded-none border-s border-[var(--color-brand-border)] font-semibold text-[var(--color-brand-primary-ink)]"
+                disabled={busy || !online}
+                onClick={() => {
+                  setEditAfter(item.id)
+                  void confirmMany([item])
+                }}
+              >
+                {lt.held.noSpending}
+              </Button>
+            </div>
+          ) : undefined
+        }
         trailing={amountText ? <span className={credit ? 'text-[var(--color-brand-green)]' : undefined}>{amountText}</span> : undefined}
         chip={chip}
         label={[title, amountText, shortDate(item.received_at), chip?.text].filter(Boolean).join(', ')}
@@ -227,45 +308,46 @@ export function HeldMessagesSheet({ open, onClose, items, confirmItem, dismissIt
           ) : undefined
         }
       />
+      </SwipeToDelete>
     )
   }
 
-  const kind = dismissKind(chosen)
-  const secondaryLabel = kind === 'keepAsIs' ? s.keepAsIsN(n) : kind === 'dontAdd' ? s.dontAddN(n) : s.dismissN(n)
   const allFailed = n > 0 && chosen.every((i) => failed.has(i.id))
   const allCredits = n > 0 && chosen.every(isCredit)
-  const allMatched = allCredits && chosen.every((i) => matches.has(i.id))
-  const primaryLabel = allFailed ? s.retryN(n) : allMatched ? s.confirmLinkN(n) : s.confirmN(n)
-  const sections = [groups.ready, groups.check, groups.locked].filter((g) => g.length > 0).length
+  // Nothing ticked: the button just closes ("Done"); every row has its own bin to remove it.
+  // Currency checks are already in Flow: confirming them is not adding anything.
+  const primaryLabel = n === 0 ? t.common.done : allFailed ? s.retryN(n) : chosen.every(isCurrencyOnly) ? s.confirmN(n) : lt.held.addThese(n)
 
   return (
     <ResolveSheet
       open={open}
       onClose={close}
       busy={busy}
-      title={s.sheetTitle(visible.length)}
-      subtitle={s.sheetSubtitle}
-      headerAction={groups.ready.length > 0 ? { label: s.selectAllReady, onPress: selectAllReady } : undefined}
+      title={lt.held.title}
+      subtitle={lt.held.sub}
       note={!online ? { text: s.offlineNote, tone: 'warning' } : failed.size > 0 ? { text: s.actionFailed, tone: 'error' } : undefined}
-      primary={{ label: primaryLabel, onPress: () => void confirmMany(chosen), disabled: n === 0 || !online, loading: busy, variant: allCredits ? 'success' : 'default' }}
-      secondary={{ label: secondaryLabel, onPress: () => void dismissMany(chosen), disabled: n === 0 }}
+      primary={{ label: primaryLabel, onPress: () => (n === 0 ? close() : void confirmMany(chosen)), disabled: n > 0 && !online, loading: busy, variant: allCredits ? 'success' : 'default' }}
     >
+      <p className="flex items-center gap-2 px-1 text-xs text-[var(--color-brand-text-muted)]">
+        <MoveHorizontal className="size-4 shrink-0" aria-hidden />
+        {lt.held.swipeTip}
+      </p>
       {groups.ready.length > 0 ? (
         <>
-          {sections > 1 ? <ResolveGroupLabel>{s.groupReady(groups.ready.length)}</ResolveGroupLabel> : null}
-          {groups.ready.map((i) => row(i, false))}
+          <ResolveGroupLabel>{s.groupReady(groups.ready.length)}</ResolveGroupLabel>
+          <ResolveList>{groups.ready.map((i) => row(i, false))}</ResolveList>
         </>
       ) : null}
       {groups.check.length > 0 ? (
         <>
-          {sections > 1 ? <ResolveGroupLabel>{s.groupCheck(groups.check.length)}</ResolveGroupLabel> : null}
-          {groups.check.map((i) => row(i, false))}
+          <ResolveGroupLabel>{s.groupCheck(groups.check.length)}</ResolveGroupLabel>
+          <ResolveList>{groups.check.map((i) => row(i, false))}</ResolveList>
         </>
       ) : null}
       {groups.locked.length > 0 ? (
         <>
           <ResolveGroupLabel>{s.groupUnverified(groups.locked.length)}</ResolveGroupLabel>
-          {groups.locked.map((i) => row(i, true))}
+          <ResolveList>{groups.locked.map((i) => row(i, true))}</ResolveList>
         </>
       ) : null}
     </ResolveSheet>
