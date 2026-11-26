@@ -63,5 +63,8 @@ describe('smsLastResult', () => {
     expect(smsLastResult(undefined, 'network')).toBe('drain:network')
     expect(smsLastResult('', null)).toBeNull()
     expect(smsLastResult('x'.repeat(80), null)).toHaveLength(60)
+    const long = smsLastResult('x'.repeat(80), 'http_401')!
+    expect(long).toHaveLength(60)
+    expect(long.endsWith(' drain:http_401')).toBe(true)
   })
 })

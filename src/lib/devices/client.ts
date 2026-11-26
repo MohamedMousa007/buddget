@@ -61,8 +61,9 @@ const QUEUE_REPORT_EVERY_MS = 10 * 60_000
  * so a stale-session `http_401` on the replay no longer hides what the Shortcut did. Fits the server's 60-character field.
  */
 export function smsLastResult(captureResult: string | null | undefined, drainOutcome: string | null | undefined): string | null {
-  const drainFailed = drainOutcome && drainOutcome !== 'delivered' ? `drain:${drainOutcome}` : null
-  return [captureResult || null, drainFailed].filter(Boolean).join(' ').slice(0, 60) || null
+  const drainFailed = drainOutcome && drainOutcome !== 'delivered' ? `drain:${drainOutcome}`.slice(0, 30) : null
+  const capture = (captureResult || '').slice(0, drainFailed ? 60 - drainFailed.length - 1 : 60)
+  return [capture || null, drainFailed].filter(Boolean).join(' ') || null
 }
 
 export async function reportSmsQueue(status: { pendingCount?: number; oldestPendingAt?: string; lastResult?: string; evictedCount?: number; drainOutcome?: string | null } | null): Promise<void> {
