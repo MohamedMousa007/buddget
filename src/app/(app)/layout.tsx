@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { cookies, headers } from 'next/headers'
 import { LOCALE_COOKIE, parseLocaleCookie } from '@/lib/i18n/localeCookie'
-import { Geist, JetBrains_Mono, IBM_Plex_Sans_Arabic } from 'next/font/google'
+import { Geist, IBM_Plex_Sans_Arabic } from 'next/font/google'
 import '../globals.css'
 import { AppShell } from '@/components/layout/AppShell'
 import { AuthProvider } from '@/components/auth/AuthProvider'
@@ -17,16 +17,10 @@ import { PlatformBodyClass } from '@/lib/native/PlatformBodyClass'
 import { NativeInviteLinks } from '@/lib/native/inviteLinks'
 import { CrashReporter } from '@/lib/crash/CrashReporter'
 
-// One variable-weight file serves body and headings.
+// One variable-weight file serves body, headings and numbers (light touch: Geist everywhere).
 const geist = Geist({
   subsets: ['latin'],
   variable: '--font-geist',
-})
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  variable: '--font-jetbrains',
-  weight: ['400', '500', '600'],
 })
 
 const ibmPlexArabic = IBM_Plex_Sans_Arabic({
@@ -147,8 +141,7 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-title" content="buddget" />
       </head>
       <body
-        style={{ '--font-heading': 'var(--font-sans)' } as React.CSSProperties}
-        className={`${geist.variable} ${jetbrainsMono.variable} ${ibmPlexArabic.variable} font-sans antialiased`}
+        className={`${geist.variable} ${ibmPlexArabic.variable} font-sans antialiased`}
       >
         <PlatformBodyClass />
         <NativeInviteLinks />
