@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import { Check, Info, TriangleAlert } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { BAND_FG2, BAND_MIX, HeroBand } from '@/components/features/hero/HeroBand'
 import { useCategoryLabel } from '@/hooks/useCategoryLabel'
@@ -11,8 +12,9 @@ import { planSplit } from '@/lib/budget/ledger'
 import type { PlanView } from '@/lib/budget/planView.types'
 import { useLocale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { formatCurrency } from '@/lib/utils/formatters'
-import { monthKeyLabel, percentText } from './chromeFormat'
+import { formatWhole } from '@/lib/utils/formatters'
+import { useBudgetDraftCopy } from '@/lib/i18n/budgetDraftCopy'
+import { monthKeyLabel, percentText, inlineMoney } from './chromeFormat'
 import { useOverviewCopy } from './useOverviewCopy'
 
 function Stat({ label, children, color }: { label: string; children: ReactNode; color?: string }) {
@@ -27,13 +29,44 @@ function Stat({ label, children, color }: { label: string; children: ReactNode; 
 }
 
 
-/** The month hero: everyday money left, the pace against an even line, and three facts. */
-export function MonthHero({ view }: { view: PlanView }) {
+/**
+ * The month hero: everyday money left, the pace against an even line, and three facts. With `onApply` (the plan is
+ * not applied yet) it shows the plan's everyday total and an "Apply budget" call to action instead.
+ */
+export function MonthHero({ view, onApply }: { view: PlanView; onApply?: () => void }) {
   const c = useOverviewCopy().hero
+  const d = useBudgetDraftCopy()
   const catLabel = useCategoryLabel()
-  const money = (n: number) => formatCurrency(n, view.base, false)
+  const money = (n: number) => inlineMoney(n, view.base)
   const pace = everydayPace(view)
   const tick = view.daysInCycle > 0 ? Math.min(100, (view.dayOfCycle / view.daysInCycle) * 100) : null
+
+  if (onApply) {
+    return (
+      <HeroBand
+        label={d.label}
+        contained
+        numbers={
+          <>
+            <p className="flex min-w-0 items-baseline gap-1.5">
+              <span className="font-mono-numbers whitespace-nowrap text-[32px] font-semibold leading-none tracking-[-0.03em]">{money(view.blocks.everyday.total)}</span>
+              <span className={`text-[0.8125rem] ${BAND_FG2}`}>{d.planned}</span>
+            </p>
+            <p className={`shrink-0 text-end text-[0.71875rem] leading-[1.3] ${BAND_FG2}`}>
+              <span dir="auto">{c.daysLeft(Math.max(0, view.daysInCycle - view.dayOfCycle))}</span>
+            </p>
+          </>
+        }
+        bar={<div aria-hidden className="h-1.5 rounded-full" style={{ background: BAND_MIX }} />}
+        note={<span dir="auto">{d.note}</span>}
+        extra={
+          <Button variant="onBand" size="touch" className="mt-3 w-full font-semibold" onClick={onApply}>
+            {d.apply}
+          </Button>
+        }
+      />
+    )
+  }
 
   if (view.learning || !pace) {
     const planned = view.blocks.everyday.total
@@ -137,7 +170,8 @@ export function SplitBar({ view }: { view: PlanView }) {
 export function PlanHero({ view }: { view: PlanView }) {
   const c = useOverviewCopy().hero
   const { locale } = useLocale()
-  const money = (n: number) => formatCurrency(n, view.base, false)
+  // Light touch: the amount, then the grey currency code.
+  const money = (n: number) => inlineMoney(n, view.base)
   const s = planSplit(view)
   const parts = (['spending', 'debt', 'saving'] as const).map((k) => ({ k, amount: s[k], pct: s[`${k}Pct` as 'spendingPct'] }))
   const month = view.extras.debtFreeMonth
@@ -146,8 +180,9 @@ export function PlanHero({ view }: { view: PlanView }) {
       <div className="flex items-end justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
           <span className="text-xs text-[var(--color-brand-text-secondary)]">{c.income}</span>
-          <span className="font-mono-numbers whitespace-nowrap text-[30px] font-semibold leading-none tracking-[-0.02em] text-[var(--color-brand-text-primary)]">
-            {money(view.income)}
+          <span className="flex items-baseline gap-1.5 whitespace-nowrap">
+            <span className="font-mono-numbers text-[30px] font-semibold leading-none tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{formatWhole(view.income)}</span>
+            <span className="text-[0.8125rem] text-[var(--color-brand-text-muted)]">{view.base}</span>
           </span>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-0.5 text-end text-xs text-[var(--color-brand-text-secondary)]">

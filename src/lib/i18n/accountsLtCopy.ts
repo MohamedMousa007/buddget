@@ -36,6 +36,10 @@ export interface AccountsLtCopy {
     cardsHeading: string
     addCardSub: string
     notListed: string
+    saveFirstTitle: string
+    saveFirstBody: (provider: string) => string
+    saveFirstCta: string
+    notYet: string
   }
   addCard: {
     title: string
@@ -108,6 +112,10 @@ export const ACCOUNTS_LT_COPY: Record<Locale, AccountsLtCopy> = {
       cardsHeading: 'Cards',
       addCardSub: 'Debit, credit or prepaid on this account. You can add it later.',
       notListed: 'Not listed? Add it by name',
+      saveFirstTitle: 'Save this account and add a card?',
+      saveFirstBody: (p) => `${p} is saved now, then you add its card. You can delete it later.`,
+      saveFirstCta: 'Save and add a card',
+      notYet: 'Not yet',
     },
     addCard: {
       title: 'Add a card',
@@ -178,6 +186,10 @@ export const ACCOUNTS_LT_COPY: Record<Locale, AccountsLtCopy> = {
       cardsHeading: 'البطاقات',
       addCardSub: 'بطاقة خصم أو ائتمان أو مسبقة الدفع على هذا الحساب. تقدر تضيفها لاحقاً.',
       notListed: 'غير موجود؟ أضفه بالاسم',
+      saveFirstTitle: 'نحفظ هذا الحساب ونضيف بطاقة؟',
+      saveFirstBody: (p) => `يُحفظ ${p} الآن، ثم تضيف بطاقته. تقدر تحذفه لاحقاً.`,
+      saveFirstCta: 'احفظ وأضف بطاقة',
+      notYet: 'ليس الآن',
     },
     addCard: {
       title: 'أضف بطاقة',

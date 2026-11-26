@@ -8,6 +8,7 @@ import { useInsightsLtCopy } from '@/lib/i18n/insightsLtCopy'
 import { MASK } from '@/lib/privacy/mask'
 import { useMask } from '@/lib/privacy/useMask'
 import { formatWhole } from '@/lib/utils/formatters'
+import { cn } from '@/lib/utils'
 import { ChartBox, useChartTip } from './ChartTip'
 import { InsightsSection } from './InsightsParts'
 
@@ -24,7 +25,9 @@ interface Props {
 }
 
 const W = 320
-const H = 132
+const H = 118
+/** Below this share of the width, two axis labels would touch: the edge label gives way to "Today". */
+const LABEL_GAP = 0.18
 
 /** Cumulative spend against the plan line, today marked, the rest projected. One axis (days); tap or hover for the day's figures. */
 export function PaceChart({ cumulative, totalDays, start, budget, projected }: Props) {
@@ -38,7 +41,11 @@ export function PaceChart({ cumulative, totalDays, start, budget, projected }: P
   const heading = projected !== null && today < totalDays ? projected : null
   const top = Math.max(budget, heading ?? 0, spent, 1) * 1.1
   const x = (d: number) => 8 + (d / totalDays) * (W - 16)
-  const y = (v: number) => H - 18 - (v / top) * (H - 30)
+  const y = (v: number) => H - 4 - (v / top) * (H - 16)
+  const pct = (px: number) => `${(px / W) * 100}%`
+  const todayAt = x(today) / W
+  const showStart = today === 0 || todayAt - 8 / W > LABEL_GAP
+  const showEnd = today === 0 || (W - 8) / W - todayAt > LABEL_GAP
   const day = (d: number) => formatLocalized(addDays(start, Math.max(0, d - 1)), 'MMM d', locale)
   const planAt = (d: number) => (budget > 0 ? (budget * d) / totalDays : null)
   const valueAt = (d: number) => (d <= today ? cumulative[d] : heading !== null ? spent + ((heading - spent) * (d - today)) / (totalDays - today) : null)
@@ -62,12 +69,13 @@ export function PaceChart({ cumulative, totalDays, start, budget, projected }: P
         {heading !== null ? <span className="inline-flex items-center gap-1.5"><span aria-hidden className="h-0 w-4 border-t-2 border-dotted border-[var(--color-brand-amber)]" />{c.legend.heading}</span> : null}
       </div>
       <ChartBox tip={chart.tip} boxRef={chart.setBox} onLeave={chart.hide} className="mt-3">
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={c.aria} direction="ltr">
+        {/* Text lives in HTML, not the scaled SVG, so it stays 10px however wide the chart is. */}
+        <div className="relative">
+        <svg viewBox={`0 0 ${W} ${H}`} className="block w-full" role="img" aria-label={c.aria} direction="ltr">
           <line x1="8" x2={W - 8} y1={y(0)} y2={y(0)} stroke="var(--color-brand-border)" strokeWidth="1" />
           {budget > 0 ? (
             <>
               <line x1="8" x2={W - 8} y1={y(budget)} y2={y(budget)} stroke="var(--color-brand-border-strong)" strokeWidth="1" strokeDasharray="3 3" />
-              <text x={W - 8} y={y(budget) - 5} textAnchor="end" fontSize="10" fill="var(--color-brand-text-muted)">{c.budget(money(budget))}</text>
               <path d={`M${x(0)} ${y(0)} L${x(totalDays)} ${y(budget)}`} fill="none" stroke="var(--color-brand-text-muted)" strokeWidth="1.5" strokeDasharray="4 4" />
             </>
           ) : null}
@@ -77,11 +85,6 @@ export function PaceChart({ cumulative, totalDays, start, budget, projected }: P
             <path d={`M${x(today)} ${y(spent)} L${x(totalDays)} ${y(heading)}`} fill="none" stroke="var(--color-brand-amber)" strokeWidth="2" strokeDasharray="2 4" strokeLinecap="round" />
           ) : null}
           <circle cx={x(today)} cy={y(spent)} r="4.5" fill="var(--color-brand-primary)" stroke="var(--color-brand-card)" strokeWidth="2" />
-          <text x="8" y={H - 3} fontSize="10" fill="var(--color-brand-text-muted)">{day(1)}</text>
-          {today > 3 && today < totalDays - 3 ? (
-            <text x={x(today)} y={H - 3} textAnchor="middle" fontSize="10" fontWeight="600" fill="var(--color-brand-text-secondary)">{c.today}</text>
-          ) : null}
-          <text x={W - 8} y={H - 3} textAnchor="end" fontSize="10" fill="var(--color-brand-text-muted)">{day(totalDays)}</text>
           {Array.from({ length: totalDays }, (_, i) => {
             const d = i + 1
             const v = valueAt(d)
@@ -100,6 +103,27 @@ export function PaceChart({ cumulative, totalDays, start, budget, projected }: P
             )
           })}
         </svg>
+        {budget > 0 ? (
+          <span
+            className="pointer-events-none absolute -translate-y-full font-mono-numbers text-[0.625rem] leading-none text-[var(--color-brand-text-muted)]"
+            style={{ right: pct(8), top: `calc(${(y(budget) / H) * 100}% - 3px)` }}
+          >
+            {c.budget(money(budget))}
+          </span>
+        ) : null}
+        </div>
+        <div dir="ltr" aria-hidden className="relative mt-1 h-3.5 text-[0.625rem] leading-[0.875rem] text-[var(--color-brand-text-muted)]">
+          {showStart ? <span className="absolute" style={{ left: pct(8) }}>{day(1)}</span> : null}
+          {today > 0 ? (
+            <span
+              className={cn('absolute whitespace-nowrap font-semibold text-[var(--color-brand-text-secondary)]', showStart && showEnd && '-translate-x-1/2')}
+              style={!showStart ? { left: pct(8) } : !showEnd ? { right: pct(8) } : { left: pct(x(today)) }}
+            >
+              {c.today}
+            </span>
+          ) : null}
+          {showEnd ? <span className="absolute" style={{ right: pct(8) }}>{day(totalDays)}</span> : null}
+        </div>
       </ChartBox>
       <ChartDataTable
         caption={c.aria}

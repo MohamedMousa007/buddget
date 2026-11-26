@@ -135,7 +135,8 @@ export function EmergencyFundSheet({ open, onClose, onAddMoney }: EmergencyFundS
             <Card padding="none" divide className="overflow-hidden">
               <div className="flex min-h-14 items-center gap-3 px-4">
                 <label htmlFor="ef-months" className="min-w-0 flex-1 text-[0.9375rem] font-medium text-[var(--color-brand-text-primary)]">{c.monthsInput}</label>
-                <span className="flex items-center gap-1">
+                {/* 12px apart, so each 32px button's 44px hit area stays its own and never covers the number. */}
+                <span className="flex items-center gap-3">
                   <IconButton aria-label={t.fewer} variant="sheetAction" disabled={targetMonths <= MIN_MONTHS} onClick={() => setMonths(targetMonths - 1)}>
                     <Minus className="size-4" />
                   </IconButton>

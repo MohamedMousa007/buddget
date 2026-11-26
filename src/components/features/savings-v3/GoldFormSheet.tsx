@@ -127,7 +127,7 @@ export function GoldFormSheet({ open, onClose, onDone }: GoldFormSheetProps) {
             paymentMethods={accounts.map((v) => v.method)}
             accounts={accounts}
             pockets={pockets}
-            labels={{ from: g.paidFrom, fromPocket: g.paidFrom }}
+            labels={{ from: g.paidFrom, fromPocket: g.paidFrom, outsideValue: g.outsideValue }}
           />
 
           <div>

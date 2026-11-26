@@ -1,5 +1,6 @@
 'use client'
 
+import { inlineMoney } from '@/components/features/budget/chromeFormat'
 import { useCategoryLabel } from '@/hooks/useCategoryLabel'
 import { useState } from 'react'
 import { Calendar, RefreshCw, Trash2 } from 'lucide-react'
@@ -20,10 +21,10 @@ import { TintedTile } from '@/components/features/budget/TintedTile'
 import { useBudgetSheetsCopy } from '@/components/features/budget/useSheetsCopy'
 import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
 import { BLOCK_META } from '@/lib/budget/blocks'
-import { lineEditPatch } from '@/lib/budget/lineEdit'
+import { lineEditDirty, lineEditPatch } from '@/lib/budget/lineEdit'
 import type { LineView, PlanView } from '@/lib/budget/planView.types'
 import type { BudgetPlanCategory } from '@/lib/store/types'
-import { formatCurrency, formatFlex } from '@/lib/utils/formatters'
+import { formatFlex } from '@/lib/utils/formatters'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 import { useLightTouchCopy } from '@/lib/i18n/lightTouchCopy'
 
@@ -70,7 +71,8 @@ function LineForm({
   const [amount, setAmount] = useState(String(shown))
   const [essential, setEssential] = useState(!!line.essential)
   const [locked, setLocked] = useState(!!line.locked)
-  const [dueDay, setDueDay] = useState<number | null>(lv.dueDay ?? line.dueDay ?? null)
+  const initialDue = lv.dueDay ?? line.dueDay ?? null
+  const [dueDay, setDueDay] = useState<number | null>(initialDue)
   const [categories, setCategories] = useState<string[]>(line.expenseCategories ?? [])
   const [sheet, setSheet] = useState<'due' | 'cats' | null>(null)
 
@@ -80,6 +82,11 @@ function LineForm({
   const pct = view.income > 0 ? Math.round((value / view.income) * 100) : 0
   const liveDiffers = linked && lv.liveAmount !== null && Math.round(lv.liveAmount) !== Math.round(lv.amount)
   const catsChanged = categories.join('|') !== (line.expenseCategories ?? []).join('|')
+  const dirty = lineEditDirty(
+    { amount: shown, essential: !!line.essential, locked: !!line.locked, dueDay: initialDue, categories: line.expenseCategories ?? [] },
+    { amount: value, essential, locked, dueDay, categories },
+    linked,
+  )
 
   const save = () => {
     const patch = lineEditPatch({ shown, value, base: view.base, linked, essential, locked, isBill: lv.block === 'bills', dueDay })
@@ -134,7 +141,7 @@ function LineForm({
         {liveDiffers && lv.liveAmount !== null ? (
           <Button type="button" variant="outline" size="touch" onClick={() => onSyncLive(line.id)}>
             <RefreshCw aria-hidden />
-            <span className="font-mono-numbers">{c.line.updateToLive(formatCurrency(lv.liveAmount, view.base, false))}</span>
+            <span className="font-mono-numbers">{c.line.updateToLive(inlineMoney(lv.liveAmount, view.base))}</span>
           </Button>
         ) : null}
 
@@ -168,7 +175,7 @@ function LineForm({
       </div>
 
       <div className="sheet-cta shrink-0 border-t border-[var(--color-brand-border)] px-5 pb-[calc(16px+env(safe-area-inset-bottom))] pt-3">
-        <Button type="button" size="cta-block" onClick={save}>{c.common.save}</Button>
+        <Button type="button" size="cta-block" onClick={save} disabled={!dirty}>{c.common.save}</Button>
       </div>
 
       <DayOfMonthSheet open={sheet === 'due'} value={dueDay} onChange={setDueDay} onClose={() => setSheet(null)} title={lt.dueDayTitle} zIndexClassName="z-[110]" />

@@ -21,6 +21,7 @@ export interface ZakatCopy {
   setYearStart: (date: string) => string
   noHistory: string
   pastNote: string
+  hideNote: string
 }
 
 /** Zakat-only inputs, the one-time note about old typed figures, and the one-year states. */
@@ -45,6 +46,7 @@ export const ZAKAT_COPY: Record<Locale, ZakatCopy> = {
     setYearStart: (date) => `Start my year on ${date}`,
     noHistory: 'Some items have no history that far back, so today’s value is used for them.',
     pastNote: 'The year start is rebuilt from your history, with gold and other prices at today’s value.',
+    hideNote: 'Hide this note',
   },
   ar: {
     legacyTitle: 'نستخدم الآن أرصدتك الحالية.',
@@ -66,6 +68,7 @@ export const ZAKAT_COPY: Record<Locale, ZakatCopy> = {
     setYearStart: (date) => `ابدأ سنتي في ${date}`,
     noHistory: 'بعض البنود ليس لها سجل بهذا القدم، فتُحسب بقيمتها اليوم.',
     pastNote: 'تُحسب بداية السنة من سجلك، والذهب وباقي الأسعار بقيمة اليوم.',
+    hideNote: 'إخفاء هذه الملاحظة',
   },
 }
 

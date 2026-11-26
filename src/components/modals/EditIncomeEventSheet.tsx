@@ -442,11 +442,16 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
     ) : null}
     <UnsavedChangesDialog
       open={confirmOpen}
-      body={lt.income.unsavedBody}
-      onSave={() => {
-        setConfirmOpen(false)
-        handleSave()
-      }}
+      title={valid ? undefined : lt.expense.incompleteTitle}
+      body={valid ? lt.income.unsavedBody : lt.expense.incompleteBody}
+      onSave={
+        valid
+          ? () => {
+              setConfirmOpen(false)
+              handleSave()
+            }
+          : undefined
+      }
       onDiscard={() => {
         setConfirmOpen(false)
         onClose()

@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils'
  * "Save your changes?" over an edited money sheet (expense, income): Save, Discard, or Keep editing. Leaving with edits
  * by the close button, a backdrop tap, Escape or Android back opens it; the sheet decides what each answer does.
  * The same dialog asks other two-way questions: `title`, `discardLabel`, `discardTone="neutral"` and `children` (under the body).
+ * Pass no `onSave` while the form can't be saved yet (a required field is empty): only Discard and Keep editing show.
  */
 export function UnsavedChangesDialog({ open, title, body, saveLabel, discardLabel, discardTone = 'danger', children, onSave, onDiscard, onKeep }: {
   open: boolean
@@ -22,7 +23,8 @@ export function UnsavedChangesDialog({ open, title, body, saveLabel, discardLabe
   discardLabel?: string
   discardTone?: 'danger' | 'neutral'
   children?: ReactNode
-  onSave: () => void
+  /** Omit when the form is not valid yet; the Save button is then left out. */
+  onSave?: () => void
   onDiscard: () => void
   onKeep: () => void
 }) {
@@ -50,9 +52,11 @@ export function UnsavedChangesDialog({ open, title, body, saveLabel, discardLabe
         <div className="mt-2 text-sm font-normal leading-[1.45] text-[var(--color-brand-text-muted)]">{body}</div>
         {children}
         <div className="mt-5 flex flex-col gap-2.5">
-          <Button type="button" onClick={onSave} size="cta" className="text-base font-semibold">
-            {saveLabel ?? t.expenseForm.saveChanges}
-          </Button>
+          {onSave ? (
+            <Button type="button" onClick={onSave} size="cta" className="text-base font-semibold">
+              {saveLabel ?? t.expenseForm.saveChanges}
+            </Button>
+          ) : null}
           <Button
             type="button"
             onClick={onDiscard}

@@ -27,7 +27,7 @@ const wealth = h(SavingsHero, {
   total: '123,456', currency: 'EGP', netWorth: '654,321', split: [{ key: 'a', label: 'Cash', value: '111,222', pct: 100 }], badges: null,
 })
 const debts = h(DebtPortfolioHero, {
-  owed: 77777, base: 'EGP', clearedPct: 10, borrowedTotal: 90000, activeCount: 1, nextPayment: null, dueThisMonth: 0,
+  owed: 77777, base: 'EGP', clearedPct: 10, borrowedTotal: 90000, activeCount: 1, nextPayment: null, overdue: null, dueThisMonth: 0,
   paidThisMonth: 0, debtFreeDate: null, unplannedCount: 0, lastClearedAt: null, paidOff: 5000, clearedCount: 0,
 })
 

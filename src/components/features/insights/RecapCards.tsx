@@ -12,6 +12,8 @@ import { MASK } from '@/lib/privacy/mask'
 import { useMask } from '@/lib/privacy/useMask'
 import type { Recap } from '@/lib/insights/recap'
 import { formatWhole } from '@/lib/utils/formatters'
+import { formatLocalized } from '@/lib/i18n/dateFormat'
+import { parseDateOnly } from '@/lib/time/calendarDays'
 import { DeltaChip, InsightsSection, LockedSection } from './InsightsParts'
 
 interface Props {
@@ -56,7 +58,14 @@ export function RecapCards({ recap, month, locked, onUnlock }: Props) {
       <div className="mt-3 grid grid-cols-3 gap-2">
         <StatTile compact className={CELL} label={c.spent} value={money(recap.spent)} sub={delta !== null ? <DeltaChip pct={delta} /> : undefined} />
         {keptShare !== null ? <StatTile compact className={CELL} label={kept >= 0 ? c.kept : c.over} value={hidden ? MASK : `${keptShare}%`} /> : null}
-        {recap.biggest ? <StatTile compact className={CELL} label={c.biggest} value={`${recap.biggest.description} ${money(recap.biggest.amount)}`.trim()} /> : null}
+        {recap.biggest ? (
+          <StatTile
+            compact
+            className={CELL}
+            label={c.biggest}
+            value={[recap.biggest.description.trim(), formatLocalized(parseDateOnly(recap.biggest.date), 'd MMM', locale), money(recap.biggest.amount)].filter(Boolean).join(' · ')}
+          />
+        ) : null}
       </div>
       <Button variant="ghost" size="touch" className="-mb-1.5 -ms-2 mt-1 gap-1.5 font-bold text-[var(--color-brand-primary-ink)]" onClick={share}>
         <Share2 aria-hidden className="size-4" />

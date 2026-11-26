@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { SelectableCard } from '@/components/ui/SelectableCard'
 import { Input } from '@/components/ui/input'
 import { useT } from '@/lib/i18n'
+import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 import { readable, soft } from './heroCardShared'
 
 export interface CreditCardOption {
@@ -49,6 +50,7 @@ export function InstallmentProviderPickerSheet({
   onClose,
 }: InstallmentProviderPickerSheetProps) {
   const t = useT().debts
+  const kind = useDebtsSubsLtCopy().install.providerKind
   const [view, setView] = useState<'grid' | 'card' | 'custom'>('grid')
   const [query, setQuery] = useState('')
   const [customName, setCustomName] = useState('')
@@ -114,7 +116,7 @@ export function InstallmentProviderPickerSheet({
                       <ProviderBadge slug={b.slug} name={b.name} color={b.color} size={40} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">{b.name}</span>
-                        <span className="block text-[0.6875rem] font-medium capitalize text-[var(--color-brand-text-muted)]">{b.category.replace('_', ' ')}</span>
+                        <span className="block text-[0.6875rem] font-medium text-[var(--color-brand-text-muted)]">{kind[b.category]}</span>
                       </span>
                       {sel ? <Check className="h-4 w-4 shrink-0" style={{ color: readable(b.color) }} /> : null}
                     </SelectableCard>

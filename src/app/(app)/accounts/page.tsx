@@ -9,6 +9,8 @@ import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { IconButton } from '@/components/ui/IconButton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { PageContainer } from '@/components/layout/PageContainer'
+import { PageGrid } from '@/components/layout/PageGrid'
+import { PageHero } from '@/components/layout/PageHero'
 import { AccountsHero } from '@/components/features/accounts/AccountsHero'
 import { AccountRow } from '@/components/features/accounts/AccountRow'
 import { CardRow } from '@/components/features/accounts/CardRow'
@@ -236,8 +238,10 @@ export default function AccountsPage() {
   const walletCount = groups.wallets.length + groups.cash.length
   const home = (
     <>
-      <AccountsHero model={missingRates.length > 0 && !model.approx ? { ...model, approx: true } : model} currency={base} netWorth={nw.netWorth} creditOwed={owed} hidden={heroMasked} onToggleHidden={toggle} />
-      <PageContainer className="space-y-5 py-4">
+      <PageHero>
+        <AccountsHero model={missingRates.length > 0 && !model.approx ? { ...model, approx: true } : model} currency={base} netWorth={nw.netWorth} creditOwed={owed} hidden={heroMasked} onToggleHidden={toggle} />
+      </PageHero>
+      <PageGrid stack primary={<div className="space-y-5 px-4 py-4 lg:px-0 lg:pt-0">
         {rateDismissed ? null : <RateAlert currencies={missingRates} onDismiss={() => setRateDismissed(true)} />}
         {detected.length > 0 ? (
           <PendingRow tone="teal" icon={Landmark} title={all.notifications.accountsLabel(detected.length)} subtitle={all.notifications.accountsHint} onPress={() => setSheet({ kind: 'found' })} />
@@ -274,7 +278,7 @@ export default function AccountsPage() {
             {cardList(groups.otherCards.map((f) => f.method))}
           </section>
         ) : null}
-      </PageContainer>
+      </div>} />
     </>
   )
 
@@ -288,8 +292,10 @@ export default function AccountsPage() {
     const prepaid = group.accounts.filter((a) => a.method.type === 'prepaid_card')
     return (
       <>
-        <ProviderHero group={approxGroup(group)} base={base} hidden={heroMasked} onToggleHidden={toggle} onBack={() => setProviderKey(null)} />
-        <PageContainer className="space-y-5 py-4">
+        <PageHero>
+          <ProviderHero group={approxGroup(group)} base={base} hidden={heroMasked} onToggleHidden={toggle} onBack={() => setProviderKey(null)} />
+        </PageHero>
+        <PageGrid stack primary={<div className="space-y-5 px-4 py-4 lg:px-0 lg:pt-0">
           <section>
             <SectionHeader title={t.title} count={group.accountCount} onAdd={() => setSheet({ kind: 'add' })} addLabel={t.addAccount} />
             {held.length > 0 ? <Card padding="none" className="divide-y divide-[var(--color-brand-border)] overflow-hidden rounded-2xl">{held.map(renderRow)}</Card> : null}
@@ -313,7 +319,7 @@ export default function AccountsPage() {
               <Archive aria-hidden className="size-4 shrink-0" />{t.closedAccounts(closed)}
             </p>
           ) : null}
-        </PageContainer>
+        </div>} />
       </>
     )
   }

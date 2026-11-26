@@ -431,6 +431,7 @@ export interface Dictionary {
     efSetUp: string
     efMonths: (covered: string, target: number) => string
     efAria: string
+    /** `due` empty while the zakat year has no start date: the amount alone. */
     zakatBadge: (amount: string, due: string) => string
     zakatAria: string
     stripLive: string
@@ -2860,7 +2861,6 @@ export interface Dictionary {
       addOver: (amount: string) => string
       addExact: string
       checkpointsAria: (pct: number, reached: number) => string
-      emptyFilter: string
       insightMilestones: (n: number) => string
       insightYear: string
       insightNext: (name: string, pct: number, when: string) => string

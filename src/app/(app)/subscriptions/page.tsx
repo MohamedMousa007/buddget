@@ -14,6 +14,7 @@ import { SubscriptionsEmpty } from '@/components/features/subscriptions/Subscrip
 import { SubscriptionsHero } from '@/components/features/subscriptions/SubscriptionsHero'
 import { SubscriptionsRail } from '@/components/features/subscriptions/SubscriptionsRail'
 import { PageGrid } from '@/components/layout/PageGrid'
+import { PageHero } from '@/components/layout/PageHero'
 import { Plus } from 'lucide-react'
 import { IconButton } from '@/components/ui/IconButton'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
@@ -87,11 +88,12 @@ export default function SubscriptionsPage() {
   return (
     <div>
       {empty ? null : (
-        <div className="px-4 pt-4 lg:px-6">
+        <PageHero inset>
           <SubscriptionsHero hero={dataReady ? home.hero : null} base={home.base} loading={!dataReady} />
-        </div>
+        </PageHero>
       )}
       <PageGrid
+        stack
         wide={empty}
         primary={
           <div className="flex min-w-0 flex-col gap-3.5 px-4 pb-4 pt-4 lg:px-0 lg:pb-0 lg:pt-0">

@@ -34,6 +34,8 @@ export interface FlowLtCopy {
     allMethodsSub: string
     nSelected: (n: number) => string
     paidPickSub: string
+    /** The filters sheet footer: "Show 12 results". */
+    showResults: (n: number) => string
   }
   expense: {
     budgetLeft: (cat: string, left: string) => string
@@ -54,6 +56,9 @@ export interface FlowLtCopy {
     keepEditing: string
     /** Leaving a new expense that has something typed into it. */
     unsavedAddBody: string
+    /** Leaving while a required field is still empty: nothing can be saved, so only discard or keep editing. */
+    incompleteTitle: string
+    incompleteBody: string
     /** The time row in the date card. */
     time: string
     catPickSub: string
@@ -133,6 +138,7 @@ export const FLOW_LT_COPY: Record<Locale, FlowLtCopy> = {
       allMethodsSub: 'Tap to choose cards, banks or wallets',
       nSelected: (n) => `${n} selected`,
       paidPickSub: 'Pick one or more',
+      showResults: (n) => (n === 1 ? 'Show 1 result' : `Show ${n} results`),
     },
     expense: {
       budgetLeft: (c, x) => `Counted in your ${c} budget · ${x} left`,
@@ -151,6 +157,8 @@ export const FLOW_LT_COPY: Record<Locale, FlowLtCopy> = {
       deleteBody: (t) => `${t} leaves your spending and the account balance. You can undo right after.`,
       keepEditing: 'Keep editing',
       unsavedAddBody: 'This expense isn’t saved yet. Save it, or discard it.',
+      incompleteTitle: 'Discard your changes?',
+      incompleteBody: 'Some details are still missing, so this can’t be saved yet. Keep editing to finish it.',
       time: 'Time',
       catPickSub: 'Budget left this month under each one',
       catLeft: (x) => `${x} left`,
@@ -226,6 +234,7 @@ export const FLOW_LT_COPY: Record<Locale, FlowLtCopy> = {
       allMethodsSub: 'اضغط لاختيار بطاقات أو بنوك أو محافظ',
       nSelected: (n) => `${n} مختارة`,
       paidPickSub: 'اختر واحدًا أو أكثر',
+      showResults: (n) => `عرض ${arPlural(n, { one: 'نتيجة', two: 'نتيجتين', few: 'نتائج', many: 'نتيجة', fem: true })}`,
     },
     expense: {
       budgetLeft: (c, x) => `محسوب في ميزانية ${c} · متبقي ${x}`,
@@ -244,6 +253,8 @@ export const FLOW_LT_COPY: Record<Locale, FlowLtCopy> = {
       deleteBody: (t) => `يخرج ${t} من إنفاقك ومن رصيد الحساب. يمكنك التراجع بعدها مباشرة.`,
       keepEditing: 'متابعة التعديل',
       unsavedAddBody: 'لم يُحفظ هذا المصروف بعد. احفظه أو تجاهله.',
+      incompleteTitle: 'تجاهل التغييرات؟',
+      incompleteBody: 'ما زالت بعض التفاصيل ناقصة، فلا يمكن الحفظ بعد. تابع التعديل لإكماله.',
       time: 'الوقت',
       catPickSub: 'المتبقي من ميزانية هذا الشهر لكل فئة',
       catLeft: (x) => `متبقي ${x}`,

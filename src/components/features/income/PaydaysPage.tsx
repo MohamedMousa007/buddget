@@ -14,7 +14,7 @@ import { StatusBarCover } from '@/components/layout/StatusBarCover'
 import { PaydayCard, type PaydayBadgeVariant } from '@/components/features/income/PaydayCard'
 import { PaydayDetail } from '@/components/features/income/PaydayDetail'
 import { PayCycleSheet } from '@/components/features/income/PayCycleSheet'
-import { methodLabel } from '@/components/features/flow/useFlowLedger'
+import { paydayMethodLabel } from '@/lib/income/paydayMethod'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore, type PaydayPrefill } from '@/lib/store/useSettingsStore'
 import { navigate } from '@/lib/navigation/navigate'
@@ -25,7 +25,8 @@ import { convertCurrency } from '@/lib/utils/currency'
 import { formatFlex, formatWhole } from '@/lib/utils/formatters'
 import { useShortDate } from '@/hooks/useShortDate'
 import { useWeekendFirstDay } from '@/hooks/useWeekStart'
-import { focusPayday, isLate, overdueDays } from '@/lib/income/paydaySummary'
+import { focusPayday, paydayState } from '@/lib/income/paydaySummary'
+import { paydayBadge } from '@/components/features/income/paydayBadge'
 import { cadenceLine } from '@/lib/income/cadence'
 import type { WeekendFirstDay } from '@/lib/utils/paydaySchedule'
 import { cn } from '@/lib/utils'
@@ -40,15 +41,7 @@ function cardStatus(source: IncomeSource, events: IncomeEvent[], month: string, 
   const occ = buildOccurrences(source, events, month, monthStartDay, today, weekendFirst)
   const focus = focusPayday(occ, today)
   if (!focus) return { variant: 'muted', label: t.income.statusPending }
-  if (!focus.eventId) {
-    const late = overdueDays(focus, today)
-    if (late > 0 && isLate(source, focus, today)) return { variant: 'warning', label: t.income.daysLateChip(late) }
-    return { variant: 'muted', label: t.paydays.dueOn(shortDate(focus.dueDate)) }
-  }
-  if (focus.status === 'missed') return { variant: 'muted', label: t.income.statusMissed }
-  if (focus.status === 'partial') return { variant: 'brand', label: t.income.statusPartial }
-  if (focus.daysLate) return { variant: 'warning', label: t.paydays.arrivedLateShort(focus.daysLate) }
-  return { variant: 'positive', label: t.income.statusReceived }
+  return paydayBadge(paydayState(focus, today), t, shortDate(focus.dueDate))
 }
 
 const STARTERS: { type: IncomeSourceType; icon: LucideIcon; name: keyof Dictionary['paydays']; sub: keyof Dictionary['paydays'] }[] = [
@@ -270,7 +263,7 @@ export function PaydaysPage() {
           ) : null}
           <div ref={listRef} className={cn('mx-4 mt-3.5 flex flex-col gap-2.5 lg:mx-0', !detail && !reordering && 'lg:grid lg:grid-cols-2 lg:gap-4 xl:grid-cols-3', reordering && !detail && 'lg:max-w-[var(--page-max)]')}>
             {shown.map((s, i) => {
-              const pm = methodLabel(paymentMethods.find((m) => m.id === s.paymentMethodId))
+              const pm = paydayMethodLabel(s, paymentMethods)
               return (
                 <PaydayCard
                   key={s.id}

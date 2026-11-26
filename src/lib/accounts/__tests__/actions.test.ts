@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { cashOut, closeAccount, ensureCashAccount, setAside, setOpeningBalance, updateBalance } from '../actions'
+import { cashOut, closeAccount, defaultSetAsidePocketId, ensureCashAccount, setAside, setOpeningBalance, updateBalance } from '../actions'
+import { accountTotals } from '../useAccounts'
 import { computeBalances } from '../balance'
 import { detectGap } from '../gap'
 import { pickablePaymentMethods } from '../kinds'
@@ -144,5 +145,45 @@ describe('gap lifecycle on the real store', () => {
     const input = { paymentMethods: st().paymentMethods, expenses: st().expenses, incomeEvents: [], debts: [], debtPayments: [], savingsTransactions: [], savingsAccounts: [], adjustments: [], convert: (a: number) => a }
     expect(computeBalances(input).get(bank)?.balance).toBe(1000)
     expect(computeBalances(input, at.getTime() - 1).get(bank)).toBeUndefined()
+  })
+})
+
+describe('Set aside (live QA: the hero showed "Set aside 0" while pockets held money)', () => {
+  let bank = ''
+  beforeEach(() => {
+    s().reset()
+    bank = s().addPaymentMethod({ name: 'CIB', type: 'bank_account', currency: 'EGP', isDefault: false })
+    setOpeningBalance(bank, 1000, new Date(Date.now() - 86_400_000))
+  })
+
+  it('starts on a pocket held in this account, not the first pocket in the list', () => {
+    const pockets = [{ id: 'vault' }, { id: 'other', heldInPaymentMethodId: 'nbe' }, { id: 'trip', heldInPaymentMethodId: bank }]
+    expect(defaultSetAsidePocketId(pockets, bank)).toBe('trip')
+    expect(defaultSetAsidePocketId([{ id: 'vault' }], bank)).toBe('vault')
+    expect(defaultSetAsidePocketId([], bank)).toBeNull()
+  })
+
+  it('money set aside on the default pocket stays in the account and reaches the hero total', () => {
+    s().addSavingsAccount({ name: 'Safe', category: 'savings', type: 'bank', currency: 'EGP', openingBalance: 0 } as never)
+    s().addSavingsAccount({ name: 'Trip', category: 'savings', type: 'bank', currency: 'EGP', openingBalance: 0, heldInPaymentMethodId: bank } as never)
+    const id = defaultSetAsidePocketId(s().savingsAccounts, bank) as string
+    setAside(bank, id, 250, 'EGP')
+    const method = s().paymentMethods.find((m) => m.id === bank)!
+    const totals = accountTotals([{ method, balance: bal(bank) ?? null }], 'EGP', (a) => a)
+    expect(totals).toMatchObject({ totalInBase: 1000, heldInBase: 250, freeInBase: 750 })
+  })
+
+  it('a pocket held nowhere takes the money out of the account, so it never counts as set aside there', () => {
+    const safe = s().addSavingsAccount({ name: 'Safe', category: 'savings', type: 'bank', currency: 'EGP', openingBalance: 0 } as never) as string
+    setAside(bank, safe, 250, 'EGP')
+    const method = s().paymentMethods.find((m) => m.id === bank)!
+    expect(accountTotals([{ method, balance: bal(bank) ?? null }], 'EGP', (a) => a)).toMatchObject({ totalInBase: 750, heldInBase: 0 })
+  })
+
+  it('stores the picked time as occurredAt', () => {
+    const trip = s().addSavingsAccount({ name: 'Trip', category: 'savings', type: 'bank', currency: 'EGP', openingBalance: 0, heldInPaymentMethodId: bank } as never) as string
+    const at = new Date(2026, 10, 20, 7, 24)
+    setAside(bank, trip, 50, 'EGP', at)
+    expect(s().savingsTransactions.at(-1)?.occurredAt).toBe(at.toISOString())
   })
 })

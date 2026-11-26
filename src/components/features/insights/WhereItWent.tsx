@@ -11,6 +11,7 @@ import { OTHER_SLICE, type CategorySlice } from '@/lib/insights/charts'
 import { MASK } from '@/lib/privacy/mask'
 import { useMask } from '@/lib/privacy/useMask'
 import { formatWhole } from '@/lib/utils/formatters'
+import { formatChangePct } from '@/lib/utils/changePct'
 import { ChartBox, useChartTip } from './ChartTip'
 import { DeltaChip, InsightsSection } from './InsightsParts'
 
@@ -100,7 +101,7 @@ export function WhereItWent({ slices, currency, lastMonth, days }: Props) {
       <ChartDataTable
         caption={c.aria}
         headers={c.headers}
-        rows={slices.map((s) => [name(s), money(s.amount), `${s.share}%`, s.delta === null ? '—' : `${s.delta}%`])}
+        rows={slices.map((s) => [name(s), money(s.amount), `${s.share}%`, s.delta === null ? '—' : `${s.delta < 0 ? '\u2212' : ''}${formatChangePct(s.delta)}`])}
       />
     </InsightsSection>
   )

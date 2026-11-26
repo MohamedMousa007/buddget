@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { SavingsAccount } from '@/lib/store/types'
 import { applyPocketDeposit, planPocketDeposit } from './moneySourceDeposit'
+import { manualOccurredAt } from '@/lib/time/occurredAt'
+import { localTodayISO } from '@/lib/utils/localDate'
 
 const pocket = (id: string, currency: SavingsAccount['currency'], bal: number): SavingsAccount => ({
   id, name: id, category: 'savings', type: 'vault', currency, currentBalance: bal, createdAt: '2026-01-01',
@@ -82,6 +84,31 @@ describe('applyPocketDeposit', () => {
   it('account (no tracked accounts) stays a budget deposit: cash flow, as before', () => {
     expect(applyPocketDeposit(S(), { pocketId: 'p1', amount: 100, currency: 'EGP', source: { kind: 'account' } })).toBe(true)
     expect(S().savingsTransactions.at(-1)!.isCashFlow).toBeUndefined()
+  })
+
+  // Live QA: the pill showed 7:24 AM, the move read 12:00 PM. The picked instant must reach every leg.
+  it('the picked time is stored as occurredAt on a deposit and on both legs of a pocket move', () => {
+    const at = manualOccurredAt('2026-03-04', '07:24')
+    expect(applyPocketDeposit(S(), { pocketId: 'p1', amount: 50, currency: 'EGP', source: { kind: 'outside' }, date: '2026-03-04', occurredAt: at })).toBe(true)
+    expect(applyPocketDeposit(S(), { pocketId: 'p1', amount: 20, currency: 'EGP', source: { kind: 'pocket', id: 'p2' }, date: '2026-03-04', occurredAt: at })).toBe(true)
+    expect(S().savingsTransactions.map((t) => t.occurredAt)).toEqual([at, at, at])
+    expect(new Date(at).getHours()).toBe(7)
+    expect(new Date(at).getMinutes()).toBe(24)
+  })
+
+  it('no picked time on today stores the current instant, never noon', () => {
+    const before = Date.now()
+    expect(applyPocketDeposit(S(), { pocketId: 'p1', amount: 10, currency: 'EGP', source: { kind: 'outside' }, occurredAt: manualOccurredAt(localTodayISO()) })).toBe(true)
+    const t = new Date(S().savingsTransactions.at(-1)!.occurredAt!).getTime()
+    expect(t).toBeGreaterThanOrEqual(before - 1)
+    expect(t).toBeLessThanOrEqual(Date.now())
+  })
+
+  it('a withdrawal and a pocket move keep the instant they are given', () => {
+    const at = manualOccurredAt(localTodayISO(), '07:24')
+    expect(S().withdrawFromSavings('p2', 30, 'EGP', undefined, 'spend', { date: localTodayISO(), occurredAt: at })).toBe(true)
+    expect(S().transferBetweenPockets('p2', 'p1', 10, undefined, localTodayISO(), at)).toBe(true)
+    expect(S().savingsTransactions.map((t) => t.occurredAt)).toEqual([at, at, at])
   })
 
   it('zero or negative amounts write nothing', () => {

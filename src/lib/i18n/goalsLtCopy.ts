@@ -3,6 +3,7 @@ import type { Locale } from '@/lib/i18n/types'
 import { GOALS_FREQUENCY_COPY } from '@/lib/i18n/goalsFrequencyCopy'
 import { arPlural, AR_UNITS } from '@/lib/i18n/arPlural'
 
+const AR_GOAL = { one: 'هدف', two: 'هدفين', few: 'أهداف', many: 'هدفًا' }
 const AR_DEPOSIT = { one: 'إيداع', two: 'إيداعين', few: 'إيداعات', many: 'إيداعًا' }
 
 /** Strings for the Light touch Savings and goals area (BUILD_SPEC A3). Each section is owned by one sheet. */
@@ -33,6 +34,8 @@ const EN = {
   // en:goals
   goals: {
     // page
+    /** Under an empty list when goals were reached: points to the trophy view. */
+    seeAchieved: (n: number) => (n === 1 ? 'You reached 1 goal · see it' : `You reached ${n} goals · see them`),
     savedLabel: 'Saved for goals',
     pctThere: (pct: number) => `${pct}% there`,
     ofAll: (amount: string) => `of ${amount} in all`,
@@ -143,6 +146,7 @@ const EN = {
     noteBudget: 'Logged as moving money into gold, not as spending.',
     notePocket: 'Moved out of the pocket into gold. Your net worth stays the same.',
     noteOutside: 'Only added to what you hold. Nothing leaves your accounts.',
+    outsideValue: 'Outside buddget',
     cta: (qty: string, unit: string, karat: number) => `Add ${qty} ${unit} of ${karat}k`,
   },
   // en-end:gold
@@ -219,6 +223,13 @@ const EN = {
     },
   },
   // en-end:ef
+  // en:discard
+  discard: {
+    title: 'Discard this?',
+    body: 'What you typed here isn’t saved yet.',
+    discard: 'Discard',
+  },
+  // en-end:discard
 }
 
 export type GoalsLtCopy = typeof EN
@@ -248,6 +259,7 @@ const AR: GoalsLtCopy = {
   // ar-end:money
   // ar:goals
   goals: {
+    seeAchieved: (n) => (n === 1 ? 'حققت هدفًا واحدًا · اعرضه' : n === 2 ? 'حققت هدفين · اعرضهما' : `حققت ${arPlural(n, AR_GOAL)} · اعرضها`),
     savedLabel: 'مدخر للأهداف',
     pctThere: (pct) => `أنجزت ${pct}%`,
     ofAll: (amount) => `من ${amount} إجمالًا`,
@@ -352,6 +364,7 @@ const AR: GoalsLtCopy = {
     noteBudget: 'يُسجَّل كنقل مال إلى الذهب، لا كإنفاق.',
     notePocket: 'نُقل من الجيب إلى الذهب. صافي ثروتك لا يتغيّر.',
     noteOutside: 'يُضاف فقط إلى ما تملكه. لا يخرج شيء من حساباتك.',
+    outsideValue: 'خارج buddget',
     cta: (qty, unit, karat) => `أضف ${qty} ${unit} عيار ${karat}`,
   },
   // ar-end:gold
@@ -428,6 +441,13 @@ const AR: GoalsLtCopy = {
     },
   },
   // ar-end:ef
+  // ar:discard
+  discard: {
+    title: 'تتجاهل هذا؟',
+    body: 'ما كتبته هنا لم يُحفظ بعد.',
+    discard: 'تجاهل',
+  },
+  // ar-end:discard
 }
 
 export const GOALS_LT_COPY: Record<Locale, GoalsLtCopy> = { en: EN, ar: AR }

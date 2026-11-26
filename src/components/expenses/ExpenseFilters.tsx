@@ -433,7 +433,7 @@ export function ExpenseFilters({
       onClose={onClose}
       footer={
         <Button size="cta-block" onClick={onClose}>
-          {t.expenses.showResults.replace('{count}', String(resultCount))}
+          {lt.filters.showResults(resultCount)}
         </Button>
       }
     >

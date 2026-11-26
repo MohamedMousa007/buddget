@@ -150,7 +150,12 @@ export function FundItSheet({ open, onClose, onDone, name, currency, value, onCh
               <span className="font-mono-numbers text-[0.9375rem] text-[var(--color-brand-text-muted)]">{formatWhole(num(value.fixed))}</span>
             )}
           >
-            <AmountField value={value.fixed} onChange={(v) => set({ fixed: v })} currency={currency} aria-label={c.fixedAria} className="h-12 rounded-xl bg-[var(--color-brand-elevated)]" />
+            {/* The unit inline after the amount (the grey code, as everywhere in Light touch), not a sign before it. */}
+            <label dir="ltr" className="flex h-12 items-center gap-2 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 focus-within:ring-2 focus-within:ring-[var(--color-brand-focus)]">
+              <AmountField bare value={value.fixed} onChange={(v) => set({ fixed: v })} decimalsFor={currency} aria-label={c.fixedAria}
+                className="flex min-w-0 flex-1 items-center font-mono-numbers text-base text-[var(--color-brand-text-primary)]" />
+              <span className="shrink-0 font-mono-numbers text-sm font-semibold text-[var(--color-brand-text-muted)]">{currency}</span>
+            </label>
             <p className="mt-3 text-xs font-semibold text-[var(--color-brand-text-secondary)]">{f.howOften}</p>
             <div className="mt-1.5 flex gap-2">
               {FREQS.map((k) => (

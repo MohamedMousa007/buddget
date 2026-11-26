@@ -47,7 +47,9 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
   const who = d.person.trim()
   const perGram = (k: GoldKarat) => goldGramsToMoney(1, gpg, k)
 
-  const line = isGold
+  const line = d.amountCleared
+    ? c.goldCleared
+    : isGold
     ? goldOk
       ? c.goldLine(`${formatWhole(goldGramsToMoney(amount > 0 ? amount : 0, gpg, d.goldKarat))} ${base}`, formatWhole(perGram(d.goldKarat)), d.goldKarat)
       : c.goldUnavailable

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ORB_INSET, ORB_SIZE, computePanel, dragLeft, keyboardOpen, pressGate, snapSide } from './panelGeometry'
+import { ORB_INSET, ORB_SIZE, clampOrbTop, computePanel, dragLeft, keyboardOpen, pressGate, snapSide } from './panelGeometry'
 
 // BDG-014: the chat panel must sit inside what the user can see, above the keyboard, so the composer is never covered.
 const notch = { top: 47, bottom: 34, left: 0, right: 0 }
@@ -88,5 +88,24 @@ describe('pressGate', () => {
     gate.press()
     gate.release()
     expect(apply).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('clampOrbTop', () => {
+  const phone = { top: 47, bottom: 34 }
+  it('keeps the orb above the tab bar and the home indicator on phone', () => {
+    const top = clampOrbTop(10_000, 852, 393, phone)
+    // 64px tab bar + 12px gap + 34px home indicator below the 56px orb.
+    expect(top + ORB_SIZE).toBe(852 - 76 - 34)
+  })
+  it('keeps the orb below the header and the notch', () => {
+    expect(clampOrbTop(0, 852, 393, phone)).toBe(47 + 52 + 12)
+  })
+  it('on desktop clears the QuickAdd FAB instead of a tab bar', () => {
+    expect(clampOrbTop(10_000, 900, 1280, { top: 0, bottom: 0 }) + ORB_SIZE).toBe(900 - 96)
+    expect(clampOrbTop(0, 900, 1280, { top: 0, bottom: 0 })).toBe(70)
+  })
+  it('leaves a position that is already clear alone', () => {
+    expect(clampOrbTop(400, 852, 393, phone)).toBe(400)
   })
 })

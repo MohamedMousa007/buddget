@@ -272,6 +272,14 @@ describe('extras', () => {
     expect(funded.extras.safety.monthsHeld).toBeCloseTo(0.2)
   })
 
+  it('promises no debt-free month while a scheduled payment is overdue', () => {
+    const v = buildPlanView(input(
+      plan([line('Loan', 23400, { block: 'debts' })]),
+      { debts: [debt('d1', { balance: 23400, minimum: 0 })], debtOverdue: true }
+    ))
+    expect(v.extras.debtFreeMonth).toBeNull()
+  })
+
   it('debt-free month is null without debts', () => {
     expect(buildPlanView(input(plan([]))).extras.debtFreeMonth).toBeNull()
   })

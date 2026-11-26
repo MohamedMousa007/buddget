@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
 import { useInsightsLtCopy } from '@/lib/i18n/insightsLtCopy'
+import { formatChangePct } from '@/lib/utils/changePct'
 
 /** The tinted icon tiles the findings and examples use: amber for "watch this", teal for facts, green for good news. */
 export const TONES = {
@@ -88,7 +89,7 @@ export function DeltaChip({ pct }: { pct: number | null }) {
       aria-label={up ? c.up(pct) : c.down(-pct)}
     >
       <Icon aria-hidden className="size-3.5" />
-      {Math.abs(pct)}%
+      {formatChangePct(pct)}
     </span>
   )
 }

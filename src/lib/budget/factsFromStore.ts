@@ -191,7 +191,7 @@ export function buildFactsFromStore(s: FactsSlice, now: Date, { remembered = tru
     subscriptionsMonthly: subs.monthly,
     subscriptionCount: subs.count,
     debts: liveDebts(s.debts, debtCtx).map((d) => ({
-      id: d.debt.id, name: d.debt.name, minimum: d.minimum, balance: d.balance, kind: d.kind,
+      id: d.debt.id, name: d.debt.name || d.debt.personName || d.debt.person, minimum: d.minimum, balance: d.balance, kind: d.kind,
     })),
     goals: liveGoals(s.goals, buildGoalProgressContext(s, monthKey), usualKeep).map((g) => ({
       id: g.goal.id,

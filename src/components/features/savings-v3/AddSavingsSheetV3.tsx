@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { ModalShell } from '@/components/modals/ModalShell'
+import { useDiscardPrompt } from '@/components/features/savings-v3/useDiscardPrompt'
 import { AmountHero } from '@/components/ui/AmountHero'
 import { Button } from '@/components/ui/button'
 import { DatePickerField } from '@/components/ui/DatePickerField'
@@ -65,6 +66,7 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
     if (source.kind === 'pocket' && source.id === id) setSource({ kind: 'account' })
   }
   const [note, setNote] = useState('')
+  const discard = useDiscardPrompt(amount.trim() !== '' || note.trim() !== '', onClose)
 
   const amountNum = parseFloat(amount) || 0
   const selected = selectedPocket(pockets, selectedId, defaultAccountId)
@@ -121,8 +123,9 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
   return (
     <>
     <ModalShell open={open} onBackdropClick={onClose} scrollChild>
+      {discard.prompt}
       <div className="flex min-h-0 flex-1 flex-col">
-        <V3SheetHeader onClose={onClose} leading={<DatePickerField look="pill" value={date} onChange={setDate} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: true }} />}>
+        <V3SheetHeader onClose={discard.close} leading={<DatePickerField look="pill" value={date} onChange={setDate} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: true }} />}>
           <span className="sr-only"><V3SheetHeader.Title>{c.title}</V3SheetHeader.Title></span>
         </V3SheetHeader>
 

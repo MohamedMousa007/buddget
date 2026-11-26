@@ -18,7 +18,7 @@ import { logAdjustFeedback } from '@/lib/budget/feedbackLog'
 import { lineBlock } from '@/lib/budget/blocks'
 import { effectivePlanCategoryAmountInBase } from '@/lib/budget/budgetPlans'
 import type { PlanView } from '@/lib/budget/planView.types'
-import { formatCurrency } from '@/lib/utils/formatters'
+import { inlineMoney } from '@/components/features/budget/chromeFormat'
 import { useBudgetStudioCopy } from '../useStudioCopy'
 
 type Phase =
@@ -53,7 +53,7 @@ function AdjustForm({ view, onClose }: { view: PlanView; onClose: () => void }) 
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
   const abort = useRef<AbortController | null>(null)
   const plan = view.plan
-  const money = (n: number) => formatCurrency(n, view.base, false)
+  const money = (n: number) => inlineMoney(n, view.base)
 
   const send = async () => {
     if (!text.trim()) return

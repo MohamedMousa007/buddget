@@ -31,6 +31,8 @@ export interface LightTouchCopy {
   moneySource: {
     title: string
     tabs: { account: string; pocket: string; outside: string }
+    /** Each tab's accessible name: the short label said in full. */
+    tabNames: { account: string; pocket: string; outside: string }
     from: string
     fromPocket: string
     outsideValue: string
@@ -61,6 +63,7 @@ export const LIGHT_TOUCH_COPY: Record<Locale, LightTouchCopy> = {
     moneySource: {
       title: 'Where the money comes from',
       tabs: { account: 'Account', pocket: 'Pocket', outside: 'Outside' },
+      tabNames: { account: 'From an account', pocket: 'From a pocket', outside: 'From outside buddget' },
       from: 'From',
       fromPocket: 'From pocket',
       outsideValue: 'Money you already had',
@@ -86,6 +89,7 @@ export const LIGHT_TOUCH_COPY: Record<Locale, LightTouchCopy> = {
     moneySource: {
       title: 'من أين يأتي المال',
       tabs: { account: 'حساب', pocket: 'جيب', outside: 'من الخارج' },
+      tabNames: { account: 'من حساب', pocket: 'من جيب', outside: 'من خارج buddget' },
       from: 'من',
       fromPocket: 'من جيب',
       outsideValue: 'مال كان معك أصلًا',

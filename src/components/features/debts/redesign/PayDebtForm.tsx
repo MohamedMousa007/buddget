@@ -12,12 +12,14 @@ import { isOwedToUser } from '@/lib/debts/debtDirection'
 import { formatFlex } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
+import { useLightTouchCopy } from '@/lib/i18n/lightTouchCopy'
 
 /** Record a payment (Light touch `debtpay`): icon tile, the signed amount, what is left after it, then Debt · Paid from · Repeat. */
 export function PayDebtForm({ d }: { d: AddDebtHook }) {
   const dict = useT()
   const t = dict.debts
   const c = useDebtsSubsLtCopy().pay
+  const ordinal = useLightTouchCopy().dayOfMonth.ordinal
   const debt = d.selectedDebt
   const receiving = debt ? isOwedToUser(debt) : false
   const tone = receiving ? 'var(--color-brand-green)' : 'var(--color-brand-primary)'
@@ -64,8 +66,8 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
         />
         <MethodPickerRow label={receiving ? c.into : c.paidFrom} value={d.paymentMethodId} onChange={d.setPaymentMethodId} paymentMethods={d.paymentMethods} />
         <SettingsSwitchRow
-          label={t.fRecurring}
-          hint={t.fRecurringHint}
+          label={c.repeat}
+          hint={c.repeatHint(ordinal(Number(d.paymentDate.slice(8, 10))))}
           checked={d.paymentScheduleMode === 'recurring'}
           onChange={(on) => d.setPaymentScheduleMode(on ? 'recurring' : 'one_time')}
         />

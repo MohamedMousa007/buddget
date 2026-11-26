@@ -2,6 +2,7 @@ import { useLocale } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n/types'
 import { AR_UNITS, arPlural } from '@/lib/i18n/arPlural'
 import type { SubscriptionDisplayStatus } from '@/lib/subscriptions/subscriptionStatus'
+import type { ProviderCategory } from '@/lib/constants/installmentProviders'
 
 type Every = 'weekly' | 'monthly' | 'quarterly' | 'annually'
 
@@ -20,7 +21,7 @@ export interface DebtsSubsLtCopy {
     leftOf: (left: number | string, of: number | string) => string
     statementDue: (date: string) => string
     usedPct: (pct: number) => string
-    hero: { next: (amount: string, date: string) => string; month: (paid: string, of: string) => string; freeBy: (date: string) => string; cleared: (count: number, paid: string) => string }
+    hero: { next: (amount: string, date: string) => string; month: (paid: string, of: string) => string; freeBy: (date: string) => string; cleared: (count: number, paid: string) => string; overdue: (amount: string, since: string) => string }
     late: (days: number) => string
     nextOn: (date: string) => string
     owedToYou: string
@@ -28,6 +29,7 @@ export interface DebtsSubsLtCopy {
     deleteTitle: (name: string) => string
     deleteBody: string
     payments: string
+    noPayments: string
     swipeHint: string
     paymentTitle: (name: string, month: string) => string
     cleared: (count: number, total: string) => string
@@ -46,6 +48,13 @@ export interface DebtsSubsLtCopy {
     they: string
     goldLine: (value: string, perGram: string, karat: number) => string
     goldUnavailable: string
+    goldCleared: string
+    needAmount: string
+    needPerson: string
+    needItem: string
+    draftTitle: string
+    draftBody: string
+    draftDiscard: string
     person: string
     personPh: string
     forLabel: string
@@ -96,8 +105,9 @@ export interface DebtsSubsLtCopy {
     paymentsUnit: (n: number) => string
     planNote: (n: number, per: string) => string
     cta: string
+    providerKind: Record<ProviderCategory, string>
   }
-  pay: { debt: string; paidFrom: string; into: string; left: (left: string, after: string) => string; note: string }
+  pay: { debt: string; paidFrom: string; into: string; left: (left: string, after: string) => string; note: string; repeat: string; repeatHint: (day: string) => string }
   vault: {
     title: string
     paidOff: string
@@ -180,6 +190,9 @@ export interface DebtsSubsLtCopy {
     save: string
     logPayday: string
     editPayday: string
+    expected: string
+    lateChip: string
+    missedChip: string
   }
   method: { choose: string }
   repaid: { title: (who: string) => string; line: (what: string, date: string, got: string, of: string) => string; into: string; match: string; none: string; matchTitle: string; cta: string; someone: string }
@@ -198,10 +211,10 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
       active: 'Active',
       add: 'Add',
       addTitle: 'Add a debt',
-      addSub: 'Each one opens its own sheet',
+      addSub: 'What are you tracking?',
       addBorrow: { title: 'Borrowed money', sub: 'From a person or a bank loan' },
       addInstallment: { title: 'Installment plan', sub: 'valU, Contact, Souhoola and others' },
-      addCard: { title: 'Credit card', sub: 'Opens Add a card with Credit picked' },
+      addCard: { title: 'Credit card', sub: 'Limit, owed now and due day' },
       perMonth: (a) => `${a} a month`,
       leftOf: (l, o) => `${l} of ${o} left`,
       statementDue: (d) => `Statement due ${d}`,
@@ -210,6 +223,7 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
         next: (a, d) => `Next ${a} on ${d}`,
         month: (p, o) => `${p} of ${o} paid this month`,
         freeBy: (d) => `debt-free by ${d}`,
+        overdue: (a, d) => `Overdue · ${a} since ${d}`,
         cleared: (c, p) => `${c === 1 ? '1 debt cleared' : `${c} debts cleared`} · ${p} paid off`,
       },
       late: (n) => (n === 1 ? '1 day late' : `${n} days late`),
@@ -219,6 +233,7 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
       deleteTitle: (n) => `Delete ${n}?`,
       deleteBody: 'Its payments go with it. This can’t be undone.',
       payments: 'Payments',
+      noPayments: 'No payments yet. Debts you add are under Added.',
       swipeHint: 'Swipe left to delete',
       paymentTitle: (n, m) => `${n} · ${m}`,
       cleared: (c, t) => `${c === 1 ? '1 cleared debt' : `${c} cleared debts`} · ${t} paid off`,
@@ -237,6 +252,13 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
       they: 'They',
       goldLine: (v, g, k) => `≈ ${v} today · ${g} a gram of ${k}k`,
       goldUnavailable: 'Today’s gold price isn’t in yet',
+      goldCleared: 'Today’s gold price isn’t in yet, so the amount was cleared. Type it again.',
+      needAmount: 'Type the amount to add it.',
+      needPerson: 'Add who it’s with to add it.',
+      needItem: 'Name the item to add it.',
+      draftTitle: 'Discard this debt?',
+      draftBody: 'What you typed isn’t saved yet.',
+      draftDiscard: 'Discard',
       person: 'Person',
       personPh: 'e.g. Ahmed',
       forLabel: 'For',
@@ -286,8 +308,9 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
       paymentsUnit: (n) => (n === 1 ? 'payment' : 'payments'),
       planNote: (n, p) => `${n} × ${p}`,
       cta: 'Add plan',
+      providerKind: { bnpl_short: 'Pay in a few months', installment_long: 'Long installment plans', bank_epp: 'Bank installments', other: 'Other plans' },
     },
-    pay: { debt: 'Debt', paidFrom: 'Paid from', into: 'Into', left: (l, a) => `${l} left · ${a} after this`, note: 'Add a note' },
+    pay: { debt: 'Debt', paidFrom: 'Paid from', into: 'Into', left: (l, a) => `${l} left · ${a} after this`, note: 'Add a note', repeat: 'Repeat monthly', repeatHint: (d) => `Logs it on the ${d}` },
     vault: {
       title: 'Cleared debts',
       paidOff: 'Paid off so far',
@@ -376,6 +399,9 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
       save: 'Save changes',
       logPayday: 'Log a payday',
       editPayday: 'Edit payday',
+      expected: 'expected',
+      lateChip: 'late',
+      missedChip: 'missed',
     },
     method: { choose: 'Choose' },
     repaid: {
@@ -404,10 +430,10 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
       active: 'جارية',
       add: 'إضافة',
       addTitle: 'إضافة دين',
-      addSub: 'لكل نوع صفحته الخاصة',
+      addSub: 'ماذا تريد أن تتابع؟',
       addBorrow: { title: 'مال مستلف', sub: 'من شخص أو قرض بنكي' },
       addInstallment: { title: 'خطة تقسيط', sub: 'ڤاليو وكونتكت وسهولة وغيرها' },
-      addCard: { title: 'بطاقة ائتمان', sub: 'يفتح إضافة بطاقة على نوع ائتمان' },
+      addCard: { title: 'بطاقة ائتمان', sub: 'الحد والمستحق الآن ويوم الاستحقاق' },
       perMonth: (a) => `${a} في الشهر`,
       leftOf: (l, o) => `باقي ${l} من ${o}`,
       statementDue: (d) => `كشف الحساب مستحق ${d}`,
@@ -416,6 +442,7 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
         next: (a, d) => `القادم ${a} في ${d}`,
         month: (p, o) => `${p} من ${o} مدفوع هذا الشهر`,
         freeBy: (d) => `بلا ديون بحلول ${d}`,
+        overdue: (a, d) => `متأخر · ${a} منذ ${d}`,
         cleared: (c, p) => `${arPlural(c, AR_DEBT)} مسدد · ${p} اتسدد`,
       },
       late: (n) => `متأخر ${arPlural(n, AR_UNITS.day)}`,
@@ -425,6 +452,7 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
       deleteTitle: (n) => `حذف ${n}؟`,
       deleteBody: 'ستُحذف دفعاته معه. لا يمكن التراجع.',
       payments: 'الدفعات',
+      noPayments: 'لا مدفوعات بعد. الديون التي تضيفها تحت «مضاف».',
       swipeHint: 'اسحب لليسار للحذف',
       paymentTitle: (n, m) => `${n} · ${m}`,
       cleared: (c, t) => `${arPlural(c, AR_DEBT)} مسدد · ${t} اتسدد`,
@@ -443,6 +471,13 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
       they: 'الشخص',
       goldLine: (v, g, k) => `≈ ${v} اليوم · ${g} للجرام عيار ${k}`,
       goldUnavailable: 'سعر الذهب اليوم لم يصل بعد',
+      goldCleared: 'سعر الذهب اليوم لم يصل بعد، لذلك مُسح المبلغ. اكتبه مرة أخرى.',
+      needAmount: 'اكتب المبلغ لإضافته.',
+      needPerson: 'أضف الشخص لإضافته.',
+      needItem: 'اكتب اسم المنتج لإضافته.',
+      draftTitle: 'تجاهل هذا الدين؟',
+      draftBody: 'ما كتبته لم يُحفظ بعد.',
+      draftDiscard: 'تجاهل',
       person: 'الشخص',
       personPh: 'مثلًا أحمد',
       forLabel: 'من أجل',
@@ -492,8 +527,9 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
       paymentsUnit: (n) => (n >= 3 && n <= 10 ? 'دفعات' : 'دفعة'),
       planNote: (n, p) => `${n} × ${p}`,
       cta: 'إضافة الخطة',
+      providerKind: { bnpl_short: 'ادفع على أشهر قليلة', installment_long: 'تقسيط طويل', bank_epp: 'تقسيط البنك', other: 'خطط أخرى' },
     },
-    pay: { debt: 'الدين', paidFrom: 'دفعته من', into: 'إلى', left: (l, a) => `باقي ${l} · ${a} بعد هذه`, note: 'أضف ملاحظة' },
+    pay: { debt: 'الدين', paidFrom: 'دفعته من', into: 'إلى', left: (l, a) => `باقي ${l} · ${a} بعد هذه`, note: 'أضف ملاحظة', repeat: 'كرّرها كل شهر', repeatHint: (d) => `تُسجَّل في ${d}` },
     vault: {
       title: 'ديون مسددة',
       paidOff: 'اتسدد حتى الآن',
@@ -582,6 +618,9 @@ export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
       save: 'حفظ التغييرات',
       logPayday: 'سجّل يوم قبض',
       editPayday: 'تعديل يوم القبض',
+      expected: 'متوقع',
+      lateChip: 'متأخر',
+      missedChip: 'فائت',
     },
     method: { choose: 'اختر' },
     repaid: {

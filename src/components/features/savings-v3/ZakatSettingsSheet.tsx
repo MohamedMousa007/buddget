@@ -23,10 +23,12 @@ export interface ZakatSettingsSheetProps {
   goldNisab: number
   silverNisab: number
   unit: string
+  /** The year start the app works out (the zakat date one lunar year back), shown until the user picks their own. */
+  derivedStart: string
 }
 
 /** Zakat settings behind the gear: the nisab basis, how stocks are held, and the personal zakat year start. Saves on each pick. */
-export function ZakatSettingsSheet({ open, onClose, goldNisab, silverNisab, unit }: ZakatSettingsSheetProps) {
+export function ZakatSettingsSheet({ open, onClose, goldNisab, silverNisab, unit, derivedStart }: ZakatSettingsSheetProps) {
   const z = useGoalsLtCopy().zakat
   const cfg = useFinanceStore((s) => s.profile.zakatConfig)
   const updateProfile = useFinanceStore((s) => s.updateProfile)
@@ -56,7 +58,7 @@ export function ZakatSettingsSheet({ open, onClose, goldNisab, silverNisab, unit
             <PickerRow label={z.stocksHeld} value={trading ? z.trading : z.longTerm} onClick={() => setSheet('stocks')} />
             <PickerRow
               label={z.yearStarts}
-              value={<DatePickerField look="pill" value={cfg?.yearStartDate ?? ''} onChange={(v) => save({ yearStartDate: v || null })} />}
+              value={<DatePickerField look="pill" value={cfg?.yearStartDate ?? derivedStart} onChange={(v) => save({ yearStartDate: v || null })} />}
             />
           </Card>
           <p className="mt-2 px-1 text-xs text-[var(--color-brand-text-secondary)]">{z.yearNote}</p>

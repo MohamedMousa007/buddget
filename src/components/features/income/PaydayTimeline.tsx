@@ -30,6 +30,8 @@ interface Props {
   statusBracket?: (occ: IncomeOccurrence) => string
   selectedKey?: string | null
   onSelect?: (occ: IncomeOccurrence) => void
+  /** On the teal hero band: dates in the band's on-colour and the status in a band chip, so both stay readable. */
+  onBand?: boolean
 }
 
 /**
@@ -41,7 +43,7 @@ interface Props {
  * it on the rail, faded into the surrounding green. No overflow/pointer capture
  * here — drags bubble up so the carousel swipes from anywhere.
  */
-export function PaydayTimeline({ occurrences, dateLabel, amountLabel, statusBracket, selectedKey, onSelect }: Props) {
+export function PaydayTimeline({ occurrences, dateLabel, amountLabel, statusBracket, selectedKey, onSelect, onBand = false }: Props) {
   const n = occurrences.length
   if (n === 0) return null
   const single = n === 1
@@ -125,11 +127,13 @@ export function PaydayTimeline({ occurrences, dateLabel, amountLabel, statusBrac
           >
             <span
               className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap font-mono-numbers text-[0.5625rem] leading-none"
-              style={{ [above ? 'bottom' : 'top']: 'calc(50% + 13px)', color: st.text, opacity: selected ? 1 : 0.82, fontWeight: selected ? 600 : 500 }}
+              style={{ [above ? 'bottom' : 'top']: 'calc(50% + 13px)', color: onBand ? 'var(--flow-band-fg)' : st.text, opacity: selected || onBand ? 1 : 0.82, fontWeight: selected ? 600 : 500 }}
               dir="ltr"
             >
               {dateLabel(occ)}
-              {statusBracket ? statusBracket(occ) : ''}
+              {statusBracket && onBand && statusBracket(occ) ? (
+                <span dir="auto" className="ms-1 inline-flex items-center rounded-full bg-[var(--flow-band-mix)] px-1.5 py-px font-sans font-bold">{statusBracket(occ)}</span>
+              ) : statusBracket ? statusBracket(occ) : ''}
             </span>
             <span
               className="flex h-5 w-5 items-center justify-center rounded-full border"

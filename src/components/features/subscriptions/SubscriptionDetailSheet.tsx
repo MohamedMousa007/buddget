@@ -97,8 +97,11 @@ export function SubscriptionDetailSheet({
   const shared = sub.myShare != null
   const amountChanged = !shared && amount > 0 && Math.abs(amount - sub.amount) > 0.004
   const dirty = amountChanged || cur !== sub.currency || (paymentMethodId || null) !== sub.paymentMethodId || category !== sub.expenseCategory || every !== sub.billingCycle
-  const nextIso = row.date ?? undefined
+  // The header and the list look ahead: an unpaid past cycle shows as Payment due, never as the next charge.
+  const nextIso = (row.life === 'active' ? row.nextDue : row.date) ?? undefined
   const nextText = nextIso ? shortDate(nextIso) : ''
+  /** The cycle the status talks about: an unpaid one keeps its own (past) date. */
+  const cycleText = row.date ? shortDate(row.date) : ''
   const life = row.life
   const ended = life === 'cancelled' || life === 'ended' || life === 'paused'
 
@@ -132,7 +135,7 @@ export function SubscriptionDetailSheet({
     if (ended) return null
     switch (row.chip.key) {
       case 'trialEnds': return { title: d.trial.title(sub.trialEnd ? shortDate(sub.trialEnd.slice(0, 10)) : ''), body: d.trial.body }
-      case 'failed': return { title: d.failed.title(nextText), body: d.failed.body }
+      case 'failed': return { title: d.failed.title(cycleText), body: d.failed.body }
       case 'shared': return { title: d.shared.title(formatFixed2(sub.amount)), body: d.shared.body((sub.sharedWith ?? []).join(', '), formatFixed2(chargeAmount(sub))) }
       case 'price': return { title: d.price.title(formatFixed2(row.priceChange?.to ?? chargeAmount(sub))), body: d.price.body(formatFixed2(chargeAmount(sub))) }
       case 'planChanges': return { title: d.plan.title('', sub.pendingPlanFrom ? shortDate(sub.pendingPlanFrom.slice(0, 10)) : ''), body: d.plan.body(formatFixed2(sub.pendingAmount ?? chargeAmount(sub))) }
@@ -143,7 +146,7 @@ export function SubscriptionDetailSheet({
   // The next three charges (from the end of a trial, or the current cycle) and every price the plan has billed.
   const upcoming = ended
     ? []
-    : scheduledDates(sub, life === 'trial' && sub.trialEnd ? parseISO(sub.trialEnd.slice(0, 10)) : (row.cycle?.due ?? startOfDay(parseISO(today))), addYears(parseISO(today), 4))
+    : scheduledDates(sub, life === 'trial' && sub.trialEnd ? parseISO(sub.trialEnd.slice(0, 10)) : (row.nextDue ? parseISO(row.nextDue) : startOfDay(parseISO(today))), addYears(parseISO(today), 4))
         .slice(0, 3)
         .map((x) => format(x, 'yyyy-MM-dd'))
   const upcomingAmount = (iso: string) =>
@@ -208,7 +211,7 @@ export function SubscriptionDetailSheet({
         <div className="-mt-2 flex flex-col items-center gap-1.5 text-center">
           <SubscriptionStatusBadge status={status} />
           <p className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
-            {c.cycle[every]} · {c.statusLine[status](status === 'trial' && sub.trialEnd ? shortDate(sub.trialEnd.slice(0, 10)) : nextText)}
+            {c.cycle[every]} · {c.statusLine[status](status === 'trial' && sub.trialEnd ? shortDate(sub.trialEnd.slice(0, 10)) : status === 'payment_due' ? cycleText : nextText)}
           </p>
         </div>
 

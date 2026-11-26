@@ -20,7 +20,10 @@ export interface DebtPortfolioHeroProps {
   borrowedTotal: number
   /** Active (not cleared) debts across every family. */
   activeCount: number
+  /** The next payment due today or later. */
   nextPayment: ScheduledPaymentVM | null
+  /** Scheduled payments past their date and still unpaid. */
+  overdue: { amount: number; since: Date } | null
   /** Still due this month (scheduled, unpaid). */
   dueThisMonth: number
   paidThisMonth: number
@@ -43,6 +46,7 @@ export function DebtPortfolioHero({
   borrowedTotal,
   activeCount,
   nextPayment,
+  overdue,
   dueThisMonth,
   debtFreeDate,
   lastClearedAt,
@@ -66,6 +70,7 @@ export function DebtPortfolioHero({
     activeCount === 0
       ? [clearedCount > 0 ? lt.cleared(clearedCount, money(paidOff)) : '', lastClearedAt ? `${t.heroDebtFreeSince} ${formatLocalized(lastClearedAt, 'MMM yyyy', locale)}` : '']
       : [
+          overdue ? lt.overdue(fmtWhole(overdue.amount), formatLocalized(overdue.since, 'MMM d', locale)) : '',
           nextPayment ? lt.next(fmtWhole(nextPayment.amount), formatLocalized(nextPayment.date, 'MMM d', locale)) : '',
           dueThisMonth > 0 ? lt.month(compact(month.paid), compact(month.total)) : paidThisMonth > 0 ? `${t.heroMonth} ${money(paidThisMonth)}` : '',
           debtFreeDate ? lt.freeBy(formatLocalized(debtFreeDate, 'MMM yyyy', locale)) : '',

@@ -23,6 +23,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import { formatWhole } from '@/lib/utils/formatters'
 import { useLocale, useT } from '@/lib/i18n'
+import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 
@@ -47,7 +48,8 @@ interface Move {
 }
 
 interface MoveFilters {
-  kind: 'all' | MoveKind
+  /** Payments by default; the debts added sit behind their own chip. */
+  kind: MoveKind
   family: DebtFamily | null
   debtId: string | null
   range: RangeKey
@@ -55,7 +57,7 @@ interface MoveFilters {
   to: string
 }
 
-const NO_FILTERS: MoveFilters = { kind: 'all', family: null, debtId: null, range: 'any', from: '', to: '' }
+const NO_FILTERS: MoveFilters = { kind: 'paid', family: null, debtId: null, range: 'any', from: '', to: '' }
 
 /**
  * Payments toward every debt and the debts added, newest first, as Flow rows, with Flow's filter chips (paid or added,
@@ -64,6 +66,7 @@ const NO_FILTERS: MoveFilters = { kind: 'all', family: null, debtId: null, range
  */
 export function DebtPaymentsFeed({ payments }: { payments: PaymentVM[] }) {
   const t = useT()
+  const lt = useFlowLtCopy()
   const c = useDebtsSubsLtCopy().debts
   const td = t.debts
   const tm = t.debtMoves
@@ -96,7 +99,7 @@ export function DebtPaymentsFeed({ payments }: { payments: PaymentVM[] }) {
       : resolveRange({ preset: filters.range, from: filters.from || null, to: filters.to || null }, monthFilter, monthStartDay, new Date(), weekStart)
     return moves.filter(
       (m) =>
-        (filters.kind === 'all' || m.kind === filters.kind) &&
+        m.kind === filters.kind &&
         (!filters.family || m.family === filters.family) &&
         (!filters.debtId || m.debtId === filters.debtId) &&
         (!bounds || isWithinInterval(parseISO(m.date.slice(0, 10)), bounds)),
@@ -107,9 +110,10 @@ export function DebtPaymentsFeed({ payments }: { payments: PaymentVM[] }) {
 
   const patch = (p: Partial<MoveFilters>) => setFilters((f) => ({ ...f, ...p }))
   const rangeLabel: Partial<Record<RangeKey, string>> = { any: tm.anyTime, all: tm.anyTime, today: t.common.today, yesterday: t.common.yesterday, week: tm.thisWeek, month: tm.thisMonth, custom: tm.custom }
-  const debtName = (id: string) => debts.find((d) => d.id === id)?.name ?? ''
+  const debtName = (id: string) => { const d = debts.find((x) => x.id === id); return d?.name || d?.person || '' }
+  const narrowed = [filters.family, filters.debtId, filters.range !== 'any'].filter(Boolean).length
   const chips = [
-    filters.kind !== 'all' && { key: 'kind', label: filters.kind === 'paid' ? tm.movePaid : tm.moveAdded, selected: true, onPress: () => patch({ kind: 'all' }) },
+    { key: 'kind', label: tm.moveAdded, selected: filters.kind === 'added', onPress: () => patch({ kind: filters.kind === 'added' ? 'paid' : 'added' }) },
     filters.family && { key: 'family', label: familyLabel[filters.family], selected: true, onPress: () => patch({ family: null, debtId: null }) },
     filters.debtId && { key: 'debt', label: debtName(filters.debtId), selected: true, onPress: () => patch({ debtId: null }) },
     filters.range !== 'any' && { key: 'range', label: rangeLabel[filters.range] ?? tm.custom, selected: true, onPress: () => patch({ range: 'any', from: '', to: '' }) },
@@ -125,10 +129,12 @@ export function DebtPaymentsFeed({ payments }: { payments: PaymentVM[] }) {
         <span className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{c.swipeHint}</span>
       </div>
       <div className="-mx-4 lg:mx-0">
-        <FlowChipRow filterCount={chips.length} onOpenFilters={() => setSheetOpen(true)} chips={chips} />
+        <FlowChipRow filterCount={narrowed} onOpenFilters={() => setSheetOpen(true)} chips={chips} />
       </div>
       {shown.length === 0 ? (
-        <p className="py-8 text-center text-sm text-[var(--color-brand-text-secondary)]">{tm.noMatch}</p>
+        <p className="py-8 text-center text-sm text-[var(--color-brand-text-secondary)]">
+          {payments.length === 0 && filters.kind === 'paid' && narrowed === 0 ? c.noPayments : tm.noMatch}
+        </p>
       ) : (
         <Card padding="none" divide className="mt-2 overflow-hidden">
           {shown.map((m) => {
@@ -142,7 +148,7 @@ export function DebtPaymentsFeed({ payments }: { payments: PaymentVM[] }) {
                 subtitle={m.kind === 'added'
                   ? `${tm.added} · ${familyLabel[m.family]} · ${formatLocalized(day(m.date), 'MMM d', locale)}`
                   : [formatLocalized(day(m.date), 'MMM d', locale), m.method].filter(Boolean).join(' · ')}
-                amount={m.kind === 'paid' ? `−${formatWhole(m.amount)}` : m.amount > 0 ? formatWhole(m.amount) : '—'}
+                amount={m.kind === 'paid' ? `−${formatWhole(m.amount)}` : formatWhole(m.amount)}
                 amountColor={m.kind === 'added' ? 'var(--color-brand-text-secondary)' : undefined}
               />
             )
@@ -169,7 +175,7 @@ export function DebtPaymentsFeed({ payments }: { payments: PaymentVM[] }) {
       <FilterSheet
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
-        footer={<Button size="cta-block" onClick={() => setSheetOpen(false)}>{t.expenses.showResults.replace('{count}', String(shown.length))}</Button>}
+        footer={<Button size="cta-block" onClick={() => setSheetOpen(false)}>{lt.filters.showResults(shown.length)}</Button>}
       >
         <div className="flex flex-col gap-5">
           <div className="flex items-center justify-between gap-2">
@@ -195,7 +201,6 @@ export function DebtPaymentsFeed({ payments }: { payments: PaymentVM[] }) {
               value={filters.kind}
               onChange={(kind) => patch({ kind })}
               options={[
-                { value: 'all', label: tm.moveAll },
                 { value: 'paid', label: tm.movePaid },
                 { value: 'added', label: tm.moveAdded },
               ]}

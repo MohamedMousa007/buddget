@@ -162,6 +162,17 @@ describe('chart derivations', () => {
     expect(s.at(-1)!.amount).toBe(120)
     expect(categorySlices([])).toEqual([])
   })
+  it('categorySlices: the Other category joins the folded tail, so Other is listed once', () => {
+    const cats = [...Array.from({ length: 7 }, (_, k) => ({ name: `C${k}`, amount: 100 - k * 10, last: 0 })), { name: 'Other', amount: 90, last: 0 }]
+      .sort((a, b) => b.amount - a.amount)
+    const s = categorySlices(cats)
+    expect(s).toHaveLength(MAX_SLICES)
+    expect(s.filter((x) => x.name === 'Other' || x.name === OTHER_SLICE)).toHaveLength(1)
+    expect(s.at(-1)).toMatchObject({ name: OTHER_SLICE, amount: 50 + 40 + 90 })
+    expect(s.slice(0, -1).map((x) => x.name)).toEqual(['C0', 'C1', 'C2', 'C3', 'C4'])
+    // With no folding, Other keeps its own row.
+    expect(categorySlices([{ name: 'Food', amount: 50, last: 0 }, { name: 'Other', amount: 20, last: 0 }]).map((x) => x.name)).toEqual(['Food', 'Other'])
+  })
   it('monthsStory: the last cycle over budget and whether it held since', () => {
     const m = (spent: number, received = 0) => ({ spent, received })
     expect(monthsStory([m(21900), m(23100), m(26800), m(22400), m(23880), m(16000)], 24500).story).toEqual({ kind: 'overThenUnder', index: 2, by: 2300 })

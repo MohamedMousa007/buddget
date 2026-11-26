@@ -30,7 +30,7 @@ import { useLocale, useT } from '@/lib/i18n'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
 import { bankLogoForName } from '@/lib/payment/bankLogos'
 import { cn } from '@/lib/utils'
-import { accountColor, accountTitle, cardKindLabel, moneyFlex, splitMoney } from './accountDisplay'
+import { accountColor, accountTitle, cardKindLabel, moneyFlex } from './accountDisplay'
 import { BrandMark } from './BrandMark'
 import { CardFaceChip } from './CardFaceChip'
 import { InlineBalanceEdit, type BalanceDraft } from './InlineBalanceEdit'
@@ -225,7 +225,7 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onA
                 </span>
                 {!smsMatches && !masked ? (
                   <Button variant="secondary" size="touch" onClick={() => setDraft({ value: String(Math.abs(live.data!.balance)), negative: live.data!.balance < 0 })}>
-                    {t.useAmount(splitMoney(live.data.balance, cur).int)}
+                    {t.useAmount(moneyFlex(live.data.balance, cur))}
                   </Button>
                 ) : null}
               </div>

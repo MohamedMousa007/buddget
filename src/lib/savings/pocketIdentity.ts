@@ -35,16 +35,19 @@ export function pocketDisplayName(a: Pick<SavingsAccount, 'type' | 'name'>, syst
 /**
  * The card sub-line — the account identity, not the balance:
  *   "CIB · Bank account ••••2016" · "Safe" · "NBE · matures Nov 2027".
+ * Empty when there is nothing beyond the name (the title already shows it).
  */
 export function pocketIdentity(a: SavingsAccount, identity: SavingsFormsCopy['identity'], locale: AppLocale = 'en'): string {
   const parts: string[] = []
-  if (a.institution) parts.push(a.institution)
+  // A linked pocket is often named after its bank ("HSBC Egypt"): the line then says the type, never the name again.
+  if (a.institution && a.institution.trim().toLowerCase() !== a.name.trim().toLowerCase()) parts.push(a.institution)
   const typeLabel = (identity.types as Partial<Record<SavingsType, string>>)[a.type]
   if (a.maturityDate) {
     const d = parseDateOnly(a.maturityDate)
     parts.push(identity.matures(monthNames(locale, 'short')[d.getMonth()], d.getFullYear()))
   } else if (typeLabel && a.type !== 'cash') {
-    parts.push(a.accountLast4 ? `${typeLabel} ••••${a.accountLast4}` : typeLabel)
+    // The last 4 once: not again when the name already carries them ("QNB Alahli ••1231").
+    parts.push(a.accountLast4 && !a.name.includes(a.accountLast4) ? `${typeLabel} ••••${a.accountLast4}` : typeLabel)
   }
-  return parts.join(' · ') || a.name
+  return parts.join(' · ')
 }

@@ -44,8 +44,8 @@ export function PlanBar({ planName, state, mode, onModeChange, onOpenPlans, expa
         value={mode}
         onChange={onModeChange}
         options={[
-          { value: 'plan', label: c.plan },
           { value: 'month', label: c.month },
+          { value: 'plan', label: c.plan },
         ]}
       />
     </div>
