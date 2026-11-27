@@ -30,7 +30,7 @@ import { checkpointInfo, coachView, finishesLate, goalMonthlyRate, replanPatch }
 import { defaultSharePct, periodMonths, sharesOverFull } from '@/lib/goals/goalPlan'
 import { debtMonthlyRate, goalLedger } from '@/lib/goals/debtGoal'
 import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
-import { relinkGoalPocket } from '@/lib/goals/goalPocket'
+import { pickGoalPocket } from '@/lib/goals/goalPocket'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatWhole } from '@/lib/utils/formatters'
@@ -259,7 +259,7 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
                     label={lt.goals.pocket}
                     pockets={pockets}
                     value={pocket?.id ?? null}
-                    onChange={(id) => s.updateGoal(goal.id, { linkedSavingsAccountIds: relinkGoalPocket(goal.linkedSavingsAccountIds, s.savingsAccounts, id) })}
+                    onChange={(id) => pickGoalPocket(useFinanceStore.getState(), goal, id)}
                   />
                 </Card>
                 <p className="mt-2 px-1 text-xs text-[var(--color-brand-text-secondary)]">{lt.goals.pocketNote}</p>

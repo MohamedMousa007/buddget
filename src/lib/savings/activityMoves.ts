@@ -3,6 +3,7 @@ import { assetFundingId } from '@/lib/savings/assetPurchase'
 import { catForAccount, type CatKey } from '@/lib/savings/wealthModel'
 import type { Expense, InvestmentHolding, SavingsAccount, SavingsTransaction } from '@/lib/store/types'
 import { safeLocalDayKey } from '@/lib/utils/localDate'
+import { isLabel } from './labels'
 
 /**
  * One row of Wealth's Activity:
@@ -38,7 +39,7 @@ export function activityMoves({ transactions, holdings, expenses, accounts, filt
   }
   // Corrections and opening balances are not moves; the rest of the non-cash-flow rows are.
   const txs: ActivityMove[] = transactions
-    .filter((t) => t.isCashFlow !== false || t.source === 'carry' || !!t.transferGroupId || t.source === 'goal_opening' || t.source === 'outside')
+    .filter((t) => t.isCashFlow !== false || isLabel(t) || t.source === 'carry' || !!t.transferGroupId || t.source === 'goal_opening' || t.source === 'outside')
     .filter((t) => !filter || catOf(t.accountId) === filter)
     .map((tx) => ({ kind: 'tx', id: tx.id, at: instantOf(tx.occurredAt, tx.date), tx }))
 

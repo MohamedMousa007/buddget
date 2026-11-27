@@ -22,6 +22,9 @@ export function savingsTransactionToRow(
     transfer_group_id: t.transferGroupId ?? null,
     occurred_at: t.occurredAt ?? null,
     payment_method_id: serverPaymentMethodId(t.paymentMethodId),
+    ...(t.idempotencyKey ? { idempotency_key: t.idempotencyKey } : {}),
+    ...(t.pairId ? { pair_id: t.pairId } : {}),
+    ...(t.accountAmount != null ? { account_amount: t.accountAmount } : {}),
   }
 }
 
@@ -43,6 +46,9 @@ export function savingsTransactionFromRow(row: SavingsTransactionRow): SavingsTr
     transferGroupId: row.transfer_group_id ?? undefined,
     occurredAt: row.occurred_at ?? undefined,
     paymentMethodId: row.payment_method_id ?? undefined,
+    idempotencyKey: row.idempotency_key ?? undefined,
+    pairId: row.pair_id ?? undefined,
+    accountAmount: row.account_amount ?? undefined,
     createdAt: row.created_at ?? undefined,
     updatedAt: row.edited_at,
   }

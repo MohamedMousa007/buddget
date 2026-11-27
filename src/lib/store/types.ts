@@ -171,6 +171,8 @@ export interface IncomeEvent {
   occurrenceDate?: string | null
   status: IncomeEventStatus
   paymentMethodId?: string
+  /** Booked amount in the receiving account's currency (I-10); absent = converted at the live rate. */
+  accountAmount?: number
   linkedSavingsAccountId?: string
   linkedDebtId?: string
   sharedPlanId?: string | null
@@ -201,6 +203,10 @@ export interface Expense {
   occurredAt?: string
   /** Transfer target (Cash out, own transfer): credits this account, `paymentMethodId` is debited. */
   toPaymentMethodId?: string
+  /** Booked amount in the source account's currency (I-10); absent = converted at the live rate. */
+  accountAmount?: number
+  /** Booked amount in the destination account's currency (I-10). */
+  toAccountAmount?: number
   id: string
   date: string
   description: string
@@ -678,8 +684,10 @@ export interface SavingsAccount {
   icon?: string
   /** @deprecated Legacy row marker; UI prefers `type` + `icon`. */
   emoji?: string
-  /** Reserved for a future Goals feature — not shown in create/card UI. */
-  targetAmount?: number
+  /** The goal this part belongs to (`goal_id`); null/absent = a pocket. Undefined is never sent, so a cached row keeps the server's value. */
+  goalId?: string | null
+  /** The user's Monthly savings part in this home (`is_monthly_savings`). Undeletable. */
+  isMonthlySavings?: boolean
   currency: Currency
   currentBalance: number
   createdAt: string
@@ -753,6 +761,16 @@ export interface RecurringSavingsDeposit {
 /** Where a savings withdrawal goes. Only 'income' creates an IncomeEvent. */
 export type SavingsWithdrawalPurpose = 'income' | 'transfer' | 'debt' | 'spend'
 
+/** Options shared by the label writers. `key` = idempotency key and row id (default: a fresh one). */
+export interface LabelWriteOpts {
+  key?: string
+  notes?: string
+  /** Ledger day (YYYY-MM-DD, default today) and exact instant (default now). */
+  date?: string
+  occurredAt?: string
+  isAutoSave?: boolean
+}
+
 export type DeleteSavingsTxResult =
   | { ok: true }
   | { ok: false; reason: 'not_found' }
@@ -784,6 +802,12 @@ export interface SavingsTransaction {
   isCashFlow?: boolean
   /** Both legs of a pocket-to-pocket transfer share this id; a plain deposit/withdrawal omits it. */
   transferGroupId?: string
+  /** Label rows (LOGIC_SPEC §3.3): one key per (part, write); the row id derives from it, so a retried sync is idempotent. */
+  idempotencyKey?: string
+  /** Ties a `move_out` label to its `move_in`. */
+  pairId?: string
+  /** Booked amount in the leg account's currency (I-10); absent = converted at the live rate. */
+  accountAmount?: number
   /** Last local edit (ISO). Powers the offline-merge tiebreak — without it an
    *  offline edit to this row loses to the server on every sign-in. */
   updatedAt?: string
@@ -1372,6 +1396,21 @@ export interface FinanceStore {
    *  `date` (`yyyy-MM-dd`, default today) dates both legs; `occurredAt` defaults to now for today and to the "no time"
    *  stand-in for a past date. */
   transferBetweenPockets: (fromId: string, toId: string, amount: number, notes?: string, date?: string, occurredAt?: string) => boolean
+  /**
+   * Labels (LOGIC_SPEC §3.3): they change a part, never an account balance. All refuse with false and write nothing.
+   * setAsideInPart: money already in the part's account is set aside (≤ what the account has free). `source: 'opening'`
+   * marks money that was already saved (not counted as this month's saving); only it may go into an outside part.
+   */
+  setAsideInPart: (partId: string, amount: number, opts?: LabelWriteOpts & { source?: 'set_aside' | 'opening' }) => boolean
+  /** Release: back to Free to spend in the same account. It won't be set aside again automatically. */
+  releasePart: (partId: string, amount: number, opts?: LabelWriteOpts) => boolean
+  /** I spent it: the money already left the account. */
+  markSpent: (partId: string, amount: number, opts?: LabelWriteOpts) => boolean
+  /**
+   * It's in another account: a goal or Monthly savings part moves `amount` (part currency) into the owner's part in
+   * `toAccountId` (created when missing); a pocket moves whole (`amount` ignored). Capped at what that account has free.
+   */
+  movePart: (partId: string, toAccountId: string, amount?: number, opts?: LabelWriteOpts) => boolean
   /** False when refused: a reserved pocket cannot be raised above what its account has available. */
   correctSavingsBalance: (accountId: string, newBalance: number, notes?: string) => boolean
   /** Delete a savings ledger row and reverse its balance effect (both legs for a transfer). */
@@ -1419,6 +1458,8 @@ export interface AccountAdjustment {
   delta: number
   reason: 'manual_update' | 'gap' | 'opening_correction'
   occurredAt: string
+  /** "The bank says X at occurredAt" (I-1): the balance restarts here; `delta` is kept for display only. Absent = a legacy delta leg. */
+  anchorBalance?: number
   note?: string
   createdAt: string
   updatedAt: string

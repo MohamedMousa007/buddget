@@ -1,6 +1,7 @@
 import type { SavingsAccount, Currency, SavingsAccountCategory, SavingsType } from '@/lib/store/types'
 import type { SavingsAccountRow, SavingsAccountInsert } from '@/lib/supabase/remote/types'
 import { serverPaymentMethodId } from './serverPaymentMethodId'
+import { systemVaultId } from '@/lib/savings/pocketIdentity'
 
 function toDbSavingsType(t: SavingsType): SavingsAccountInsert['type'] {
   // DB enum: bank | cash | gold | crypto | stock | bond | real_estate | other | stablecoin
@@ -37,7 +38,11 @@ export function savingsAccountToRow(a: SavingsAccount, userId: string): SavingsA
     type: toDbSavingsType(a.type),
     icon: a.icon ?? null,
     emoji: a.emoji ?? null,
-    target_amount: a.targetAmount ?? null,
+    // target_amount is retired (0364): never sent, so the stored value stays until the contract migration.
+    // goal_id is sent only when known (null unlinks): a row cached before 0355 must not erase the backfill.
+    ...(a.goalId !== undefined ? { goal_id: a.goalId } : {}),
+    // Same for the Monthly savings flag; the system vault is always one (0355 backfill rule).
+    ...(a.isMonthlySavings !== undefined ? { is_monthly_savings: a.isMonthlySavings } : a.id === systemVaultId(userId) ? { is_monthly_savings: true } : {}),
     currency: a.currency,
     opening_balance: 0, // we don't track this in the Zustand shape — only currentBalance.
     current_balance: a.currentBalance,
@@ -59,7 +64,8 @@ export function savingsAccountFromRow(row: SavingsAccountRow): SavingsAccount {
     type: fromDbSavingsType(row.type),
     icon: row.icon ?? undefined,
     emoji: row.emoji ?? undefined,
-    targetAmount: row.target_amount ?? undefined,
+    goalId: row.goal_id ?? undefined,
+    isMonthlySavings: row.is_monthly_savings || undefined,
     currency: row.currency as Currency,
     currentBalance: row.current_balance,
     notes: row.notes ?? undefined,

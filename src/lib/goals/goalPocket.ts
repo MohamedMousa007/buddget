@@ -56,7 +56,7 @@ export function createGoalPocket(
   if (input.fromPocketId && input.saved > 0) {
     const source = s.savingsAccounts?.find((a) => a.id === input.fromPocketId)
     const pocketId = s.addSavingsAccount({
-      name: input.pocketName, category: 'savings', type: 'vault', currency: input.currency,
+      name: input.pocketName, category: 'savings', type: 'vault', currency: input.currency, goalId: input.goalId,
       ...(source?.heldInPaymentMethodId ? { heldInPaymentMethodId: source.heldInPaymentMethodId } : {}),
     })
     s.updateGoal(input.goalId, { linkedSavingsAccountIds: [pocketId] })
@@ -67,7 +67,7 @@ export function createGoalPocket(
     ? input.home
     : undefined
   const pocketId = s.addSavingsAccount({
-    name: input.pocketName, category: 'savings', type: 'vault', currency: input.currency,
+    name: input.pocketName, category: 'savings', type: 'vault', currency: input.currency, goalId: input.goalId,
     ...(holder ? { heldInPaymentMethodId: holder } : {}),
   })
   s.updateGoal(input.goalId, { linkedSavingsAccountIds: [pocketId] })
@@ -89,7 +89,7 @@ export function depositIntoGoal(
   write: (pocketId: string) => boolean,
 ): boolean {
   if (pocketId) return write(pocketId)
-  const created = s.addSavingsAccount({ name: pocketName, category: 'savings', type: 'vault', currency: goal.currency })
+  const created = s.addSavingsAccount({ name: pocketName, category: 'savings', type: 'vault', currency: goal.currency, goalId: goal.id })
   s.updateGoal(goal.id, { linkedSavingsAccountIds: [...goal.linkedSavingsAccountIds, created] })
   if (write(created)) return true
   s.deleteSavingsAccount(created)
@@ -97,15 +97,31 @@ export function depositIntoGoal(
 }
 
 /**
- * The goal's pockets after the user picks `pocketId` on its detail sheet. No money moves ("keeps every amount where it
- * is"), so a pocket that still holds money for the goal stays linked and counted; the picked pocket comes first, as the
- * one new money goes to. An empty old pocket is let go.
+ * A goal's parts, the only rows a goal delete may move or touch: `goal_id` is the goal, or the goal lists the row (a
+ * cached row from before the first pull has no goalId yet). A row another goal also lists is never touched.
  */
-export function relinkGoalPocket(
-  linked: readonly string[],
-  pockets: readonly Pick<SavingsAccount, 'id' | 'currentBalance'>[],
+export function goalParts(goal: Pick<Goal, 'id' | 'linkedSavingsAccountIds'>, goals: readonly Pick<Goal, 'id' | 'linkedSavingsAccountIds'>[], accounts: readonly SavingsAccount[]): SavingsAccount[] {
+  const elsewhere = new Set(goals.filter((g) => g.id !== goal.id).flatMap((g) => g.linkedSavingsAccountIds))
+  return accounts.filter((a) => (a.goalId === goal.id || goal.linkedSavingsAccountIds.includes(a.id)) && !elsewhere.has(a.id))
+}
+
+/**
+ * The user picks `pocketId` for the goal on its detail sheet. No money moves ("keeps every amount where it is"): the
+ * picked row becomes one of the goal's parts (unless the goal already has a part in that account: one part per home,
+ * I-13), and parts that still hold money stay. Goal readers use the linked array until P5, so it is kept in step:
+ * the picked pocket first, as the one new money goes to; an empty old one is let go.
+ */
+export function pickGoalPocket(
+  s: Pick<FinanceStore, 'updateGoal' | 'updateSavingsAccount' | 'savingsAccounts'> & Partial<Pick<FinanceStore, 'goals'>>,
+  goal: Pick<Goal, 'id' | 'linkedSavingsAccountIds'>,
   pocketId: string,
-): string[] {
-  const holding = linked.filter((id) => id !== pocketId && (pockets.find((p) => p.id === id)?.currentBalance ?? 0) > 0)
-  return [pocketId, ...holding]
+): void {
+  const picked = s.savingsAccounts.find((p) => p.id === pocketId)
+  if (!picked) return
+  const clash = !!picked.heldInPaymentMethodId && s.savingsAccounts.some((p) => p.id !== pocketId && p.goalId === goal.id && p.heldInPaymentMethodId === picked.heldInPaymentMethodId)
+  // A pocket another goal still lists stays shared (no goal_id): stamping it would hand it to this goal alone.
+  const sharedElsewhere = (s.goals ?? []).some((g) => g.id !== goal.id && g.linkedSavingsAccountIds.includes(pocketId))
+  if (!picked.goalId && !picked.isMonthlySavings && !clash && !sharedElsewhere) s.updateSavingsAccount(pocketId, { goalId: goal.id })
+  const holding = goal.linkedSavingsAccountIds.filter((id) => id !== pocketId && (s.savingsAccounts.find((p) => p.id === id)?.currentBalance ?? 0) > 0)
+  s.updateGoal(goal.id, { linkedSavingsAccountIds: [pocketId, ...holding] })
 }

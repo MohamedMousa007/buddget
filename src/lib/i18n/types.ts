@@ -464,6 +464,7 @@ export interface Dictionary {
     deleteBodyStays: (amount: string, account: string) => string
     deleteDefaultTitle: string
     deleteDefaultBody: string
+    deleteSystemBody: string
     deleteOnlyTitle: string
     deleteOnlyBody: string
     nothingHeld: string
@@ -3457,6 +3458,9 @@ export interface Dictionary {
       fromAccount: string
       toAccount: string
       staysIn: (account: string) => string
+      /** Release sheet (LOGIC_SPEC §1): the money stays in the account and is never set aside again on its own. */
+      releaseTitle: string
+      releaseBody: (account: string) => string
       otherAccount: string
       heldSpendHint: (account: string) => string
       whereFrom: string

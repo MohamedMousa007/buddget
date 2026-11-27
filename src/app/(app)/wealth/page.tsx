@@ -259,7 +259,9 @@ export default function WealthPage() {
       const verdict = canDeletePocket(useFinanceStore.getState(), a.id)
       if (!verdict.ok) {
         const isDefault = verdict.reason === 'default'
-        await alertDialog({ title: isDefault ? t.deleteDefaultTitle : t.deleteOnlyTitle, body: isDefault ? t.deleteDefaultBody : t.deleteOnlyBody })
+        await alertDialog(verdict.reason === 'system'
+          ? { title: t.deleteDefaultTitle, body: t.deleteSystemBody }
+          : { title: isDefault ? t.deleteDefaultTitle : t.deleteOnlyTitle, body: isDefault ? t.deleteDefaultBody : t.deleteOnlyBody })
         return
       }
     }

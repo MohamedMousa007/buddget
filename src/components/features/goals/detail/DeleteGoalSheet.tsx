@@ -5,7 +5,7 @@ import { SheetFrame } from '@/components/features/subscriptions/SheetFrame'
 import { Button } from '@/components/ui/button'
 import { SelectableCard } from '@/components/ui/SelectableCard'
 import { useT } from '@/lib/i18n'
-import { exclusivePockets } from '@/lib/goals/exclusivePockets'
+import { goalParts } from '@/lib/goals/goalPocket'
 import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Goal } from '@/lib/store/types'
@@ -20,7 +20,7 @@ export function DeleteGoalSheet({ goal, onClose, onDeleted }: { goal: Goal; onCl
   const [moveFailed, setMoveFailed] = useState(false)
 
   const goals = useFinanceStore((s) => s.goals)
-  const owned = exclusivePockets(goal, goals, accounts)
+  const owned = goalParts(goal, goals, accounts)
   const others = accounts.filter((a) => isEligibleCarryPocket(a) && !goal.linkedSavingsAccountIds.includes(a.id))
 
   const confirm = () => {

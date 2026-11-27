@@ -40,6 +40,9 @@ export function expenseToRow(e: Expense, userId: string): ExpenseInsert {
     owed_settled_at: e.owedSettledAt ?? null,
     to_payment_method_id:
       e.toPaymentMethodId && e.toPaymentMethodId !== DEFAULT_CASH_ID ? e.toPaymentMethodId : null,
+    // Booked amounts (I-10) are sent only when known: a cached row from before P2 never clears a stored value.
+    ...(e.accountAmount != null ? { account_amount: e.accountAmount } : {}),
+    ...(e.toAccountAmount != null ? { to_account_amount: e.toAccountAmount } : {}),
     ...(e.serverRev !== undefined ? { server_rev: e.serverRev } : {}),
     created_at: e.createdAt,
   }
@@ -78,6 +81,8 @@ export function expenseFromRow(row: ExpenseRow): Expense {
     owedBy: row.owed_by ?? undefined,
     owedSettledAt: row.owed_settled_at ?? undefined,
     toPaymentMethodId: row.to_payment_method_id ?? undefined,
+    accountAmount: row.account_amount ?? undefined,
+    toAccountAmount: row.to_account_amount ?? undefined,
     serverRev: row.server_rev ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.edited_at,

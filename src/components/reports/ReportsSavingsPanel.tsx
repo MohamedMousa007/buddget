@@ -8,6 +8,7 @@ import { useGoldQuote } from '@/hooks/useGoldQuote'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 import type { Currency } from '@/lib/store/types'
+import { isCountedSavingsFlow } from '@/lib/savings/labels'
 
 export interface ReportsSavingsPanelProps {
   transactions: SavingsTransaction[]
@@ -34,7 +35,7 @@ export function ReportsSavingsPanel({
     let w = 0
     for (const tx of transactions) {
       const day = parseISO(tx.date.length > 10 ? tx.date : `${tx.date}T12:00:00`)
-      if (tx.isCashFlow === false || !isWithinInterval(day, { start: startDate, end: endDate })) continue
+      if (!isCountedSavingsFlow(tx) || !isWithinInterval(day, { start: startDate, end: endDate })) continue
       const v = tryConvertWithGold(tx.amount, tx.currency, baseCurrency, exchangeRates, baseCurrency, gold)
       if (v === null) continue
       if (tx.type === 'deposit') d += v

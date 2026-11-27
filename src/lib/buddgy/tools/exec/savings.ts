@@ -450,6 +450,7 @@ const delete_savings_account: WriteImpl = {
     const p = hit.item
     const verdict = canDeletePocket(s, p.id)
     if (!verdict.ok) {
+      if (verdict.reason === 'system') return no(`${p.name} is your Monthly savings, so it cannot be deleted.`, 'You can rename it. It hides when it is empty.')
       return verdict.reason === 'default'
         ? no(`${p.name} receives the monthly savings, so it cannot be deleted yet.`, 'Make another pocket the default for monthly savings first.')
         : no(`${p.name} is your only pocket, so it cannot be deleted.`, 'At least one pocket is needed for monthly savings. Add another first.')

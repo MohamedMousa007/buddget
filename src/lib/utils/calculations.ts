@@ -10,6 +10,7 @@ import {
   eachMonthOfInterval,
   format,
 } from 'date-fns'
+import { isCountedSavingsFlow } from '@/lib/savings/labels'
 import type {
   Expense,
   IncomeSource,
@@ -494,7 +495,7 @@ export function netSavingsLedgerInBaseForMonth(
   return rows.reduce((sum, t) => {
     // Opening balances and corrections move a balance without moving cash. Declaring a
     // pre-existing 50k account used to wipe out `leftToSpend` for the month.
-    if (t.isCashFlow === false) return sum
+    if (!isCountedSavingsFlow(t)) return sum
     const inBase = tryConvertWithGold(t.amount, t.currency, baseCurrency, rates, baseCurrency, gold)
     if (inBase === null) return sum
     return sum + (t.type === 'deposit' ? inBase : -inBase)
@@ -522,7 +523,7 @@ export function cashSavingsDepositsInBaseForMonth(
   gold: GoldQuote
 ): number {
   return filterSavingsTransactionsByMonth(transactions, monthStr, monthStartDay)
-    .filter((t) => t.type === 'deposit' && t.isCashFlow !== false && t.source !== 'carry')
+    .filter((t) => t.type === 'deposit' && isCountedSavingsFlow(t) && t.source !== 'carry')
     .reduce(
       (sum, t) => sum + (tryConvertWithGold(t.amount, t.currency, baseCurrency, rates, baseCurrency, gold) ?? 0),
       0

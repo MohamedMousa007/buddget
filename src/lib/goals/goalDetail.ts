@@ -149,7 +149,8 @@ export function normalizeRuns(input: {
       t.type === 'deposit' &&
       goal.linkedSavingsAccountIds.includes(t.accountId) &&
       t.source !== 'carry' &&
-      t.source !== 'goal_opening',
+      t.source !== 'goal_opening' &&
+      t.source !== 'opening',
   )
   return runs.map((r) => {
     const start = periodStartMonth(r.period)

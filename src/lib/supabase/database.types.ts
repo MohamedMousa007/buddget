@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       account_adjustments: {
         Row: {
+          anchor_balance: number | null
           created_at: string
           deleted_at: string | null
           delta: number
@@ -29,6 +30,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          anchor_balance?: number | null
           created_at?: string
           deleted_at?: string | null
           delta: number
@@ -42,6 +44,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          anchor_balance?: number | null
           created_at?: string
           deleted_at?: string | null
           delta?: number
@@ -2014,6 +2017,7 @@ export type Database = {
       }
       expenses: {
         Row: {
+          account_amount: number | null
           amount: number
           category: Database["public"]["Enums"]["expense_category"]
           category_label: string | null
@@ -2049,11 +2053,13 @@ export type Database = {
           sms_log_id: string | null
           spend_exclusion: string | null
           subcategory: string | null
+          to_account_amount: number | null
           to_payment_method_id: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          account_amount?: number | null
           amount: number
           category?: Database["public"]["Enums"]["expense_category"]
           category_label?: string | null
@@ -2089,11 +2095,13 @@ export type Database = {
           sms_log_id?: string | null
           spend_exclusion?: string | null
           subcategory?: string | null
+          to_account_amount?: number | null
           to_payment_method_id?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          account_amount?: number | null
           amount?: number
           category?: Database["public"]["Enums"]["expense_category"]
           category_label?: string | null
@@ -2129,6 +2137,7 @@ export type Database = {
           sms_log_id?: string | null
           spend_exclusion?: string | null
           subcategory?: string | null
+          to_account_amount?: number | null
           to_payment_method_id?: string | null
           updated_at?: string
           user_id?: string
@@ -2451,6 +2460,7 @@ export type Database = {
       }
       income_events: {
         Row: {
+          account_amount: number | null
           amount: number
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
@@ -2479,6 +2489,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account_amount?: number | null
           amount: number
           created_at?: string
           currency: Database["public"]["Enums"]["currency_code"]
@@ -2507,6 +2518,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          account_amount?: number | null
           amount?: number
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
@@ -3948,10 +3960,12 @@ export type Database = {
           deleted_at: string | null
           edited_at: string
           emoji: string | null
+          goal_id: string | null
           held_in_payment_method_id: string | null
           icon: string | null
           id: string
           is_emergency_cover: boolean
+          is_monthly_savings: boolean
           linked_payment_method_id: string | null
           metadata: Json
           name: string
@@ -3971,10 +3985,12 @@ export type Database = {
           deleted_at?: string | null
           edited_at?: string
           emoji?: string | null
+          goal_id?: string | null
           held_in_payment_method_id?: string | null
           icon?: string | null
           id?: string
           is_emergency_cover?: boolean
+          is_monthly_savings?: boolean
           linked_payment_method_id?: string | null
           metadata?: Json
           name: string
@@ -3994,10 +4010,12 @@ export type Database = {
           deleted_at?: string | null
           edited_at?: string
           emoji?: string | null
+          goal_id?: string | null
           held_in_payment_method_id?: string | null
           icon?: string | null
           id?: string
           is_emergency_cover?: boolean
+          is_monthly_savings?: boolean
           linked_payment_method_id?: string | null
           metadata?: Json
           name?: string
@@ -4009,6 +4027,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "savings_accounts_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "savings_accounts_held_in_payment_method_id_fkey"
             columns: ["held_in_payment_method_id"]
@@ -4175,6 +4200,7 @@ export type Database = {
       }
       savings_transactions: {
         Row: {
+          account_amount: number | null
           account_id: string
           amount: number
           balance_after: number | null
@@ -4183,11 +4209,13 @@ export type Database = {
           deleted_at: string | null
           edited_at: string
           id: string
+          idempotency_key: string | null
           is_auto_save: boolean
           is_cash_flow: boolean
           kind: Database["public"]["Enums"]["savings_transaction_kind"]
           notes: string | null
           occurred_at: string | null
+          pair_id: string | null
           payment_method_id: string | null
           source: string | null
           transaction_date: string
@@ -4196,6 +4224,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account_amount?: number | null
           account_id: string
           amount: number
           balance_after?: number | null
@@ -4204,11 +4233,13 @@ export type Database = {
           deleted_at?: string | null
           edited_at?: string
           id?: string
+          idempotency_key?: string | null
           is_auto_save?: boolean
           is_cash_flow?: boolean
           kind: Database["public"]["Enums"]["savings_transaction_kind"]
           notes?: string | null
           occurred_at?: string | null
+          pair_id?: string | null
           payment_method_id?: string | null
           source?: string | null
           transaction_date?: string
@@ -4217,6 +4248,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          account_amount?: number | null
           account_id?: string
           amount?: number
           balance_after?: number | null
@@ -4225,11 +4257,13 @@ export type Database = {
           deleted_at?: string | null
           edited_at?: string
           id?: string
+          idempotency_key?: string | null
           is_auto_save?: boolean
           is_cash_flow?: boolean
           kind?: Database["public"]["Enums"]["savings_transaction_kind"]
           notes?: string | null
           occurred_at?: string | null
+          pair_id?: string | null
           payment_method_id?: string | null
           source?: string | null
           transaction_date?: string
@@ -6687,6 +6721,20 @@ export type Database = {
         }
       }
       jsonb_counts_add: { Args: { a: Json; b: Json }; Returns: Json }
+      label_part: {
+        Args: {
+          p_amount: number
+          p_date?: string
+          p_key: string
+          p_kind: Database["public"]["Enums"]["savings_transaction_kind"]
+          p_note?: string
+          p_pair?: string
+          p_part: string
+          p_source: string
+          p_user: string
+        }
+        Returns: number
+      }
       latest_balance_reports: {
         Args: never
         Returns: {

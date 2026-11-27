@@ -5,6 +5,7 @@ import { computeBalances, instantOf, type LedgerInput } from './balance'
 import { SKEW_MS, type GapResult } from './gap'
 import { isTracked } from './kinds'
 import { resolveAccountId } from './resolve'
+import { ledgerOf } from '@/lib/savings/pocketHome'
 
 /** How the user explains a bank balance that is higher than the ledger. Each answer raises the ledger toward the bank. */
 export type SurplusAnswer = 'income' | 'transfer' | 'pocket' | 'correct'
@@ -78,6 +79,12 @@ export function resolveSurplus(answer: SurplusAnswer, input: SurplusInput): bool
     for (const t of input.deposits ?? []) undone = s.deleteSavingsTransaction(t.id).ok || undone
     return undone
   }
-  s.addAccountAdjustment({ paymentMethodId: account.id, delta: Math.round(amount * 100) / 100, reason: 'gap', occurredAt: at.toISOString() })
+  // 'correct': the bank's reported balance is the truth: an anchor at the back-dated instant (I-1), so the report matches.
+  const ledgerThen = computeBalances(ledgerOf(s), at.getTime()).get(account.id)?.balance
+  const delta = Math.round(amount * 100) / 100
+  s.addAccountAdjustment({
+    paymentMethodId: account.id, delta, reason: 'gap', occurredAt: at.toISOString(),
+    ...(ledgerThen != null ? { anchorBalance: Math.round((ledgerThen + delta) * 100) / 100 } : {}),
+  })
   return true
 }

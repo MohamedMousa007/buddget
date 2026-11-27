@@ -23,10 +23,20 @@ describe('L11/W22 sync round trip', () => {
     expect(row.is_recurring).toBe(false)
     expect(expenseFromRow({ ...row, updated_at: 'x', deleted_at: null } as never).amountInBaseCurrency).toBe(0)
   })
-  it('keeps savings account targetAmount and emoji', () => {
-    const a = { id: 'a', name: 'N', category: 'savings', type: 'bank', currency: 'EGP', currentBalance: 1, targetAmount: 900, emoji: '🏠', createdAt: 'x' } as unknown as SavingsAccount
-    const back = savingsAccountFromRow({ ...savingsAccountToRow(a, 'u'), updated_at: 'x', deleted_at: null } as never)
-    expect(back).toMatchObject({ targetAmount: 900, emoji: '🏠' })
+  it('keeps savings account goal part fields and emoji; never sends the retired target_amount', () => {
+    const a = { id: 'a', name: 'N', category: 'savings', type: 'bank', currency: 'EGP', currentBalance: 1, goalId: 'g', isMonthlySavings: true, emoji: '🏠', createdAt: 'x' } as unknown as SavingsAccount
+    const row = savingsAccountToRow(a, 'u')
+    expect('target_amount' in row).toBe(false)
+    const back = savingsAccountFromRow({ ...row, updated_at: 'x', deleted_at: null } as never)
+    expect(back).toMatchObject({ goalId: 'g', isMonthlySavings: true, emoji: '🏠' })
+  })
+  it('a pocket cached before 0355 (no goalId) never sends goal_id, so the backfill survives; the system vault is flagged', () => {
+    const a = { id: 'a', name: 'N', category: 'savings', type: 'bank', currency: 'EGP', currentBalance: 1, createdAt: 'x' } as unknown as SavingsAccount
+    expect('goal_id' in savingsAccountToRow(a, 'u')).toBe(false)
+    expect('is_monthly_savings' in savingsAccountToRow(a, 'u')).toBe(false)
+    const vault = { ...a, id: '55555555-5555-4448-3334-222211111111' }
+    expect(savingsAccountToRow(vault, '11111111-2222-4333-8444-555555555555').is_monthly_savings).toBe(true)
+    expect(savingsAccountToRow({ ...a, goalId: null }, 'u').goal_id).toBeNull()
   })
   it('writes cancelled goals as cancelled', () => {
     expect(goalToRow({ id: 'g', status: 'cancelled', name: 'g' } as Goal, 'u').status).toBe('cancelled')

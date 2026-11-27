@@ -48,6 +48,19 @@ describe('flushDiff link-column FK order (Q9)', () => {
   })
 })
 
+describe('flushDiff goal_id FK order (P2)', () => {
+  it('commits goals before the savings parts that reference them', async () => {
+    const next = {
+      ...emptySnapshot(),
+      goals: [{ id: id(8), name: 'Car', linkedSavingsAccountIds: [id(3)] }],
+      savingsAccounts: [{ id: id(3), name: 'Car part', goalId: id(8) }],
+    } as unknown as Snapshot
+    const at = await commitOrder(next)
+    expect(at('goals')).toBeGreaterThanOrEqual(0)
+    expect(at('goals')).toBeLessThan(at('savings_accounts'))
+  })
+})
+
 describe('flushDiff holdings tier and per-row retry', () => {
   it('commits a pocket before the holding that references it', async () => {
     const next = {

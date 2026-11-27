@@ -46,6 +46,7 @@ import type {
   SavingsHolding,
   SavingsTransaction,
   DeleteSavingsTxResult,
+  LabelWriteOpts,
   SavingsType,
   Subscription,
 } from './types'
@@ -74,7 +75,10 @@ import { advanceRecurringDebtDueDate, scheduledDueDate } from '@/lib/utils/recur
 import { overpaysDebt } from '@/lib/debts/overpaysDebt'
 import { withGoalDefaults } from '@/lib/goals/goalDefaults'
 import { resolveAccountLeg, incomeEventIdForTx } from '@/lib/savings/accountLeg'
-import { correctionRefusal, depositLegId, depositRefusal, ledgerOf } from '@/lib/savings/pocketHome'
+import { availableIn, correctionRefusal, depositLegId, depositRefusal, ledgerOf, pocketHome } from '@/lib/savings/pocketHome'
+import { labelRow, moveAmount, movePocket, release, spent, type LabelSource } from '@/lib/savings/labels'
+import { canHoldParts } from '@/lib/accounts/kinds'
+import { resolveAccountId } from '@/lib/accounts/resolve'
 import { entryOccurredAt } from '@/lib/time/occurredAt'
 import { dropExpenseReceipt, restoreExpenseReceipt } from '@/lib/receipt/receiptCascade'
 import { migrateIdsToUuid } from '@/lib/store/migrations/v17_uuid_remap'
@@ -93,6 +97,63 @@ const restoredNow = <T extends { id: string }>(row: T): T => {
 
 /** Today's entries carry the exact time; back-dated ones stay day-level (the balance reads them at noon). */
 const occurredNow = (date: string, given?: string): string => given ?? entryOccurredAt(date)
+
+/**
+ * One label on one part (LOGIC_SPEC §3.3), with the part's balance moved and goals reconciled. Null = refused (no
+ * such part, does not fit). A key already in the ledger is the same write retried: the state is returned unchanged.
+ */
+function withLabel(state: FinanceStore, partId: string, source: LabelSource, amount: number, opts: LabelWriteOpts = {}): Partial<FinanceStore> | null {
+  const part = state.savingsAccounts.find((a) => a.id === partId)
+  const amt = Math.round(Number(amount) * 1e6) / 1e6
+  if (!part || !(amt > 0)) return null
+  const key = opts.key ?? generateId()
+  if (state.savingsTransactions.some((t) => t.id === key)) return {}
+  const date = opts.date ?? localTodayISO()
+  const o = { key, date, occurredAt: occurredNow(date, opts.occurredAt), notes: opts.notes, isAutoSave: opts.isAutoSave }
+  const row = source === 'release' ? release(part, amt, o) : source === 'spent' ? spent(part, amt, o) : labelRow(part, source, amt, o)
+  if (!row) return null
+  const sign = row.type === 'deposit' ? 1 : -1
+  const nextState: FinanceStore = {
+    ...state,
+    savingsTransactions: [...state.savingsTransactions, row],
+    savingsAccounts: state.savingsAccounts.map((a) => (a.id === partId ? { ...a, currentBalance: settleBalance(Math.max(0, a.currentBalance + sign * amt)) } : a)),
+  }
+  return { savingsTransactions: nextState.savingsTransactions, savingsAccounts: nextState.savingsAccounts, goals: reconcileGoalsForState(nextState) }
+}
+
+/**
+ * A pocket and its rows leave the store; a held pocket's leg-bearing rows are frozen first (pocketCloseAdjustments), so
+ * removing them never moves an account. Label rows carry no leg, so a held pocket's balance is in effect released.
+ */
+function withoutPocket(state: FinanceStore, id: string): Partial<FinanceStore> {
+  const closing = state.savingsAccounts.find((a) => a.id === id)
+  const nextState: FinanceStore = {
+    ...state,
+    savingsAccounts: state.savingsAccounts.filter((a) => a.id !== id),
+    savingsTransactions: state.savingsTransactions.filter((t) => t.accountId !== id),
+    recurringSavingsDeposits: state.recurringSavingsDeposits.filter((r) => r.accountId !== id),
+    ...unlinkSavingsAccount(state, id),
+    goals: state.goals.map((g) => ({
+      ...g,
+      linkedSavingsAccountIds: g.linkedSavingsAccountIds.filter((x) => x !== id),
+    })),
+  }
+  const freeze = closing?.heldInPaymentMethodId
+    ? pocketCloseAdjustments(ledgerOf(state), ledgerOf(nextState), closing.name, new Date().toISOString(), generateId)
+    : []
+  return {
+    savingsAccounts: nextState.savingsAccounts,
+    savingsTransactions: nextState.savingsTransactions,
+    recurringSavingsDeposits: nextState.recurringSavingsDeposits,
+    incomeEvents: nextState.incomeEvents,
+    incomeSources: nextState.incomeSources,
+    goals: reconcileGoalsForState(nextState),
+    ...(freeze.length ? { accountAdjustments: [...state.accountAdjustments, ...freeze] } : {}),
+    ...(state.profile.defaultCarryPocketId === id
+      ? { profile: { ...state.profile, defaultCarryPocketId: null } }
+      : {}),
+  }
+}
 const PERSIST_WRITE_DEBOUNCE_MS = 150
 
 const persistStorage = createDebouncedJsonStorage<FinanceStore>(() => createSafeLocalStorage(), PERSIST_WRITE_DEBOUNCE_MS)
@@ -1434,6 +1495,10 @@ export const useFinanceStore = create<FinanceStore>()(
       deleteGoal: (id) =>
         set((state) => ({
           goals: state.goals.filter((g) => g.id !== id),
+          // Its parts become pockets (goal_id ON DELETE SET NULL on the server; null is sent, never a dead goal id).
+          savingsAccounts: state.savingsAccounts.some((a) => a.goalId === id)
+            ? state.savingsAccounts.map((a) => (a.goalId === id ? { ...a, goalId: null } : a))
+            : state.savingsAccounts,
         })),
 
       achieveGoal: (id) =>
@@ -1753,37 +1818,8 @@ export const useFinanceStore = create<FinanceStore>()(
           ),
         })),
 
-      deleteSavingsAccount: (id) =>
-        set((state) => {
-          const closing = state.savingsAccounts.find((a) => a.id === id)
-          const nextState: FinanceStore = {
-            ...state,
-            savingsAccounts: state.savingsAccounts.filter((a) => a.id !== id),
-            savingsTransactions: state.savingsTransactions.filter((t) => t.accountId !== id),
-            recurringSavingsDeposits: state.recurringSavingsDeposits.filter((r) => r.accountId !== id),
-            ...unlinkSavingsAccount(state, id),
-            goals: state.goals.map((g) => ({
-              ...g,
-              linkedSavingsAccountIds: g.linkedSavingsAccountIds.filter((x) => x !== id),
-            })),
-          }
-          // A held pocket's exits are account legs derived from its rows: freeze them before the rows go.
-          const freeze = closing?.heldInPaymentMethodId
-            ? pocketCloseAdjustments(ledgerOf(state), ledgerOf(nextState), closing.name, new Date().toISOString(), generateId)
-            : []
-          return {
-            savingsAccounts: nextState.savingsAccounts,
-            savingsTransactions: nextState.savingsTransactions,
-            recurringSavingsDeposits: nextState.recurringSavingsDeposits,
-            incomeEvents: nextState.incomeEvents,
-            incomeSources: nextState.incomeSources,
-            goals: reconcileGoalsForState(nextState),
-            ...(freeze.length ? { accountAdjustments: [...state.accountAdjustments, ...freeze] } : {}),
-            ...(state.profile.defaultCarryPocketId === id
-              ? { profile: { ...state.profile, defaultCarryPocketId: null } }
-              : {}),
-          }
-        }),
+      // Release first (§4.6, T43): a held part's money goes back to Free to spend in its account, never out of it.
+      deleteSavingsAccount: (id) => set((state) => withoutPocket(state, id)),
 
       addRecurringSavingsDeposit: (r) =>
         set((state) => {
@@ -1828,6 +1864,17 @@ export const useFinanceStore = create<FinanceStore>()(
           if (depositRefusal(ledgerOf(state), acc, { amount: amt, mode: opts?.mode, paymentMethodId: opts?.paymentMethodId, fromAccountId: opts?.fromAccountId })) return state
           // Only cash deposits get an account leg; an explicit paymentMethodId (set-aside) is kept as given.
           const legId = depositLegId(state.paymentMethods, acc, { mode: opts?.mode, paymentMethodId: opts?.paymentMethodId, fromAccountId: opts?.fromAccountId })
+          // A part held in a live account, funded from that account's own money: a set-aside label (no leg, §3.3).
+          // Declared money (already saved, not this month's flow) is an `opening` label, as before not counted.
+          const home = pocketHome(acc, state.paymentMethods)
+          if (home.kind === 'reserved' && (!legId || resolveAccountId(legId, state.paymentMethods) === home.accountId)) {
+            const labelled = withLabel(state, accountId, opts?.mode === 'declare' ? 'opening' : 'set_aside', amt, {
+              key: opts?.txId, notes, date: opts?.date, occurredAt: opts?.occurredAt, isAutoSave: opts?.isAutoSave,
+            })
+            if (!labelled) return state
+            ok = true
+            return labelled
+          }
           const tx: SavingsTransaction = {
             id: opts?.txId ?? generateId(),
             accountId,
@@ -1908,6 +1955,107 @@ export const useFinanceStore = create<FinanceStore>()(
         return ok
       },
 
+      setAsideInPart: (partId, amount, opts) => {
+        let ok = false
+        set((state) => {
+          const part = state.savingsAccounts.find((a) => a.id === partId)
+          if (!part) return state
+          const source = opts?.source ?? 'set_aside'
+          const home = pocketHome(part, state.paymentMethods)
+          // In an account: capped at what it has free. Outside (gold, other assets): only an `opening` entry (§4.9).
+          if (home.kind === 'reserved') {
+            if (depositRefusal(ledgerOf(state), part, { amount, paymentMethodId: home.accountId })) return state
+          } else if (source !== 'opening' || part.heldInPaymentMethodId) return state
+          const next = withLabel(state, partId, source, amount, opts)
+          if (!next) return state
+          ok = true
+          return next
+        })
+        return ok
+      },
+
+      releasePart: (partId, amount, opts) => {
+        let ok = false
+        set((state) => {
+          const part = state.savingsAccounts.find((a) => a.id === partId)
+          // Release is for money set aside in an account; an outside holding is withdrawn (§0 "Withdraw").
+          if (!part?.heldInPaymentMethodId) return state
+          const next = withLabel(state, partId, 'release', amount, opts)
+          if (!next) return state
+          ok = true
+          return next
+        })
+        return ok
+      },
+
+      markSpent: (partId, amount, opts) => {
+        let ok = false
+        set((state) => {
+          const part = state.savingsAccounts.find((a) => a.id === partId)
+          if (!part?.heldInPaymentMethodId) return state
+          const next = withLabel(state, partId, 'spent', amount, opts)
+          if (!next) return state
+          ok = true
+          return next
+        })
+        return ok
+      },
+
+      movePart: (partId, toAccountId, amount, opts) => {
+        let ok = false
+        set((state) => {
+          const p = state.savingsAccounts.find((a) => a.id === partId)
+          const b = state.paymentMethods.find((m) => m.id === toAccountId)
+          if (!p || !b || !canHoldParts(b) || p.heldInPaymentMethodId === b.id) return state
+          const bCur = b.currency as Currency
+          const amt = p.goalId || p.isMonthlySavings ? Math.max(0, Number(amount) || 0) : p.currentBalance
+          const amtB = p.currency === bCur ? amt : tryConvertWithGold(amt, p.currency, bCur, state.exchangeRates, state.settings.baseCurrency, goldQuoteOf(state))
+          if (amtB === null || !(amtB > 0)) return state
+          const rounded = Math.round(amtB * 100) / 100
+          if (rounded > availableIn(b.id, ledgerOf(state)) + balanceEpsilon(bCur)) return state
+          const date = opts?.date ?? localTodayISO()
+          const at = { date, occurredAt: occurredNow(date, opts?.occurredAt), createdAt: new Date().toISOString(), pairId: generateId() }
+          if (p.goalId || p.isMonthlySavings) {
+            const moved = moveAmount(state.savingsAccounts, p, { id: b.id, currency: bCur }, amt, rounded, state.profile.id, { ...at, outKey: opts?.key ?? generateId(), inKey: generateId() })
+            if (!moved) return state
+            const [outRow, inRow] = moved.rows
+            const parts = moved.newPart ? [...state.savingsAccounts, moved.newPart] : state.savingsAccounts
+            const nextState: FinanceStore = {
+              ...state,
+              savingsTransactions: [...state.savingsTransactions, outRow, inRow],
+              savingsAccounts: parts.map((a) =>
+                a.id === outRow.accountId ? { ...a, currentBalance: settleBalance(Math.max(0, a.currentBalance - outRow.amount)) }
+                  : a.id === inRow.accountId ? { ...a, currentBalance: settleBalance(a.currentBalance + inRow.amount) } : a),
+              // Goal readers use the linked array until P5: a new part joins it.
+              goals: moved.newPart && p.goalId
+                ? state.goals.map((g) => (g.id === p.goalId && !g.linkedSavingsAccountIds.includes(moved.newPart!.id) ? { ...g, linkedSavingsAccountIds: [...g.linkedSavingsAccountIds, moved.newPart!.id] } : g))
+                : state.goals,
+            }
+            ok = true
+            return { savingsTransactions: nextState.savingsTransactions, savingsAccounts: nextState.savingsAccounts, goals: reconcileGoalsForState(nextState) }
+          }
+          const moved = movePocket(p, { id: b.id, currency: bCur }, rounded, { ...at, newId: generateId(), inKey: opts?.key ?? generateId() })
+          if (!moved) return state
+          const withNew: FinanceStore = {
+            ...state,
+            savingsAccounts: [...state.savingsAccounts, moved.newPocket],
+            savingsTransactions: [...state.savingsTransactions, moved.row],
+          }
+          const removed = withoutPocket(withNew, p.id)
+          ok = true
+          // Every goal that listed the old row lists the new one in its place (not just dropped).
+          const relinked = state.goals.map((g) => (g.linkedSavingsAccountIds.includes(p.id)
+            ? { ...g, linkedSavingsAccountIds: g.linkedSavingsAccountIds.map((x) => (x === p.id ? moved.newPocket.id : x)) }
+            : g))
+          return {
+            ...removed,
+            goals: reconcileGoalsForState({ ...withNew, ...removed, goals: relinked } as FinanceStore),
+            ...(state.profile.defaultCarryPocketId === p.id ? { profile: { ...state.profile, defaultCarryPocketId: moved.newPocket.id } } : {}),
+          }
+        })
+        return ok
+      },
+
       withdrawFromSavings: (accountId, amount, currency, notes, purpose = 'income', opts) => {
         const raw = Math.max(0, Number(amount) || 0)
         if (raw <= 0) return false
@@ -1915,6 +2063,16 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => {
           const acc = state.savingsAccounts.find((a) => a.id === accountId)
           if (!acc) return state
+          // Withdraw is for outside holdings (§0). "Back to income" from a part held in an account, kept in that account,
+          // is a Release: a label, not income. Spend, debt and transfer still move real money out of the holder.
+          const heldHome = pocketHome(acc, state.paymentMethods)
+          if (purpose === 'income' && heldHome.kind === 'reserved' && (opts?.toAccountId === null || opts?.toAccountId === heldHome.accountId)) {
+            const inPart = currency === acc.currency ? raw : tryConvertWithGold(raw, currency, acc.currency, state.exchangeRates, state.settings.baseCurrency, goldQuoteOf(state))
+            const next = inPart === null ? null : withLabel(state, accountId, 'release', inPart, { key: opts?.txId, notes, date: opts?.date, occurredAt: opts?.occurredAt })
+            if (!next) return state
+            ok = true
+            return next
+          }
           const cIn =
             currency === acc.currency ? acc.currency : clampFiatToAllowed(state.settings, currency)
           const amt =
@@ -1993,10 +2151,12 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => {
           const tx = state.savingsTransactions.find((t) => t.id === id)
           if (!tx) return state
-          // A transfer is two legs — remove both and reverse each.
+          // A transfer is two legs, a move label two halves (pairId): remove both and reverse each.
           const ids = tx.transferGroupId
             ? state.savingsTransactions.filter((t) => t.transferGroupId === tx.transferGroupId).map((t) => t.id)
-            : [id]
+            : tx.pairId
+              ? state.savingsTransactions.filter((t) => t.pairId === tx.pairId).map((t) => t.id)
+              : [id]
           const removed = state.savingsTransactions.filter((t) => ids.includes(t.id))
           const balanceDelta: Record<string, number> = {}
           for (const r of removed) {

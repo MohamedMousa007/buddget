@@ -5,7 +5,7 @@ import { computeBalances } from '@/lib/accounts/balance'
 import { computeNetWorth } from '@/lib/savings/netWorth'
 import { ledgerOf } from '@/lib/savings/pocketHome'
 import { computeGoalProgress, buildGoalProgressContext } from '@/lib/goals/computeGoalProgress'
-import { createGoalPocket, depositIntoGoal, ELSEWHERE, goalHomeAccounts, savedHomeProblem, savedPocketProblem, relinkGoalPocket } from './goalPocket'
+import { createGoalPocket, depositIntoGoal, ELSEWHERE, goalHomeAccounts, savedHomeProblem, savedPocketProblem, pickGoalPocket, goalParts } from './goalPocket'
 import type { PaymentMethod } from '@/lib/store/types'
 import { TOOLS } from '@/lib/buddgy/tools/exec'
 import { refOf } from '@/lib/buddgy/tools/refs'
@@ -68,7 +68,7 @@ describe('"Where is this money?" for a goal\'s already-saved amount (QA bug 11)'
     const { pocketId, savedRecorded } = make(30000, 'CIB')
     expect(savedRecorded).toBe(true)
     expect(S().savingsAccounts.find((p) => p.id === pocketId)).toMatchObject({ heldInPaymentMethodId: 'CIB', currentBalance: 30000, type: 'vault' })
-    expect(S().savingsTransactions.at(-1)).toMatchObject({ source: 'goal_opening', isCashFlow: false, paymentMethodId: 'CIB' })
+    expect(S().savingsTransactions.at(-1)).toMatchObject({ source: 'opening', isCashFlow: false })
     expect(acct('CIB').balance).toBe(100000)
     expect(acct('CIB').free).toBe(70000)
     expect(netWorth()).toBe(before)
@@ -388,15 +388,49 @@ describe('savedPocketProblem (QA W3 P1: Pocket tab with no pocket picked fell ba
   })
 })
 
-describe('relinkGoalPocket (QA W3 P2: changing the pocket dropped the saved amount, 500 → 350)', () => {
+describe('pickGoalPocket (QA W3 P2: changing the pocket dropped the saved amount, 500 → 350)', () => {
+  const run = (linked: string[], pick: string, pockets: Array<Partial<import('@/lib/store/types').SavingsAccount> & { id: string; currentBalance: number }>) => {
+    const calls: { goal?: string[]; part?: [string, unknown] } = {}
+    pickGoalPocket({
+      savingsAccounts: pockets as never,
+      updateGoal: (_id, u) => { calls.goal = u.linkedSavingsAccountIds },
+      updateSavingsAccount: (id, u) => { calls.part = [id, u] },
+    }, { id: 'g', linkedSavingsAccountIds: linked }, pick)
+    return calls
+  }
   const pockets = [{ id: 'old', currentBalance: 500 }, { id: 'new', currentBalance: 350 }, { id: 'empty', currentBalance: 0 }]
-  it('the money already in the old pocket stays counted: the goal now shows both, the picked pocket first', () => {
-    const linked = relinkGoalPocket(['old'], pockets, 'new')
-    expect(linked).toEqual(['new', 'old'])
-    expect(linked.reduce((sum, id) => sum + pockets.find((p) => p.id === id)!.currentBalance, 0)).toBe(850)
+  it('the money already in the old pocket stays counted: the goal now shows both, the picked pocket first, as a part', () => {
+    const c = run(['old'], 'new', pockets)
+    expect(c.goal).toEqual(['new', 'old'])
+    expect(c.part).toEqual(['new', { goalId: 'g' }])
   })
   it('an empty old pocket is let go, and picking the same pocket changes nothing', () => {
-    expect(relinkGoalPocket(['empty'], pockets, 'new')).toEqual(['new'])
-    expect(relinkGoalPocket(['old'], pockets, 'old')).toEqual(['old'])
+    expect(run(['empty'], 'new', pockets).goal).toEqual(['new'])
+    expect(run(['old'], 'old', pockets).goal).toEqual(['old'])
+  })
+  it('a pocket another goal still lists is linked but never stamped with this goal', () => {
+    const calls: { part?: unknown } = {}
+    pickGoalPocket({
+      savingsAccounts: [{ id: 'shared', currentBalance: 5 }] as never,
+      goals: [{ id: 'other', linkedSavingsAccountIds: ['shared'] }] as never,
+      updateGoal: () => undefined,
+      updateSavingsAccount: (_id, u) => { calls.part = u },
+    }, { id: 'g', linkedSavingsAccountIds: [] }, 'shared')
+    expect(calls.part).toBeUndefined()
+  })
+  it('one part per home (I-13): a second pocket in an account where the goal has a part is linked, not made a part', () => {
+    const c = run(['a'], 'b', [{ id: 'a', currentBalance: 5, goalId: 'g', heldInPaymentMethodId: 'CIB' }, { id: 'b', currentBalance: 5, heldInPaymentMethodId: 'CIB' }])
+    expect(c.part).toBeUndefined()
+    expect(c.goal).toEqual(['b', 'a'])
+  })
+})
+
+describe('goalParts (what a goal delete may touch)', () => {
+  const acc = (id: string, goalId?: string) => ({ id, goalId, currentBalance: 1 }) as never
+  it('goal_id or listed by the goal (cached rows), never a pocket another goal lists', () => {
+    const goal = { id: 'g', linkedSavingsAccountIds: ['cached', 'shared'] }
+    const goals = [goal, { id: 'h', linkedSavingsAccountIds: ['shared'] }]
+    const ids = goalParts(goal, goals, [acc('part', 'g'), acc('cached'), acc('shared'), acc('other', 'h')]).map((a: { id: string }) => a.id)
+    expect(ids).toEqual(['part', 'cached'])
   })
 })

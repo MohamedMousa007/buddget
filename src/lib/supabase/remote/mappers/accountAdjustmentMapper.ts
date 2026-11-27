@@ -8,6 +8,7 @@ export function accountAdjustmentToRow(a: AccountAdjustment, userId: string): Ad
   return {
     id: a.id, user_id: userId, payment_method_id: a.paymentMethodId, delta: a.delta, reason: a.reason,
     occurred_at: a.occurredAt, note: a.note ?? null, created_at: a.createdAt, edited_at: a.updatedAt,
+    ...(a.anchorBalance != null ? { anchor_balance: a.anchorBalance } : {}),
   }
 }
 
@@ -16,5 +17,6 @@ export function accountAdjustmentFromRow(row: AdjRow): AccountAdjustment {
     id: row.id, paymentMethodId: row.payment_method_id, delta: row.delta,
     reason: row.reason as AccountAdjustment['reason'], occurredAt: row.occurred_at,
     note: row.note ?? undefined, createdAt: row.created_at, updatedAt: row.edited_at,
+    ...(row.anchor_balance != null ? { anchorBalance: row.anchor_balance } : {}),
   }
 }

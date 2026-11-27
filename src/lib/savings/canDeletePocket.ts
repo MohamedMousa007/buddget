@@ -1,7 +1,11 @@
 import type { SavingsAccount, UserProfile } from '@/lib/store/types'
 import { SYSTEM_VAULT_NAME } from '@/lib/savings/pocketIdentity'
 
-export type PocketDeleteVerdict = { ok: true } | { ok: false; reason: 'default' | 'only' }
+export type PocketDeleteVerdict = { ok: true } | { ok: false; reason: 'system' | 'default' | 'only' }
+
+/** Monthly savings (I-13): undeletable; rename is fine, and it hides when empty. */
+export const isMonthlySavingsPart = (p: Pick<SavingsAccount, 'isMonthlySavings' | 'type' | 'name'>): boolean =>
+  !!p.isMonthlySavings || (p.type === 'vault' && p.name === SYSTEM_VAULT_NAME)
 
 export function canDeletePocket(
   state: { savingsAccounts: SavingsAccount[]; profile: Pick<UserProfile, 'defaultCarryPocketId'> },
@@ -9,6 +13,7 @@ export function canDeletePocket(
 ): PocketDeleteVerdict {
   const pocket = state.savingsAccounts.find((a) => a.id === id)
   if (!pocket) return { ok: true }
+  if (isMonthlySavingsPart(pocket)) return { ok: false, reason: 'system' }
   if (pocket.category === 'savings' && !state.savingsAccounts.some((a) => a.id !== id && a.category === 'savings')) {
     return { ok: false, reason: 'only' }
   }

@@ -65,7 +65,7 @@ export function goalJourney(
   let months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth())
   if (now.getDate() < start.getDate()) months -= 1
   const fromDay = localDay(start)
-  const deposits = depositsInto(goal, txs).filter((t) => t.date.slice(0, 10) >= fromDay && t.source !== 'goal_opening').length
+  const deposits = depositsInto(goal, txs).filter((t) => t.date.slice(0, 10) >= fromDay && t.source !== 'goal_opening' && t.source !== 'opening').length
   return { months: Math.max(0, months), deposits }
 }
 

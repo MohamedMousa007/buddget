@@ -7,6 +7,8 @@ import { balanceDelta, balanceSave } from './balanceEdit'
 import { DEFAULT_CASH_ID, isTracked } from './kinds'
 import { removePaymentMethod } from './removePaymentMethod'
 import { cashAccountId } from './resolve'
+import { ownerPartIn } from '@/lib/savings/labels'
+import { partId } from '@/lib/savings/partId'
 
 const store = () => useFinanceStore.getState()
 
@@ -80,7 +82,10 @@ export function setAside(fromId: string, pocketId: string, amount: number, curre
   store().depositToSavings(pocketId, amount, currency, undefined, { mode: 'declare', paymentMethodId: fromId, date: localTodayISO(at), occurredAt: at.toISOString() })
 }
 
-/** "What does your bank show now?": records the difference as an explicit adjustment, never as an expense. */
+/**
+ * "What does your bank show now?": an anchor (I-1), the bank's balance at this instant. Rows dated before it are inside
+ * it; `delta` keeps the difference for display. Never an expense.
+ */
 export function updateBalance(accountId: string, current: number, reported: number, reason: 'manual_update' | 'gap' = 'manual_update'): number {
   const account = store().paymentMethods.find((m) => m.id === accountId)
   const save = balanceSave(accountId !== DEFAULT_CASH_ID && (!account || isTracked(account)), current, reported, account ? String(account.currency) : '')
@@ -89,8 +94,41 @@ export function updateBalance(accountId: string, current: number, reported: numb
     return balanceDelta(current, reported, account ? String(account.currency) : '')
   }
   if (save.kind === 'none') return 0
-  store().addAccountAdjustment({ paymentMethodId: accountId, delta: save.delta, reason, occurredAt: new Date().toISOString() })
+  store().addAccountAdjustment({ paymentMethodId: accountId, delta: save.delta, anchorBalance: reported, reason, occurredAt: new Date().toISOString() })
   return save.delta
+}
+
+/**
+ * "Where is this money?" (§4.9), money that was already saved: an `opening` label, never income, never this month's
+ * saving. In Cash at home it first raises Cash by the amount (an anchor, reason `opening_correction`), since that money
+ * was never in the ledger; an untracked Cash gets its opening balance. Elsewhere the account already holds it.
+ * `partId` must already exist (see {@link ensureGoalPart}). False when refused.
+ */
+export function addAlreadySaved(partId: string, amount: number, at: Date = new Date()): boolean {
+  const s = store()
+  const part = s.savingsAccounts.find((p) => p.id === partId)
+  if (!part || !(amount > 0)) return false
+  const cash = part.heldInPaymentMethodId ? s.paymentMethods.find((m) => m.id === part.heldInPaymentMethodId && m.type === 'cash') : undefined
+  if (cash) {
+    const current = computeBalances(ledgerOf(s)).get(cash.id)?.balance
+    if (current == null) setOpeningBalance(cash.id, amount, at)
+    else s.addAccountAdjustment({ paymentMethodId: cash.id, delta: amount, anchorBalance: current + amount, reason: 'opening_correction', occurredAt: at.toISOString() })
+  }
+  return store().setAsideInPart(partId, amount, { source: 'opening', date: localTodayISO(at), occurredAt: new Date(at.getTime() + 1).toISOString() })
+}
+
+/** The goal's part in `accountId`: the existing one, else a new row with the deterministic id (§4.7), linked to the goal. */
+export function ensureGoalPart(goalId: string, accountId: string): string | null {
+  const s = store()
+  const goal = s.goals.find((g) => g.id === goalId)
+  const account = s.paymentMethods.find((m) => m.id === accountId)
+  if (!goal || !account) return null
+  const existing = ownerPartIn(s.savingsAccounts, { goalId }, accountId)
+  const id = existing?.id ?? s.addSavingsAccount({
+    id: partId({ goalId }, accountId), name: goal.name, category: 'savings', type: 'vault', currency: account.currency as Currency, goalId, heldInPaymentMethodId: accountId,
+  } as Parameters<FinanceStore['addSavingsAccount']>[0])
+  if (!goal.linkedSavingsAccountIds.includes(id)) s.updateGoal(goalId, { linkedSavingsAccountIds: [...goal.linkedSavingsAccountIds, id] })
+  return id
 }
 
 /** Closed accounts keep their history; their cards become standalone cards. */
