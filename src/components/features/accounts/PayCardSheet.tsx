@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card'
 import { DatePickerField } from '@/components/ui/DatePickerField'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { useActionToast } from '@/components/ui/ActionToast'
+import { useSubmitOnce } from '@/hooks/useSubmitOnce'
 import { paysFrom } from '@/lib/accounts/cardHold'
 import { defaultMethodId, storedMethodId } from '@/lib/accounts/resolve'
 import { reconcileDebtSchedule } from '@/lib/debts/recurringDebtDueHandlers'
@@ -53,6 +54,7 @@ export function PayCardSheet({ open, onClose, debt, name, owed, dueNow, plansDue
   const [date, setDate] = useState(() => localTodayISO())
   const [from, setFrom] = useState(() => paysFrom(debt, { paymentMethods, debtPayments }) ?? defaultMethodId(paymentMethods))
   const [error, setError] = useState('')
+  const submit = useSubmitOnce(open)
   const money = (n: number) => moneyFlex(n, cur)
   const full = Math.round(dueNow * 100) / 100
   const typed = parseFloat(amount)
@@ -70,6 +72,7 @@ export function PayCardSheet({ open, onClose, debt, name, owed, dueNow, plansDue
     const rec = computeDebtPaymentRecord(debt, typed, currency, settings.baseCurrency, s.exchangeRates, s.goldPricePerGram, s.debtPayments,
       { expenses: s.expenses, exchangeRates: s.exchangeRates, allDebts: s.debts })
     if (!rec.ok) { setError(rec.error); return }
+    if (!submit.claim()) return
     s.addDebtPayment({
       debtId: debt.id,
       date,
@@ -91,7 +94,7 @@ export function PayCardSheet({ open, onClose, debt, name, owed, dueNow, plansDue
       footer={<Button size="cta-block" onClick={save} disabled={!(typed > 0) || !from}>{c.payCard}</Button>}>
       <AmountHero value={amount} onChange={(v) => { setAmount(v); setError('') }} currency={currency}
         onCurrencyChange={(code) => { setCurrency(code); setError('') }} base={settings.baseCurrency} line={line} className="px-0 pb-0" />
-      {owed > 0 ? (
+      {owed > 0 && full > 0 ? (
         <div className="-mt-2 flex justify-center">
           <OptionChip selected={isFull} onClick={() => { setCurrency(cur); setAmount(String(full)); setError('') }} className="h-11 rounded-full px-4 text-[0.875rem]">
             {c.fullAmount} <span className="font-mono-numbers">{money(full)}</span>

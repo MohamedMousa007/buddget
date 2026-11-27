@@ -20,7 +20,7 @@ import { followsAccountCurrency } from '@/lib/accounts/actions'
 import { availableCredit, cardDetails, sheetActivity } from '@/lib/accounts/cardDetails'
 import { cardLook } from '@/lib/payment/cardThemes'
 import { faceOf } from '@/lib/payment/cardFaces'
-import { cardHoldBack, cardPlansOf, cardUnbilledPlans } from '@/lib/debt/computeCreditCardBalance'
+import { cardPlanSummary } from '@/lib/accounts/cardPlanSummary'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import { CalendarClock, Info } from 'lucide-react'
 import { PayCardSheet } from './PayCardSheet'
@@ -82,30 +82,10 @@ export function CardDetailSheet({ open, onClose, card, parent, masked, onEdit, o
   const look = cardLook(card)
   // The card's plans live inside it (§4.10): owed once, shown as "X on the card + Y in N plans" and an Installments row.
   const creditDebt = card.type === 'credit_card' ? debts.find((d) => d.debtType === 'credit_card' && d.linkedPaymentMethodId === card.id) : undefined
-  const plans = useMemo(() => {
-    if (!creditDebt) return null
-    const convert = (a: number, from: string, to: string) => tryConvertCurrency(a, from, to, rates)
-    const toCard = (n: number, cur: string) => (cur === creditDebt.currency ? n : convert(n, cur, String(creditDebt.currency)) ?? 0)
-    const rows = { expenses, payments, debts }
-    const now = new Date()
-    const list = cardPlansOf(creditDebt, debts, expenses).filter((p) => p.status !== 'cleared').map((p) => {
-      const paid = payments.filter((x) => x.debtId === p.id)
-      const per = p.installmentAmount ?? (p.installmentCount ? p.startingBalance / p.installmentCount : 0)
-      return {
-        id: p.id, name: p.name, paidCount: paid.length, count: p.installmentCount ?? 0,
-        month: toCard(per, String(p.currency)),
-        left: toCard(Math.max(0, p.startingBalance - paid.reduce((n, x) => n + x.amountPaid, 0)), String(p.currency)),
-      }
-    })
-    const left = list.reduce((n, p) => n + p.left, 0)
-    const unbilled = cardUnbilledPlans(creditDebt, rows, convert, now)
-    return {
-      list, left,
-      month: list.reduce((n, p) => n + p.month, 0),
-      dueNow: cardHoldBack(creditDebt, rows, convert, now),
-      plansDue: Math.max(0, left - unbilled),
-    }
-  }, [creditDebt, debts, expenses, payments, rates])
+  const plans = useMemo(
+    () => (creditDebt ? cardPlanSummary(creditDebt, { expenses, payments, debts }, (a, from, to) => tryConvertCurrency(a, from, to, rates), new Date()) : null),
+    [creditDebt, debts, expenses, payments, rates],
+  )
   const money = (n: number, cur: string) => (masked ? MASK : moneyFlex(n, cur))
 
   const items = [
@@ -153,20 +133,20 @@ export function CardDetailSheet({ open, onClose, card, parent, masked, onEdit, o
         ) : null}
         {plans && plans.left > 0 && owed > 0 ? (
           <p dir="auto" className="mt-0.5 text-end font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">
-            {v9.owedSplit(money(Math.max(0, owed - plans.left), details.currency), money(plans.left, details.currency), plans.list.length)}
+            {v9.owedSplit(money(Math.max(0, owed - plans.left), details.currency), money(plans.left, details.currency), plans.plans.length)}
           </p>
         ) : null}
         {facts ? <p dir="auto" className="mt-2 text-xs text-[var(--color-brand-text-secondary)]">{facts}</p> : null}
-        {plans && plans.list.length > 0 ? (
+        {plans && plans.plans.length > 0 ? (
           <div className="mt-3 border-t border-[var(--color-brand-border)] pt-3">
             <p className="flex items-center gap-2.5 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
               <CalendarClock aria-hidden className="size-[18px] shrink-0" />
               <span dir="auto" className="min-w-0 flex-1">
                 <b className="font-semibold text-[var(--color-brand-text-primary)]">{v9.installments}</b>{' '}
-                {v9.installmentsLine(plans.list.length, money(plans.month, details.currency), money(plans.left, details.currency))}
+                {v9.installmentsLine(plans.plans.length, money(plans.month, details.currency), money(plans.left, details.currency))}
               </span>
             </p>
-            {plans.list.map((p) => (
+            {plans.plans.map((p) => (
               <button key={p.id} type="button" onClick={() => { (onLeave ?? onClose)(); router.push('/debts') }} data-raw-button-ok="a card plan row, a whole-row tap target"
                 className="mt-1 flex min-h-11 w-full items-center gap-3 rounded-xl px-1 text-start hover:bg-[var(--color-brand-elevated)]">
                 <span className="min-w-0 flex-1">

@@ -150,7 +150,6 @@ export interface AccountsLtCopy {
     fullAmount: string
     from: string
     date: string
-    today: string
     payNote: string
     paySaved: string
     clearsWithPlans: (card: string, plans: string) => string
@@ -162,13 +161,13 @@ export interface AccountsLtCopy {
     installmentsLine: (n: number, month: string, left: string) => string
     planProgress: (paid: number, of: number, month: string) => string
     planLeft: (amount: string) => string
-    nothingOwed: string
     setAsideTitle: string
     setAsideSub: (amount: string) => string
     pockets: string
     goals: string
     inAccount: (account: string) => string
     inPlaces: (parts: string[]) => string
+    amountIn: (amount: string, account: string) => string
     notCovered: (amount: string) => string
     shortWarn: (account: string, amount: string) => string
     setAsideFootnote: string
@@ -317,7 +316,6 @@ export const ACCOUNTS_LT_COPY: Record<Locale, AccountsLtCopy> = {
       fullAmount: 'Full amount',
       from: 'From',
       date: 'Date',
-      today: 'Today',
       payNote: 'The money leaves that account and what you owe on the card goes down. It isn’t counted as spending; the purchases already were.',
       paySaved: 'Card payment saved',
       clearsWithPlans: (c, p) => `Clears what’s due now: ${c} + ${p} in installments`,
@@ -329,13 +327,13 @@ export const ACCOUNTS_LT_COPY: Record<Locale, AccountsLtCopy> = {
       installmentsLine: (n, m, l) => `${n} ${n === 1 ? 'plan' : 'plans'} · ${m} a month · ${l} left`,
       planProgress: (p, of, m) => `${p} of ${of} · ${m} a month`,
       planLeft: (a) => `${a} left`,
-      nothingOwed: 'Nothing owed right now',
       setAsideTitle: 'Set aside',
       setAsideSub: (a) => `${a} kept for pockets and goals`,
       pockets: 'Pockets',
       goals: 'Goals',
       inAccount: (a) => `In ${a}`,
       inPlaces: (parts) => parts.join(' · '),
+      amountIn: (a, acc) => `${a} in ${acc}`,
       notCovered: (a) => `${a} not covered`,
       shortWarn: (acc, a) => `${acc} is short ${a}.`,
       setAsideFootnote: 'Set-aside money stays in its account, so the balance doesn’t change. It’s left out of Free to spend so you don’t spend it by accident.',
@@ -482,7 +480,6 @@ export const ACCOUNTS_LT_COPY: Record<Locale, AccountsLtCopy> = {
       fullAmount: 'المبلغ كامل',
       from: 'من',
       date: 'التاريخ',
-      today: 'اليوم',
       payNote: 'يخرج المبلغ من ذلك الحساب وينقص ما تدين به على البطاقة. لا يُحسب كمصروف؛ المشتريات حُسبت من قبل.',
       paySaved: 'تم حفظ سداد البطاقة',
       clearsWithPlans: (c, p) => `يغطي المستحق الآن: ${c} + ${p} أقساط`,
@@ -494,13 +491,13 @@ export const ACCOUNTS_LT_COPY: Record<Locale, AccountsLtCopy> = {
       installmentsLine: (n, m, l) => `${arPlural(n, AR_PLAN)} · ${m} شهريًا · يتبقى ${l}`,
       planProgress: (p, of, m) => `${p} من ${of} · ${m} شهريًا`,
       planLeft: (a) => `يتبقى ${a}`,
-      nothingOwed: 'لا يوجد مستحق الآن',
       setAsideTitle: 'المُخصَّص',
       setAsideSub: (a) => `${a} مُخصَّص للجيوب والأهداف`,
       pockets: 'الجيوب',
       goals: 'الأهداف',
       inAccount: (a) => `في ${a}`,
       inPlaces: (parts) => parts.join(' · '),
+      amountIn: (a, acc) => `${a} في ${acc}`,
       notCovered: (a) => `${a} غير مغطّى`,
       shortWarn: (acc, a) => `${acc} ناقص ${a}.`,
       setAsideFootnote: 'المال المُخصَّص يبقى في حسابه، فلا يتغير الرصيد. يُستبعد من «متاح للصرف» حتى لا تصرفه بالخطأ.',

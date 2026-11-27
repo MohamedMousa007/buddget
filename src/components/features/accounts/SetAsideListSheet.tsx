@@ -78,7 +78,7 @@ export function SetAsideListSheet({ open, onClose, onShort }: { open: boolean; o
       return {
         key, name, tile: parts[0],
         amount: parts.reduce((n, p) => n + toBase(p.currentBalance, String(p.currency)), 0),
-        where: places.length === 1 ? c.v9.inAccount(places[0].name) : c.v9.inPlaces(places.map((x) => c.v9.inAccount(`${x.name} · ${x.amount}`))),
+        where: places.length === 1 ? c.v9.inAccount(places[0].name) : c.v9.inPlaces(places.map((x) => c.v9.amountIn(x.amount, x.name))),
         notCovered: parts.reduce((n, p) => n + toBase(Math.max(0, p.currentBalance - (cov.get(p.id) ?? p.currentBalance)), String(p.currency)), 0),
       }
     }

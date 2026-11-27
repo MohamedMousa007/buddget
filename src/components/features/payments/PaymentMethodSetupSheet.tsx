@@ -270,8 +270,9 @@ export function PaymentMethodSetupSheet({
     const use4 = last4.length > 0 && isSavableTail(last4)
     const words = label.trim()
     const name = composePaymentMethodName(provider, { last4: use4 ? last4 : undefined })
-    // `color` stays a real hex (avatars and tints read it): the theme's first stop, or an edited method's own colour until a theme is picked.
-    const color = editing?.color && !themePicked ? editing.color : CARD_COLOURS[effectiveFace.colour][0]
+    // `color` stays a real hex (avatars and tints read it): an edited method's own colour, else the brand's, until a face is
+    // picked; then the face colour's first stop.
+    const color = themePicked ? CARD_COLOURS[effectiveFace.colour][0] : editing?.color ?? (brand ? brand.colors[0] : CARD_THEMES[effectiveTheme].a)
     const look = encodeFace(effectiveFace)
     const payload = { name, type, currency: curCode, color, cardStyle: look.cardStyle, cardTheme: look.cardTheme, isDefault, paysFromPaymentMethodId, ...(use4 ? { last4 } : {}), ...(words ? { label: words } : {}) }
     let pmId: string

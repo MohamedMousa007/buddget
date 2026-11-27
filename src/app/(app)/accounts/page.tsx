@@ -424,7 +424,7 @@ export default function AccountsPage() {
       ) : null}
       <PaymentMethodSetupSheet open={sheet?.kind === 'addCard'} prefill={sheet?.kind === 'addCard' ? sheet.prefill ?? null : null} editing={null} baseCurrency={settings.baseCurrency} extraChoices={['store']} excludeTypes={['wallet']} nested onClose={close} />
       <AddAccountSheet key={addKey} open={addOpen} prefill={accountPrefill ?? undefined} onClose={close} pushCardStep onOnlyCard={() => { clearAccountPrefill(); setSheet({ kind: 'addCard' }) }} />
-      <SetAsideListSheet open={sheet?.kind === 'setAside'} onClose={close} onShort={(id) => setSheet({ kind: 'short', id })} />
+      {sheet?.kind === 'setAside' ? <SetAsideListSheet open onClose={close} onShort={(id) => setSheet({ kind: 'short', id })} /> : null}
       <DetectedAccountsSheet open={foundSheetOpen} onClose={close} onManual={() => setSheet({ kind: 'add' })} />
       <UnplacedSmsSheet key={unplaced.length} open={sheet?.kind === 'unplaced'} onClose={close} items={unplaced} accounts={model.accounts} />
     </div>
