@@ -1,25 +1,39 @@
-# buddget money model: logic spec (v1, 2026-11-27)
+# buddget money model: logic spec (v2, 2026-11-27)
 
-The one definition engineers build. Sources, in priority order: owner rules (end of `COUNCIL_DECISIONS.md`) > Deep logic check > Final revision > Consolidated model > earlier rounds. Code read: `origin/main` at `c3b9790a`; the latest migration is 0354. Live counts quoted below are "per council, 2026-11-27". **Re-run every count before applying a migration.**
+This is the one definition engineers build.
+
+- **Sources, in priority order:** owner rules (end of `COUNCIL_DECISIONS.md`), then the session-lead decisions on the v1 council attack (`spec_review.md`), then the Deep logic check, then the Final revision, then the Consolidated model, then earlier rounds.
+- **Code read:** `origin/main` at `c3b9790a`; the latest migration is 0354.
+- **Live counts** quoted here are the council's, from 2026-11-27. **Re-run every count before applying a migration.**
+- **v2 changes:**
+  - Old native builds are handled by a required update (UpdateGate) instead of compatibility machinery.
+  - `savings_accounts.goal_id` replaces the polymorphic `item_id`.
+  - Pockets keep one home.
+  - The split is stored in `profiles.savings_split`.
+  - Month-end extends `savings_month_summary`.
+  - Release is not counted in `savedNet`.
+  - Undo of a month-end reverts the goal completion it caused.
 
 ## 0. Which rule wins (conflicts in the sources, settled)
 
 | Topic | Rule that wins | Rule it replaces |
 |---|---|---|
-| Achieved goal | Completed for good. It never returns to active, and has no "now X below target" or "X no longer set aside" copy. | Deep fix 9, Final rev 5 |
-| Card hold-back | Everything owed on the card except unbilled plan principal (Deep fix 2). | Final rev 2: "statement + this month's instalment" |
+| Achieved goal | Completed for good. It never returns to active, and has no "below target" or "no longer set aside" copy. **The only exception:** Undo of the month-end that completed it reverts that completion in the same transaction. | Deep fix 9, Final rev 5 |
+| Card hold-back | Everything owed on the card except unbilled plan principal (Deep fix 2). | Final rev 2 |
 | Shortfall trigger | Any drop of the bank-aligned balance, after SMS pairing, with no timer. | Round 4: 24h grace |
-| Shortfall choices | It's in another account / I spent it / Keep for now. | Round 4: Move / I spent it / Ignore (renamed) |
+| Shortfall choices | It's in another account / I spent it / Keep for now. Applied repeatedly to whatever is still short. | Round 4: Move / I spent it / Ignore |
 | Month-end scope | Every live account, each in its own currency. | Round 4 and Audit: base currency only |
-| Fill order | Each item's existing parts first, then the account with the most remaining free money. | Round 5: proportional spread |
-| Closed months | Never reopened. A late row counts in the month it arrives. `carryAdjust.ts`, drift and `priorAdjustment` are retired. | `carryAdjust.ts`, `closedCycleDrift` |
-| Allocator | One allocator, "Where your monthly savings go" (% lines, at most 100% in total, rest goes to Monthly savings). | Goal share/fixed engine (`allocateMonth.ts`), default carry pocket, top-priority-goal routing |
-| Release / "I spent it" | Labels only. They never move a balance. | Today's withdrawal path (rule 8 moves the holder) |
-| Free money | Can be negative. It is never clamped at 0. | `balance.ts:110` `Math.max(0, …)` |
-| Outside money | Gold or other assets only. Cash goes to the Cash account. An untracked bank is added as an account. | Round 3: cash/untracked bank as outside items |
-| Money in a closed account | Counts zero. It is never counted as outside money. | `netWorthBasis.ts:484` (counts it standalone) |
-| Card plan | Owed once, inside the card. The full price is spending at purchase. Instalments are settlements. | A separate installment debt plus `Debt`-category instalment spend |
-| Cut for now | The "+X from rate changes" label (show the note "includes rate changes"), a multi-home editor, the "Is this money in the new bank?" prompt, and new emergency fund or Zakat work. | Round 5 |
+| Fill order | Goal and Monthly savings parts: existing parts first, then the account with the most remaining free money. A pocket fills only its one home; its overflow goes to Monthly savings. | Round 5: proportional spread |
+| Closed months | Never reopened. A late row counts in the month it arrives. `carryAdjust.ts`, drift and `priorAdjustment` are deleted. | `carryAdjust.ts`, `closedCycleDrift` |
+| Allocator | One split, `profiles.savings_split` (% per goal or pocket, at most 100% in total, the rest goes to Monthly savings). To edit a proposal, change the split and re-propose. | Goal share/fixed engine, default carry pocket, top-goal routing |
+| Release / "I spent it" | Labels only. They never move a balance. Release is not counted in `savedNet`. | Today's withdrawal path (rule 8) |
+| Free money | Can be negative. It is never clamped at 0. | `balance.ts:110` |
+| Withdraw | For gold and other outside holdings only. Money set aside in a bank or in Cash uses Release. | Round 3 |
+| Money in a closed account | Counts zero. | `netWorthBasis.ts:484` |
+| Parts in an untracked account | Counted standalone, listed for repair ("What's the balance of X?"). No new ones: `canHoldParts` refuses untracked accounts. | Implicit third outside kind |
+| Card plan | Owed once, inside the card. Full price is spending at purchase. Instalments written after the cutover are settlements. Past rows are left as they were. | Separate debt plus `Debt`-category instalments |
+| Old native builds | P2 ships with a required update (UpdateGate min-version bump). No compatibility triggers. | v1 §3.4 machinery |
+| Cut for now | "+X from rate changes" (show the note "includes rate changes" instead), multi-home editor, "Is this money in the new bank?", new emergency fund or Zakat work, editing a month-end proposal line by line. | Round 5, v1 |
 
 ## 1. Glossary
 
@@ -28,482 +42,441 @@ The one definition engineers build. Sources, in priority order: owner rules (end
 | Free to spend | متاح للإنفاق | `free(A)`, `freeTotal` | Balance − set aside − card hold-back. Can be < 0 ("Free to spend −X"). |
 | in your accounts | في حساباتك | `Σ balance(A)` | Sum of live account balances. |
 | Set aside | مُخصَّص | `held(A)` | Sum of the parts held in A, in A's currency. |
-| Pocket | جيب | item with no target | A reserve. It can have parts in several accounts. |
-| Goal | هدف | `goals` row with a target, plus its parts | A target (amount, date, its own unit). It owns its parts. |
-| Monthly savings | المدخرات الشهرية | system item, `item_id = systemVaultId(user)` | An undeletable item that holds the rest of month-end. One part per account. Hides when empty. |
-| Where your monthly savings go | وين تروح مدخراتك الشهرية | `savings_split_lines` | % lines per item (Σ ≤ 100). The rest goes to Monthly savings. |
-| Month-end card | بطاقة نهاية الشهر | `month_end_proposals` row | The proposal: confirm, edit, or let it apply itself after 3 days. Undo is available. |
+| Pocket | جيب | part with `goal_id NULL`, `is_monthly_savings=false` | A reserve with one home. |
+| Goal | هدف | `goals` row + parts with `goal_id` | A target (amount, date, its own unit). It can have parts in several accounts. |
+| Monthly savings | المدخرات الشهرية | parts with `is_monthly_savings=true` | Undeletable. One part per account. Hides when empty. |
+| Where your monthly savings go | وين تروح مدخراتك الشهرية | `profiles.savings_split` | `[{target_id, pct}]`, Σ ≤ 100. The rest goes to Monthly savings. |
+| Month-end card | بطاقة نهاية الشهر | `savings_month_summary` row, `status='proposed'` | Confirm, or let it apply after 3 days. Undo is available. |
 | Short X | ناقص X | `short(A)` | Set aside − balance, when positive. Card money never counts. |
-| Release | رجّعه للمتاح | label `release` | "Stays in CIB, back to Free to spend". |
-| I spent it | صرفته | label `spent` | The money already left (it was counted as spending). The part shrinks. |
-| It's in another account | في حساب تاني | label pair `move` | The part's money now sits in another live account. |
-| Keep for now | خليه دلوقتي | dismiss | The notice is dismissed. The row keeps "Short X" and progress counts only the covered part. |
-| Withdraw | اسحب | real withdrawal | Only for gold, cash-like or other outside holdings. Money moves into an account. |
+| Release | رجّعه للمتاح | label `release` | Sheet copy: "Stays in CIB, back to Free to spend. It won't be set aside again automatically." |
+| I spent it | صرفته | label `spent` | Only in the shortfall flow and when closing an account. The money already left. |
+| It's in another account | في حساب تاني | labels `move_out` / `move_in` | The money now sits in another live account. |
+| Keep for now | خليه دلوقتي | dismiss | The row keeps "Short X". Progress counts only the covered part. |
+| Withdraw | اسحب | real withdrawal | Only for gold and other outside holdings. Money goes into an account (a leg). |
 | Outside holding | خارج الحسابات | part with `held_in IS NULL` | Gold or another asset no SMS sees. |
-| Saved and invested | المدخر والمستثمر | Savings-page sum | Parts + investments. It is not net worth (one-line explainer). |
+| Saved and invested | المدخر والمستثمر | Savings-page sum | Not net worth (one-line explainer). |
 | Net worth | صافي الثروة | `netWorth` | Shown on Accounts only. |
-| Achieved | مُنجَز | `goals.status='achieved'` | Final. |
+| Achieved | مُنجَز | `goals.status='achieved'` | Final (see §0). |
 | Salary / Income | راتب / دخل | copy only | "Salary" only for salary sources. |
 
-Data words: **item** = goal, pocket or Monthly savings (`savings_accounts.item_id`). **Part** = one `savings_accounts` row: one item, one home, one currency. **Home** = `held_in_payment_method_id` (a live account) or NULL (outside). **Label** = a `savings_transactions` row that changes a part and never an account. **Leg** = a ledger effect on an account balance (`walkLegs`). **Live account** = see I-11.
+**Data words:**
+- **Part:** one `savings_accounts` row with one home and one currency.
+- **Home:** `held_in_payment_method_id` (a live account) or NULL (outside).
+- **Label:** a `savings_transactions` row that changes a part and never an account.
+- **Leg:** an effect on an account balance (`walkLegs`).
+- **Live account:** see I-11.
 
-## 2. Invariants (every screen, job and test keeps these)
+## 2. Invariants
 
-- **I-1. Bank truth.** For a live account A, `balance(A, t)` = the latest anchor at or before t (opening balance or SMS/user-reported balance) + the legs after that anchor, up to t. A reported balance becomes an anchor. A row dated before the anchor is inside it and is never counted twice.
-- **I-2. Set aside.** `held(A) = Σ part.balance` over the parts with `held_in = A` and `deleted_at IS NULL`. Every part held in A is in A's currency (enforced at write).
-- **I-3. Free.**
-  - `free(A) = balance(A) − held(A) − cardHold(A)`. It is a real number and may be negative.
-  - `short(A) = max(0, held(A) − balance(A))`. `cardHold` is never part of `short`.
-- **I-4. Labels.**
-  - Set aside, release, spent, move, month-end, month-end undo and close are labels.
-  - They change `part.balance` only. They never change any `balance(A)`.
-- **I-5. Net worth.** `NW = Σ_{A live, not excluded} balance(A)→base + Σ outside parts→base + investments − debts`.
+- **I-1 Bank truth.** `balance(A,t)` = latest anchor ≤ t (opening balance, or an `account_adjustments` row with `anchor_balance`) + the legs after it, up to t. A row dated before the latest anchor is inside it.
+- **I-2 Set aside.** `held(A) = Σ part.current_balance` over the live parts with `held_in = A`. Every such part is in A's currency.
+- **I-3 Free and short.**
+  - `free(A) = balance(A) − held(A) − cardHold(A)`. It is unclamped.
+  - `short(A) = max(0, held(A) − balance(A))`. `cardHold` never counts toward `short`.
+- **I-4 Labels.** Set aside, opening, release, spent, move, month-end, month-end undo and close change `part.current_balance` only. They never change any `balance(A)`.
+- **I-5 Net worth.** `NW = Σ_{A live, !excluded} balance(A)→base + Σ outside parts→base + Σ parts in untracked open accounts→base + investments − debts`.
   - Held parts count 0 extra times.
-  - Parts whose holder is closed or deleted count 0.
-  - A card plan is owed once, inside the card.
-- **I-6. Goal progress.** `progress(G) = Σ covered(p)→goal unit` over G's parts, at live rates. Missing price: use the last price, with a warning and its date.
-- **I-7. Month-end cap.**
-  - `placed ≤ min(leftover, Σ cap(A))` and `placed(A) ≤ cap(A)`.
-  - `cap(A) = max(0, min(free(A, cycleEnd), free(A, applyTime)))`.
+  - Parts in closed or deleted accounts count 0.
+  - A card plan is owed once.
+- **I-6 Goal progress.** `progress(G) = Σ covered(p)→G unit` over G's parts, at live rates. A missing price uses the last price, with a warning.
+- **I-7 Month-end cap.**
+  - `placed(A) ≤ cap(A) = max(0, min(free(A, cycleEnd), free(A, now)))`. This holds at propose **and** at apply.
+  - `placed ≤ min(leftover, Σ cap)`.
   - `leftover = income − spending − savedNet − unexplainedOut`.
-- **I-8. Not income, not spending.** Own transfers, card bill payments, card-plan and BNPL instalments, opening balances, outside-money entry and labels.
-- **I-9. Once.** Each `(user, month_key)` has at most one proposal row, and at most one application of it, enforced by compare-and-set (CAS) on `version` inside one SQL transaction.
-- **I-10. Booked rate.** A cross-currency row stores the amount it moved in the account's currency (`account_amount` / `to_account_amount`), or its booked rate. Reads never re-convert it at today's rate.
-- **I-11. One live-account rule.** `isLiveAccount(pm) = isTracked(pm) && !pm.closedAt && !deleted`. The same rule is used by the client, the server, net worth and month-end. `canHoldParts(pm) = isLiveAccount(pm) && !pm.excluded`.
-- **I-12. Achieved is final.** `status` never leaves `'achieved'`. This is enforced by a DB trigger and by every writer.
-- **I-13. One part per (item, account).** Enforced by a unique partial index.
-- **I-14. Closing.** An account with `held(A) > 0` cannot close until "Where did this money go?" is answered. After the answer, `held(A) = 0`.
+- **I-8 Not income, not spending.** Own transfers, card bills, card-plan and BNPL instalments (rows written after the cutover), opening balances, outside-money entry, labels.
+- **I-9 Once.** One `savings_month_summary` row per `(user, month_key)`, applied at most once. Enforced by CAS on `version` inside one SQL transaction.
+- **I-10 Booked rate.** A cross-currency row **written after P2** stores `account_amount` / `to_account_amount`. Reads use it; a null falls back to the live conversion.
+- **I-11 Live account.**
+  - `isLiveAccount = isTracked && !closedAt && !deleted`.
+  - `canHoldParts = isLiveAccount && !excluded`.
+  - One rule for client, server, net worth and month-end.
+- **I-12 Achieved is final,** except the month-end Undo revert (§0). A DB trigger enforces it.
+- **I-13 One part per home.** At most one live part per (goal, account) and one Monthly savings part per (user, account). A pocket is one row with one home.
+- **I-14 Closing and deleting.** An account with `held(A) > 0` cannot close or be deleted until "Where did this money go?" is answered. One guard in `removePaymentMethod`. Afterwards `held(A) = 0`.
 
 ## 3. Data model
 
 ### 3.1 Per table
 
-| Table | Added | Changed | Retired (kept for old builds until P7) |
+| Table | Added | Changed | Retired (dropped in 0364, after P6) |
 |---|---|---|---|
-| `savings_accounts` (= parts) | `item_id uuid` (goal id / systemVaultId(user) / own id) | `held_in_payment_method_id` stays set-once (never updated; Move = new part) | `linked_payment_method_id` (nulled in 0353), `target_amount` (moved to goals), `is_emergency_cover` (kept, read-only) |
-| `savings_transactions` | `idempotency_key uuid`, `pair_id uuid`, `account_amount numeric` | `source` gains label values: `set_aside, opening, release, spent, move_out, move_in, month_end, month_end_undo, close`; every label row: `is_cash_flow=false`, `payment_method_id NULL`, `transfer_group_id NULL` | `transfer_group_id` on carry rows (moved to `idempotency_key`) |
-| `goals` | nothing | `status` guarded by a trigger (I-12) | `linked_savings_account_ids` (trigger-maintained mirror of parts), `funding_mode`, `share_pct`, `monthly_contribution`, `manual_current_amount` (pocketless goals only) |
-| `payment_methods` | `pays_from_payment_method_id uuid` (credit cards with no `parent_id`), `is_savings boolean default false` | none | none |
-| `account_adjustments` | `anchor_balance numeric` (set = anchor: balance at `occurred_at` equals it) | `delta` is still written (= anchor − ledger at write) for old builds | none |
-| `expenses` | `account_amount numeric` (source side in account currency), `to_account_amount numeric` (destination side) | card-plan instalment rows: category `Installment` (non-spend) | none |
+| `savings_accounts` | `goal_id uuid references goals(id) on delete set null` (+ index), `is_monthly_savings boolean not null default false` | `held_in_payment_method_id` stays set-once | `linked_payment_method_id`, `target_amount` |
+| `savings_transactions` | `idempotency_key uuid`, `pair_id uuid`, `account_amount numeric` | label `source` values (3.3) | none |
+| `goals` | none | `status` guarded (I-12) | `linked_savings_account_ids`, `funding_mode`, `share_pct`, `monthly_contribution` |
+| `payment_methods` | `pays_from_payment_method_id uuid references payment_methods(id) on delete set null` (+ index), `is_savings boolean not null default false` | none | none |
+| `account_adjustments` | `anchor_balance numeric` | `delta` still written (= anchor − ledger at write) for display and audit | none |
+| `expenses` | `account_amount numeric`, `to_account_amount numeric` | new card-plan and BNPL instalment rows: category `Installment` | none |
 | `income_events` | `account_amount numeric` | none | none |
-| `month_end_proposals` (new) | see 3.3 | none | none |
-| `savings_split_lines` (new) | `id, user_id, item_id, pct numeric(5,2) check (pct>0 and pct<=100), sort int, edited_at, updated_at, deleted_at` | none | none |
-| `savings_month_summary` | none | read-only history | written by nothing after P6 |
-| `goal_allocation_runs` | none | read-only history | written by nothing after P6 |
-| `profiles` | none | none | `default_carry_pocket_id` (becomes a 100% split line) |
-| `debts` | none | card plan = `debt_type='installment'` with `linked_credit_card_debt_id` set: a schedule inside the card, not counted in `debtRemaining` | none |
+| `profiles` | `savings_split jsonb not null default '[]'` | none | `default_carry_pocket_id` |
+| `savings_month_summary` | `status text`, `version int`, `cycle_start date`, `cycle_end date`, `rates jsonb`, `rates_apply jsonb`, `figures jsonb`, `lines jsonb`, `applied_lines jsonb`, `capped jsonb`, `held_snapshot jsonb`, `auto_apply_at timestamptz`, `applied_at`, `applied_by text`, `undone_at`, `achieved_by_proposal uuid[]` | legacy rows get `status='legacy'` | the `carry`, `carry_adjustment`, `carry_settled_at`, `pocket_id` writers |
+| `goal_allocation_runs` | none | read-only history | dropped in 0364 |
 
-### 3.2 Migrations (each with its pre-count; all follow 0315/0316 grants and RLS `(select auth.uid()) = user_id`; every FK gets an index)
+**Write rules:**
+- Backfill and derived writes bump `updated_at` only, never `edited_at`. `reject_stale_write` (0241:18-35) would otherwise drop users' pending offline edits.
+- Nothing in the design raises inside a sync upsert.
+- New columns on synced tables come through `sync_pull_v2` / `sync_table_delta` (whole-row jsonb, 0233:17-20) and `sync_changed_since` (0301:23). Check that each function still selects whole rows.
+- There are no new synced tables, so the `a0_stamp_insert` / `a0_reject_stale_write` lists (0241:41-44) are unchanged.
+- `savings_month_summary` stays server-written: `authenticated` has select only (0316).
 
-**0355_savings_items.sql**
-- Pre-counts:
-  - parts linked to two or more goals (expect 0);
-  - goals with two or more pockets (expect 0);
-  - pockets with `target_amount IS NOT NULL` and no goal;
-  - duplicate `(item, holder)` pairs after the backfill (expect 0).
-- Changes:
-  - Add `item_id uuid`.
-  - Backfill: `item_id = goal.id` for linked parts; for the system vault `item_id = id` (systemVaultId); otherwise `item_id = id`.
-  - Pockets with a `target_amount` and no goal: create a `goals` row (category `quality_of_life`, since `GoalCategory` has no `other`; target, currency, priority = max+1) with `id = gen_random_uuid()`, and set `item_id` to it.
-  - Set `item_id NOT NULL`, with a BEFORE INSERT trigger `item_id := coalesce(item_id, id)` (old builds send none).
-  - Index `(user_id, item_id)`.
-  - Unique partial index `(item_id, held_in_payment_method_id) WHERE deleted_at IS NULL AND held_in_payment_method_id IS NOT NULL`.
-  - Trigger `sync_goal_parts`: after INSERT/UPDATE/DELETE of `item_id` or `deleted_at` on parts, recompute `goals.linked_savings_account_ids` for the old and new item. Guard with `pg_trigger_depth() < 2`.
-  - Trigger on `goals.linked_savings_account_ids` UPDATE (old build): newly listed ids whose `item_id = id` get `item_id = goal.id`. Removed ids are ignored.
-  - `edited_at = now()` on every changed row.
+### 3.2 Migrations (in phase order; every one: pre-count `SELECT`, RLS `(select auth.uid())`, grants per 0315/0316, FK indexes, `EXPLAIN` without ANALYZE of each new query on live)
 
-**0356_savings_labels.sql**
-- Pre-counts:
-  - `source='carry'` rows (expect 6 for 3 users, 0 with a leg);
-  - rows with `transfer_group_id` used as an idempotency key (`source in ('carry')`).
-- Changes:
-  - Add `idempotency_key uuid`, `pair_id uuid`, `account_amount numeric`.
-  - Unique `(user_id, idempotency_key) WHERE idempotency_key IS NOT NULL`. Index `pair_id`.
-  - Backfill carry rows: `idempotency_key = transfer_group_id`, `transfer_group_id = NULL`, `is_cash_flow = false`.
-  - New RPC `label_part(p_user, p_part, p_delta, p_source, p_key, p_pair, p_date, p_note) returns numeric`:
-    - locks the part;
-    - refuses a negative result;
-    - inserts the label row and updates `current_balance`;
-    - is idempotent on `p_key`.
-  - `EXECUTE` for `service_role` only.
-  - `adjust_pocket_balance` stays for outside holdings.
+**P2 (ships with the required update)**
 
-**0357_goals_achieved_final.sql**
-- Pre-count: goals with `status='achieved'` and goals that were reopened. The reopen count is not knowable; report the current achieved count only.
-- BEFORE UPDATE trigger: `if old.status='achieved' and new.status <> 'achieved' and new.deleted_at is null then new.status := 'achieved'; new.achieved_at := old.achieved_at; end if`.
-- It is silent, so an old build's write-back does not break sync.
+- **0355_savings_parts.sql**
+  - Pre-counts:
+    - goals with ≥2 linked pockets (expect 0);
+    - pockets linked to ≥2 goals (expect 0);
+    - pockets with `target_amount` and no goal (expect about 0);
+    - duplicate (goal, holder) after backfill (expect 0);
+    - live system vaults per user.
+  - Add `goal_id` and `is_monthly_savings`.
+  - Backfill `goal_id` from `goals.linked_savings_account_ids`. Set `is_monthly_savings = true` where `id = systemVaultId(user_id)`.
+  - Targeted pockets with no goal: create a goal (category `quality_of_life`) and set `goal_id`. Leave `target_amount` in place until 0364.
+  - Unique partial indexes:
+    - `(goal_id, held_in_payment_method_id) WHERE goal_id IS NOT NULL AND held_in_payment_method_id IS NOT NULL AND deleted_at IS NULL`;
+    - `(user_id, held_in_payment_method_id) WHERE is_monthly_savings AND deleted_at IS NULL`.
+  - `updated_at = now()` only.
+- **0356_savings_labels.sql**
+  - Pre-counts: `source='carry'` rows (6 live; out/in legs share a group); rows per `(user_id, account_id, transfer_group_id)` > 1 (expect 0).
+  - Add `idempotency_key`, `pair_id`, `account_amount`.
+  - Unique `(user_id, account_id, idempotency_key) WHERE idempotency_key IS NOT NULL AND deleted_at IS NULL`. Index on `pair_id`.
+  - Backfill carry rows: `idempotency_key = transfer_group_id`, `transfer_group_id = NULL`.
+  - RPC `label_part(p_user, p_part, p_amount > 0, p_kind, p_source, p_key, p_pair, p_date, p_note)`, SECURITY DEFINER, `service_role` only:
+    - copy `adjust_pocket_balance`'s delta-ON branch (0227:238-248);
+    - lock the part FOR UPDATE and compute `balance_after`;
+    - **insert the ledger row only**: `trg_savings_tx_delta` (0227:113-150) moves `current_balance`;
+    - on an existing `p_key`, return the stored `balance_after`.
+  - Soft guard: a BEFORE INSERT trigger on `savings_transactions` for `kind='withdrawal'` with a label source clamps `amount` to the part's balance and appends " (clamped)" to `notes`. It never raises, so a client sync batch is never blocked.
+- **0357_goals_achieved_final.sql**
+  - Pre-count: achieved goals.
+  - BEFORE UPDATE trigger: if `old.status='achieved' and new.status<>'achieved' and new.deleted_at is null and current_setting('buddget.month_end_undo', true) is distinct from '1'`, then keep the old status and `achieved_at`. It never raises.
+- **0358_balance_anchors.sql**
+  - Pre-count: adjustments by reason.
+  - Add `anchor_balance`.
+  - Index `(payment_method_id, occurred_at) WHERE anchor_balance IS NOT NULL AND deleted_at IS NULL`.
+- **0359_booked_amounts.sql**
+  - Columns only, no backfill.
+  - Pre-count old cross-currency rows (expense vs resolved account currency, transfers, income events). If there are fewer than about 20, fix them by hand from the SMS text. Otherwise leave them on the live-rate fallback.
 
-**0358_cards_and_savings_accounts.sql**
-- Pre-counts: credit cards with `parent_id IS NULL`, and cards whose `parent_id` is not a bank or wallet.
-- Add `payment_methods.pays_from_payment_method_id uuid references payment_methods(id)` with an index.
-- Add a CHECK through a trigger: the target is `bank_account` or `wallet` of the same user.
-- Add `is_savings boolean not null default false`.
+**P3**
 
-**0359_balance_anchors.sql**
-- Pre-count: `account_adjustments` by reason.
-- Add `anchor_balance numeric`. Index `(payment_method_id, occurred_at)` where `anchor_balance IS NOT NULL`. Check it is not a duplicate of an existing index.
-- No backfill: legacy rows stay deltas.
+- **0360_cards_and_savings_accounts.sql**
+  - Pre-count credit cards with `parent_id IS NULL`.
+  - Add `pays_from_payment_method_id` (ON DELETE SET NULL) and `is_savings`.
+- **0361_card_plans.sql**
+  - Pre-counts:
+    - plans with `installment_provider='credit_card'`;
+    - those with no `linked_credit_card_debt_id`, and those where the user has exactly one card debt;
+    - card plans with no purchase charge on the card (no expense with `linked_debt_id = plan.id`, and none of the same amount ±3 days on the card).
+  - Link single-card cases.
+  - For plans with no purchase charge: insert one card charge of the **remaining principal** (category from the plan, `spend_exclusion='manual'`, dated today). The debt is then owed once.
+  - Historical instalment rows are not recategorised.
 
-**0360_booked_amounts.sql**
-- Pre-counts:
-  - expenses whose currency ≠ the resolved account currency;
-  - transfers whose `to_payment_method_id` currency ≠ the row currency;
-  - income events whose currency ≠ the account currency.
-- Add the columns.
-- Backfill is not done in SQL (no rates table). A one-off server script freezes `account_amount` at the rates the client uses today. It does a dry run first that reports the count and total drift per account, and it suppresses notices.
+**P6**
 
-**0361_month_end.sql**
-- Tables `month_end_proposals` and `savings_split_lines`.
-  - RLS: select own rows for both. Insert/update/delete own rows for split lines. Proposals are written by the server only (no insert/update for `authenticated`).
-  - `anon` gets nothing.
-- Trigger: Σ live `pct` per user ≤ 100. Raise `split_over_100`.
-- RPCs `apply_month_end(p_user, p_id, p_version, p_lines jsonb)` and `undo_month_end(p_user, p_id)`: `service_role` only.
-- Partial index `month_end_proposals (auto_apply_at) WHERE status='proposed'`.
-- Unique `(user_id, month_key)`.
+- **0362_month_end.sql**
+  - Add `profiles.savings_split` and the `savings_month_summary` columns. Set `status='legacy'` on existing rows.
+  - Partial index `(auto_apply_at) WHERE status='proposed'`.
+  - Index `user_settings (month_start_day, user_id)`.
+  - RPCs, all `service_role` only:
+    - `apply_month_end(p_user, p_id, p_version, p_lines jsonb, p_held jsonb, p_rates jsonb)`;
+    - `undo_month_end(p_user, p_id)`;
+    - `month_end_ledger(p_user)`: one round trip returning per-account held aggregates (`sum(current_balance) group by held_in`) plus the ledger rows after each account's latest anchor, all on `user_id` indexes;
+    - `month_end_due_users(p_after uuid, p_limit int)`: keyset on `user_id`, anti-join on the summary unique index `(user_id, month_key)`, LIMIT. `EXPLAIN` must show index scans on `user_settings_pkey` / `savings_month_summary_user_month_key`, with no seq scan on summaries.
+- **0363_split_backfill.sql**
+  - Pre-counts:
+    - users with `default_carry_pocket_id` ≠ systemVaultId;
+    - share goals and Σ pct per user;
+    - share lines that would round to 0 (dropped).
+  - Write `savings_split`:
+    - share goals at `share_pct`, scaled when Σ > 100 and rounded down to 0.01;
+    - lines that round to 0 are dropped;
+    - the default pocket gets `100 − Σ` (only if > 0);
+    - fixed goals get no line.
+- **0364_retire_columns.sql** (after P6 is live)
+  - Pre-count non-null values in each column.
+  - Drop:
+    - `savings_accounts.linked_payment_method_id`, `target_amount`;
+    - `profiles.default_carry_pocket_id` (FK first);
+    - `goals.linked_savings_account_ids`, `funding_mode`, `share_pct`, `monthly_contribution`;
+    - `goal_allocation_runs`.
 
-**0362_split_backfill.sql**
-- Pre-counts:
-  - profiles with `default_carry_pocket_id` ≠ systemVaultId;
-  - goals with `funding_mode='share'` (Σ pct per user);
-  - goals with `funding_mode='fixed'`.
-- Changes:
-  - Default carry pocket → one line at 100% for its item.
-  - Share goals → `pct = share_pct`, scaled proportionally when Σ > 100, rounded down to 0.01.
-  - Fixed goals → no line (OQ-2).
-  - A user with both a default pocket and share lines: share lines first, and the default pocket gets `100 − Σ`.
+### 3.3 Label encoding (every label: `payment_method_id NULL`, `transfer_group_id NULL`, `is_cash_flow=false`, `idempotency_key` set)
 
-**0363_card_plans.sql**
-- Pre-counts:
-  - plan debts with `installment_provider='credit_card'`;
-  - those with `linked_credit_card_debt_id IS NULL`;
-  - of those, users with exactly one card debt;
-  - expenses with `linked_debt_id` = a card-plan id (instalment rows) by category;
-  - card plans with no purchase expense on the card (`expenses.linked_debt_id = plan.id`, or the same amount and date ±3 days on `plan.linked_payment_method_id`).
-- Changes:
-  - Link the unlinked plans where the user has exactly one card. Leave the rest and list them.
-  - Instalment expenses on card plans: `category = 'Installment'`, `edited_at = now()`.
-  - Plans with no purchase on the card: OQ-3.
+| source | kind | Written by |
+|---|---|---|
+| `set_aside` | deposit | Add money (client store) |
+| `opening` | deposit | outside-money entry, new goal "already saved" (not counted in `savedNet`) |
+| `move_in` / `move_out` | deposit / withdrawal | It's in another account, closing (`pair_id`) |
+| `month_end` / `month_end_undo` | deposit / withdrawal | `apply_month_end` / `undo_month_end` |
+| `release` | withdrawal | Release, deleting a goal or pocket |
+| `spent` | withdrawal | I spent it (shortfall, closing) |
+| `close` | withdrawal | outside part written off |
 
-**0364_retire_columns.sql** (P7, only when no build ≤ the last pre-P2 native build is in use)
-- Drop:
-  - `savings_accounts.linked_payment_method_id` and `target_amount`;
-  - `profiles.default_carry_pocket_id` (FK first);
-  - `goals.share_pct`, `funding_mode`, `monthly_contribution`;
-  - the `goals.linked_savings_account_ids` sync triggers and the column.
-- Pre-count non-null values for each column, which must be 0 or migrated.
+The client writes labels through the sync upsert. The soft guard in 0356 covers a negative result. The server writes them through `label_part`.
 
-### 3.3 `month_end_proposals`
+### 3.4 Old builds
 
-| Column | Notes |
-|---|---|
-| `id uuid pk`, `user_id`, `month_key text` | unique (user_id, month_key) |
-| `cycle_start date`, `cycle_end date` (exclusive) | frozen; next cycle starts at this `cycle_end` |
-| `status text` | `proposed` → `applied` → `undone` (terminal); `proposed` → `empty` (nothing placeable; terminal) |
-| `version int default 1` | CAS key |
-| `base_currency`, `rates jsonb` | frozen at create; apply uses `rates_apply jsonb` (written at apply) |
-| `income, spending, saved_net, unexplained_out, leftover, placeable, not_placed numeric` | base currency |
-| `lines jsonb` | `[{item_id, part_id|null, account_id, currency, amount, amount_base}]`, proposed (and user-edited) |
-| `applied_lines jsonb`, `capped jsonb` | what was written; per-account cap reductions at apply |
-| `auto_apply_at timestamptz` | created_at + 72 h |
-| `applied_at`, `applied_by ('user'|'auto')`, `undone_at`, `created_at`, `updated_at` | |
-
-### 3.4 What stays for old native builds (≤ the build before P2)
-
-- Old `walkLegs` order is rule 1 (leg) → carry skip (only builds after 7d01085a) → rule 3 (`transfer_group_id`) → rule 4 (`is_cash_flow=false`) → rule 6 (deposit) → rule 8 (withdrawal moves the holder).
-- Label rows carry no leg, no `transfer_group_id` and `is_cash_flow=false`. Every old build therefore skips them: deposits at rule 6 and withdrawals at rule 4. 0356 moves the carry keys off `transfer_group_id`, which removes the 1,000→1,300 orphan-move bug on old builds too.
-- Old builds see each extra Monthly savings part as another "Monthly Savings" pocket, and a goal's extra parts as pockets linked through `linked_savings_account_ids` (the mirror).
-- Old builds may write `status='active'` on an achieved goal. The trigger keeps it achieved.
-- Old builds ignore `anchor_balance` and read `delta`. That is correct at write time, and only the late-SMS double count stays on them.
-- Old builds clamp free at 0 and do not know card hold-back. That is display only.
-- Old builds still write `linked_payment_method_id` (ignored; a BEFORE INSERT/UPDATE trigger in 0355 sets it to NULL) and `target_amount` (ignored after 0355).
+- P2 raises the min version in the admin portal (UpdateGate, `src/components/ui/UpdateGate.tsx`, plus a 426 from the API). A build below it shows only the update screen, so it never reads or writes the new model.
+- Between the P2 deploy and the gate bump, an old build sees each extra Monthly savings or goal part as a separate pocket. Label rows have no leg, no `transfer_group_id` and `is_cash_flow=false`, so old `walkLegs` skips them (rules 4 and 6).
+- **Ship order:** native build → TestFlight/APK → gate bump → P2 migrations. This needs the owner's OK for a native build (OQ-1).
 
 ## 4. Algorithms
 
-Notation: `→X` = convert at live rate (display) unless a booked amount exists; `cents()` rounds half-up to the currency's minor unit (`minorUnit`).
-
-### 4.1 Balance and free(A) incl. card hold-back
+### 4.1 Balance, free, card hold-back
 
 ```
 balance(A, t):
-  base = latest anchor in {opening(A)} ∪ {adj ∈ adjustments(A) : adj.anchor_balance != null, adj.occurred_at ≤ t}
-  legs = walkLegs rows for A with base.at < row.at ≤ t        // legacy delta adjustments stay legs
-  amount(row) = row.account_amount ?? row.to_account_amount (dest side) ?? convertLive(row)   // I-10
-  return base.value + Σ amount(legs)
-
-walkLegs rule order (savings_transactions): ONE new rule in front, rules 1–8 exactly as today for every other row
-  0  t.source ∈ LABEL_SOURCES {set_aside, opening, release, spent, move_out, move_in, month_end, month_end_undo, close} → skip
-     (only rows written by the new writers carry these sources; legacy rows keep today's meaning:
-      'transfer' + transfer_group_id + is_cash_flow=false = pocket↔pocket move → rule 3; 'carry' → rule 5; declare → rule 4;
-      legless withdrawal with no income event → rule 8 = money left the holder)
-  1–8 unchanged (balance.ts:174-198); P1 regression test: the same pre-P1 ledger gives identical balances before and after.
-anchors: the gap shown and counted is derived at read time = anchor_balance − ledger(just before anchor, current rows);
-  the stored `delta` is never read by new code (old builds only).
-
-cardHold(A):
-  Σ over credit cards c with paysFrom(c) = A:
-     owed(c) − unbilledPlanPrincipal(c), converted c.currency→A.currency at the live rate (no rate → A.approx, hold = owed 1:1 refused: A gets cap 0)
-  paysFrom(c) = c.parent_id ?? c.pays_from_payment_method_id ?? lastPayer(c) ?? primary(c.currency) ?? primary(any)
-     lastPayer(c) = resolve(paymentMethodId) of the newest debt payment to c's debt that resolves to a live account
-  owed(c) = computeCreditCardOutstanding(cardDebt)          // full plan price is a charge at purchase
-  unbilledPlanPrincipal(c) = Σ over plans P on c: P.amount × max(0, P.count − billedOrCurrent(P))
-     billedOrCurrent(P) = number of P's instalment bill dates ≤ the card's next statement close (paymentDueDay)
-
-free(A) = balance(A) − held(A) − cardHold(A)                    // no clamp
-freeTotal = Σ_A free(A)→base ;  "of Σ balance(A)→base in your accounts"
+  base = latest of {opening(A)} ∪ {adj(A): anchor_balance != null, occurred_at ≤ t}
+  return base.value + Σ amount(leg) for legs of A with base.at < leg.at ≤ t   // legacy delta adjustments stay legs
+  amount(row) = row.account_amount ?? row.to_account_amount (dest side) ?? convertLive(row)     // I-10
+gap(anchor k) = anchor_k − balance(A, just before anchor_k)        // derived at read time; stored delta never read
+walkLegs (savings_transactions): rule 0 = t.source ∈ LABEL_SOURCES → skip; rules 1–8 unchanged for every other row
+  (legacy 'transfer' pairs → rule 3; 'carry' → rule 5; declare → rule 4; legless withdrawal → rule 8)
+cardHold(A) = Σ_{credit cards c, paysFrom(c)=A} max(0, owed(c) − unbilledPlan(c)) → A.currency (live rate; none → cap(A)=0)
+  paysFrom(c) = c.parent_id ?? c.pays_from_payment_method_id ?? lastPayer(c) ?? primary(c.currency) ?? primary()
+  owed(c) = start + charges − payments to the card − payments to its plans          // plan purchase = one full-price charge
+  unbilledPlan(c) = Σ_P min(scheduleUnbilled(P), P.total − Σ payments to P)
+     scheduleUnbilled(P) = P.amount × max(0, P.count − #(bill dates ≤ c's next statement close))
+free(A) = balance(A) − held(A) − cardHold(A)          // unclamped
 ```
 
 ### 4.2 Shortfall
 
 ```
-uncoverOrder(A) = parts held in A sorted by:
-  Monthly savings part, then pockets (newest first), then goal parts by goal.priority desc (lowest priority first), achieved goals last (OQ-1)
-covered(p): walk uncoverOrder(A) with s = short(A); u = min(s, p.balance); s -= u; covered = p.balance − u
-trigger: after any change of balance(A) (ledger row or anchor) and after SMS pairing ran for it
-  if short(A) > 0 and (no open episode for A): notify once ("X of what you set aside isn't in CIB anymore")
-  pure FX moves never trigger: parts are in A's currency, so FX cannot change short(A)
-  episode closes automatically when short(A) = 0; a new drop after close opens a new episode
-  episode key = (A, first time short > 0), stored client-side in prompt_state (no table)
-choices:
-  It's in another account (pre-filled with the destination of an own transfer out of A in the last 7 days):
-     for p in uncoverOrder(A) until s = 0: amt = min(p.balance, s); moveAmount(p, B, amt)  // 4.7, capped at free(B)
-  I spent it: release `spent` from Monthly savings part first, then the parts the user picks; total = short(A)
-  Keep for now: dismiss the episode; "Short X" stays; progress uses covered()
+uncoverOrder(A): Monthly savings part → pockets (newest first) → goal parts by priority, lowest first → achieved goals last
+covered(p): s = short(A); for p in uncoverOrder(A): u = min(s, p.balance); s −= u; covered(p) = p.balance − u
+episode: opens when short(A) goes 0 → >0 after SMS pairing ran for that change (prompt_state key A + opened_at);
+  closes when short(A) = 0; one notice per episode; FX cannot trigger (parts are in A's currency)
+choices apply to the remaining short R, and loop until R = 0 or the user stops (episode stays open with R):
+  It's in another account (pre-filled: own transfer out of A in the last 7 days) → B:
+     for p in uncoverOrder(A) while R > 0:
+       goal/MS part: amt = min(p.balance, R, free(B) in A ccy) → moveAmount(p, B, amt)
+       pocket: whole pocket only, if free(B) ≥ p.balance → movePocket(p, B); else skip (offer I spent it)
+       R = short(A) recomputed
+  I spent it: spent() on the Monthly savings part first, then the parts the user picks, total ≤ R
+  Keep for now: dismiss; "Short X" stays
 ```
 
-### 4.3 Leftover for a cycle C
+### 4.3 Leftover for cycle C
 
 ```
-countsIn(row, C):
-  P = proposal for cycle(row.date)
-  if P exists and row.created_at > P.created_at: cycle = cycleContaining(row.created_at)   // late SMS / refund
-  else cycle = cycle(row.date)
-  return cycle == C
-income(C)        = Σ received income events counted in C, at frozen C.rates (account_amount where present)
-spending(C)      = Σ spend expenses counted in C (non-spend, refunded parts, card bills, card-plan and BNPL instalments excluded;
-                   card purchases count at purchase; a refund of a closed month's expense counts as −spending in C)
-savedNet(C)      = Σ labels in C with source ∈ {set_aside} + legs out of accounts into outside parts in C (gold bought: the
-                   account_amount, never grams)  −  Σ labels {release, spent} in C − Σ pocket-funded spend withdrawals in C
-                   (month_end, month_end_undo, opening, move_*, close excluded)
-                   legacy rows (written before P2, no label source): counted exactly as today's isCountedDeposit
-                   (deposit, is_cash_flow ≠ false, source ≠ 'carry') plus Savings-category expenses; legacy withdrawals not subtracted
-unexplainedOut(C)= Σ max(0, −(anchor − ledger just before anchor)) for anchors counted in C   // positive gaps ignored (OQ-4)
-leftover(C)      = income − spending − savedNet − unexplainedOut
+countsIn(row, C): P = summary of cycle(row.date); if P exists and row.created_at > P.created_at
+  then cycle = cycleContaining(row.created_at) else cycle(row.date); return cycle == C
+income(C)   = Σ received income counted in C (account_amount where present) at C.rates
+spending(C) = Σ spend expenses counted in C; excludes non-spend, refunded part, card bills, instalments written after cutover;
+              a refund of an expense from a closed month counts as −spending in its arrival month
+savedNet(C) = Σ set_aside labels in C + Σ account legs into outside parts in C (gold bought: account_amount, never grams)
+              − Σ spent labels in C − Σ pocket-funded spend withdrawals in C
+              (release, opening, move_*, month_end*, close NOT counted; legacy pre-P2 rows: today's isCountedDeposit +
+               Savings-category expenses)
+unexplainedOut(C) = max(0, −Σ gap(k)) over anchors k counted in C   // net per month: an earlier-dated anchor that a later
+              anchor overrides nets to its effect on the latest-anchor balance; a rise only raises free, never leftover
+leftover(C) = income − spending − savedNet − unexplainedOut
 ```
 
-### 4.4 Month-end proposal, apply, undo
+### 4.4 Month-end
 
 ```
-cycles: first cycle for a user = last closed cycle by cycleRange(month_start_day); next = [prev.cycle_end, first boundary of the
-  current month_start_day strictly after prev.cycle_end). A start-day change therefore makes one short or long cycle, never a gap or overlap.
-propose(user, C)  — called by POST /api/month-end {op:'propose'} on first app open after C ends, or by the cron (day 1, 06:00 user tz):
-  if proposal exists → return it
-  rates = live rates now (fail closed: no rates → no row, retry next run)
-  L = leftover(C); if L ≤ 0 → insert status 'empty' with figures ("You spent −L more than you received"); return
-  caps(A) for A live, canHoldParts:  max(0, min(free(A, C.end), free(A, now)))  (free(A,t) uses balance(A,t), held at t, cardHold now)
-  placeable = min(L, Σ caps→base) ; not_placed = L − placeable
-  lines = split(placeable)
-  insert status 'proposed', version 1, auto_apply_at = now + 72h
-split(amount):
-  items = live split lines in sort order (skip items whose goal is achieved or deleted; their pct joins the rest)
-  for line: want = cents(amount × pct / 100)
-     if item is a goal: want = min(want, max(0, target − progress(goal)) at rates)     // overflow joins the rest
+nextCycle(prev): [prev.cycle_end, first boundary of the current month_start_day strictly after prev.cycle_end)
+caps(A) = max(0, min(free(A, C.end), free(A, now))) for A with canHoldParts        // same formula at propose and apply
+propose(user, C):  (POST /api/month-end {op:'propose'} on the first app open after C ends; or the cron)
+  if a row exists for C: return it (status proposed → re-propose below, others unchanged)
+  rates = live (none → no row, retry next run); L = leftover(C)
+  L ≤ 0 → insert status 'empty', copy "You spent and set aside |L| more than you received"; nothing set aside or released
+  placeable = min(L, Σ caps→base); lines = split(placeable); not_placed = L − placeable + unplaced
+  insert status 'proposed', version 1, held_snapshot = held per account, auto_apply_at = now + 72h
+re-propose: on any savings_split change, or when an account holding a line closes: recompute lines for status 'proposed'
+  rows (version += 1); auto_apply_at unchanged
+split(amount): for each {target_id, pct} whose target is live and (pocket, or goal active): want = cents(amount × pct/100)
+  goal: want = min(want, target − progress); excess → rest. Achieved/paused/deleted targets: pct → rest
   rest = amount − Σ want → Monthly savings
-  for each (item, want) then (MS, rest): fill(item, want)
-fill(item, want):
-  order = item's existing live parts sorted by remaining cap desc, then other accounts sorted by remaining cap desc
-          (caps compared in base at the proposal's rates when proposing, at `rates_apply` when applying; Deep fix 8)
-  take = min(want, cap); line(item, part|new, A, cents(take→A.currency), take); cap(A) -= take; want -= take
-  any want left (all caps 0) → added to not_placed
-edit (client, status proposed): PATCH lines; server re-runs the caps, rejects a line over its cap → 'over_cap'; version += 1
-apply(user, id, version, by):   (user confirm, or cron when status='proposed' and auto_apply_at ≤ now)
-  recompute caps against free NOW; walk lines in order, cut each to its account's remaining cap, and re-fill the cut for the
-  same item through fill() (existing parts first, then most remaining cap); what still fits nowhere → not_placed;
-  record capped[] ("CIB had only 6,000 free; 27,000 set aside in Deel instead")
+fill(target, want):
+  pocket: its home only, ≤ cap(home); the overflow → Monthly savings
+  goal or Monthly savings: existing parts by remaining cap desc, then other accounts by remaining cap desc (base at the
+    rates in use); part = existing (goal_id or MS, held_in) else new with id = partId(owner, account)
+  what fits nowhere → not_placed
+apply(user, id, version, by):   user confirm, or cron when status='proposed' and auto_apply_at ≤ now
+  rates_apply = live; re-convert each line from amount_base (amount_base wins)
+  caps recomputed (formula above); refuse lines in non-live accounts (they become cuts)
+  pass 1: every line keeps what fits its account's cap, in order; pass 2: cuts re-filled via fill(); record capped[]
   SQL apply_month_end (one transaction):
-     UPDATE proposals SET status='applied', version=version+1, applied_* WHERE id AND status='proposed' AND version=p_version
-     if 0 rows → return 'conflict' (the other caller won; the client re-reads)
-     for line: upsert the part (id = partId(item_id, account_id), on conflict revive; name/icon/color copied from the item)
-               label_part(part, +amount, 'month_end', key = hash(proposal.id, part.id))
-  notify (dedupe `month-end:<month_key>`)
-undo(user, id):  status must be 'applied'; for each applied line: label_part(part, −min(amount, part.balance),
-  'month_end_undo', key = hash(id, part.id, 'undo')); status 'undone' (terminal); the shortfall from an already spent part is reported, not forced
-cron /api/cron/month-carry → /api/cron/month-end: (a) apply due proposals: SELECT … WHERE status='proposed' AND auto_apply_at ≤ now()
-  ORDER BY auto_apply_at LIMIT 200 (partial index); (b) propose for users whose next cycle has ended and who have no row:
-  RPC month_end_due_users(p_after uuid, p_limit int) (keyset on user_id, LIMIT); time budget 50 s, cursor in the response.
-  Writes stay behind MONTH_END_WRITES=on (the old MONTH_CARRY_WRITES path is deleted).
+    SELECT … FOR UPDATE on the summary row and every part in the lines
+    if status ≠ 'proposed' or version ≠ p_version → 'conflict'
+    if held per account ≠ p_held (a label landed since) → 'stale' (TS recomputes once and retries)
+    upsert new parts: INSERT … ON CONFLICT on the (goal_id, held_in) / MS (user_id, held_in) index DO UPDATE SET deleted_at=NULL
+    insert month_end labels, key = md5(id || ':' || part_id)::uuid
+    goals reaching target → status 'achieved', achieved_at = now, id appended to achieved_by_proposal
+    status 'applied', version += 1, applied_lines, rates_apply, applied_at, applied_by
+undo(user, id): allowed only while status='applied' AND no later spent/move_out label exists on any applied part
+  (else Undo is disabled: "a shortfall answer used this money")
+  in one transaction: set buddget.month_end_undo='1'; each applied line: label month_end_undo of min(amount, part balance),
+  key md5(id||':'||part_id||':undo')::uuid; goals in achieved_by_proposal → status 'active', achieved_at NULL;
+  status 'undone' (terminal); report "X not undone (already released)" per line
+cron /api/cron/month-end (replaces month-carry; MONTH_CARRY_WRITES stays off from P2 until this ships, then the old route
+  and flag are deleted): (a) due proposals ORDER BY auto_apply_at LIMIT 25; (b) month_end_due_users keyset LIMIT 25;
+  one month_end_ledger call per user; 50 s budget; cursor in response; writes behind MONTH_END_WRITES=on
 ```
-
-Rules:
-- Each placed amount is converted at the frozen `rates_apply`, and the part stores it in its own currency (I-10).
-- A goal reaching its target through month-end is stamped achieved by the same apply (4.5).
 
 ### 4.5 Goal progress and completion
 
-```
-progress(G) = Σ_p∈parts(G) value(covered(p)) → G.currency      // gold: grams × karat price; missing price → last price + warning
-achieve(G): when status='active' and progress(G) ≥ target − ε → status='achieved', achieved_at=now (client reconcile + server apply)
-manual "Mark achieved" stays.
-after achieved: never reverts (I-12); removed from split (4.4); Add money hidden; Release / I spent it / Withdraw still allowed;
-  card shows the trophy and its achieved figure (achieved_at); no "below target" copy
-paused goals: kept in split? no: paused goals' lines are skipped like achieved ones (their pct joins the rest)
-Resume (paused → active) stays; the writers at goals/page.tsx:95 and GoalDetailSheet.tsx:156 must guard status==='paused'
-```
+- `progress(G) = Σ value(covered(p))` → G's currency. Gold uses the karat price. A missing price uses the last price, with "price from <date>".
+- **Achieve:**
+  - The client reconcile or `apply_month_end` sets `status='achieved'` when progress ≥ target − ε.
+  - The manual "Mark achieved" stays.
+- **After achieved:**
+  - The goal is out of the split.
+  - Add money is hidden.
+  - Release, I spent it and Withdraw (outside parts) still work.
+  - The goal stays in trophies.
+- **Paused:**
+  - Out of the split.
+  - Resume writers (`goals/page.tsx:95`, `GoalDetailSheet.tsx:156`) must check `status==='paused'`.
 
-### 4.6 Release and "I spent it" (labels)
-
-```
-release(p, amt):  require 0 < amt ≤ p.balance; label_part(p, −amt, 'release'); balance(A) unchanged; free(A) += amt
-spent(p, amt):    same with 'spent' (the debit already counted as spending, or the drop counted in unexplainedOut)
-Withdraw (outside parts only): real withdrawal; with a destination account → leg +amount there (rule 1), source 'withdraw'
-```
-
-### 4.7 Moving a part (across accounts or currencies)
+### 4.6 Release and "I spent it"
 
 ```
-moveAmount(p in A, B, amt):           // never updates held_in (set-once invariant)
-  require canHoldParts(B); amtB = cents(amt → B.currency at the booked rate of the transfer row if one exists, else live)
-  require amtB ≤ free(B)  ('over_available' otherwise; offer the max)
-  q = part(item(p), B) or upsert (id = partId(item, B), revive if deleted)
-  pair = uuid; label_part(p, −amt, 'move_out', pair); label_part(q, +amtB, 'move_in', pair)
-  an emptied part is never soft-deleted by a move: it stays at 0 and is hidden (a later fill reuses the same row, so the
-  derived id never collides with a deleted row). Only item deletion soft-deletes parts; insert paths upsert with
-  `on conflict (id) do update set deleted_at = null` (revive), as the old vault code had to.
-  partId(item, account) = uuid from a sync SHA-256 of `part|<item_id>|<account_id>` in a shared module
-  (`src/lib/savings/partId.ts`, pure JS hash usable on client and server; server `groupIdFor` keeps node:crypto)
+release(p, amt): 0 < amt ≤ p.balance; label release; free(A) += amt; not in savedNet (won't be swept next month)
+spent(p, amt):   label spent; counted −savedNet (the debit was spending, or the drop was unexplainedOut)
+Withdraw (outside parts only): real withdrawal with a destination leg (rule 1), source 'withdraw'
 ```
 
-### 4.8 Closing or deleting an account
+### 4.7 Moving money between accounts or currencies
 
 ```
-closeAccount(A):
-  if held(A) > 0: open "Where did this money go?" per part (pre-filled: an own transfer out of A → that account):
-     • In <B> → moveAmount(p, B, p.balance)   • Spent → spent(p, p.balance)   • Cash at home → moveAmount(p, Cash, …)
-  then removePaymentMethod(A,'close'); refuse while held(A) > 0 → 'needs_answer'
-  parts still pointing at a closed/deleted holder (legacy) count 0 in NW and progress, and are listed for repair
-deleting a goal/pocket: held parts → release(p, p.balance), then soft-delete (pocketCloseAdjustments only for leg-bearing rows);
-  outside parts → ask: keep (item_id := own id; becomes a pocket) or remove (Withdraw to an account, or write off with a 'close' label)
-Monthly savings: not deletable (canDeletePocket → 'system')
+moveAmount(p in A, B, amt):  goal / MS parts.  held_in is never updated.
+  amtB = cents(amt → B.ccy at the booked rate of the transfer that left A if one exists, else live); require amtB ≤ free(B)
+  q = the owner's part in B, else new (partId); pair = uuid; label move_out(p, amt), move_in(q, amtB)
+  p at 0 stays, hidden (a later fill reuses it; never soft-deleted by a move)
+movePocket(p in A, B): whole pocket. New row in B copying name/icon/color/notes; move_out(p, all), move_in(new, all→B);
+  old row soft-deleted (pocketCloseAdjustments only if it has leg-bearing rows); split entries re-pointed to the new id
+partId(owner, account) = uuid from a sync SHA-256 of `part|<goal_id or 'ms:'+user_id>|<account_id>` (src/lib/savings/partId.ts)
 ```
+
+### 4.8 Closing or deleting an account (one guard)
+
+- `removePaymentMethod(A, mode)` returns `needs_answer` while `held(A) > 0`. This applies to `close` and to `auto` (delete).
+- "Where did this money go?" goes part by part (pre-filled from the last own transfer out of A):
+  - **In B:** `moveAmount` or `movePocket`.
+  - **Spent:** `spent`.
+  - **Cash at home:** move to the Cash account.
+- A pending month-end proposal with lines in A is re-proposed.
+- Legacy parts in closed or deleted accounts count 0 and are listed for repair.
 
 ### 4.9 Outside money entry ("Where is this money?")
 
-```
-• An account I haven't added → create the account with its real balance (opening anchor), then set_aside into the item (≤ free)
-• Cash at home → Cash account: untracked → set opening balance; tracked → adjustment anchor = current + amount
-  (reason 'opening_correction'); then set_aside into the item
-• Gold or other → outside part (held_in NULL, currency XAU/other, karat), first row label 'opening'
-None of these are income (I-8); none count in savedNet (the 'opening' label is excluded; the account opening is an anchor).
-```
+| Answer | What is written |
+|---|---|
+| An account I haven't added | Create it with its real balance (opening anchor), then an `opening` label into the goal or pocket (≤ free). |
+| Cash at home | Cash untracked: set its opening balance. Cash tracked: anchor = current + amount (reason `opening_correction`). Then an `opening` label. |
+| Gold or other | Outside part (`held_in NULL`, XAU/other, karat); first row label `opening`. |
+
+Never income. Never counted in `savedNet`.
 
 ### 4.10 Card instalments as settlements
 
-```
-purchase on a plan: one expense on the card, full price, spend; plan row = schedule (linked_credit_card_debt_id = card debt)
-instalment: no money moves by itself; the card bill payment (CC Payoff, non-spend) pays billed instalments + purchases
-legacy instalment payment rows on card plans: category 'Installment' (non-spend); amount counts as a payment to the card debt
-debtRemaining excludes plans with linked_credit_card_debt_id (owed once inside owed(c))
-BNPL/valU: unchanged installment debts (isBnplPlan); instalments are settlements; recurringDebtDueHandlers uses
-  isSettlementPlan(debt) = isBnplPlan(debt) || isCardPlan(debt)
-```
+- **Purchase:** one full-price expense on the card. The plan row is a schedule linked by `linked_credit_card_debt_id`.
+- **Instalment:** moves no money by itself. The card bill (CC Payoff, non-spend) pays it.
+- **Instalment rows written after cutover:** category `Installment`, through `isSettlementPlan = isBnplPlan || isCardPlan` in `recurringDebtDueHandlers`. Past rows are left as they were.
+- **Pay early:** a payment to the plan, which `owed(c)` counts. `unbilledPlan` shrinks with it.
+- **Net worth:** `debtRemaining` excludes plans linked to a card.
 
 ### 4.11 Net worth
 
 ```
-NW = Σ_{A live, !excluded} balance(A)→base
-   + Σ parts with held_in IS NULL → base (gold at karat price; unpriced → excluded + incomplete flag)
-   + Σ parts whose holder exists, is untracked, open and not deleted → base (counted standalone until the account is tracked)
-   + investments (holdings + investment-category outside parts)
-   − (debtRemaining − card-plan principal already inside owed(c))
-parts whose holder is closed or deleted: 0
+NW = Σ_{A live, !excluded} balance(A)→base + Σ outside parts→base (gold at karat price; no price → left out, incomplete)
+   + Σ parts in untracked open accounts→base (listed for repair) + investments − (debtRemaining − card plans)
+parts in closed/deleted accounts: 0
 ```
 
-## 5. File-by-file change list, by phase (each phase ships alone; tests named → section 6)
+## 5. Phases (each ships alone; tests → §6)
 
-**P1: Ledger correctness (no schema, no UI).** It ships first, because it fixes wrong numbers that are on screen today.
-
-| File | Change |
-|---|---|
-| `src/lib/accounts/balance.ts` | Add `freeSigned` (unclamped; `free` stays clamped until P3). Add rule 0 (`LABEL_SOURCES` only). Export `LABEL_SOURCES`. |
-| `src/lib/accounts/kinds.ts` | Add `isLiveAccount` and `canHoldParts` (I-11). |
-| `src/lib/accounts/netWorthBasis.ts` | Parts with a closed or deleted holder → excluded (0), not standalone. Use `isLiveAccount`. |
-| `src/lib/savings/netWorth.ts` | Pass through. Subtract card-plan principal once (helper `cardPlanPrincipalInside`). |
-| `src/lib/debt/bnpl.ts` | Add `isCardPlan`, `isSettlementPlan`. |
-| `src/lib/debts/recurringDebtDueHandlers.ts` | Use `isSettlementPlan` for the category. |
-| `src/lib/savings/pocketHome.ts`, `pocketHolder.ts`, `goals/goalPocket.ts#goalHomeAccounts` | Use `canHoldParts`. |
-
-P1 tests: T0 (a recorded pre-P1 ledger snapshot of 3 QA users gives identical balances, held and NW before and after P1), T2, T3, T19, T20, T25.
-
-**P2: Schema for parts and labels (0355–0357, 0359, 0360).**
+**P1: Ledger correctness (no schema, no visible change beyond fixing wrong numbers)**
 
 | File | Change |
 |---|---|
-| `src/lib/store/types.ts` | `SavingsAccount.itemId`; `SavingsTransaction.idempotencyKey/pairId/accountAmount`; `AccountAdjustment.anchorBalance`; `Expense.accountAmount/toAccountAmount`; `IncomeEvent.accountAmount`. Remove `targetAmount`. |
-| `src/lib/supabase/database.types.ts`, mappers | Regenerate. Map the new columns. |
-| `src/lib/accounts/balance.ts` | Anchors in `computeBalances` and `balancesOverTime`. Use booked amounts. |
-| `src/lib/accounts/actions.ts#updateBalance`, `gapSurplus.ts`, SMS balance ingestion | Write anchors (`anchor_balance` + `delta`). |
-| New `src/lib/savings/labels.ts` | `setAside`, `release`, `spent`, `moveAmount`, `uncoverOrder`, `covered`. These are the only label writers (store actions call them). |
-| `src/lib/store/useFinanceStore.ts` | New actions `setAsideInPart`, `releasePart(reason)`, `movePart`. `withdrawFromSavings` is limited to outside parts. `depositToSavings` routes held parts to `setAsideInPart`. `deleteSavingsAccount` releases first. |
-| `src/lib/goals/exclusivePockets.ts` | Retired (parts belong to one item by schema). |
-| `src/lib/accounts/resolve.ts`, `src/lib/debts/bnplSplit.ts`, `netWorthSnapshot.ts`, `netWorthTrend.ts` | No change (snapshots keep `netWorthBasisOf`; a basis change shows as a new series point, as today). |
-| `src/lib/goals/goalPocket.ts` | `createGoalPocket` and `depositIntoGoal` create parts with `itemId = goal.id`. `relinkGoalPocket` retired. |
-| `src/lib/savings/canDeletePocket.ts` | Monthly savings → `{ok:false, reason:'system'}`. The `default` reason is retired with `defaultCarryPocketId`. |
+| `src/lib/accounts/kinds.ts` | `isLiveAccount`, `canHoldParts`. |
+| `src/lib/accounts/balance.ts` | Rule 0 `LABEL_SOURCES` (no such rows exist yet). |
+| `src/lib/accounts/netWorthBasis.ts` | Closed/deleted holder → 0. Untracked holder → standalone + `needsRepair` list. |
+| `src/lib/savings/netWorth.ts` | Card plans once (`debtRemaining` minus plans linked to a card). |
+| `src/lib/debt/bnpl.ts` | `isCardPlan`, `isSettlementPlan`. |
+| `src/lib/debts/recurringDebtDueHandlers.ts` | Use `isSettlementPlan` (new rows only). |
+| `pocketHome.ts`, `pocketHolder.ts`, `goalPocket.ts#goalHomeAccounts` | `canHoldParts`. |
+| No change | `resolve.ts`, `bnplSplit.ts`, `netWorthSnapshot.ts`, `netWorthTrend.ts`. |
 
-P2 tests: T4, T5, T6, T21, T22, T48.
+Tests: T0 (pre-P1 ledger snapshot of 3 QA users → identical balances, held and NW), T2, T3, T19, T20, T25.
 
-**P3: Card hold-back (0358).**
+**P2: Parts, labels, anchors, booked amounts (0355–0359), with the required update**
 
 | File | Change |
 |---|---|
-| New `src/lib/accounts/cardHold.ts` | `paysFrom`, `unbilledPlanPrincipal`, `cardHold(A)`. |
-| `src/lib/accounts/balance.ts` | `AccountBalance.cardHold`; `free` becomes `balance − held − cardHold`, unclamped (`freeSigned` removed). Consumers that need a non-negative cap use `Math.max(0, free)` explicitly: `savings/pocketHome.ts` (availableIn, exceedsAvailable, transferRefusal, explainDepositRefusal), `savings/assetPurchase.ts`, `accounts/useAccounts.ts`, `AccountPicker.tsx`, `AccountRow.tsx` (shows −X), `AccountDetailSheet.tsx`, `MoveMoneySheet.tsx`, `PocketFormSheet.tsx`, `NewGoalFlow.tsx`, `useNewGoalForm.ts`, `sms/matchSalary.ts`, `api/buddgy/turn/route.ts`. Audit the other `.free` hits (budget `FlowStrip`, `FreeCapsule`, `studioEntities`, …): they are budget free, not account free; no change. |
-| `src/lib/debt/computeCreditCardBalance.ts` | Plan payments count toward the card. Export plan-schedule helpers. |
-| Add card form | Asks "pays this card from" when Linked account is None. |
+| `types.ts`, `database.types.ts`, mappers | `goalId`, `isMonthlySavings`, `idempotencyKey`, `pairId`, `accountAmount`, `anchorBalance`, `toAccountAmount`. Remove `targetAmount`. |
+| `balance.ts` | Anchors and booked amounts in `computeBalances` / `balancesOverTime`. |
+| `actions.ts#updateBalance`, `gapSurplus.ts`, SMS balance ingestion | Write anchors. |
+| New `src/lib/savings/labels.ts` | `setAside`, `release`, `spent`, `moveAmount`, `movePocket`, `covered`, `uncoverOrder`. |
+| New `src/lib/savings/partId.ts` | — |
+| `useFinanceStore.ts` | `setAsideInPart`, `releasePart`, `markSpent`, `movePart`. `depositToSavings` → `setAsideInPart` for held parts. `withdrawFromSavings` → outside parts only. `deleteSavingsAccount` → release first. |
+| `goalPocket.ts` | Parts via `goalId`. `relinkGoalPocket` retired. |
+| `exclusivePockets.ts` | Retired. |
+| `canDeletePocket.ts` | Monthly savings → `reason:'system'`. |
+| Release sheet copy | "won't be set aside again automatically". |
+| Admin portal | min version bump. |
+| `MONTH_CARRY_WRITES` | Stays off (release note). |
 
-P3 tests: T1, T7, T8, T9.
+Tests: T4, T5, T6, T21, T22, T48, N7.
 
-**P4: Shortfall and closing.**
-
-| File | Change |
-|---|---|
-| New `src/lib/savings/shortfall.ts` | `short`, episodes, choices, using `labels.ts`. |
-| `src/lib/accounts/removePaymentMethod.ts` | `needs_answer` while `held > 0`. |
-| `src/lib/accounts/actions.ts#closeAccount` | Opens the sheet. |
-| `pocketCloseAdjustments.ts` | Used only for leg-bearing parts. |
-
-P4 tests: T10, T11, T12, T13, T14, T15, T16.
-
-**P5: Goals on parts.**
+**P3: Card hold-back and unclamped free (0360, 0361)**
 
 | File | Change |
 |---|---|
-| `src/lib/goals/computeGoalProgress.ts` | Sum `covered()` over `parts(goal)` (by `itemId`), at karat price, with a last-price fallback and warning. Pocketless goals unchanged. |
-| `src/lib/goals/reconcileAchievedGoals.ts` | One-way. Skip non-active goals (already done). |
-| Resume writers (`goals/page.tsx:95`, `GoalDetailSheet.tsx:156`) | Guard on `status==='paused'`. |
-| `src/lib/savings/savingsConversions.ts` | Part value uses its karat. |
+| New `src/lib/accounts/cardHold.ts` | — |
+| `balance.ts` | `cardHold`. `free` unclamped. |
+| `computeCreditCardBalance.ts` | Plan payments count toward the card. Schedule helpers. |
+| Non-negative-cap consumers | Use `Math.max(0, free)`: `pocketHome.ts` (availableIn, exceedsAvailable, transferRefusal, explainDepositRefusal), `assetPurchase.ts`, `useAccounts.ts`, `AccountPicker.tsx`, `AccountRow.tsx` (shows −X), `AccountDetailSheet.tsx`, `MoveMoneySheet.tsx`, `PocketFormSheet.tsx`, `NewGoalFlow.tsx`, `useNewGoalForm.ts`, `sms/matchSalary.ts`, `api/buddgy/turn/route.ts`. |
+| Budget `.free` hits | Unrelated: `FlowStrip`, `FreeCapsule`, `studioEntities`, `insights`, `ledger`, `reviewState`, `bufferAbsorb`. |
+| Add card | Asks "pays this card from" when Linked account is None. |
 
-P5 tests: T17, T18, T24, T41, T42, T43, T44, T45.
+Tests: T1, T7, T8, T9, N6, N8.
 
-**P6: Month-end (0361, 0362).**
+**P4: Shortfall and closing**
 
 | File | Change |
 |---|---|
-| New `src/lib/monthEnd/leftover.ts` | `countsIn`, `leftover`. Replaces `cycleCarryFigures.ts`. |
-| New `src/lib/monthEnd/proposal.ts` | `caps`, `split`, `fill`, `capAtApply`. Pure, shared by the client card and the server. |
-| `src/lib/savings/carryDateLogic.ts` | `nextCycle(prev, startDay)`. |
-| New `src/app/api/month-end/route.ts` | Ops `propose`, `edit`, `apply`, `undo`. Server ledger load by `user_id`, `computeBalances`. |
-| `src/app/api/cron/month-carry/route.ts` | Rewritten as month-end (due proposals plus `month_end_due_users`). |
-| New `src/lib/server/monthEndLedger.ts` | Loads one user's ledger with bounded queries. |
-| Retired | `src/lib/server/carryAdjust.ts`, `carryCycle.ts#closedCycleDrift/rowsChangedSince`, `allocateGoalFunding.ts`, `goals/allocateMonth.ts`, `savings/monthCarry.ts` (`computeMonthCarry`, `carryDrift`, `resolveCarryDestination`, `findUnlinkedGoalPocket`, `isCarrySetAside`), `cycleCarryFigures.ts`. `pocketLedger.ts` keeps `groupIdFor` only. `carryCycle.ts` keeps `fetchRates`, `allRows`, `must` (moved to `server/monthEndLedger.ts`); `loadCycle`, `carryPostDate`, `CycleDriftItem` retired. |
-| Split screen | "Where your monthly savings go" (lines + rest row). |
+| New `src/lib/savings/shortfall.ts` | Episodes, looped choices. |
+| `removePaymentMethod.ts` | `needs_answer` for close and delete. |
+| `actions.ts#closeAccount` | Opens the sheet. |
 
-P6 tests: T23, T26–T40, T46, T47.
+Tests: T10–T16, N4.
 
-**P7: Cleanup (0364)** after old builds age out.
+**P5: Goals on parts**
+
+| File | Change |
+|---|---|
+| `computeGoalProgress.ts` | Σ `covered()` over parts by `goalId`, karat price, last-price fallback. |
+| `reconcileAchievedGoals.ts` | One-way. |
+| Resume writers | Guarded. |
+| `savingsConversions.ts` | Karat per part. |
+
+Tests: T17, T18, T24, T41–T45.
+
+**P6: Month-end (0362–0364)**
+
+| File | Change |
+|---|---|
+| New `src/lib/monthEnd/leftover.ts` | Replaces `cycleCarryFigures.ts`. |
+| New `src/lib/monthEnd/proposal.ts` | caps / split / fill / applyPasses (pure, shared). |
+| New `src/lib/server/monthEndLedger.ts` | Calls `month_end_ledger`. Moves `fetchRates`, `allRows`, `must` here. |
+| `carryDateLogic.ts#nextCycle` | — |
+| New `src/app/api/month-end/route.ts` | Ops `propose` / `apply` / `undo`. |
+| `src/app/api/cron/month-carry/route.ts` | Deleted. Replaced by `/api/cron/month-end` (vercel.json). |
+| Deleted | `carryAdjust.ts`, `carryCycle.ts`, `allocateGoalFunding.ts`, `goals/allocateMonth.ts`, `savings/monthCarry.ts`, `cycleCarryFigures.ts`. `pocketLedger.ts` keeps `groupIdFor` only. |
+| Split screen | Writes `profiles.savings_split` (Σ ≤ 100 validated in the writer; a stored Σ > 100 is clamped proportionally on read and shown "over 100%"). |
+
+Tests: T23, T26–T40, T46, T47, N1–N3, N5, N9, N10.
 
 ## 6. Test matrix
 
-**Fixture F** (all tests start here unless stated). Base EGP, `month_start_day = 1`, user timezone Africa/Cairo.
+**Fixture F.** Base EGP, `month_start_day = 1`, timezone Africa/Cairo.
 
 Rates: USD→EGP 50. 24k gold 4,000 EGP/g, so 21k = 3,500 EGP/g.
 
@@ -514,106 +487,108 @@ Rates: USD→EGP 50. 24k gold 4,000 EGP/g, so 21k = 3,500 EGP/g.
 | Cash (EGP, tracked) | 3,000 | −1,000 | 2,000 |
 | NBE (EGP bank) | 0 | none | 0 |
 
-CIB Card (credit card, `parent_id` = CIB, `paymentDueDay` 10):
-- previous statement fully paid;
+CIB Card (credit card, `parent_id` = CIB, statement close 10th):
+- previous statement paid;
 - purchases 4,000 (Nov 15–25);
-- TV plan bought Nov 12 on the card: 12,000 = 6 × 2,000, first instalment billed Dec 10.
+- TV plan on the card Nov 12: 12,000 = 6 × 2,000, first bill Dec 10.
 - Card owed = 16,000.
 
-Items:
+Parts:
 
-| Item | Type | Parts |
+| Owner | Type | Parts |
 |---|---|---|
-| Car | goal, target 150,000 EGP, priority 1 | CIB 20,000; Deel $200 |
-| Travel | pocket | CIB 5,000; 5,000 of it was set aside in November |
+| Car | goal, target 150,000, priority 1 | CIB 20,000; Deel $200 |
+| Travel | pocket, home CIB | 5,000; 5,000 of it set aside in November |
 | Monthly savings | system | CIB 3,000 |
 | Wedding | goal, target 50,000, priority 3 | outside part: 10 g of 21k gold |
 
-Split lines: Car 50%, Travel 20% (the rest goes to Monthly savings).
+Split: Car 50%, Travel 20%.
 
-November figures: income 60,000 + 15,000 = 75,000. Spending 4,000 + 12,000 + 20,000 + 1,000 = 37,000. savedNet 5,000. Leftover 33,000.
+November figures: income 75,000. Spending 37,000. savedNet 5,000. Leftover 33,000.
 
 Derived values in F:
 
 | Value | Result |
 |---|---|
 | held(CIB) | 28,000 |
-| cardHold(CIB) | 16,000 − 10,000 = 6,000 |
-| free(CIB) | 66,000 |
-| free(Deel) | $800 |
-| free(Cash) | 2,000 |
+| cardHold | 16,000 − 10,000 = 6,000 |
+| free | CIB 66,000; Deel $800 (40,000); Cash 2,000; NBE 0 |
 | freeTotal | 108,000 |
-| Σ balances | 252,000 |
-| Car progress | 20,000 + $200×50 = 30,000 (20%) |
+| **Σ balances** | **152,000** |
+| Car progress | 30,000 (20%) |
 | Wedding progress | 35,000 |
-| NW | 100,000 + 50,000 + 2,000 + 0 + 35,000 − 16,000 = 171,000 |
+| NW | 152,000 + 35,000 − 16,000 = **171,000** |
 
-| # | Scenario (from F) | Input | Expected |
+**Fixture F27.** F with Travel 61,000 (56,000 set aside before November). held(CIB) = 84,000 and free(CIB) = 10,000; everything else is as F.
+
+All numbers in this table were rechecked with a script (`scratchpad/me2.py`, `led.py`).
+
+| # | Scenario | Input | Expected |
 |---|---|---|---|
-| T1 | Free not clamped | CIB debit −80,000 (Dec 1) | balance(CIB) 20,000; held 28,000; short 8,000; free(CIB) −14,000; hero "Free to spend −14,000 + 40,000 + 2,000 = 28,000" total; NW 91,000 |
-| T2 | Legacy carry label, 1,000 vs 1,300 | account X balance 1,000; part in X 300 from a `source='carry'` row with `transfer_group_id` (pre-0356) and, separately, the same row after 0356 (`idempotency_key`, no group) | balance(X) 1,000 in both; held 300; free 700 |
-| T3 | Card plan owed once | F, legacy plan row also present as a separate debt 12,000 | NW 171,000 (not 159,000); debts shown: card 16,000 with "TV 1 of 6 · 2,000/mo" inside |
-| T4 | Labels never move balances | release(Travel, 2,000); then spent(MS, 3,000); then setAside(Travel, 1,000) | balance(CIB) 100,000 throughout; held 28,000 → 26,000 → 23,000 → 24,000; free 66,000 → 68,000 → 71,000 → 70,000; NW 171,000 throughout |
-| T5 | SMS anchor, no double count | Dec 2 SMS "CIB balance 97,000" (ledger 100,000) → anchor; then a late SMS debit −500 dated Dec 1 10:00 arrives | balance(CIB) 97,000 after both (the −500 is inside the anchor); derived gap 2,500; spending(Dec) +500; unexplainedOut(Dec) 2,500 (total outflow 3,000, counted once); old delta model would give 96,500 |
-| T6 | Booked rate | own transfer Deel → CIB $1,000 at 50 (`to_account_amount` 50,000); rate moves to 45 | balance(CIB) 150,000 at both rates; balance(Deel) $0; NW at 45: 150,000+0+2,000+35,000−16,000 = 171,000; Deel now short $200 (shortfall flow, see T15) |
-| T7 | Hold-back excludes unbilled plan | F | cardHold(CIB) 6,000 (4,000 purchases + 2,000 Dec-10 instalment); free 66,000 |
-| T8 | Bill payment | Dec 15: pay the Dec-10 statement 6,000 from CIB (CC Payoff) | balance(CIB) 94,000; owed 10,000; unbilled 8,000; hold 2,000; free(CIB) 94,000 − 28,000 − 2,000 = 64,000; spending(Dec) += 0; NW 171,000 |
-| T9 | Card with no linked account | card `parent_id` NULL, no `pays_from`, last payment from NBE | hold 6,000 lands on NBE: free(NBE) −6,000; free(CIB) 72,000; Add card asks "pays this card from" once |
-| T10 | Shortfall, uncover order | T1 state | MS 3,000 uncovered, Travel 5,000 uncovered, Car covered 20,000; Car progress 30,000; notice once "8,000 of what you set aside isn't in CIB anymore" |
-| T11 | Deeper shortfall | CIB debit −82,000 instead | short 10,000: MS 0, Travel 0, Car CIB covered 18,000; Car progress 28,000 (18.7%) |
-| T12 | "It's in another account" | own transfer CIB → NBE 80,000; choose NBE (pre-filled) | labels: MS CIB −3,000 / MS NBE +3,000, Travel CIB −5,000 / Travel NBE +5,000; held CIB 20,000, NBE 8,000; short 0; free(CIB) 20,000−20,000−6,000 = −6,000 ("Free to spend −6,000", no shortfall); free(NBE) 72,000; NW 171,000 |
-| T13 | "I spent it" | T1 state, I spent it | MS −3,000 (spent), picker: Travel −5,000; held 20,000; short 0; balance(CIB) 20,000 unchanged by labels; free −6,000; Dec savedNet −8,000 |
-| T14 | FX-only move | rate USD 45 | no shortfall on Deel (held $200 ≤ $1,000); Car progress 20,000 + 9,000 = 29,000 "includes rate changes"; NW 166,000 |
-| T15 | Close account with goal money | Deel balance $1,000 holds Car $200; transfer Deel → CIB $1,000 (50,000 booked); close Deel; answer "In CIB" | Car CIB part 20,000 + 10,000 = 30,000; Deel part 0 (soft-deleted); held(CIB) 38,000; balance(CIB) 150,000; free(CIB) 106,000; close allowed; NW 150,000 + 0 (Deel closed) + 2,000 + 35,000 − 16,000 = 171,000 |
-| T16 | Close refused | close Deel with Car $200 unanswered | `needs_answer`; account stays open |
-| T17 | Achieved is permanent | goal Phone target 10,000, part CIB 10,000 → achieved; then spent(Phone, 10,000) | status achieved; progress 0; trophy list; no "below target" copy; old build writes `status='active'` → row still achieved (trigger) |
-| T18 | Achieved under FX | goal Laptop target $200, part Deel $200 → achieved; rate drops | stays achieved; split skips Laptop |
-| T19 | Money in a closed account | legacy part 5,000 whose holder was closed without the flow | NW counts it 0 (not +5,000); listed for repair |
-| T20 | Untracked holder | part 4,000 held in an account with no opening balance | counted standalone: NW +4,000; when the account is tracked with balance 4,000, NW +4,000 once (account), the part is then held |
-| T21 | Outside money: cash at home | "Cash at home" 5,000 into new pocket Home | Cash anchor 7,000; Home part 5,000 held in Cash; NW 176,000; leftover(Nov) unchanged 33,000 (opening, not income, not savedNet) |
-| T22 | Outside money: gold | add 2 g 21k to Wedding as "Gold or other" | Wedding outside part 12 g → 42,000; NW 178,000; not income |
-| T23 | Gold bought from an account in the month | Nov 20: buy 2 g 21k from CIB for 7,000 into Wedding | balance(CIB) 93,000; Wedding 42,000; savedNet(Nov) 12,000; leftover 26,000 (month not "empty", no gold price needed server-side) |
-| T24 | Covered progress with outside part | T11 state | Wedding 35,000 unaffected (outside); Car 28,000 |
-| T25 | Instalment not spending | legacy BNPL/valU instalment 1,500 and card-plan instalment row 2,000 in Dec | spending(Dec) += 0 for both; categories `Installment` |
-| T26 | Month-end base | F; propose Dec 1, apply | caps CIB 66,000, Deel 40,000, Cash 2,000 (Σ 108,000); placeable 33,000; Car 16,500 → CIB; Travel 6,600 → CIB; MS 9,900 → CIB; held(CIB) 61,000; free(CIB) 33,000; NW 171,000; Car progress 46,500 |
-| T27 | Caps change fill | F but cap(CIB) 10,000 (free 10,000) | Car 16,500 → Deel $330 (existing part with most cap); Travel 6,600 → CIB; MS 3,400 → CIB + 6,500 → Deel $130; not_placed 0 |
-| T28 | Not enough free | caps CIB 10,000, Deel $100, Cash 2,000 | placeable 17,000, not_placed 16,000 ("16,000 saved but not set aside: no account had it free"); Car 8,500 → CIB; Travel 1,500 → CIB + 1,900 → Deel $38 (new part); MS 3,100 → Deel $62 + 2,000 → Cash (new part) |
-| T29 | Goal near target | Car target 40,000 (progress 30,000) | Car 10,000 → CIB, overflow 6,500 to MS; MS 16,400 → CIB; Travel 6,600; Car achieved by the apply |
-| T30 | Negative month | Nov spending 80,000 | leftover −10,000; status `empty`; card "You spent 10,000 more than you received"; nothing set aside or released |
-| T31 | New salary in days 1–3 | F with free(CIB, Nov 30) 10,000 (other caps unchanged); salary +60,000 lands Dec 2; auto-apply Dec 4 | cap(CIB) = min(10,000, 70,000) = 10,000; placement identical to T27 |
-| T32 | Spending in days 1–3 | after propose (T26), CIB debit −60,000 Dec 2, then confirm | free(CIB) now 6,000 → cap 6,000; applied: Car 6,000 → CIB + 10,500 → Deel $210; Travel 6,600 → Deel $132 (new part); MS 9,900 → Deel $198 (new part); capped[] reports CIB −27,000 refilled; not_placed 0 |
-| T33 | Confirm races auto-apply | user confirm (v1) and cron apply (v1) at once | exactly one `applied`; the other gets `conflict`; one set of `month_end` labels (idempotency keys) |
-| T34 | Undo | after T26, user spent 5,000 of MS CIB part (label `spent`), then Undo | Car −16,500, Travel −6,600, MS −min(9,900, 7,900) = −7,900; status `undone`; Undo button gone; re-propose impossible |
-| T35 | Start-day change | Nov proposal cycle Nov 1–Dec 1; on Dec 10 start day → 15 | next cycle Dec 1–Dec 15 (one short cycle), then Dec 15–Jan 15; no day counted twice or skipped |
-| T36 | Late refund | refund 1,000 on a Nov expense arrives Dec 5 (Nov already proposed) | Nov figures unchanged; spending(Dec) −1,000 |
-| T37 | Unexplained drop | Nov 28 SMS anchor CIB 97,000 vs ledger 100,000 | unexplainedOut(Nov) 3,000; leftover 30,000; cap(CIB) 63,000 |
-| T38 | Split ≤ 100 | add a line 40% with Car 50% + Travel 20% | refused `split_over_100` |
-| T39 | Server cap | client sends a line 70,000 to CIB (cap 66,000) | `over_cap`; nothing written |
-| T40 | Achieved / paused goal in split | Car achieved before month-end | Car's 50% joins the rest: MS 26,400 → CIB; Travel 6,600 |
-| T41 | Delete a goal with held parts | delete Car | release CIB 20,000 and Deel $200; held(CIB) 8,000; free(CIB) 86,000; free(Deel) $1,000; Car line removed (its 50% joins the rest); NW 171,000 |
-| T42 | Delete a goal with an outside part | delete Wedding → Keep / Remove | Keep: part becomes pocket "Wedding" (item_id = own id), NW 171,000. Remove → Withdraw into CIB for 35,000: CIB 135,000, NW 171,000. Remove → write off (`close` label): NW 136,000 |
-| T43 | Delete a pocket | delete Travel | release 5,000; held(CIB) 23,000; free(CIB) 71,000; Travel line removed; NW 171,000 |
-| T44 | Missing gold price | gold price unavailable (last price 3,500 on Nov 29) | Wedding progress 35,000 with "price from Nov 29"; NW 136,000 flagged incomplete (gold left out, never 1:1) |
-| T45 | Monthly savings undeletable | delete MS | `canDeletePocket` → `{ok:false, reason:'system'}`; rename allowed; hidden when every MS part is 0 |
-| T46 | Late expense, closed month | Nov proposed Dec 1; Dec 2 an SMS for a −1,000 CIB debit dated Nov 29 arrives | Nov figures unchanged (leftover 33,000); spending(Dec) +1,000; balance(CIB) 99,000 now; cap(CIB) at apply 65,000; T26 placement unchanged |
-| T47 | Rate change after close | Nov applied at 50; rate later 45 | Nov row keeps income 75,000, rates {USD:50}; Deel parts keep their USD amounts; nothing re-priced |
-| T48 | Outside money: account not added | "An account I haven't added": QNB EGP, real balance 12,000; set aside 12,000 into Wedding | QNB anchor 12,000; Wedding part in QNB 12,000; Wedding progress 47,000; NW 183,000; leftover(Nov) unchanged |
+| T1 | Free not clamped | F; CIB debit −80,000 Dec 1 | balance(CIB) 20,000; held 28,000; short 8,000; free(CIB) −14,000; freeTotal 28,000; Σ balances 72,000; NW 91,000 |
+| T2 | Legacy carry label | account X 1,000; part 300 from a `carry` row before and after 0356 | balance(X) 1,000 both; held 300; free 700 |
+| T3 | Card plan owed once | F + legacy separate plan debt 12,000 | NW 171,000 (not 159,000); card 16,000 shows "TV 0 of 6 · next Dec 10" |
+| T4 | Labels never move balances | F; release Travel 2,000; spent MS 3,000; set_aside Travel 1,000 | balance(CIB) 100,000 throughout; held 28,000→26,000→23,000→24,000; free 66,000→68,000→71,000→70,000; NW 171,000; savedNet(Dec) +1,000 − 3,000 = −2,000 (release not counted) |
+| T5 | Anchor, late SMS | Dec 2 anchor 97,000 (ledger 100,000); late debit −500 dated Dec 1 arrives after | balance 97,000; gap 2,500; spending(Dec) +500; unexplainedOut(Dec) 2,500 |
+| T6 | Booked rate | Deel→CIB $1,000, `to_account_amount` 50,000; rate → 45 | CIB 150,000 at both rates; Deel $0 (Deel short $200 → T15); NW 171,000 |
+| T7 | Hold-back | F | cardHold 6,000; free(CIB) 66,000 |
+| T8 | Bill paid | Dec 15: 6,000 from CIB (CC Payoff) | CIB 94,000; owed 10,000; unbilled 8,000; hold 2,000; free(CIB) 64,000; spending(Dec) +0; NW 171,000 |
+| T9 | No linked account | card `parent_id` NULL, no `pays_from`, last paid from NBE | free(NBE) −6,000; free(CIB) 72,000; Add card asks once |
+| T10 | Uncover order | T1 state | MS 3,000 and Travel 5,000 uncovered; Car covered 20,000; Car 30,000; one notice "8,000 of what you set aside isn't in CIB anymore" |
+| T11 | Deeper short | CIB debit −82,000 | short 10,000; Car CIB covered 18,000; Car 28,000 (18.7%) |
+| T12 | It's in another account | own transfer CIB→NBE 80,000; choose NBE | MS: move_out CIB 3,000 / move_in NBE 3,000; Travel: new pocket row in NBE 5,000, old row soft-deleted; held CIB 20,000, NBE 8,000; short 0; free(CIB) −6,000 (no shortfall); free(NBE) 72,000; NW 171,000 |
+| T13 | I spent it | T1 state | spent MS 3,000 + Travel 5,000; held 20,000; balance 20,000; free −6,000; savedNet(Dec) −8,000 |
+| T14 | FX-only | rate 45 | no shortfall; Car 29,000 "includes rate changes"; free Deel 36,000 EGP; NW 166,000 |
+| T15 | Close with goal money | T6 then close Deel, answer "In CIB" | Car CIB 30,000; Car Deel part **0, hidden**; held(CIB) 38,000; free(CIB) 106,000; NW 150,000 + 2,000 + 35,000 − 16,000 = 171,000 |
+| T16 | Guard | close Deel unanswered; **delete** Deel unanswered | both `needs_answer`; account unchanged |
+| T17 | Achieved permanent | goal Phone target 10,000, part CIB 10,000 → achieved; release 10,000 | stays achieved; progress 0; no below-target copy; an old-build write of `active` is ignored by the trigger |
+| T18 | Achieved under FX | Laptop $200 target, Deel $200 → achieved; rate drops | stays achieved; out of split |
+| T19 | Closed holder | legacy part 5,000 in a closed account | NW +0; listed for repair |
+| T20 | Untracked holder | part 4,000 in an open untracked account | NW +4,000, "set this account's balance" repair; new set-aside into it refused (`canHoldParts`); once tracked at 4,000: NW +4,000 once |
+| T21 | Cash at home | 5,000 into new pocket Home | Cash anchor 7,000; Home 5,000 (`opening`); NW 176,000; leftover(Nov) 33,000 |
+| T22 | Gold outside | +2 g 21k to Wedding | Wedding 42,000; NW 178,000; not income |
+| T23 | Gold bought from account | Nov 20 buy 2 g from CIB for 7,000 | CIB 93,000; free(CIB) 59,000; Wedding 42,000; savedNet(Nov) 12,000; leftover 26,000; NW 171,000 |
+| T24 | Outside part unaffected | T11 state | Wedding 35,000; Car 28,000 |
+| T25 | Instalments | new BNPL instalment 1,500 + card-plan instalment 2,000 written in Dec | spending(Dec) +0; category `Installment`; pre-cutover rows unchanged |
+| T26 | Month-end base | F; propose Dec 1, confirm | caps 66,000 / 40,000 / 2,000; placeable 33,000; Car 16,500→CIB, Travel 6,600→CIB, MS 9,900→CIB; held(CIB) 61,000; free(CIB) 33,000; Car 46,500; NW 171,000 |
+| T27 | Fill by cap | F27 | Car 16,500→Deel $330; Travel 6,600→CIB; MS 3,400→CIB + 6,500→Deel $130; not_placed 0 |
+| T28 | Not enough free | F27 with Car's Deel part $900 (free Deel $100) | placeable 17,000; not_placed 16,000 ("16,000 saved but not set aside: no account had it free"); Car 8,500→CIB; Travel 1,500→CIB, overflow 1,900→MS; MS 5,000→Deel $100 + 2,000→Cash |
+| T29 | Goal near target | F, Car target 40,000 | Car 10,000→CIB (achieved by apply, in `achieved_by_proposal`); MS 16,400→CIB; Travel 6,600 |
+| T30 | Negative month | Nov spending 80,000 | leftover −10,000; status `empty`; "You spent and set aside 10,000 more than you received"; nothing set aside or released |
+| T31 | Salary in days 1–3 | F27; salary +60,000 Dec 2; auto-apply Dec 4 | cap(CIB) = min(10,000, 70,000) = 10,000 at propose and apply; T27 placement |
+| T32 | Spend in days 1–3 | T26 proposed; CIB debit −60,000 Dec 2; confirm | cap(CIB) 6,000; pass 1 Car 6,000→CIB, Travel 0, MS 0; pass 2 Car 10,500→Deel $210, Travel 6,600 overflow→MS, MS 16,500→Deel $330; Deel 27,000 of 40,000; **Cash never reached** |
+| T33 | Confirm vs auto | both send version 1 | one `applied`, one `conflict`; one set of labels |
+| T34 | Undo after a release | T26 applied; release MS 5,000 (not shortfall); Undo | Car −16,500 → 30,000; Travel −6,600 → 5,000; MS −7,900 → 0, "2,000 not undone (already released)"; status `undone` (terminal) |
+| T35 | Start-day change | Nov cycle Nov 1–Dec 1; Dec 10 start day → 15 | next cycles Dec 1–Dec 15, Dec 15–Jan 15 |
+| T36 | Late refund | 1,000 refund on a Nov expense arrives Dec 5 | Nov unchanged; spending(Dec) −1,000 |
+| T37 | Unexplained drop | Nov 28 anchor CIB 97,000 | unexplainedOut(Nov) 3,000; leftover 30,000; cap(CIB) 63,000 |
+| T38 | Split > 100 | add 40% to Car 50 + Travel 20 | writer refuses ("over 100%"); a stored 110% reads as 45.45 / 18.18 / 36.36 |
+| T39 | Line in a closed account | proposal line in an account closed before apply | line cut and re-filled; no label into a non-live account |
+| T40 | Achieved target in split | F, Car achieved before month-end | Travel 6,600→CIB; MS 26,400→CIB |
+| T41 | Delete goal, held parts | delete Car | release CIB 20,000 and Deel $200; held(CIB) 8,000; free(CIB) 86,000; free(Deel) $1,000; split entry removed; NW 171,000 |
+| T42 | Delete goal, outside part | delete Wedding | Keep → pocket (goal_id NULL), NW 171,000; Withdraw into CIB 35,000 → CIB 135,000, NW 171,000; write off (`close`) → NW 136,000 |
+| T43 | Delete pocket | delete Travel | release 5,000; held(CIB) 23,000; free(CIB) 71,000; NW 171,000 |
+| T44 | Missing gold price | no price (last 3,500, Nov 29) | Wedding 35,000 "price from Nov 29"; NW 136,000 marked incomplete |
+| T45 | MS undeletable | delete MS | `{ok:false, reason:'system'}`; rename OK; hidden when all parts are 0 |
+| T46 | Late expense | Nov proposed Dec 1; Dec 2 SMS for a −1,000 debit dated Nov 29 | Nov unchanged; spending(Dec) +1,000; CIB 99,000; cap(CIB) 65,000; T26 placement unchanged |
+| T47 | Rate change after close | Nov applied at 50; rate → 45 | Nov row keeps income 75,000 and rates {USD:50}; nothing re-priced |
+| T48 | Account not added | QNB EGP 12,000; `opening` 12,000 into Wedding | QNB anchor 12,000; Wedding 47,000; NW 183,000; leftover(Nov) 33,000 |
+| N1 | Rate move before apply | F27 proposed at 50; rate 55 at apply | amount_base wins: Car 16,500→Deel **$300**; MS Deel 6,500→**$118.18**; CIB lines unchanged; `rates_apply` {USD:55}; card re-rendered |
+| N2 | Refund after apply | T26 applied; Dec 5 refund 1,000 on a Nov CIB debit | CIB 101,000; free(CIB) 33,000 → 34,000; spending(Dec) −1,000; NW 172,000 |
+| N3 | Undo after a shortfall label | T26 applied; CIB debit −80,000 Dec 3 (short 41,000); I spent it on MS 12,900 | short 28,100 (episode open); Undo **disabled** |
+| N4 | Two pockets, partial move | account X EGP 10,000; pockets A 4,000 (older), B 4,000; debit −8,000 → short 6,000; It's in another account → NBE (free 5,000) | B moved whole → NBE (NBE free 1,000); short 2,000 remains, A can't fit → episode open "2,000 still short"; then I spent it 2,000 from A: A 2,000, X held 2,000 = balance 2,000, free 0, short 0 |
+| N5 | Completed by month-end, undone | T29 applied (Car achieved) then Undo | Car 30,000, status `active`, `achieved_at` NULL (via `achieved_by_proposal`); MS and Travel reversed; status `undone` |
+| N6 | Bill paid from another account | Dec 15: statement 6,000 paid from Deel $120 (booked 6,000) | Deel $880; owed 10,000; hold 2,000 (still on CIB); free(CIB) 70,000; free(Deel) $680; NW 171,000; at rate 45 owed stays 10,000 |
+| N7 | Earlier-dated anchor | Dec 2 10:00 anchor 100,000 (= ledger); then a late report dated Dec 1 09:00 = 99,000 (ledger there 100,500; a −500 debit at Dec 1 12:00 already booked) | balance(CIB) 100,000; gaps −1,500 and +1,500 net 0; unexplainedOut(Dec) **0** |
+| N8 | Plan paid off early | F; Dec 1 pay the TV plan 12,000 early from CIB | CIB 88,000; owed 4,000; unbilled min(10,000, 0) = 0; hold 4,000; free(CIB) **56,000**; NW 171,000 |
+| N9 | Close with a pending proposal | F27 proposed; Dec 2 Deel→CIB $1,000 (50,000); close Deel, Car $200 "In CIB" (Car CIB 30,000) | re-proposed v2: caps CIB min(10,000, 50,000) = 10,000, Cash 2,000; placeable 12,000; not_placed 21,000; Car 6,000→CIB; Travel 2,400→CIB; MS 1,600→CIB + 2,000→Cash; auto_apply_at unchanged |
+| N10 | Split changed before auto-apply | T26 proposed; Dec 2 Car 50%→30% | re-proposed v2 (auto_apply_at still Dec 4): Car 9,900, Travel 6,600, MS 16,500, all CIB |
 
-T32: fill after the 6,000 CIB cap is exhausted uses Deel (cap 40,000) then Cash (2,000).
-- Car 16,500 = 6,000 CIB + 10,500 Deel ($210).
-- Travel 6,600 → Deel ($132).
-- MS 9,900 → Deel 9,900 ($198).
-- Deel total 27,000 ≤ 40,000.
+## 7. Open questions (still open)
 
-## 7. Open questions (with recommended defaults)
-
-| # | Question | Default |
+| # | Question | Recommended default |
 |---|---|---|
-| OQ-1 | Where do plain pockets and achieved goals sit in the uncover order? (The sources only name "Monthly savings, then the lowest-priority goal".) | Monthly savings → pockets (newest first) → goals by priority, lowest first → achieved goals last. |
-| OQ-2 | Fixed-amount goals (`monthly_contribution`) in a %-only allocator. | No line is created. The goal card keeps "needs X/month" from `goalPlan`, and the split screen pre-fills `pct = fixed / last leftover`, shown to the user (not saved until they confirm). |
-| OQ-3 | Legacy card plans with no purchase charge on the card (count in 0363). | Insert one card charge for the remaining principal, dated at the plan start, with `spend_exclusion='manual'` so it never counts as spending. Owner to confirm if the count is > 0. |
-| OQ-4 | Does an unexplained SMS balance *rise* count as leftover? | No (conservative). It raises free money only, so a later month-end can place it once it is real leftover. |
-| OQ-6 | Order of an item's existing parts in fill() (sources say only "existing parts first"). | Most remaining cap first (T27 sends all of Car to Deel). Alternative: the part in the account that received most of the month's income. |
-| OQ-7 | Fixed-goal amounts for OQ-2 after 0364 drops `monthly_contribution`. | Run the OQ-2 pre-fill once in P6 and store it as a pending suggestion in `prompt_state`; then 0364 may drop the column. |
-| OQ-8 | Category for goals created from targeted pockets (0355). | `quality_of_life`, name kept; the user can change it. |
-| OQ-5 | Item name, icon and colour are copied onto each part. | Rename and recolour update every part of the item in one store action. Revisit if a pocket table is ever needed. |
+| OQ-1 | P2 needs a native build and a forced update for every tester. Owner OK? | Yes. Build and upload both apps (native-release.sh), then bump the min version, then run the P2 migrations. |
+| OQ-2 | Fixed-amount goals (`monthly_contribution`) get no split line. | No automatic line. One-time note on the split screen: "Car used to get 2,000 a month; add it here as a %". |
+| OQ-3 | Legacy card plans with no purchase charge (0361 count). | If > 0, insert the remaining-principal charge with `spend_exclusion='manual'` and leave history as it is. The owner confirms the count. |
+| OQ-4 | Targeted pockets with no goal (0355 count). | Likely 0. If not: a goal in `quality_of_life`, name kept. |
