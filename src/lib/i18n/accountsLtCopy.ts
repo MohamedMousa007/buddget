@@ -1,5 +1,9 @@
 import { useLocale } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n/types'
+import type { CardColour, CardDesign } from '@/lib/payment/cardFaces'
+import { arPlural } from '@/lib/i18n/arPlural'
+
+const AR_PLAN = { one: 'خطة', two: 'خطتين', few: 'خطط', many: 'خطة', fem: true }
 
 /** Light touch Accounts (A2): the account and card sheets, add account, add card, Cash out, Set aside and Cash on hand. */
 export interface AccountsLtCopy {
@@ -121,6 +125,54 @@ export interface AccountsLtCopy {
     closeLeft: (amount: string, account: string) => string
     closeRefused: (account: string) => string
   }
+  /** Round 9 (final UI v9): hero, faces, card sheet, Pay card, Set aside list, the add menu's Card tile. */
+  v9: {
+    freeToSpend: string
+    exactly: (amount: string) => string
+    exactlyOf: (label: string, amount: string) => string
+    showExact: (label: string, amount: string) => string
+    addACard: string
+    spreadCards: string
+    creditTip: string
+    addMenuCard: string
+    addMenuCardHint: string
+    cardFace: string
+    modern: string
+    classic: string
+    cardColour: string
+    designs: Record<CardDesign, string>
+    colours: Record<CardColour, string>
+    linkedAccount: string
+    linkedNone: string
+    linkedHint: string
+    payCard: string
+    payTitle: (card: string) => string
+    fullAmount: string
+    from: string
+    date: string
+    today: string
+    payNote: string
+    paySaved: string
+    clearsWithPlans: (card: string, plans: string) => string
+    clears: (amount: string) => string
+    leftAfter: (amount: string) => string
+    dueNow: (amount: string) => string
+    owedSplit: (card: string, plans: string, n: number) => string
+    installments: string
+    installmentsLine: (n: number, month: string, left: string) => string
+    planProgress: (paid: number, of: number, month: string) => string
+    planLeft: (amount: string) => string
+    nothingOwed: string
+    setAsideTitle: string
+    setAsideSub: (amount: string) => string
+    pockets: string
+    goals: string
+    inAccount: (account: string) => string
+    inPlaces: (parts: string[]) => string
+    notCovered: (amount: string) => string
+    shortWarn: (account: string, amount: string) => string
+    setAsideFootnote: string
+  }
 }
 
 export const ACCOUNTS_LT_COPY: Record<Locale, AccountsLtCopy> = {
@@ -241,6 +293,53 @@ export const ACCOUNTS_LT_COPY: Record<Locale, AccountsLtCopy> = {
       closeLeft: (a, acc) => `${a} is still set aside: ${acc} doesn’t have that much free. Pick another account, or I spent it.`,
       closeRefused: (acc) => `${acc} couldn’t be closed. Check what is still set aside in it and try again.`,
     },
+    v9: {
+      freeToSpend: 'Free to spend',
+      exactly: (a) => `${a} exactly`,
+      exactlyOf: (l, a) => `${l} · ${a} exactly`,
+      showExact: (l, a) => `${l}, ${a}`,
+      addACard: 'Add a card',
+      spreadCards: 'Spread the cards',
+      creditTip: 'Spending on this card is added to what you owe. It isn’t taken from any account until you pay the card.',
+      addMenuCard: 'Card',
+      addMenuCardHint: 'No account needed',
+      cardFace: 'Card face',
+      modern: 'Modern',
+      classic: 'Classic',
+      cardColour: 'Card colour',
+      designs: { wave: 'Wave', metal: 'Metal', chrome: 'Chrome', glass: 'Glass', carbon: 'Carbon', contour: 'Contour', grain: 'Grain', lion: 'Lion', guilloche: 'Guilloche', facet: 'Facets', globe: 'Globe', twotone: 'Two-tone', ribbon: 'Ribbon', emboss: 'Emboss' },
+      colours: { black: 'Black', teal: 'Teal', navy: 'Navy', sand: 'Sand', rose: 'Rose' },
+      linkedAccount: 'Linked account',
+      linkedNone: 'None',
+      linkedHint: 'None is fine for a store card, a prepaid card or a card from a bank where you have no account.',
+      payCard: 'Pay card',
+      payTitle: (c) => `Pay ${c}`,
+      fullAmount: 'Full amount',
+      from: 'From',
+      date: 'Date',
+      today: 'Today',
+      payNote: 'The money leaves that account and what you owe on the card goes down. It isn’t counted as spending; the purchases already were.',
+      paySaved: 'Card payment saved',
+      clearsWithPlans: (c, p) => `Clears what’s due now: ${c} + ${p} in installments`,
+      clears: (a) => `Clears the ${a} you owe on this card`,
+      leftAfter: (a) => `${a} left to pay after this`,
+      dueNow: (a) => `${a} due now`,
+      owedSplit: (c, p, n) => `${c} on the card + ${p} in ${n} ${n === 1 ? 'plan' : 'plans'}`,
+      installments: 'Installments:',
+      installmentsLine: (n, m, l) => `${n} ${n === 1 ? 'plan' : 'plans'} · ${m} a month · ${l} left`,
+      planProgress: (p, of, m) => `${p} of ${of} · ${m} a month`,
+      planLeft: (a) => `${a} left`,
+      nothingOwed: 'Nothing owed right now',
+      setAsideTitle: 'Set aside',
+      setAsideSub: (a) => `${a} kept for pockets and goals`,
+      pockets: 'Pockets',
+      goals: 'Goals',
+      inAccount: (a) => `In ${a}`,
+      inPlaces: (parts) => parts.join(' · '),
+      notCovered: (a) => `${a} not covered`,
+      shortWarn: (acc, a) => `${acc} is short ${a}.`,
+      setAsideFootnote: 'Set-aside money stays in its account, so the balance doesn’t change. It’s left out of Free to spend so you don’t spend it by accident.',
+    },
   },
   ar: {
     account: {
@@ -358,6 +457,53 @@ export const ACCOUNTS_LT_COPY: Record<Locale, AccountsLtCopy> = {
       closeCta: (acc) => `إغلاق ${acc}`,
       closeLeft: (a, acc) => `لا يزال ${a} مُخصَّصًا: لا يتوفر في ${acc} مبلغ متاح كافٍ. اختر حسابًا آخر، أو صرفته.`,
       closeRefused: (acc) => `تعذّر إغلاق ${acc}. راجع ما بقي مُخصَّصًا فيه وحاول مرة أخرى.`,
+    },
+    v9: {
+      freeToSpend: 'متاح للصرف',
+      exactly: (a) => `${a} بالضبط`,
+      exactlyOf: (l, a) => `${l} · ${a} بالضبط`,
+      showExact: (l, a) => `${l}، ${a}`,
+      addACard: 'أضف بطاقة',
+      spreadCards: 'افرد البطاقات',
+      creditTip: 'المصروف على هذه البطاقة يُضاف لما تدين به. لا يُخصم من أي حساب حتى تسدد البطاقة.',
+      addMenuCard: 'بطاقة',
+      addMenuCardHint: 'بدون حساب',
+      cardFace: 'شكل البطاقة',
+      modern: 'عصري',
+      classic: 'كلاسيكي',
+      cardColour: 'لون البطاقة',
+      designs: { wave: 'موجة', metal: 'معدني', chrome: 'كروم', glass: 'زجاج', carbon: 'كربون', contour: 'خطوط', grain: 'محبّب', lion: 'أسد', guilloche: 'زخرفة', facet: 'أوجه', globe: 'كرة أرضية', twotone: 'لونين', ribbon: 'شريط', emboss: 'نقش بارز' },
+      colours: { black: 'أسود', teal: 'أخضر مزرق', navy: 'كحلي', sand: 'رملي', rose: 'وردي' },
+      linkedAccount: 'الحساب المرتبط',
+      linkedNone: 'لا يوجد',
+      linkedHint: '«لا يوجد» مناسب لبطاقة متجر أو بطاقة مسبقة الدفع أو بطاقة من بنك ليس لك فيه حساب.',
+      payCard: 'سدّد البطاقة',
+      payTitle: (c) => `سداد ${c}`,
+      fullAmount: 'المبلغ كامل',
+      from: 'من',
+      date: 'التاريخ',
+      today: 'اليوم',
+      payNote: 'يخرج المبلغ من ذلك الحساب وينقص ما تدين به على البطاقة. لا يُحسب كمصروف؛ المشتريات حُسبت من قبل.',
+      paySaved: 'تم حفظ سداد البطاقة',
+      clearsWithPlans: (c, p) => `يغطي المستحق الآن: ${c} + ${p} أقساط`,
+      clears: (a) => `يغطي ${a} المستحقة على هذه البطاقة`,
+      leftAfter: (a) => `يتبقى ${a} بعد هذه الدفعة`,
+      dueNow: (a) => `${a} مستحق الآن`,
+      owedSplit: (c, p, n) => `${c} على البطاقة + ${p} في ${arPlural(n, AR_PLAN)}`,
+      installments: 'الأقساط:',
+      installmentsLine: (n, m, l) => `${arPlural(n, AR_PLAN)} · ${m} شهريًا · يتبقى ${l}`,
+      planProgress: (p, of, m) => `${p} من ${of} · ${m} شهريًا`,
+      planLeft: (a) => `يتبقى ${a}`,
+      nothingOwed: 'لا يوجد مستحق الآن',
+      setAsideTitle: 'المُخصَّص',
+      setAsideSub: (a) => `${a} مُخصَّص للجيوب والأهداف`,
+      pockets: 'الجيوب',
+      goals: 'الأهداف',
+      inAccount: (a) => `في ${a}`,
+      inPlaces: (parts) => parts.join(' · '),
+      notCovered: (a) => `${a} غير مغطّى`,
+      shortWarn: (acc, a) => `${acc} ناقص ${a}.`,
+      setAsideFootnote: 'المال المُخصَّص يبقى في حسابه، فلا يتغير الرصيد. يُستبعد من «متاح للصرف» حتى لا تصرفه بالخطأ.',
     },
   },
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useDismissable } from '@/hooks/useDismissable'
 
@@ -50,11 +50,55 @@ function menuKeyTarget(menu: HTMLElement | null, key: string): HTMLElement | nul
 
 const WIDTH = 216
 const ROW = 44
+const GAP = 6
+const EDGE = 8
+
+export interface MenuPlacementInput {
+  anchor: Pick<DOMRect, 'top' | 'bottom' | 'left' | 'right'>
+  /** The menu's rendered height (or the first estimate before it is measured). */
+  height: number
+  viewportW: number
+  viewportH: number
+  /** The bottom safe-area inset (home indicator). */
+  insetBottom?: number
+  rtl?: boolean
+}
+
+/**
+ * Where the menu sits: under the trigger, aligned to its end edge (right in LTR, left in RTL), inside the viewport.
+ * Near the bottom (or over the home indicator) it flips above the trigger; with room on neither side it pins to the
+ * bottom edge. LTR with room below lands where it always has.
+ */
+export function placeMenu({ anchor, height, viewportW, viewportH, insetBottom = 0, rtl = false }: MenuPlacementInput): { top: number; left: number } {
+  const left = Math.max(EDGE, Math.min(rtl ? anchor.left : anchor.right - WIDTH, viewportW - WIDTH - EDGE))
+  const floor = viewportH - EDGE - insetBottom
+  const below = anchor.bottom + GAP
+  if (below + height <= floor) return { top: below, left }
+  const above = anchor.top - GAP - height
+  if (above >= EDGE) return { top: above, left }
+  return { top: Math.max(EDGE, floor - height), left }
+}
+
+/** The bottom safe-area inset in px, read from a probe padded with env(). */
+function bottomInset(): number {
+  const probe = document.createElement('div')
+  probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding-bottom:env(safe-area-inset-bottom, 0px)'
+  document.body.appendChild(probe)
+  const v = parseFloat(getComputedStyle(probe).paddingBottom) || 0
+  probe.remove()
+  return v
+}
 
 export function CardActionMenu({ anchor, items, onClose, title, zClassName = 'z-[60]' }: CardActionMenuProps) {
   useDismissable(anchor !== null, onClose)
   const menuRef = useRef<HTMLDivElement>(null)
   const open = anchor !== null
+  const [box, setBox] = useState<{ height: number; inset: number } | null>(null)
+  useLayoutEffect(() => {
+    const el = menuRef.current
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- measures the rendered menu before paint
+    setBox(el ? { height: el.offsetHeight, inset: bottomInset() } : null)
+  }, [anchor, items.length, title])
   useEffect(() => {
     if (!open) return
     const opener = document.activeElement as HTMLElement | null
@@ -65,9 +109,10 @@ export function CardActionMenu({ anchor, items, onClose, title, zClassName = 'z-
   // beyond confirming document exists for the portal target.
   if (!anchor || typeof document === 'undefined') return null
 
-  // Position under the trigger, right-aligned to it, clamped to the viewport.
-  const left = Math.max(8, Math.min(anchor.right - WIDTH, window.innerWidth - WIDTH - 8))
-  const top = Math.min(anchor.bottom + 6, window.innerHeight - 8 - items.length * ROW - (title ? 40 : 0))
+  // Rows with a hint are taller than ROW, so the rendered height replaces the estimate once it is measured.
+  const height = box?.height ?? items.length * ROW + (title ? 40 : 0)
+  const rtl = document.documentElement.dir === 'rtl'
+  const { top, left } = placeMenu({ anchor, height, viewportW: window.innerWidth, viewportH: window.innerHeight, insetBottom: box?.inset ?? 0, rtl })
 
   return createPortal(
     <div className={`fixed inset-0 ${zClassName}`} onClick={onClose} role="presentation">
