@@ -9,6 +9,6 @@ describe('lineAmountInBase (v9 budget line: currency picked inline, written in b
     expect(lineAmountInBase(10, 'USD', 'EGP', { USD_EGP: 48.333 })).toBe(483.33)
   })
   it('gives null with no rate, so nothing is written from a guess', () => {
-    expect(lineAmountInBase(10, 'GBP', 'EGP', {})).toBeNull()
+    expect(lineAmountInBase(10, 'XYZ', 'EGP', {})).toBeNull()
   })
 })
