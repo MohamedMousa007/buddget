@@ -4,6 +4,8 @@
 --   (GOAL_ICON_SET, the one goals use), e.g. 'graduation-cap'. Set only for source_type 'other' by the client; any
 --   type may carry it, the client ignores it elsewhere. The CHECK keeps it a short kebab-case key, never free text.
 --   Additive only: optional on write, old builds never send or clear it. Whole-row sync, no RPC column lists. No backfill.
+--   Ship order (§8 OQ-1): apply this file before the web deploy that carries ui/v9-gaps; the new client sends the new
+--   column(s) on every upsert of this table, so without it every write of the table fails.
 --
 -- BEFORE-COUNTS (run first; expected in brackets)
 --   select count(*) from information_schema.columns

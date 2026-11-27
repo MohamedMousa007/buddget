@@ -39,5 +39,8 @@ describe('irregular income is never late', () => {
     expect(cand.occ.dueDate.slice(0, 7)).toBe('2026-09')
     const filled = buildOccurrences(free, [{ ...credit, templateId: 'free', occurrenceDate: cand.occ.dueDate }], '2026-09', 1, today)
     expect(filled[0]).toMatchObject({ eventId: 'c', status: 'received' })
+    // Sep 20 against the placeholder day 1 is not "19 days late".
+    expect(filled[0].daysLate).toBeUndefined()
+    expect(paydayState(filled[0], today).kind).toBe('received')
   })
 })

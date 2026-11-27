@@ -9,6 +9,8 @@
 --   builds read an irregular source as a plain monthly one.
 --   Additive only: the column is optional on write, so old builds' upserts never send or clear it. sync_pull_v2 /
 --   sync_table_delta return whole rows; no RPC lists income_sources columns for this field. No backfill.
+--   Ship order (§8 OQ-1): apply this file before the web deploy that carries ui/v9-gaps; the new client sends the new
+--   column(s) on every upsert of this table, so without it every write of the table fails.
 --
 -- BEFORE-COUNTS (run first; expected in brackets)
 --   select count(*) from public.income_sources where deleted_at is null;                                [any]

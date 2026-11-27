@@ -149,7 +149,7 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
 
   const source = event.templateId ? incomeSources.find((s) => s.id === event.templateId) : undefined
   const recurring = Boolean(event.templateId)
-  const daysLate = recurring ? eventDaysLate(event) : null
+  const daysLate = recurring && !source?.irregular ? eventDaysLate(event) : null
   const payday = event.occurrenceDate ?? event.receivedDate
   const clockAt = mergeDayTime(receivedDate, clock)
   const time = clockAt ? formatClock(new Date(clockAt), locale) : null

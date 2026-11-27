@@ -336,7 +336,7 @@ export function useFlowLedger() {
       const amountBase = convertCurrency(inc.amount, inc.currency, base, rates)
       const recurring = Boolean(inc.event?.templateId)
       const fromSms = Boolean(inc.event?.smsLogId)
-      const daysLate = inc.event && recurring ? eventDaysLate(inc.event) : null
+      const daysLate = inc.event && recurring && !sourceById.get(inc.event.templateId!)?.irregular ? eventDaysLate(inc.event) : null
       const notLinked = Boolean(inc.event && unmatched.has(inc.event.id))
       const passedThrough = inc.event?.exclusion === 'pass_through'
       const borrowed = isBorrowedMoney(inc.event ?? inc)

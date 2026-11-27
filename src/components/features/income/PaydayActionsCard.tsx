@@ -70,7 +70,7 @@ export function PaydayActionsCard({ source, occ }: { source: IncomeSource; occ: 
         ? t.paydays.missedBody
         : state === 'notYet'
           ? t.income.earlierPaydayFirst
-          : fillSlots(occ.dueDate < todayISO ? t.paydays.untouchedBody : t.paydays.dueBody, { amount: amountSlot, currency: occ.currency })
+          : fillSlots(occ.dueDate < todayISO && !occ.irregular ? t.paydays.untouchedBody : t.paydays.dueBody, { amount: amountSlot, currency: occ.currency })
 
   const received = () => openAmountReceived(source.id, occ.key, month)
   const markMissed = () =>
@@ -107,13 +107,16 @@ export function PaydayActionsCard({ source, occ }: { source: IncomeSource; occ: 
       <p className="text-[0.8125rem] leading-[1.45] text-[var(--color-brand-text-secondary)]">{body}</p>
       {state === 'untouched' ? (
         <>
-          <div className="grid grid-cols-2 gap-2">
+          {/* An irregular month is never missed: it only takes money. */}
+          <div className={occ.irregular ? 'grid' : 'grid grid-cols-2 gap-2'}>
             <Button variant="success" size="cta" onClick={received}>
               {t.income.receivedBtn}
             </Button>
-            <Button variant="outline" size="cta" onClick={markMissed}>
-              {t.income.missedBtn}
-            </Button>
+            {occ.irregular ? null : (
+              <Button variant="outline" size="cta" onClick={markMissed}>
+                {t.income.missedBtn}
+              </Button>
+            )}
           </div>
           <Button variant="link" size="touch" onClick={() => setLinking(true)}>
             {t.paydays.linkOther}

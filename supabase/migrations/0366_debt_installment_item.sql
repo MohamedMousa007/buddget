@@ -7,6 +7,8 @@
 --   Editing an installment reads both back, so the tile keeps the type picked at creation. debts.emoji is left alone
 --   (it carries the family emoji the add sheet writes, e.g. the card emoji).
 --   Additive only: both optional on write, old builds never send or clear them. Whole-row sync. No backfill.
+--   Ship order (§8 OQ-1): apply this file before the web deploy that carries ui/v9-gaps; the new client sends the new
+--   column(s) on every upsert of this table, so without it every write of the table fails.
 --
 -- BEFORE-COUNTS (run first; expected in brackets)
 --   select count(*) from public.debts where debt_type = 'installment' and deleted_at is null;          [any]

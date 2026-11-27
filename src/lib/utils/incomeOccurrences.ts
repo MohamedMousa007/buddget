@@ -258,6 +258,9 @@ export function buildOccurrences(
     if (realizedAfter && !o.eventId && o.status === 'late') o.status = 'missed'
   }
 
+  // An irregular source's day is only a placeholder for its month: money that lands later in the month is not late.
+  if (source.irregular) for (const o of occ) delete o.daysLate
+
   // Actionability. Settled paydays are always editable/deletable, and any *past*
   // open payday (late/missed) can always be backfilled or marked missed — you can
   // catch up a historical gap regardless of what landed after it. Only *future*
