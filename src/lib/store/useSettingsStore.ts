@@ -150,6 +150,9 @@ interface SettingsState {
   budgetStudioDraft: StudioDraft | null
   saveBudgetStudioDraft: (draft: StudioDraft) => void
   clearBudgetStudioDraft: () => void
+  /** What was typed on the Studio opener and not yet read, so leaving keeps it (persisted). */
+  budgetOpenerText: string
+  setBudgetOpenerText: (text: string) => void
   /** When false, chat stops saving new notes. */
   buddgyLearning: boolean
   setBuddgyLearning: (on: boolean) => void
@@ -284,6 +287,8 @@ export const useSettingsStore = create<SettingsState>()(
       budgetStudioDraft: null,
       saveBudgetStudioDraft: (draft) => set({ budgetStudioDraft: draft }),
       clearBudgetStudioDraft: () => set({ budgetStudioDraft: null }),
+      budgetOpenerText: '',
+      setBudgetOpenerText: (text) => set({ budgetOpenerText: text }),
       buddgyLearning: true,
       setBuddgyLearning: (on) => set({ buddgyLearning: on }),
       clearBuddgyNotes: () => set({ buddgyNotes: [] }),
@@ -394,7 +399,7 @@ export const useSettingsStore = create<SettingsState>()(
       reset: () => {
         get().resetSettings()
         // Persisted per-account fields: left in memory they would carry into the next sign-in in the same tab.
-        set({ budgetClosedCycles: [], budgetStudioDraft: null, buddgyNotes: [], serverSyncedFor: null, dismissedBanners: [], snoozedBanners: {}, pushOptOut: false })
+        set({ budgetClosedCycles: [], budgetStudioDraft: null, budgetOpenerText: '', buddgyNotes: [], serverSyncedFor: null, dismissedBanners: [], snoozedBanners: {}, pushOptOut: false })
       },
     }),
     {
@@ -411,6 +416,7 @@ export const useSettingsStore = create<SettingsState>()(
         buddgyNotes: state.buddgyNotes,
         budgetClosedCycles: state.budgetClosedCycles,
         budgetStudioDraft: state.budgetStudioDraft,
+        budgetOpenerText: state.budgetOpenerText,
         buddgyLearning: state.buddgyLearning,
         insightsSeen: state.insightsSeen,
         insightsRemindedAt: state.insightsRemindedAt,

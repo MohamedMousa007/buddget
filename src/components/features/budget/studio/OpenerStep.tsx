@@ -7,6 +7,7 @@ import { OptionChip } from '@/components/ui/OptionChip'
 import { Textarea } from '@/components/ui/textarea'
 import { readSituation } from '@/lib/budget/budgetAiClient'
 import { SITUATION_MAX_TEXT } from '@/lib/budget/situationAi'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import type { Currency } from '@/lib/store/types'
 import { useBudgetStudioCopy } from '../useStudioCopy'
 import { StudioHeading } from './StudioHeading'
@@ -31,7 +32,8 @@ type Problem = 'failed' | 'quota' | 'empty' | null
 /** Always-asked first step: describe your situation and every question it answers is skipped. */
 export function OpenerStep({ base, onDone, onSkip }: OpenerStepProps) {
   const c = useBudgetStudioCopy().opener
-  const [text, setText] = useState('')
+  const text = useSettingsStore((s) => s.budgetOpenerText)
+  const setText = useSettingsStore((s) => s.setBudgetOpenerText)
   const [busy, setBusy] = useState(false)
   const [problem, setProblem] = useState<Problem>(null)
   const live = useRef<AbortController | null>(null)
@@ -58,7 +60,9 @@ export function OpenerStep({ base, onDone, onSkip }: OpenerStepProps) {
     if (!out.ok) {
       setProblem(out.reason === 'quota' ? 'quota' : 'failed')
       setBusy(false)
-    } else if (!onDone(out.data)) {
+    } else if (onDone(out.data)) {
+      setText('')
+    } else {
       setProblem('empty')
       setBusy(false)
     }
@@ -109,7 +113,7 @@ export function OpenerStep({ base, onDone, onSkip }: OpenerStepProps) {
           {problem === 'failed' ? c.retry : c.cta}
         </Button>
         {problem ? (
-          <Button size="touch" variant="ghost" className="w-full" disabled={busy} onClick={onSkip}>
+          <Button size="touch" variant="ghost" className="w-full" disabled={busy} onClick={() => { setText(''); onSkip() }}>
             {c.skip}
           </Button>
         ) : null}
