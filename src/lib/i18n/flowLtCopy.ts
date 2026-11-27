@@ -53,6 +53,8 @@ export interface FlowLtCopy {
     deleteAria: string
     deleteTitle: string
     deleteBody: (title: string) => string
+    /** An expense paired with a debt payment: its money is read-only here. Empty name = a generic "this debt". */
+    pairedNote: (debt: string) => string
     keepEditing: string
     /** Leaving a new expense that has something typed into it. */
     unsavedAddBody: string
@@ -157,6 +159,7 @@ export const FLOW_LT_COPY: Record<Locale, FlowLtCopy> = {
       deleteAria: 'Delete expense',
       deleteTitle: 'Delete this expense?',
       deleteBody: (t) => `${t} leaves your spending and the account balance. You can undo right after.`,
+      pairedNote: (d) => `Paid toward ${d || 'this debt'}. Edit or delete it from the debt.`,
       keepEditing: 'Keep editing',
       unsavedAddBody: 'This expense isn’t saved yet. Save it, or discard it.',
       incompleteTitle: 'Discard your changes?',
@@ -255,6 +258,7 @@ export const FLOW_LT_COPY: Record<Locale, FlowLtCopy> = {
       deleteAria: 'احذف المصروف',
       deleteTitle: 'حذف هذا المصروف؟',
       deleteBody: (t) => `يخرج ${t} من إنفاقك ومن رصيد الحساب. يمكنك التراجع بعدها مباشرة.`,
+      pairedNote: (d) => `مدفوع لسداد ${d || 'هذا الدين'}. عدّله أو احذفه من الدين.`,
       keepEditing: 'متابعة التعديل',
       unsavedAddBody: 'لم يُحفظ هذا المصروف بعد. احفظه أو تجاهله.',
       incompleteTitle: 'تجاهل التغييرات؟',

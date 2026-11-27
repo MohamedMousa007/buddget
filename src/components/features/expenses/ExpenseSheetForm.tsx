@@ -103,6 +103,8 @@ export interface ExpenseSheetFormProps {
   origin?: ExpenseOrigin
   /** Edit-only: the saved category and amount in base currency, already inside this month's budget totals. */
   saved?: { category: string; amountBase: number }
+  /** Edit-only: the row belongs to a debt payment; amount, date, account, category and whether it counts are read-only, with this line saying why. */
+  lockedNote?: string
   /** Add-only: BNPL "split into installments" controls (shown when the PM is `bnpl`). */
   installment?: {
     isBnplPurchase: boolean
@@ -220,6 +222,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
     onDelete,
     origin,
     saved,
+    lockedNote,
   } = props
   const t = useT()
   const lt = useFlowLtCopy()
@@ -331,7 +334,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
         <V3SheetHeader
           onClose={handleX}
           leading={
-            <PillButton icon={<Calendar />} onClick={() => setCalOpen(true)} aria-haspopup="dialog" aria-expanded={calOpen} className={HEADER_PILL}>
+            <PillButton icon={<Calendar />} onClick={() => setCalOpen(true)} disabled={Boolean(lockedNote)} aria-haspopup="dialog" aria-expanded={calOpen} className={HEADER_PILL}>
               <span dir="auto">{datePill}</span>
             </PillButton>
           }
@@ -360,6 +363,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
               ) : undefined
             }
             line={conversion ?? ''}
+            readOnly={Boolean(lockedNote)}
             className="pb-0"
           />
           <div className="flex flex-col items-center px-5 pb-5 text-center">
@@ -390,7 +394,8 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
           <Card padding="none" divide className="mx-4 overflow-hidden rounded-2xl">
             <PickerRow
               label={t.expenseForm.category}
-              onClick={() => setCatOpen(true)}
+              onClick={lockedNote ? undefined : () => setCatOpen(true)}
+              chevron={!lockedNote}
               value={
                 category && colors ? (
                   <>
@@ -406,11 +411,19 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
             />
             <PickerRow
               label={lt.filters.paidWith}
-              onClick={() => setMethodOpen(true)}
+              onClick={lockedNote ? undefined : () => setMethodOpen(true)}
+              chevron={!lockedNote}
               value={method ? <MethodValue method={method} /> : <span className="text-[var(--color-brand-text-muted)]">{choose}</span>}
             />
             {originValue ? <PickerRow label={lt.expense.recordedFrom} value={<span className="inline-flex min-w-0 items-center gap-1.5">{originValue}</span>} /> : null}
           </Card>
+
+          {lockedNote ? (
+            <div className={`mx-4 mt-3 flex items-start gap-2.5 px-3 py-2.5 ${BOX}`} role="note">
+              <Info className="mt-px size-4 shrink-0 text-[var(--color-brand-text-muted)]" aria-hidden />
+              <span dir="auto" className="text-start text-xs font-medium leading-[1.4] text-[var(--color-brand-text-secondary)]">{lockedNote}</span>
+            </div>
+          ) : null}
 
           {nonSpendSelected ? (
             <div className={`mx-4 mt-3 flex items-start gap-2.5 px-3 py-2.5 ${BOX}`}>
@@ -495,7 +508,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
             />
           </label>
 
-          {!nonSpendSelected ? (
+          {!nonSpendSelected && !lockedNote ? (
             <div className="mx-4 mt-3 space-y-2">
               <div className={`divide-y divide-[var(--color-brand-border)] overflow-hidden ${BOX}`}>
                 {addOnExcludedMethod ? (

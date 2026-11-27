@@ -30,6 +30,11 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
     useShallow((s) => ({ paymentMethods: s.paymentMethods, base: s.settings.baseCurrency, rates: s.exchangeRates, monthStartDay: s.settings.monthStartDay })),
   )
   const monthFilter = useSettingsStore((s) => s.monthFilter)
+  const pairedDebt = useFinanceStore((s) => {
+    const payment = expense.linkedDebtPaymentId ? s.debtPayments.find((p) => p.id === expense.linkedDebtPaymentId) : undefined
+    const debt = payment ? s.debts.find((d) => d.id === payment.debtId) : undefined
+    return payment ? debt?.name || debt?.person || '' : null
+  })
   const pm = paymentMethods.find((m) => m.id === expense.paymentMethodId)
   const parent = pm?.parentId ? paymentMethods.find((m) => m.id === pm.parentId) : undefined
   const origin: ExpenseOrigin = hasReceipt
@@ -103,6 +108,7 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
       receiptId={hasReceipt ? expense.receiptId : undefined}
       origin={origin}
       saved={saved}
+      lockedNote={pairedDebt === null ? undefined : lt.expense.pairedNote(pairedDebt)}
       onDelete={async () => {
         // A debt payment's expense asks its own question inside removeExpense; a plain one asks here, then offers Undo.
         const paired = expense.linkedDebtPaymentId && useFinanceStore.getState().debtPayments.some((p) => p.id === expense.linkedDebtPaymentId)

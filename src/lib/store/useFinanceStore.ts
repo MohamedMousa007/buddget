@@ -91,6 +91,18 @@ import { stampRateKeys } from '@/lib/market/rateFreshness'
 import { decomposePaymentMethodName, normalizePaymentMethodType } from '@/lib/payment/paymentMethodDefaults'
 const PERSIST_VERSION = 24
 
+/** What an edit may change on an expense paired with a debt payment: its words and attachments, never the money it moved. */
+const PAIRED_EDITABLE = ['description', 'notes', 'receiptId', 'smsFlagsAck', 'serverRev'] as const satisfies readonly (keyof Expense)[]
+
+function pairedExpensePatch(e: Expense, patch: Partial<Expense>, methods: readonly PaymentMethod[]): Partial<Expense> {
+  const kept: Partial<Expense> = {}
+  for (const k of PAIRED_EDITABLE) if (k in patch) Object.assign(kept, { [k]: patch[k] })
+  // Repair flows still move a row off an account that is gone or provisional (merge, unplaced SMS); a real account stays.
+  const current = methods.find((m) => m.id === e.paymentMethodId)
+  if ('paymentMethodId' in patch && (!current || current.provisional)) kept.paymentMethodId = patch.paymentMethodId
+  return kept
+}
+
 /** A row put back by Undo: a fresh edit time (the server clears a tombstone only for an action newer than the delete), and watched in case the undo still loses. */
 const restoredNow = <T extends { id: string }>(row: T): T => {
   noteRestored(row.id)
@@ -416,10 +428,11 @@ export const useFinanceStore = create<FinanceStore>()(
           return { receipts: next }
         }),
 
-      updateExpense: (id, updates) =>
+      updateExpense: (id, patch) =>
         set((state) => ({
           expenses: state.expenses.map((e) => {
             if (e.id !== id) return e
+            const updates = e.linkedDebtPaymentId ? pairedExpensePatch(e, patch, state.paymentMethods) : patch
             // A moved date moves the instant too, or balances/ordering keep reading the old day.
             const movedDay = updates.date && updates.date !== e.date && !('occurredAt' in updates)
             return {
@@ -433,6 +446,12 @@ export const useFinanceStore = create<FinanceStore>()(
 
       deleteExpense: (id) => {
         const removed = get().expenses.find((e) => e.id === id)
+        // A debt payment's expense goes with its payment, so the debt is owed again rather than silently paid.
+        const pairedId = removed?.linkedDebtPaymentId
+        if (pairedId && get().debtPayments.some((p) => p.id === pairedId)) {
+          get().deleteDebtPayment(pairedId)
+          return
+        }
         set((state) => ({
           expenses: state.expenses.filter((e) => e.id !== id),
         }))
