@@ -89,7 +89,7 @@ import { noteRestored } from '@/lib/store/undoWatch'
 import { dropMistypedFields } from '@/lib/store/persistShape'
 import { stampRateKeys } from '@/lib/market/rateFreshness'
 import { decomposePaymentMethodName, normalizePaymentMethodType } from '@/lib/payment/paymentMethodDefaults'
-const PERSIST_VERSION = 23
+const PERSIST_VERSION = 24
 
 /** A row put back by Undo: a fresh edit time (the server clears a tombstone only for an action newer than the delete), and watched in case the undo still loses. */
 const restoredNow = <T extends { id: string }>(row: T): T => {
