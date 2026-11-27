@@ -14,7 +14,7 @@ export const BOTTOM_NAV_ITEMS: BottomNavItem[] = [
   { kind: 'link', href: '/flow', label: 'flow', icon: FlowTabIcon },
   { kind: 'link', href: '/accounts', label: 'accounts', icon: Wallet },
   { kind: 'fab', icon: Plus },
-  { kind: 'link', href: '/wealth', label: 'wealth', icon: Coins },
+  { kind: 'link', href: '/wealth', label: 'savings', icon: Coins },
   { kind: 'link', href: '/debts', label: 'debts', icon: Landmark },
 ]
 
@@ -39,10 +39,10 @@ export function sectionTitleNavKey(pathname: string | null): keyof Dictionary['n
   if (pathname.startsWith('/accounts')) return 'accounts'
   if (pathname.startsWith('/debts')) return 'debts'
   if (pathname.startsWith('/income')) return 'flow'
-  if (pathname.startsWith('/wealth')) return 'wealth'
+  if (pathname.startsWith('/wealth')) return 'savings'
   // aliases of /wealth
-  if (pathname.startsWith('/savings')) return 'wealth'
-  if (pathname.startsWith('/investment')) return 'wealth'
+  if (pathname.startsWith('/savings')) return 'savings'
+  if (pathname.startsWith('/investment')) return 'savings'
   if (pathname.startsWith('/subscriptions')) return 'subscriptions'
   // `/budget` is the typed address of /budget-setup and renders it in place: it gets the same title.
   if (pathname === '/budget' || pathname.startsWith('/budget-setup') || pathname.startsWith('/budget-history')) return 'budgetSetup'

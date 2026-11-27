@@ -39,7 +39,7 @@ export function Sidebar() {
     { href: '/flow', label: t.nav.flow, icon: FlowTabIcon },
     { href: '/budget-setup', label: t.nav.budgetSetup, icon: SlidersHorizontal },
     { href: '/accounts', label: t.nav.accounts, icon: Wallet },
-    { href: '/wealth', label: t.nav.wealth, icon: HandCoins },
+    { href: '/wealth', label: t.nav.savings, icon: HandCoins },
     { href: '/debts', label: t.nav.debts, icon: Landmark },
     { href: '/reports', label: t.nav.reports, icon: BarChart3 },
   ]
