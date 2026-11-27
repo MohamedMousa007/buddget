@@ -70,8 +70,10 @@ describe('savings funding link (WLT9)', () => {
     for (const id of ['pm_default_cash', '']) {
       expect(debtPaymentToRow({ ...crossCurrency, paymentMethodId: id }, 'u1').payment_method_id).toBeNull()
       expect(debtToRow({ id: 'd', name: 'n', linkedPaymentMethodId: id } as never, 'u1').linked_payment_method_id).toBeNull()
-      const acct = savingsAccountToRow({ id: 's', name: 'n', type: 'bank', category: 'savings', linkedPaymentMethodId: id, heldInPaymentMethodId: id } as never, 'u1')
-      expect([acct.linked_payment_method_id, acct.held_in_payment_method_id]).toEqual([null, null])
+      const acct = savingsAccountToRow({ id: 's', name: 'n', type: 'bank', category: 'savings', heldInPaymentMethodId: id } as never, 'u1')
+      expect(acct.held_in_payment_method_id).toBeNull()
+      // Retired (0353): a pocket's home is held_in only; the old link double counted pockets with no holder.
+      expect('linked_payment_method_id' in acct).toBe(false)
       expect(savingsTransactionToRow({ id: 't', accountId: 's', type: 'deposit', amount: 1, paymentMethodId: id } as never, 'u1').payment_method_id).toBeNull()
     }
     expect(debtPaymentToRow({ ...crossCurrency, paymentMethodId: 'real-uuid' }, 'u1').payment_method_id).toBe('real-uuid')

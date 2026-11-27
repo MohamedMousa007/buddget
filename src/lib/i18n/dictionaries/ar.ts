@@ -1265,8 +1265,6 @@ export const ar: Dictionary = {
     tabInvestment: 'استثمار',
     fromAccount: 'من حساب لديك بالفعل',
     startFromKind: 'أو ابدأ من نوع',
-    alreadyPocket: 'جيب بالفعل',
-    notPocketYet: 'ليس جيباً بعد',
     continue: 'متابعة',
     goldName: 'ذهب',
     goldSub: 'سبائك، عملات، مجوهرات · حسب العيار',

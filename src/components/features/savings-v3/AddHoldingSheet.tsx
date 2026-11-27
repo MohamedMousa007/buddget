@@ -56,7 +56,6 @@ function AddHoldingBody({ onClose, initialTab, presetAssetType, pocketOnly, onPo
   const t = useT().addHolding
   const sf = useT().savingsForms
   const paymentMethods = useFinanceStore((s) => s.paymentMethods)
-  const savingsAccounts = useFinanceStore((s) => s.savingsAccounts)
   const wealthGoldStrip = useFinanceStore((s) => s.settings.wealthGoldStrip)
   const updateSettings = useFinanceStore((s) => s.updateSettings)
 
@@ -66,7 +65,6 @@ function AddHoldingBody({ onClose, initialTab, presetAssetType, pocketOnly, onPo
   const [formDef, setFormDef] = useState<{ def: PocketKindDef; method: PaymentMethod | null } | null>(null)
   const [asset, setAsset] = useState<InvestmentAssetType | null>(presetAssetType ?? null)
 
-  const pocketByPm = new Map(savingsAccounts.filter((a) => a.linkedPaymentMethodId).map((a) => [a.linkedPaymentMethodId, a.name]))
   const holdablePms = paymentMethods.filter((pm) => HOLDS_MONEY.has(pm.type))
 
   const pickKind = (k: PocketKind) => { setKind(k); setMethod(null) }
@@ -105,10 +103,9 @@ function AddHoldingBody({ onClose, initialTab, presetAssetType, pocketOnly, onPo
                     <p style={label}>{t.fromAccount}</p>
                     <div className="mt-2 space-y-2.5" role="radiogroup" aria-label={t.fromAccount}>
                       {holdablePms.map((pm) => {
-                        const linked = pocketByPm.get(pm.id)
                         const kindDef = pm.type === 'wallet' ? POCKET_KINDS.wallet : POCKET_KINDS.bank
                         return (
-                          <SelectableCard key={pm.id} selected={method?.id === pm.id} disabled={!!linked} onClick={() => pickMethod(pm)}>
+                          <SelectableCard key={pm.id} selected={method?.id === pm.id} onClick={() => pickMethod(pm)}>
                             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-card)] text-[var(--color-brand-text-secondary)]">
                               <SavingsAccountIcon account={{ type: kindDef.savingsType as SavingsType, icon: kindDef.icon }} className="h-5 w-5" />
                             </span>
@@ -117,7 +114,7 @@ function AddHoldingBody({ onClose, initialTab, presetAssetType, pocketOnly, onPo
                                 {accountTitle(pm)}{pm.last4 ? <span className="font-mono-numbers"> ••{pm.last4}</span> : null}
                               </p>
                               <p className="truncate text-xs text-[var(--color-brand-text-muted)]">
-                                {linked ? `${t.alreadyPocket}: ${linked}` : `${PM_TYPE_LABEL[pm.type] ?? ''} · ${pm.currency} · ${t.notPocketYet}`}
+                                {`${PM_TYPE_LABEL[pm.type] ?? ''} · ${pm.currency}`}
                               </p>
                             </div>
                           </SelectableCard>

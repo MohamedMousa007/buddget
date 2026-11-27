@@ -102,7 +102,7 @@ export function commitFlowEntities(state: FlowState, store: Actions, base: Curre
       const holder = roomiestAccount(store, base)
       if (holder) {
         created.savings = store.addSavingsAccount({
-          ...pocket, openingBalance: Math.min(savings, holder.free), linkedPaymentMethodId: holder.id, heldInPaymentMethodId: holder.id,
+          ...pocket, openingBalance: Math.min(savings, holder.free), heldInPaymentMethodId: holder.id,
         })
       }
     }

@@ -91,7 +91,6 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod, onCr
       ...(provider ? { institution: provider } : {}),
       ...(last4 ? { accountLast4: last4 } : {}),
       ...(maturity ? { maturityDate: maturity } : {}),
-      ...(linkedMethod ? { linkedPaymentMethodId: linkedMethod.id } : {}),
       ...(holderId ? { heldInPaymentMethodId: holderId } : {}),
     } as never)
     onCreated?.(id, currency)

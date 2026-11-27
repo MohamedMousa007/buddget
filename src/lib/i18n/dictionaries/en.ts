@@ -1258,8 +1258,6 @@ export const en: Dictionary = {
     tabInvestment: 'Investment',
     fromAccount: 'From an account you already have',
     startFromKind: 'Or start from a kind',
-    alreadyPocket: 'Already a pocket',
-    notPocketYet: 'not a pocket yet',
     continue: 'Continue',
     goldName: 'Gold',
     goldSub: 'Bars, coins, jewellery · by karat',

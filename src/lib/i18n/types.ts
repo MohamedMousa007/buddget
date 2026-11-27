@@ -1145,8 +1145,6 @@ export interface Dictionary {
     tabInvestment: string
     fromAccount: string
     startFromKind: string
-    alreadyPocket: string
-    notPocketYet: string
     continue: string
     goldName: string
     goldSub: string

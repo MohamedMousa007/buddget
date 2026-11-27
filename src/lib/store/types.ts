@@ -688,8 +688,6 @@ export interface SavingsAccount {
   color?: string
   /** Counts toward emergency cover (claimed before any goal). */
   isEmergencyCover?: boolean
-  /** Linked real payment method this pocket represents. */
-  linkedPaymentMethodId?: string
   /** Account-identity sub-line bits (bank name, last 4, certificate maturity, yearly return). */
   institution?: string
   accountLast4?: string

@@ -36,7 +36,7 @@ const seed = (methods: PaymentMethod[]) =>
 const createFromAccount = (method: PaymentMethod, openingBalance: number) =>
   S().addSavingsAccount({
     name: 'Rainy day', category: 'savings', type: 'bank', currency: 'EGP', openingBalance,
-    linkedPaymentMethodId: method.id, heldInPaymentMethodId: pocketHolderId(method, S().paymentMethods, 'EGP'),
+    heldInPaymentMethodId: pocketHolderId(method, S().paymentMethods, 'EGP'),
   } as never)
 
 describe('QA-13 / QA-122 / QA-12: money a tracked account already holds is never counted twice', () => {
