@@ -42,6 +42,8 @@ const THREE_DECIMALS = new Set(['KWD', 'BHD', 'OMR', 'JOD'])
 const unit = (currency: string) => (THREE_DECIMALS.has(currency) ? 1000 : 100)
 export const minorUnit = unit
 const RECEIVED = new Set(['confirmed', 'late', 'partial'])
+/** Savings rows that only relabel money already in its account (LOGIC_SPEC §3.3). Legacy `carry` keeps rule 5. */
+export const LABEL_SOURCES: ReadonlySet<string> = new Set(['set_aside', 'opening', 'move_in', 'move_out', 'month_end', 'month_end_undo', 'release', 'spent', 'close'])
 
 /** Instant of a ledger row: its exact time, else noon of its day (rows that predate `occurredAt`). */
 export function instantOf(occurredAt: string | undefined, date: string): number {
@@ -166,6 +168,7 @@ function walkLegs(input: LedgerInput, apply: ApplyLeg): void {
     else groups.set(t.transferGroupId, [t])
   }
   for (const t of input.savingsTransactions) {
+    if (t.source && LABEL_SOURCES.has(t.source)) continue // 0: a label changes a part, never an account (I-4)
     const pocket = pockets.get(t.accountId)
     const holder = pocket?.heldInPaymentMethodId
     const at = instantOf(t.occurredAt, t.date)

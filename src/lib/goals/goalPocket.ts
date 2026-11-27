@@ -1,5 +1,5 @@
 import type { LedgerInput } from '@/lib/accounts/balance'
-import { DEFAULT_CASH_ID, isTracked } from '@/lib/accounts/kinds'
+import { DEFAULT_CASH_ID, canHoldParts } from '@/lib/accounts/kinds'
 import { balanceEpsilon } from '@/lib/savings/balanceMath'
 import { availableIn } from '@/lib/savings/pocketHome'
 import type { Currency, FinanceStore, Goal, PaymentMethod, SavingsAccount } from '@/lib/store/types'
@@ -14,7 +14,7 @@ export type SavedHome = string
  * currency, the Cash account and wallets included. Cash or a wallet is never offered as a separate outside place.
  */
 export function goalHomeAccounts(methods: readonly PaymentMethod[], currency: string): PaymentMethod[] {
-  return methods.filter((m) => m.id !== DEFAULT_CASH_ID && isTracked(m) && !m.closedAt && !m.excluded && String(m.currency) === currency)
+  return methods.filter((m) => m.id !== DEFAULT_CASH_ID && canHoldParts(m) && String(m.currency) === currency)
 }
 
 export type SavedHomeProblem = 'choose_home' | 'over_available'

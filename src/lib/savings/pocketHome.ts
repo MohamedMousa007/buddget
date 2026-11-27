@@ -1,17 +1,17 @@
 import type { FinanceStore, PaymentMethod, SavingsAccount } from '@/lib/store/types'
 import { computeBalances, type LedgerInput } from '@/lib/accounts/balance'
-import { isTracked } from '@/lib/accounts/kinds'
+import { canHoldParts } from '@/lib/accounts/kinds'
 import { resolveAccountId } from '@/lib/accounts/resolve'
 import { primaryTrackedAccount, resolveAccountLeg } from './accountLeg'
 import { balanceEpsilon } from './balanceMath'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 
-/** Where a pocket's money is: inside a tracked account (part of that account's balance), or outside every account. */
+/** Where a pocket's money is: inside an account that can hold parts (part of its balance), or outside every account. */
 export type PocketHome = { kind: 'reserved'; accountId: string } | { kind: 'outside' }
 
 export function pocketHome(pocket: Pick<SavingsAccount, 'heldInPaymentMethodId'>, methods: readonly PaymentMethod[]): PocketHome {
   const holder = pocket.heldInPaymentMethodId ? methods.find((m) => m.id === pocket.heldInPaymentMethodId) : undefined
-  return holder && isTracked(holder) ? { kind: 'reserved', accountId: holder.id } : { kind: 'outside' }
+  return canHoldParts(holder) ? { kind: 'reserved', accountId: holder.id } : { kind: 'outside' }
 }
 
 type LedgerState = Pick<FinanceStore, 'paymentMethods' | 'expenses' | 'incomeEvents' | 'debtPayments' | 'debts' | 'savingsTransactions' | 'savingsAccounts' | 'accountAdjustments' | 'exchangeRates'>
@@ -85,6 +85,9 @@ function transferRefusal(ledger: LedgerInput, pocket: GuardedPocket, sourceId: s
 /** The one guard behind every deposit writer: the store refuses on it, sheets and Buddgy explain it before submitting. */
 export function depositRefusal(ledger: LedgerInput, pocket: GuardedPocket, intent: DepositIntent): DepositRefusal | null {
   const methods = ledger.paymentMethods
+  // A pocket whose account is closed or deleted counts 0 (I-5): money moved into it would leave net worth.
+  const holder = pocket.heldInPaymentMethodId ? methods.find((m) => m.id === pocket.heldInPaymentMethodId) : undefined
+  if (pocket.heldInPaymentMethodId && (!holder || holder.closedAt)) return 'over_available'
   const declared = intent.mode === 'declare'
   const legId = depositLegId(methods, pocket, intent)
   const home = pocketHome(pocket, methods)

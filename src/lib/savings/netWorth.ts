@@ -19,6 +19,8 @@ export interface NetWorthInput {
    */
   accountsBasis?: number
   heldInPocketIds?: ReadonlySet<string>
+  /** Pockets in a closed or deleted account: counted 0. */
+  goneHolderPocketIds?: ReadonlySet<string>
   /** A tracked account had no rate to the base currency and was left out of `accountsBasis`. */
   accountsIncomplete?: boolean
 }
@@ -50,6 +52,7 @@ export function computeNetWorth(i: NetWorthInput): NetWorthResult {
   // never count it at its raw unit value.
   let valuationIncomplete = i.accountsIncomplete === true
   for (const a of i.savingsAccounts) {
+    if (i.goneHolderPocketIds?.has(a.id)) continue
     if (i.accountsBasis !== undefined && i.heldInPocketIds?.has(a.id)) continue
     const v = pocketBalanceInBase(a, base, exchangeRates, i.goldPricePerGram, goldOk, i.lookup)
     if (v === null) {

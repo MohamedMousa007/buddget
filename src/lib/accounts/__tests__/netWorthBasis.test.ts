@@ -23,11 +23,13 @@ describe('accountsBasisFor', () => {
     expect(r).toMatchObject({ accountsBasis: 1500 })
     expect([...((r as unknown as { heldInPocketIds: Set<string> }).heldInPocketIds)]).toEqual(['p'])
   })
-  it('BUD-100: a closed account leaves the total and its pocket counts on its own', () => {
+  // LOGIC_SPEC §0 "Money in a closed account: counts zero" replaces BUD-100's "its pocket counts on its own".
+  it('a closed account leaves the total and so does its pocket, which is listed for repair (T19)', () => {
     const closed = { ...bank, closedAt: '2026-11-01T00:00:00Z' } as PaymentMethod
     const pocket = { id: 'p', heldInPaymentMethodId: 'b' } as SavingsAccount
     const r = accountsBasisFor(ledger([closed, usd], [pocket]), 'EGP')
-    expect(r).toMatchObject({ accountsBasis: 500 })
-    expect([...((r as unknown as { heldInPocketIds: Set<string> }).heldInPocketIds)]).toEqual([])
+    expect(r).toMatchObject({ accountsBasis: 500, needsRepair: ['p'] })
+    expect([...(r.heldInPocketIds ?? [])]).toEqual([])
+    expect([...(r.goneHolderPocketIds ?? [])]).toEqual(['p'])
   })
 })

@@ -33,6 +33,12 @@ export function filterablePaymentMethods(methods: readonly PaymentMethod[]): Pay
 export const isTracked = (pm: PaymentMethod): boolean =>
   holdsBalance(pm.type) && pm.openingBalance != null && pm.openingAt != null && !pm.provisional
 
+/** I-11: an account whose balance is known and still in the user's totals. Undefined = deleted (gone from the list). */
+export const isLiveAccount = (pm: PaymentMethod | undefined): pm is PaymentMethod => !!pm && isTracked(pm) && !pm.closedAt
+
+/** I-11: an account that may hold set-aside parts: live and counted. One rule for every writer. */
+export const canHoldParts = (pm: PaymentMethod | undefined): pm is PaymentMethod => isLiveAccount(pm) && !pm.excluded
+
 /** Live (not closed) balance holders, the rows of the Accounts list. */
 /** The in-store cash sentinel is a stand-in for the Cash account, never an account row of its own. */
 /** A provisional account waits in the detected-accounts sheet for the user's answer before it joins the list. */
