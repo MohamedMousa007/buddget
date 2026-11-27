@@ -2,6 +2,7 @@
 const ROUTES: Record<string, string> = {
   recurring_due: '/debts',
   recurring_tomorrow: '/debts',
+  debt_reminder: '/debts',
   subscription_digest: '/subscriptions',
   subscription_trial: '/subscriptions',
   subscription_price: '/subscriptions',

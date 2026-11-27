@@ -2215,6 +2215,9 @@ export interface Dictionary {
     savingsSkippedBody: (amount: string, pocket: string) => string
     recurringDueBody: (name: string, amount: number, currency: string) => string
     recurringTomorrowBody: (name: string, amount: number, currency: string) => string
+    payBackTomorrowBody: (name: string) => string
+    payBackDueBody: (name: string) => string
+    payBackOverdueBody: (name: string, days: number) => string
     recurringConfirmPaid: string
     recurringSnooze: string
     /** Server-built copy for SMS-transaction OS push (localized per account). */

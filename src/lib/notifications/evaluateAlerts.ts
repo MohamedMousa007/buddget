@@ -12,7 +12,7 @@ import { addDays, differenceInCalendarDays, format, parseISO } from 'date-fns'
 import { getMonthRange } from '@/lib/utils/calculations'
 import type { Dictionary } from '@/lib/i18n/types'
 
-export type AlertType = 'recurring_due' | 'recurring_tomorrow' | 'month_end'
+export type AlertType = 'recurring_due' | 'recurring_tomorrow' | 'month_end' | 'debt_reminder'
 
 export interface RecurringPaymentLite {
   id: string
@@ -32,13 +32,21 @@ export interface EvaluateAlertsInput {
   recurring: RecurringPaymentLite[]
   /** debtId → display name. */
   debtNameById: Record<string, string>
+  /** Debts the user owes with a "pay back by" date and no payment schedule (a schedule is reminded above). */
+  payBack?: PayBackDebtLite[]
+}
+
+export interface PayBackDebtLite {
+  debtId: string
+  name: string
+  dueDate: string // YYYY-MM-DD
 }
 
 export interface AlertDescriptor {
   type: AlertType
   dedupeKey: string
   severity: 'info' | 'warning'
-  params: { debtName?: string; amount?: number; currency?: string; daysLeft?: number; recurringId?: string }
+  params: { debtName?: string; amount?: number; currency?: string; daysLeft?: number; recurringId?: string; daysLate?: number; debtId?: string }
 }
 
 /** Overdue days that remind: 1, 3, 7, then every 7 days, 6 reminders at most. */
@@ -74,6 +82,18 @@ export function evaluateAlerts(input: EvaluateAlertsInput): AlertDescriptor[] {
     }
   }
 
+  // Pay-back-by dates: the day before, the day itself, then the same overdue days as scheduled payments.
+  for (const d of input.payBack ?? []) {
+    const late = differenceInCalendarDays(parseISO(todayYmd), parseISO(d.dueDate))
+    if (late !== -1 && late !== 0 && !OVERDUE_REMINDER_DAYS.includes(late)) continue
+    out.push({
+      type: 'debt_reminder',
+      dedupeKey: `debt_reminder:${d.debtId}:${d.dueDate}:${late}`,
+      severity: late < 0 ? 'info' : 'warning',
+      params: { debtName: d.name, daysLate: late, debtId: d.debtId },
+    })
+  }
+
   // Days left in the active month, evaluated against `input.now` (kept pure for
   // testability — mirrors calculateDaysLeftInMonth which uses the wall clock).
   const { end } = getMonthRange(input.monthStr, input.monthStartDay)
@@ -107,6 +127,14 @@ export function renderAlertCopy(
         title: a.params.debtName ?? '',
         body: n.recurringDueBody(a.params.debtName ?? '', a.params.amount ?? 0, a.params.currency ?? ''),
       }
+    case 'debt_reminder': {
+      const late = a.params.daysLate ?? 0
+      const name = a.params.debtName ?? ''
+      return {
+        title: name,
+        body: late < 0 ? n.payBackTomorrowBody(name) : late === 0 ? n.payBackDueBody(name) : n.payBackOverdueBody(name, late),
+      }
+    }
     case 'month_end': {
       const d = a.params.daysLeft ?? 0
       return {

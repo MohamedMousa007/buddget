@@ -2452,6 +2452,9 @@ export const ar: Dictionary = {
       `دفعة ${name} بمبلغ ${amount} ${currency} مستحقة اليوم. هل أكملت الدفع؟`,
     recurringTomorrowBody: (name, amount, currency) =>
       `دفعة ${name} بمبلغ ${amount} ${currency} مستحقة غداً.`,
+    payBackTomorrowBody: (name) => `خطتك أن تسدّد ${name} بحلول الغد.`,
+    payBackDueBody: (name) => `اليوم هو موعد سداد ${name} الذي حددته.`,
+    payBackOverdueBody: (name, days) => `كان موعد سداد ${name} قبل ${arCount(days, 'day')}. هل سدّدته؟ أضف الدفعة.`,
     recurringConfirmPaid: 'تأكيد الدفع',
     recurringSnooze: 'تأجيل يوم',
     push: {

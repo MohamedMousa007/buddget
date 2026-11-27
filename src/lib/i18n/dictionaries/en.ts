@@ -2442,6 +2442,9 @@ export const en: Dictionary = {
       `${name} payment of ${amount} ${currency} is due today. Confirm payment?`,
     recurringTomorrowBody: (name, amount, currency) =>
       `${name} payment of ${amount} ${currency} is due tomorrow.`,
+    payBackTomorrowBody: (name) => `You planned to pay back ${name} by tomorrow.`,
+    payBackDueBody: (name) => `Today is the day you planned to pay back ${name}.`,
+    payBackOverdueBody: (name, days) => `You planned to pay back ${name} ${days} day${days === 1 ? '' : 's'} ago. Paid already? Add the payment.`,
     recurringConfirmPaid: 'Confirm paid',
     recurringSnooze: 'Snooze',
     push: {

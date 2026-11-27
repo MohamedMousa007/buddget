@@ -4,7 +4,7 @@
  * Due users come from one set-based query (notification_due_users: inside the 09:00-21:00 window and either alertable or near month end);
  * the pg_cron entry point (notifications_tick) does not call at all when nobody is due, and each page prefetches its users' rows in bulk.
  *
- * Evaluates the time-sensitive alerts (recurring debt due/tomorrow, month-end)
+ * Evaluates the time-sensitive alerts (recurring debt due/tomorrow, pay-back-by dates of debts you owe, month-end)
  * for every account and emits them as localized in-app notifications + OS push.
  * Each user is evaluated only between 09:00 and 21:00 in their own timezone (Cairo when none is reported), so an hourly
  * caller delivers at each user's 09:00 and the daily backup only reaches users already past 09:00.
@@ -62,6 +62,15 @@ async function allRowsIn(ids: string[], read: (part: string[], from: number, to:
   const parts: string[][] = []
   for (let i = 0; i < ids.length; i += IN_LIST) parts.push(ids.slice(i, i + IN_LIST))
   return (await Promise.all(parts.map((part) => allRows((from, to) => read(part, from, to))))).flat()
+}
+
+/** Live, active debts the user owes that carry a pay-back-by date (`goal.targetDate`) and no active schedule. */
+function payBackDebts(debts: Rows, scheduled: Set<string>) {
+  return debts.flatMap((d) => {
+    const target = (d.goal as { targetDate?: string } | null)?.targetDate
+    if (d.deleted_at || d.status !== 'active' || d.direction !== 'i_owe' || !target || scheduled.has(d.id as string)) return []
+    return [{ debtId: d.id as string, name: (d.name as string) ?? '', dueDate: target.slice(0, 10) }]
+  })
 }
 
 const groupBy = (rows: Rows, key: string) => {
@@ -124,7 +133,7 @@ export async function GET(request: Request) {
       const summarySince = format(new Date(utcNow.getTime() - 731 * 86_400_000), 'yyyy-MM')
       const [rec, debts, subs, goals, summaries, accounts] = await Promise.all([
         allRowsIn(ids, (p, a, b) => service.from('recurring_debt_payments').select('id, user_id, debt_id, amount, currency, next_due_date, is_active').in('user_id', p).eq('is_active', true).order('id').range(a, b)),
-        allRowsIn(ids, (p, a, b) => service.from('debts').select('id, user_id, name').in('user_id', p).order('id').range(a, b)),
+        allRowsIn(ids, (p, a, b) => service.from('debts').select('id, user_id, name, direction, status, goal, deleted_at').in('user_id', p).order('id').range(a, b)),
         allRowsIn(ids, (p, a, b) => service.from('subscriptions').select('*').in('user_id', p).is('deleted_at', null).in('status', ['active', 'trial']).order('id').range(a, b)),
         allRowsIn(ids, (p, a, b) => service.from('goals').select('*').in('user_id', p).is('deleted_at', null).eq('status', 'active').neq('funding_mode', 'manual').order('id').range(a, b)),
         allRowsIn(ids, (p, a, b) => service.from('savings_month_summary').select('user_id, month_key, saved, currency').in('user_id', p).gte('month_key', summarySince).order('user_id').order('month_key', { ascending: false }).range(a, b)),
@@ -173,6 +182,8 @@ export async function GET(request: Request) {
       const debtNameById: Record<string, string> = {}
       const debtIds = new Set(recurring.map((r) => r.debtId))
       for (const d of debtsBy.get(userId) ?? []) if (debtIds.has(d.id as string)) debtNameById[d.id as string] = (d.name as string) ?? ''
+      // Debts the user owes with a "pay back by" date and no schedule: the schedule's own reminders cover the rest.
+      const payBack = full ? payBackDebts(debtsBy.get(userId) ?? [], debtIds) : []
 
       const descriptors = evaluateAlerts({
         now,
@@ -180,6 +191,7 @@ export async function GET(request: Request) {
         monthStartDay: (s.month_start_day as number | null) ?? 1,
         recurring,
         debtNameById,
+        payBack,
       })
 
       const dict = getServerDictionary(s.language as string | null)
