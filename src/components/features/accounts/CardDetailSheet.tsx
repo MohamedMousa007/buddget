@@ -19,6 +19,11 @@ import { removeMethodWithUndo } from '@/lib/accounts/methodUndo'
 import { followsAccountCurrency } from '@/lib/accounts/actions'
 import { availableCredit, cardDetails, sheetActivity } from '@/lib/accounts/cardDetails'
 import { cardLook } from '@/lib/payment/cardThemes'
+import { faceOf } from '@/lib/payment/cardFaces'
+import { cardPlanSummary } from '@/lib/accounts/cardPlanSummary'
+import { tryConvertCurrency } from '@/lib/utils/currency'
+import { CalendarClock, Info } from 'lucide-react'
+import { PayCardSheet } from './PayCardSheet'
 import { allowsLast4 } from '@/lib/payment/paymentMethodDefaults'
 import { MASK } from '@/lib/privacy/mask'
 import type { PaymentMethod } from '@/lib/store/types'
@@ -65,6 +70,8 @@ export function CardDetailSheet({ open, onClose, card, parent, masked, onEdit, o
   const rates = useFinanceStore((s) => s.exchangeRates)
   const methods = useFinanceStore((s) => s.paymentMethods)
   const [menu, setMenu] = useState<DOMRect | null>(null)
+  const [paying, setPaying] = useState(false)
+  const v9 = lt.v9
 
   const details = useMemo(() => cardDetails(card, debts, expenses, payments, rates), [card, debts, expenses, payments, rates])
   const activity = useMemo(() => sheetActivity(card, parent?.id ?? card.id, expenses, methods), [card, parent, expenses, methods])
@@ -73,6 +80,12 @@ export function CardDetailSheet({ open, onClose, card, parent, masked, onEdit, o
   // The card's own Name, else the account's Name (or provider) with the kind, as the card rows title it.
   const name = card.label?.trim() || `${parent ? accountDisplayName(parent) : bank} ${kind}`
   const look = cardLook(card)
+  // The card's plans live inside it (§4.10): owed once, shown as "X on the card + Y in N plans" and an Installments row.
+  const creditDebt = card.type === 'credit_card' ? debts.find((d) => d.debtType === 'credit_card' && d.linkedPaymentMethodId === card.id) : undefined
+  const plans = useMemo(
+    () => (creditDebt ? cardPlanSummary(creditDebt, { expenses, payments, debts }, (a, from, to) => tryConvertCurrency(a, from, to, rates), new Date()) : null),
+    [creditDebt, debts, expenses, payments, rates],
+  )
   const money = (n: number, cur: string) => (masked ? MASK : moneyFlex(n, cur))
 
   const items = [
@@ -118,7 +131,37 @@ export function CardDetailSheet({ open, onClose, card, parent, masked, onEdit, o
             <span className="block h-full rounded-full bg-[var(--color-brand-red)]" style={{ width: `${pct}%` }} />
           </div>
         ) : null}
+        {plans && plans.left > 0 && owed > 0 ? (
+          <p dir="auto" className="mt-0.5 text-end font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">
+            {v9.owedSplit(money(Math.max(0, owed - plans.left), details.currency), money(plans.left, details.currency), plans.plans.length)}
+          </p>
+        ) : null}
         {facts ? <p dir="auto" className="mt-2 text-xs text-[var(--color-brand-text-secondary)]">{facts}</p> : null}
+        {plans && plans.plans.length > 0 ? (
+          <div className="mt-3 border-t border-[var(--color-brand-border)] pt-3">
+            <p className="flex items-center gap-2.5 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
+              <CalendarClock aria-hidden className="size-[18px] shrink-0" />
+              <span dir="auto" className="min-w-0 flex-1">
+                <b className="font-semibold text-[var(--color-brand-text-primary)]">{v9.installments}</b>{' '}
+                {v9.installmentsLine(plans.plans.length, money(plans.month, details.currency), money(plans.left, details.currency))}
+              </span>
+            </p>
+            {plans.plans.map((p) => (
+              <button key={p.id} type="button" onClick={() => { (onLeave ?? onClose)(); router.push('/debts') }} data-raw-button-ok="a card plan row, a whole-row tap target"
+                className="mt-1 flex min-h-11 w-full items-center gap-3 rounded-xl px-1 text-start hover:bg-[var(--color-brand-elevated)]">
+                <span className="min-w-0 flex-1">
+                  <span dir="auto" className="block truncate text-[0.875rem] font-semibold text-[var(--color-brand-text-primary)]">{p.name}</span>
+                  <span dir="auto" className="block font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">{v9.planProgress(p.paidCount, p.count, money(p.month, details.currency))}</span>
+                </span>
+                <span dir="auto" className="font-mono-numbers text-[0.8125rem] font-semibold text-[var(--color-brand-text-primary)]">{v9.planLeft(money(p.left, details.currency))}</span>
+                <ChevronRight aria-hidden className="size-4 shrink-0 text-[var(--color-brand-text-muted)] rtl:rotate-180" />
+              </button>
+            ))}
+          </div>
+        ) : null}
+        {owed > 0 && creditDebt ? (
+          <Button size="cta-block" className="mt-3.5 w-full" onClick={() => setPaying(true)}>{v9.payCard}</Button>
+        ) : null}
       </Card>
     )
   } else if (card.type === 'bnpl') {
@@ -150,13 +193,18 @@ export function CardDetailSheet({ open, onClose, card, parent, masked, onEdit, o
         </V3SheetHeader>
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y pb-5 pt-1">
           <div className="flex justify-center px-4 pb-2" aria-hidden>
-            <CardFace theme={look.theme} style={look.style} bank={bank} kind={kind} last4={allowsLast4(card.type) ? card.last4 : undefined}
+            <CardFace theme={look.theme} style={look.style} face={faceOf(card)} bank={bank} kind={kind} last4={allowsLast4(card.type) ? card.last4 : undefined}
               currency={String(card.currency)} scale={scale} />
           </div>
           {parent && followsAccountCurrency(card) && card.currency !== parent.currency ? (
             <div className="flex justify-center"><Badge variant="warning" size="sm">{lt.account.differentCurrency}</Badge></div>
           ) : null}
           {detail}
+          {details.kind === 'credit' ? (
+            <p className="mx-5 flex gap-2 text-xs leading-[1.45] text-[var(--color-brand-text-secondary)]">
+              <Info aria-hidden className="size-4 shrink-0 text-[var(--color-brand-text-muted)]" /><span>{v9.creditTip}</span>
+            </p>
+          ) : null}
           <Card padding="none" divide className="mx-4 overflow-hidden rounded-2xl">
             {uses}
             <div className="flex min-h-[52px] w-full items-center gap-3 px-4">
@@ -168,6 +216,11 @@ export function CardDetailSheet({ open, onClose, card, parent, masked, onEdit, o
           <SheetActivity title={t.spentWith(name)} rows={activity} masked={masked} method={card} emptyLine={t.emptyCardActivity} onLeave={onLeave ?? onClose} />
         </div>
       </div>
+      {creditDebt && plans ? (
+        <PayCardSheet key={paying ? 'pay' : 'idle'} open={paying} onClose={() => setPaying(false)} debt={creditDebt} name={name}
+          owed={details.kind === 'credit' ? details.outstanding ?? 0 : 0} dueNow={plans.dueNow} plansDue={plans.plansDue}
+          zClassName={zIndexClassName ? 'z-[120]' : 'z-[110]'} />
+      ) : null}
       <CardActionMenu anchor={menu} items={items} onClose={() => setMenu(null)} zClassName={zIndexClassName ? 'z-[120]' : 'z-[110]'} title={name} />
     </ModalShell>
   )

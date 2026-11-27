@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { Check } from 'lucide-react'
 import { CARD_THEMES, CHIP_FILL, type CardStyle, type CardThemeKey } from '@/lib/payment/cardThemes'
 import { INK_DARK, INK_LIGHT } from '@/lib/ui/contrast'
+import { FACE_BLUR, MODERN_SCRIM, faceBackground, facePattern, familyOf, type FaceDesign } from '@/lib/payment/cardFaces'
 
 export const FACE_W = 340
 export const FACE_H = 214
@@ -50,6 +51,8 @@ export interface CardFaceProps {
   className?: string
   /** Laid over the face, unscaled (so a control there keeps its 44px tap area). */
   children?: ReactNode
+  /** Draws the v9 face (design and colour, no lighting) instead of `theme`/`style`. Omit for the earlier look. */
+  face?: FaceDesign
 }
 
 /**
@@ -58,9 +61,12 @@ export interface CardFaceProps {
  * 340 and scaled, so every size keeps the board's proportions. Always LTR, like a physical card.
  */
 export function CardFace({
-  theme, style, bank, kind, last4, holder, currency, network, defaultLabel, selected = false, reserveTopRight = false, scale = 1, className, children,
+  theme, style, bank, kind, last4, holder, currency, network, defaultLabel, selected = false, reserveTopRight = false, scale = 1, className, children, face: v9,
 }: CardFaceProps) {
-  const f = faceLook(theme, style, { light: 0.04, dark: 0.2 })
+  const legacy = faceLook(theme, style, { light: 0.04, dark: 0.2 })
+  const v9Modern = v9 ? familyOf(v9.design) === 'modern' : false
+  const f = v9 ? { lightInk: true, metal: v9Modern, ink: INK_LIGHT, background: faceBackground(v9) } : legacy
+  const blur = v9 ? FACE_BLUR[v9.design] : undefined
   const line = f.lightInk ? 'rgba(255,255,255,.07)' : 'rgba(4,32,28,.07)'
   const engrave = f.metal
     ? (f.lightInk ? '0 1px 0 rgba(0,0,0,.8), 0 -1px 0 rgba(255,255,255,.08)' : '0 1px 0 rgba(255,255,255,.55)')
@@ -76,7 +82,13 @@ export function CardFace({
   return (
     <div dir="ltr" className={`relative shrink-0 ${className ?? ''}`} style={{ width: FACE_W * scale, height: FACE_H * scale }}>
       <div className="absolute left-0 top-0 box-border flex flex-col overflow-hidden" style={face}>
-        {!f.metal ? (
+        {v9 ? (
+          <>
+            <svg className="absolute left-0 top-0" width={FACE_W} height={FACE_H} viewBox="0 0 340 214" aria-hidden
+              style={blur ? { filter: `blur(${blur}px)` } : undefined} dangerouslySetInnerHTML={{ __html: facePattern(v9.design, false) }} />
+            {v9Modern ? <i aria-hidden className="absolute inset-0" style={{ background: MODERN_SCRIM }} /> : null}
+          </>
+        ) : !f.metal ? (
           <svg className="absolute left-0 top-0" width={FACE_W} height={FACE_H} viewBox="0 0 340 214" aria-hidden>
             {[150, 161, 172, 183].map((y) => (
               <path key={y} d={`M-10 ${y} C60 ${y - 40}, 120 ${y + 40}, 200 ${y - 10} S300 ${y - 60}, 360 ${y - 30}`} fill="none" stroke={line} strokeWidth={1} />
@@ -84,11 +96,11 @@ export function CardFace({
             <circle cx={300} cy={30} r={92} fill={line} />
           </svg>
         ) : null}
-        <i
+        {v9 ? null : <i
           aria-hidden
           className="absolute inset-0"
           style={{ background: f.metal ? 'linear-gradient(115deg, transparent 30%, rgba(255,255,255,.12) 46%, transparent 62%)' : 'radial-gradient(120% 90% at 85% 8%, rgba(255,255,255,.12), transparent 60%)' }}
-        />
+        />}
         <div className="relative flex min-h-[34px] items-start justify-between gap-2.5">
           <div className="min-w-0">
             <span

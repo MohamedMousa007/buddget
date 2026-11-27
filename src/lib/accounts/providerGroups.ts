@@ -26,6 +26,12 @@ export interface ProviderGroup {
   cards: ProviderFace[]
   totalInBase: number
   heldInBase: number
+  /** Free summed per account (may be negative), as the hero sums it. */
+  freeInBase: number
+  /** Sum of each account's short (set aside − balance, card hold never counts), in base. */
+  shortInBase: number
+  /** Some account sets money aside or holds back for a card: the row shows what is free. */
+  holds: boolean
   approx: boolean
   /** Accounts shown as rows: every account but a prepaid card, which is drawn as a face instead. */
   accountCount: number
@@ -111,9 +117,12 @@ export function groupByProvider(
     const section: ProviderSection = d.accounts.length > 0
       ? (d.accounts.some((a) => a.method.type === 'wallet') ? 'wallet' : 'bank')
       : (d.brandKey && PAYMENT_BRANDS[d.brandKey].type === 'wallet' ? 'wallet' : 'bank')
-    const { totalInBase, heldInBase, approx } = accountTotals(d.accounts, base, convert)
+    const { totalInBase, heldInBase, freeInBase, approx } = accountTotals(d.accounts, base, convert)
+    const counted = d.accounts.filter((a) => a.balance && !a.method.excluded)
+    const shortInBase = counted.reduce((n, a) => n + (convert(Math.max(0, a.balance!.held - a.balance!.balance), a.balance!.currency, base) ?? 0), 0)
+    const holds = counted.some((a) => a.balance!.held > 0 || a.balance!.cardHold > 0)
     const group: ProviderGroup = {
-      ...d, section, totalInBase, heldInBase, approx,
+      ...d, section, totalInBase, heldInBase, freeInBase, shortInBase, holds, approx,
       accountCount: d.accounts.filter((a) => a.method.type !== 'prepaid_card').length,
       cardCount: d.cards.length,
     }

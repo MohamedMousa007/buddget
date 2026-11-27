@@ -1,12 +1,13 @@
 'use client'
 
 import type { LucideIcon } from 'lucide-react'
-import { Plus, X, BanknoteArrowDown, BanknoteArrowUp, ScanLine, CreditCard, Coins, Mic } from 'lucide-react'
+import { Plus, X, BanknoteArrowDown, BanknoteArrowUp, ScanLine, CreditCard, Coins, WalletCards } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { navigate } from '@/lib/navigation/navigate'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalTitle } from '@/components/modals/ModalTitle'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useRef } from 'react'
@@ -15,7 +16,8 @@ import { useVoiceHoldGesture } from '@/hooks/useVoiceHoldGesture'
 import { VoiceRecordSheet } from '@/components/voice/VoiceRecordSheet'
 import { ReceiptScanSheet } from '@/components/receipt/ReceiptScanSheet'
 import { SelectableCard } from '@/components/ui/SelectableCard'
-import { RotateCwClock } from '@/components/ui/icons/RotateCwClock'
+import { PaymentMethodSetupSheet } from '@/components/features/payments/PaymentMethodSetupSheet'
+import { useAccountsLtCopy } from '@/lib/i18n/accountsLtCopy'
 
 type QuickAddTile = {
   id: string
@@ -36,19 +38,21 @@ export function QuickAddFAB() {
   const isOpen = activeModal === 'quickAdd'
   const voiceOpen = activeModal === 'voiceExpense'
   const scanOpen = activeModal === 'scanReceipt'
+  const cardOpen = activeModal === 'quickAddCard'
+  const lt = useAccountsLtCopy().v9
+  const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
   // Buddgy's chat owns the bottom corner on desktop: the + would sit on its Send button.
   const chatOpen = activeModal === 'aiChat'
 
   // Under the "Add" title every tile is a noun, so each reads as "Add …". Ordered by how often people reach for them;
-  // the odd last tile (voice) spans the row. Payment methods are not here: every method picker has its own "Add method".
+  // an odd last tile spans the row. Card adds a card with no account (a store card, a card from a bank you don't use).
   const tiles: QuickAddTile[] = [
     { id: 'addExpense', label: t.modals.fabTileExpense, hint: t.quickAdd.hintExpense, icon: BanknoteArrowUp, fg: 'var(--color-brand-primary-ink)', bg: 'var(--color-brand-primary-soft)' },
     { id: 'addIncome', label: t.modals.fabTileIncome, hint: t.quickAdd.hintIncome, icon: BanknoteArrowDown, fg: 'var(--color-brand-green)', bg: 'var(--color-brand-green-soft)' },
     { id: 'scanReceipt', label: t.modals.fabTileScan, hint: t.quickAdd.hintScan, icon: ScanLine, ...tint('var(--color-cat-4)') },
     { id: 'payDebt', label: t.modals.fabTileDebt, hint: t.quickAdd.hintDebt, icon: CreditCard, ...tint('var(--color-cat-5)') },
     { id: 'savings', label: t.modals.fabTileWealth, hint: t.quickAdd.hintWealth, icon: Coins, ...tint('var(--color-brand-gold)') },
-    { id: 'addSubscription', label: t.subscriptions.ui.quickAdd.subscription, hint: t.quickAdd.hintSubscription, icon: RotateCwClock, ...tint('var(--color-cat-2)') },
-    { id: 'voice', label: t.modals.fabTileVoice, hint: t.quickAdd.hintVoice, icon: Mic, fg: 'var(--color-brand-primary-ink)', bg: 'var(--color-brand-primary-soft)' },
+    { id: 'quickAddCard', label: lt.addMenuCard, hint: lt.addMenuCardHint, icon: WalletCards, fg: 'var(--color-brand-primary-ink)', bg: 'var(--color-brand-primary-soft)' },
   ]
 
   const openVoice = () => {
@@ -67,24 +71,12 @@ export function QuickAddFAB() {
       requireAuth(() => useSettingsStore.getState().openPayDebtSheet(), msg)
       return
     }
-    if (tileId === 'addSubscription') {
-      requireAuth(() => {
-        setActiveModal(null)
-        useSettingsStore.getState().setSubscriptionAddOpen(true)
-        navigate('/subscriptions')
-      }, msg)
-      return
-    }
     if (tileId === 'savings') {
       requireAuth(() => {
         setActiveModal(null)
         useSettingsStore.getState().setWealthAddRequested(true)
         navigate('/wealth')
       }, msg)
-      return
-    }
-    if (tileId === 'voice') {
-      openVoice()
       return
     }
     requireAuth(() => {
@@ -155,6 +147,7 @@ export function QuickAddFAB() {
 
       <VoiceRecordSheet open={voiceOpen} onClose={() => setActiveModal(null)} />
       <ReceiptScanSheet open={scanOpen} onClose={() => setActiveModal(null)} />
+      <PaymentMethodSetupSheet open={cardOpen} editing={null} baseCurrency={baseCurrency} extraChoices={['store']} excludeTypes={['wallet']} nested onClose={() => setActiveModal(null)} />
     </>
   )
 }

@@ -2,8 +2,6 @@
 
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { createPortal } from 'react-dom'
-import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowLeft, Calendar, Lock, Trash2 } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { CurrencySheet } from '@/components/ui/CurrencySheet'
@@ -23,7 +21,8 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Switch } from '@/components/ui/switch'
 import { TypeGlyph } from '@/components/features/payments/PaymentCardCarousel'
 import { CardFace, FACE_W } from '@/components/features/payments/CardFace'
-import { CardThemePicker } from '@/components/features/payments/CardThemePicker'
+import { CardFaceChip } from '@/components/features/accounts/CardFaceChip'
+import { CARD_COLOURS, CARD_COLOUR_KEYS, CLASSIC_DESIGNS, MODERN_DESIGNS, encodeFace, faceOf, familyOf, type CardFamily, type FaceDesign } from '@/lib/payment/cardFaces'
 import { CARD_THEMES, cardLook, nearestCardTheme, type CardStyle, type CardThemeKey } from '@/lib/payment/cardThemes'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { ProviderPickerSheet } from '@/components/features/payments/ProviderPickerSheet'
@@ -35,7 +34,6 @@ import {
   allowsLast4, composePaymentMethodName, decomposePaymentMethodName,
   resolvePaymentBrandKey, prefillPaymentType, typesForBrand,
 } from '@/lib/payment/paymentMethodDefaults'
-import { cn } from '@/lib/utils'
 import type { PmPrefill } from '@/lib/store/useSettingsStore'
 import { mix, readable } from '@/lib/utils/color'
 import type { Currency, PaymentMethod, PaymentMethodType } from '@/lib/store/types'
@@ -75,7 +73,7 @@ interface Props {
   /** Edit mode only: shows a destructive footer button; the caller owns confirmation and removal. */
   onDelete?: () => void
   deleteLabel?: string
-  /** Render the form's body inside another sheet (a pushed step), with no ModalShell or floating preview of its own. Save then only calls `onSaved`. */
+  /** Render the form's body inside another sheet (a pushed step), with no ModalShell or fixed preview of its own. Save then only calls `onSaved`. */
   embedded?: boolean
   /** Shown above the preview (a pushed step's "{account} added" summary). */
   summary?: ReactNode
@@ -91,8 +89,8 @@ export type CardChoice = 'virtual' | 'store'
 const CHOICE_TYPE: Record<CardChoice, PaymentMethodType> = { virtual: 'debit_card', store: 'other' }
 
 /**
- * Add / edit a payment method — floating live card preview (pinned above the
- * sheet) + provider field + colour slider + type/identifier/currency/default.
+ * Add / edit a payment method — live card preview (fixed at the top of the sheet's column, above the scroll, so it
+ * stays in view with the keyboard up) + provider field + card face and colour + type/identifier/currency/default.
  * Reused by the wallet sheet and the payment-method picker (self-contained add).
  */
 export function PaymentMethodSetupSheet({
@@ -122,6 +120,7 @@ export function PaymentMethodSetupSheet({
   const [cardStyle, setCardStyle] = useState<CardStyle>('bank')
   const [cardTheme, setCardTheme] = useState<CardThemeKey | null>(null)
   const [themePicked, setThemePicked] = useState(false)
+  const [face, setFace] = useState<FaceDesign | null>(null)
   const [isDefault, setIsDefault] = useState(false)
   const [providerSheetOpen, setProviderSheetOpen] = useState(false)
   const [linkedId, setLinkedId] = useState<string | undefined>(undefined)
@@ -137,6 +136,7 @@ export function PaymentMethodSetupSheet({
   const [daySheetOpen, setDaySheetOpen] = useState(false)
   const ltAll = useAccountsLtCopy()
   const lt = ltAll.addCard
+  const v9 = ltAll.v9
   const ordinal = useLightTouchCopy().dayOfMonth.ordinal
 
   const prevOpen = useRef(false)
@@ -154,7 +154,7 @@ export function PaymentMethodSetupSheet({
         setLast4(editing.last4 ?? ''); setLabel(savedLabel); setAliases(editing.last4Aliases ?? [])
         setCurCode(editing.currency); setIsDefault(editing.isDefault); setLinkedId(editing.parentId); setPaysFromId(editing.paysFromPaymentMethodId)
         const look = cardLook(editing)
-        setCardStyle(look.style); setCardTheme(look.theme)
+        setCardStyle(look.style); setCardTheme(look.theme); setFace(faceOf(editing))
         // Load the linked credit-card debt's terms so they're editable here.
         const linked = useFinanceStore.getState().debts.find((d) => d.debtType === 'credit_card' && d.linkedPaymentMethodId === editing.id)
         setCcLimit(linked?.creditLimit != null ? String(linked.creditLimit) : '')
@@ -170,7 +170,7 @@ export function PaymentMethodSetupSheet({
           setType('debit_card'); setLast4(''); setLabel('')
           setCurCode(parent.currency); setIsDefault(false); setLinkedId(parent.id)
           const look = cardLook(parent)
-          setCardStyle(look.style); setCardTheme(look.theme)
+          setCardStyle(look.style); setCardTheme(look.theme); setFace(faceOf(parent))
         } else {
           // Resolve a detected bank/provider name to a catalogue brand so the SMS
           // prefill lands on the right type/colours. An explicit prefill type (the SMS said
@@ -185,7 +185,7 @@ export function PaymentMethodSetupSheet({
           // A type that takes no last4 (wallet, bnpl) never starts with digits: the tiles are not offered for it.
           setLast4(prefill?.last4 && allowsLast4(pfType) ? prefill.last4 : ''); setLabel('')
           const suggestedParent = prefill?.parentId ? useFinanceStore.getState().paymentMethods.find((m) => m.id === prefill.parentId) : undefined
-          setCurCode((prefill?.currency as Currency | undefined) ?? suggestedParent?.currency ?? baseCurrency); setCardStyle('bank'); setCardTheme(null); setIsDefault(false)
+          setCurCode((prefill?.currency as Currency | undefined) ?? suggestedParent?.currency ?? baseCurrency); setCardStyle('bank'); setCardTheme(null); setFace(null); setIsDefault(false)
           setLinkedId(pfType === 'debit_card' ? suggestedParent?.id : undefined)
         }
       }
@@ -245,6 +245,9 @@ export function PaymentMethodSetupSheet({
   const brand = brandId && brandId !== '__custom' ? PAYMENT_BRANDS[brandId] : null
   // No theme picked yet: the one nearest the provider's brand colour (or the type's colour).
   const effectiveTheme: CardThemeKey = cardTheme ?? nearestCardTheme(brand ? brand.colors[0] : PAYMENT_TYPE_META[type].color)
+  // v9 faces: a new card starts on Wave in Black, as the mockup's Add card does.
+  const effectiveFace: FaceDesign = face ?? { design: 'wave', colour: 'black' }
+  const pickFace = (f: FaceDesign) => { setFace(f); setThemePicked(true) }
   const reattribute = useReattribute()
   const hasProvider = providerName.trim().length > 0
   // The Debt tab locks the type; an existing bank account or wallet keeps its kind here (cards are the only thing this sheet can switch between).
@@ -267,9 +270,11 @@ export function PaymentMethodSetupSheet({
     const use4 = last4.length > 0 && isSavableTail(last4)
     const words = label.trim()
     const name = composePaymentMethodName(provider, { last4: use4 ? last4 : undefined })
-    // `color` stays a real hex (avatars and tints read it): the theme's first stop, or an edited method's own colour until a theme is picked.
-    const color = editing?.color && !themePicked ? editing.color : CARD_THEMES[effectiveTheme].a
-    const payload = { name, type, currency: curCode, color, cardStyle, cardTheme: effectiveTheme, isDefault, paysFromPaymentMethodId, ...(use4 ? { last4 } : {}), ...(words ? { label: words } : {}) }
+    // `color` stays a real hex (avatars and tints read it): an edited method's own colour, else the brand's, until a face is
+    // picked; then the face colour's first stop.
+    const color = themePicked ? CARD_COLOURS[effectiveFace.colour][0] : editing?.color ?? (brand ? brand.colors[0] : CARD_THEMES[effectiveTheme].a)
+    const look = encodeFace(effectiveFace)
+    const payload = { name, type, currency: curCode, color, cardStyle: look.cardStyle, cardTheme: look.cardTheme, isDefault, paysFromPaymentMethodId, ...(use4 ? { last4 } : {}), ...(words ? { label: words } : {}) }
     let pmId: string
     if (editing) {
       updatePaymentMethod(editing.id, { ...payload, last4: use4 ? last4 : undefined, last4Aliases: aliases.length > 0 ? aliases : undefined, label: words || undefined, ...(CARD_TYPES.includes(editing.type) ? { parentId } : {}) })
@@ -298,14 +303,10 @@ export function PaymentMethodSetupSheet({
   const country = countryFromCurrency(baseCurrency)
   const popularIds = country ? QUICK_ADD[country] : QUICK_ADD_BLEND
 
-  // `card` sits ABOVE the shell + provider backdrops so the floating preview
-  // stays crisp and in front of the sheets (not dimmed behind their scrims).
-  // It stays BELOW `currency` — picking a currency is a focused sub-task that
-  // may cover the card. The provider sheet is height-capped (see below) so its
-  // panel never rises into the card's zone.
+  // The provider and currency pickers open over the sheet.
   const z = nested
-    ? { shell: 'z-[120]', provider: 'z-[130]', card: 'z-[135]', currency: 'z-[140]' }
-    : { shell: 'z-[110]', provider: 'z-[120]', card: 'z-[125]', currency: 'z-[130]' }
+    ? { shell: 'z-[120]', provider: 'z-[130]', currency: 'z-[140]' }
+    : { shell: 'z-[110]', provider: 'z-[120]', currency: 'z-[130]' }
 
   const kindLabel = cardKindLabel(type, t.accountsPage)
   const previewProps = {
@@ -314,7 +315,10 @@ export function PaymentMethodSetupSheet({
     kind: kindLabel,
     last4: last4 || undefined,
     currency: curCode,
+    face: effectiveFace,
   }
+  const family: CardFamily = familyOf(effectiveFace.design)
+  const chipMethod = { id: 'preview', name: hasProvider ? providerName : t.paymentMethods.addTitle, type, currency: curCode, last4: last4 || undefined, isDefault: false } as PaymentMethod
   // Debit | Credit | Prepaid (+ Store card) as one segmented control; an entry offering more kinds (the generic add,
   // a custom provider) keeps the scrolling chip row so wallet, pay-later and other stay reachable.
   const segValues: string[] = [...offeredTypes, ...(extraChoices ?? [])]
@@ -346,10 +350,12 @@ export function PaymentMethodSetupSheet({
             <V3SheetHeader.Title>{editing ? t.paymentMethods.editTitle : (titleOverride ?? (type === 'credit_card' ? lt.creditTitle : lt.title))}</V3SheetHeader.Title>
           </V3SheetHeader>
 
+          {/* The preview sits in the sheet's own column, outside the scroll, so it stays in view while the keyboard is up. */}
+          {embedded ? null : <div className="shrink-0 px-4"><CardPreview {...previewProps} /></div>}
           <div className="native-scroll min-h-0 flex-1 overflow-y-auto px-4 pb-4">
             <div className="flex flex-col gap-3">
               {summary}
-              <FloatingCardPreview open={open} inline={embedded ? 'always' : true} {...previewProps} />
+              {embedded ? <CardPreview {...previewProps} /> : null}
 
               {typeLock ? (
                 <div
@@ -415,7 +421,7 @@ export function PaymentMethodSetupSheet({
                     look="row"
                     accounts={linkable.map((m) => ({ method: m, cards: [], balance: null }))}
                     value={linkedId ?? ''} onChange={(id) => (id ? pickLinked(id) : setLinkedId(undefined))}
-                    label={lt.uses} noneLabel={lt.usesNone} showBalance={false} zIndexClassName={z.provider}
+                    label={v9.linkedAccount} noneLabel={v9.linkedNone} showBalance={false} zIndexClassName={z.provider}
                   />
                 ) : null}
                 {payers.length > 0 ? (
@@ -430,6 +436,7 @@ export function PaymentMethodSetupSheet({
                   <PickerRow label={lt.currency} onClick={() => setCurSheetOpen(true)} value={<span dir="ltr" className="font-mono-numbers">{curCode}</span>} />
                 ) : null}
               </Card>
+              {showUses ? <p className="-mt-1 px-1 text-xs leading-[1.45] text-[var(--color-brand-text-muted)]">{v9.linkedHint}</p> : null}
               {editing ? <AccountAliasChips aliases={aliases} onRemove={(d) => setAliases((a) => a.filter((x) => x !== d))} /> : null}
 
               {type === 'credit_card' ? (
@@ -445,15 +452,35 @@ export function PaymentMethodSetupSheet({
               ) : null}
 
               <section>
-                <h3 className={sectionHead}>{lt.look}</h3>
-                <Card padding="none" className="space-y-3 rounded-2xl p-3">
+                <h3 className={sectionHead}>{v9.cardFace}</h3>
+                <Card padding="none" className="rounded-2xl p-3">
                   <SegmentedControl
-                    ariaLabel={t.paymentMethods.cardStyle}
-                    value={cardStyle}
-                    onChange={setCardStyle}
-                    options={[{ value: 'metal', label: lt.metal }, { value: 'bank', label: lt.classic }]}
+                    ariaLabel={v9.cardFace}
+                    value={family}
+                    onChange={(v: CardFamily) => { if (v !== family) pickFace({ design: v === 'modern' ? 'wave' : 'lion', colour: effectiveFace.colour }) }}
+                    options={[{ value: 'modern', label: v9.modern }, { value: 'classic', label: v9.classic }]}
                   />
-                  <CardThemePicker value={effectiveTheme} onChange={(k) => { setCardTheme(k); setThemePicked(true) }} names={t.paymentMethods.themeNames} ariaLabel={t.paymentMethods.cardTheme} />
+                  <div className="hide-scrollbar -mx-3 mt-3 flex gap-2.5 overflow-x-auto px-3 pb-1 pt-1">
+                    {(family === 'modern' ? MODERN_DESIGNS : CLASSIC_DESIGNS).map((d) => (
+                      <button key={d} type="button" aria-pressed={effectiveFace.design === d} onClick={() => pickFace({ design: d, colour: effectiveFace.colour })}
+                        data-raw-button-ok="a card face choice drawn as the face itself" className="flex shrink-0 flex-col items-center gap-1.5 rounded-[7px]">
+                        <CardFaceChip method={chipMethod} face={{ design: d, colour: effectiveFace.colour }} selected={effectiveFace.design === d} />
+                        <span className={`text-xs font-semibold ${effectiveFace.design === d ? 'text-[var(--color-brand-primary-ink)]' : 'text-[var(--color-brand-text-secondary)]'}`}>{v9.designs[d]}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div role="radiogroup" aria-label={v9.cardColour} className="mt-2 flex justify-between px-2">
+                    {CARD_COLOUR_KEYS.map((c) => {
+                      const on = effectiveFace.colour === c
+                      return (
+                        <button key={c} type="button" role="radio" aria-checked={on} aria-label={v9.colours[c]} onClick={() => pickFace({ design: effectiveFace.design, colour: c })}
+                          data-raw-button-ok="a colour swatch in a radio group" className="grid size-11 place-items-center rounded-full">
+                          <span aria-hidden className="block size-[34px] rounded-full"
+                            style={{ background: `linear-gradient(135deg, ${CARD_COLOURS[c][0]}, ${CARD_COLOURS[c][1]})`, boxShadow: on ? '0 0 0 2px var(--color-brand-card), 0 0 0 4px var(--color-brand-primary)' : 'none' }} />
+                        </button>
+                      )
+                    })}
+                  </div>
                 </Card>
               </section>
 
@@ -500,8 +527,7 @@ export function PaymentMethodSetupSheet({
   if (embedded) return <>{body}{picker}</>
   return (
     <>
-      <FloatingCardPreview open={open} z={z.card} {...previewProps} />
-      <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={z.shell} panelClassName="h-[64dvh] md:h-[min(88dvh,760px)]">
+      <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={z.shell} panelClassName="h-[calc(100dvh-56px)] md:h-[min(88dvh,760px)]">
         {body}
       </ModalShell>
       {picker}
@@ -509,61 +535,31 @@ export function PaymentMethodSetupSheet({
   )
 }
 
-// ── Floating card preview (pinned above the sheet, static/elevated) ───────────
+// ── Card preview (in the sheet's column, never floating) ───────────
 const PREVIEW_W = 280
 
-function FloatingCardPreview({
-  open, z = '', inline = false, ...face
-}: {
-  open: boolean
-  z?: string
-  /** md+ renders the card in the dialog's flow instead of pinned above it; 'always' at every width (an embedded form). */
-  inline?: boolean | 'always'
+function CardPreview(face: {
   theme: CardThemeKey
   style: CardStyle
   bank: string
   kind: string
   last4?: string
   currency: string
+  face?: FaceDesign
 }) {
-  if (typeof document === 'undefined') return null
-
-  // Always a live card (reflects style/theme/type/digits/currency immediately), with the theme's soft halo behind it.
-  const preview = (
-    <>
+  // Always a live card (reflects face/type/digits/currency immediately), with its colour's soft halo behind it.
+  return (
+    <div className="relative mx-auto my-4 h-[176px] w-[280px] shrink-0">
     <div
       aria-hidden
       className="pointer-events-none absolute"
       style={{
         inset: -34, borderRadius: 46,
-        background: `radial-gradient(circle, ${mix(CARD_THEMES[face.theme].a, 70)}, transparent 68%)`,
+        background: `radial-gradient(circle, ${mix(face.face ? CARD_COLOURS[face.face.colour][0] : CARD_THEMES[face.theme].a, 70)}, transparent 68%)`,
         filter: 'blur(36px)', zIndex: 0,
       }}
     />
     <CardFace {...face} scale={PREVIEW_W / FACE_W} />
-    </>
-  )
-
-  if (inline) return <div className={cn('relative mx-auto my-4 h-[176px] w-[280px] shrink-0', inline === 'always' ? 'block' : 'hidden md:block')}>{preview}</div>
-
-  return createPortal(
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          key="pm-float-card"
-          data-inert-exempt
-          initial={{ opacity: 0, scale: 0.97 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.97 }}
-          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-          className={cn('pointer-events-none fixed left-1/2 w-[280px] md:hidden', z)}
-          // Centred in the space above the 58vh sheet; floor keeps it clear of the status bar.
-          style={{ top: 'max(46px, calc(21dvh - 88px))', marginLeft: -140 }}
-        >
-          {preview}
-        </motion.div>
-      )}
-    </AnimatePresence>,
-    document.body,
+    </div>
   )
 }

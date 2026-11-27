@@ -1,4 +1,5 @@
 import type { AccountView } from '@/lib/accounts/useAccounts'
+import type { PaymentMethod } from '@/lib/store/types'
 import { MASK } from '@/lib/privacy/mask'
 import { useT } from '@/lib/i18n'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -6,6 +7,7 @@ import { useAccountsLtCopy } from '@/lib/i18n/accountsLtCopy'
 import { BrandMark } from './BrandMark'
 import { bankLogoForName } from '@/lib/payment/bankLogos'
 import { CardStrip } from './CardStrip'
+import { ProviderCardFaces } from './ProviderCardFaces'
 import { Badge } from '@/components/ui/badge'
 import { accountColor, accountDisplayName, accountSubtitle, accountTitle, moneyFlex, smartSplit, splitMoney } from './accountDisplay'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
@@ -25,10 +27,12 @@ interface AccountRowProps {
   /** The account holds less than what is set aside in it: the row reads "Short X" and opens the shortfall sheet. */
   onShort?: () => void
   onAddCard: () => void
+  /** A face under a bank or wallet account opens that card. */
+  onOpenCard?: (card: PaymentMethod) => void
 }
 
 /** One account: mark, name, balance and its cards. Only exceptions get colour. */
-export function AccountRow({ account, masked, gap, shared = false, baseEquivalent, onOpen, onFix, onShort, onAddCard }: AccountRowProps) {
+export function AccountRow({ account, masked, gap, shared = false, baseEquivalent, onOpen, onFix, onShort, onAddCard, onOpenCard }: AccountRowProps) {
   const dict = useT()
   const t = dict.accountsPage
   const base = useFinanceStore((s) => String(s.settings.baseCurrency))
@@ -88,7 +92,12 @@ export function AccountRow({ account, masked, gap, shared = false, baseEquivalen
           )}
         </span>
       </button>
-      {method.type === 'bank_account' || method.type === 'wallet' ? <CardStrip cards={cards} onOpen={onOpen} onAddCard={onAddCard} parent={method} /> : null}
+      {method.type === 'bank_account' || method.type === 'wallet' ? (
+        <div className="px-4 pb-3.5">
+          <ProviderCardFaces faces={cards.map((c) => ({ method: c, parentAccountId: method.id, isAccount: false }))} label={t.cardsCount(cards.length)}
+            parentOf={() => method} onFace={(f) => (onOpenCard ? onOpenCard(f.method) : onOpen())} onAddCard={onAddCard} emptyLabel={t.addACard} />
+        </div>
+      ) : null}
       {isPrepaid ? <CardStrip cards={[method]} onOpen={onOpen} onAddCard={onAddCard} label={t.typePrepaid} /> : null}
     </div>
   )

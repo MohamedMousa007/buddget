@@ -32,6 +32,7 @@ import { CashOnHandMark, MoveMoneySheet, type MoveMode } from '@/components/feat
 import { useAccountsLtCopy } from '@/lib/i18n/accountsLtCopy'
 import { UnplacedSmsSheet } from '@/components/features/accounts/UnplacedSmsSheet'
 import { CardDetailSheet } from '@/components/features/accounts/CardDetailSheet'
+import { SetAsideListSheet } from '@/components/features/accounts/SetAsideListSheet'
 import { PaymentMethodSetupSheet } from '@/components/features/payments/PaymentMethodSetupSheet'
 import { ensureCashAccount } from '@/lib/accounts/actions'
 import { cardDetails } from '@/lib/accounts/cardDetails'
@@ -49,6 +50,7 @@ import { useMask, useToggleHideAll } from '@/lib/privacy/useMask'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import type { PaymentMethod } from '@/lib/store/types'
+import type { PmPrefill } from '@/lib/store/useSettingsStore'
 import { totalDebtRemainingInBase } from '@/lib/utils/calculations'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import { useT } from '@/lib/i18n'
@@ -71,7 +73,7 @@ type Sheet =
   /** One card on its own (a face, a credit row, an Other cards row). */
   | { kind: 'cardSheet'; cardId: string }
   /** "+ Add card" in Other cards: the card form with no parent account. */
-  | { kind: 'addCard' }
+  | { kind: 'addCard'; prefill?: PmPrefill }
   | { kind: 'add' }
   | { kind: 'found' }
   | { kind: 'unplaced' }
@@ -79,6 +81,8 @@ type Sheet =
   | { kind: 'short'; id: string }
   /** "Where did this money go?" before closing an account that holds set-aside money (§4.8). */
   | { kind: 'closeHeld'; id: string }
+  /** The hero's "X set aside": pockets and goals kept in accounts. */
+  | { kind: 'setAside' }
 
 /** The Wealth and Debts header row: title, count, and the page's add action at the end. */
 function SectionHeader({ title, count, onAdd, addLabel }: { title: string; count: number; onAdd?: () => void; addLabel?: string }) {
@@ -125,9 +129,11 @@ export default function AccountsPage() {
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
   const ltCash = useAccountsLtCopy().cash
   const ltShort = useAccountsLtCopy().short
+  const ltV9 = useAccountsLtCopy().v9
   const ledger = useLedgerInput()
   // One notice per account per shortfall episode, until it is covered (auto-clears) or kept for now (settled).
-  const asking = useMemo(() => shortfallEpisodes(ledger).filter((e) => !settings.promptState?.[e.key]), [ledger, settings.promptState])
+  const episodes = useMemo(() => shortfallEpisodes(ledger), [ledger])
+  const asking = useMemo(() => episodes.filter((e) => !settings.promptState?.[e.key]), [episodes, settings.promptState])
   const base = String(settings.baseCurrency)
 
   const owed = useMemo(
@@ -212,12 +218,17 @@ export default function AccountsPage() {
       onOpen={() => openAccount(a)}
       onFix={() => setSheet({ kind: 'fix', id: a.method.id })}
       onShort={asking.some((e) => e.accountId === a.method.id) ? () => setSheet({ kind: 'short', id: a.method.id }) : undefined}
-      onAddCard={() => setSheet({ kind: 'card', id: a.method.id })} />
+      onAddCard={() => setSheet({ kind: 'card', id: a.method.id })} onOpenCard={openCard} />
   )
   const renderProviderCard = (g: ProviderGroup) => (
     <ProviderCard key={g.key} group={approxGroup(g)} base={base} masked={listMasked} alert={g.accounts.some((a) => (gaps[a.method.id]?.amount ?? 0) !== 0)}
-      onOpen={() => openProvider(g.key)} onFace={openFace} />
+      onOpen={() => openProvider(g.key)} onFace={openFace} onAddCard={() => addCardAt(g)} />
   )
+  // The dashed + slot on a provider card: the card form starts at that bank, under its only account when it has one.
+  const addCardAt = (g: ProviderGroup) => {
+    const held = g.accounts.filter((a) => a.method.type !== 'prepaid_card')
+    setSheet({ kind: 'addCard', prefill: { name: g.name, last4: '', ...(held.length === 1 ? { parentId: held[0].method.id } : {}) } })
+  }
   const parentOf = (m: PaymentMethod) => (m.parentId ? model.accounts.find((a) => a.method.id === m.parentId)?.method : undefined)
   const cardList = (cards: PaymentMethod[]) => (
     <Card padding="none" divide className="overflow-hidden rounded-2xl">
@@ -261,11 +272,17 @@ export default function AccountsPage() {
   ) : null
 
   const walletCount = groups.wallets.length + groups.cash.length
+  const firstShort = episodes[0]
+  const shortMethod = firstShort ? viewOf(firstShort.accountId)?.method : undefined
+  const heroShort = firstShort && shortMethod
+    ? { text: ltShort.title(accountDisplayName(shortMethod), moneyFlex(firstShort.short, firstShort.currency)), onPress: () => setSheet({ kind: 'short', id: firstShort.accountId }) }
+    : undefined
   const home = (
     <>
       <PageHero inset>
         <AccountsHero model={missingRates.length > 0 && !model.approx ? { ...model, approx: true } : model} currency={base} netWorth={nw.netWorth} creditOwed={owed}
-          segments={heroSegments} hidden={heroMasked} onToggleHidden={toggle} />
+          segments={heroSegments} hidden={heroMasked} onToggleHidden={toggle} onSetAside={() => setSheet({ kind: 'setAside' })}
+          short={heroShort} />
       </PageHero>
       <PageGrid stack primary={<div className="space-y-5 px-4 py-4 lg:px-0 lg:pt-0">
         {rateDismissed ? null : <RateAlert currencies={missingRates} onDismiss={() => setRateDismissed(true)} />}
@@ -308,7 +325,7 @@ export default function AccountsPage() {
         ) : null}
         {groups.otherCards.length > 0 ? (
           <section>
-            <SectionHeader title={t.standaloneCards} count={groups.otherCards.length} onAdd={() => setSheet({ kind: 'addCard' })} addLabel={t.addCardCta} />
+            <SectionHeader title={t.standaloneCards} count={groups.otherCards.length} />
             {cardList(groups.otherCards.map((f) => f.method))}
           </section>
         ) : null}
@@ -338,7 +355,7 @@ export default function AccountsPage() {
             <section>
               <SectionHeader title={t.creditCards} count={credit.length} />
               {cardList(credit)}
-              <p className="mt-2 px-1 text-xs leading-[1.45] text-[var(--color-brand-text-muted)] [text-wrap:pretty]">{t.creditNote}</p>
+              <p className="mt-2 px-1 text-xs leading-[1.45] text-[var(--color-brand-text-muted)] [text-wrap:pretty]">{ltV9.creditTip}</p>
             </section>
           ) : null}
           {orphans.length + prepaid.length > 0 ? (
@@ -405,8 +422,9 @@ export default function AccountsPage() {
       {shownOverCard ? (
         <PaymentMethodSetupSheet key={`ec-${shownOverCard.id}`} open={over?.kind === 'editCard' && !!overCard} editing={shownOverCard} baseCurrency={settings.baseCurrency} nested onClose={() => setOver(null)} />
       ) : null}
-      <PaymentMethodSetupSheet open={sheet?.kind === 'addCard'} editing={null} baseCurrency={settings.baseCurrency} extraChoices={['store']} excludeTypes={['wallet']} nested onClose={close} />
+      <PaymentMethodSetupSheet open={sheet?.kind === 'addCard'} prefill={sheet?.kind === 'addCard' ? sheet.prefill ?? null : null} editing={null} baseCurrency={settings.baseCurrency} extraChoices={['store']} excludeTypes={['wallet']} nested onClose={close} />
       <AddAccountSheet key={addKey} open={addOpen} prefill={accountPrefill ?? undefined} onClose={close} pushCardStep onOnlyCard={() => { clearAccountPrefill(); setSheet({ kind: 'addCard' }) }} />
+      {sheet?.kind === 'setAside' ? <SetAsideListSheet open onClose={close} onShort={(id) => setSheet({ kind: 'short', id })} /> : null}
       <DetectedAccountsSheet open={foundSheetOpen} onClose={close} onManual={() => setSheet({ kind: 'add' })} />
       <UnplacedSmsSheet key={unplaced.length} open={sheet?.kind === 'unplaced'} onClose={close} items={unplaced} accounts={model.accounts} />
     </div>
