@@ -196,7 +196,7 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onA
                   <span className="h-full rounded-full bg-[var(--color-brand-primary)]" style={{ width: `${100 - heldPct}%` }} />
                 </div>
                 <div className="mt-2 flex justify-between text-xs text-[var(--color-brand-text-secondary)]">
-                  <span><b className="font-mono-numbers font-semibold text-[var(--color-brand-text-primary)]">{fmt(balance.free)}</b> {lt.free}</span>
+                  <span><b className="font-mono-numbers font-semibold text-[var(--color-brand-text-primary)]">{fmt(Math.max(0, balance.free))}</b> {lt.free}</span>
                   <span><b className="font-mono-numbers font-semibold text-[var(--color-brand-text-primary)]">{fmt(balance.held)}</b> {t.setAsideLabel}</span>
                 </div>
               </div>

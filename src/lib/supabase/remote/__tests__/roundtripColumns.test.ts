@@ -3,7 +3,8 @@ import { expenseToRow, expenseFromRow } from '../mappers/expenseMapper'
 import { savingsAccountToRow, savingsAccountFromRow } from '../mappers/savingsAccountMapper'
 import { goalToRow } from '../mappers/goalMapper'
 import { savingsTransactionFromRow } from '../mappers/savingsTransactionMapper'
-import type { Expense, Goal, SavingsAccount } from '@/lib/store/types'
+import { paymentMethodFromRow, paymentMethodToRow } from '../mappers/paymentMethodMapper'
+import type { Expense, Goal, PaymentMethod, SavingsAccount } from '@/lib/store/types'
 
 describe('L11/W22 sync round trip', () => {
   it('keeps expense category label, subcategory, shared plan and isRecurring', () => {
@@ -45,5 +46,15 @@ describe('L11/W22 sync round trip', () => {
     const base = { id: 't', account_id: 'a', amount: 5, currency: 'EGP', transaction_date: '2026-10-10', is_cash_flow: true }
     expect(savingsTransactionFromRow({ ...base, kind: 'withdraw' } as never).type).toBe('withdrawal')
     expect(savingsTransactionFromRow({ ...base, kind: 'correct' } as never).isCashFlow).toBe(false)
+  })
+
+  it('P3 (0360): a card keeps the account that pays it and the savings flag', () => {
+    const pm = { id: 'c', name: 'Card', type: 'credit_card', currency: 'EGP', isDefault: false, paysFromPaymentMethodId: 'nbe', isSavings: true } as PaymentMethod
+    const row = paymentMethodToRow(pm, 'u')
+    expect([row.pays_from_payment_method_id, row.is_savings]).toEqual(['nbe', true])
+    const back = paymentMethodFromRow({ ...row, created_at: 'x', edited_at: 'x' } as never)
+    expect([back.paysFromPaymentMethodId, back.isSavings]).toEqual(['nbe', true])
+    const plain = paymentMethodToRow({ ...pm, paysFromPaymentMethodId: undefined, isSavings: undefined }, 'u')
+    expect([plain.pays_from_payment_method_id, plain.is_savings]).toEqual([null, false])
   })
 })

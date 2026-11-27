@@ -75,7 +75,8 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod, onCr
 
   // From a tracked account the pocket is an earmark inside it: the money stays in the account, so it cannot exceed what is free there.
   const holderId = linkedMethod ? pocketHolderId(linkedMethod, paymentMethods, currency) : undefined
-  const free = holderId ? accounts.find((a) => a.method.id === holderId)?.balance?.free : undefined
+  const holderFree = holderId ? accounts.find((a) => a.method.id === holderId)?.balance?.free : undefined
+  const free = holderFree === undefined ? undefined : Math.max(0, holderFree)
   const overFree = free !== undefined && (parseFloat(balance) || 0) > free
 
   const create = () => {

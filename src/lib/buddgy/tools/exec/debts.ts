@@ -21,7 +21,8 @@ import { debtsSpecs } from '@/lib/buddgy/tools/specs/debts'
 import { fin } from '@/lib/buddgy/tools/stores'
 import type { ReadImpl, ToolContext, WriteImpl } from '@/lib/buddgy/tools/types'
 import { fail, makeProposal, money, num, ok, parseIsoDate, text } from '@/lib/buddgy/tools/writeKit'
-import { isBnplPlan } from '@/lib/debt/bnpl'
+import { isSettlementPlan } from '@/lib/debt/bnpl'
+import { bookCardPlanPurchase } from '@/lib/debts/cardPlanPurchase'
 import { reconcileDebtSchedule } from '@/lib/debts/recurringDebtDueHandlers'
 import { installmentPaymentsCompleted } from '@/lib/debts/installmentSchedule'
 import { findInstallmentProviderMeta } from '@/lib/constants/installmentProviders'
@@ -121,7 +122,7 @@ const get_debt: ReadImpl = (args, ctx) => {
   const payments = s.debtPayments.filter((p) => p.debtId === d.id).sort((a, b) => b.date.localeCompare(a.date))
   const left = remainingOf(s, d)
   const schedule = s.recurringDebtPayments.find((r) => r.debtId === d.id && r.isActive)
-  const outstanding = d.debtType === 'credit_card' ? computeCreditCardOutstanding(d, s.expenses, s.debtPayments, s.exchangeRates) : undefined
+  const outstanding = d.debtType === 'credit_card' ? computeCreditCardOutstanding(d, s.expenses, s.debtPayments, s.exchangeRates, s.debts) : undefined
   const util = outstanding !== undefined ? creditUtilizationRatio(outstanding, d.creditLimit) : null
   return {
     ref: refOf(d.id),
@@ -414,7 +415,14 @@ const add_installment_plan: WriteImpl = {
       installmentProviderName: a.providerName ?? findInstallmentProviderMeta(a.provider)?.name,
       ...(card?.kind === 'one' ? { linkedCreditCardDebtId: card.item.id } : {}),
     })
-    return { ok: true, message: a.item, undo: () => fin().deleteDebt(id) }
+    const purchase = bookCardPlanPurchase(id)
+    return {
+      ok: true, message: a.item,
+      undo: () => {
+        if (purchase) fin().deleteExpense(purchase)
+        fin().deleteDebt(id)
+      },
+    }
   },
 }
 
@@ -638,11 +646,11 @@ const record_debt_payment: WriteImpl = {
     if (settlesWithoutExpense(debt)) {
       s.addDebtPayment(record)
     } else {
-      const bnpl = isBnplPlan(debt, s.paymentMethods)
+      const settlement = isSettlementPlan(debt, s.paymentMethods)
       s.addDebtPaymentWithExpense(record, {
         date,
-        description: `${debt.name} — ${bnpl ? 'installment' : 'debt payment'}`,
-        category: bnpl ? 'Installment' : 'Debt',
+        description: `${debt.name} — ${settlement ? 'installment' : 'debt payment'}`,
+        category: settlement ? 'Installment' : 'Debt',
         amount,
         currency: payCur as Currency,
         paymentMethodId: pmId,

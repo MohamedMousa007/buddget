@@ -18,11 +18,11 @@ const sumOfRows = (views: ReturnType<typeof rows>) =>
   views.filter((v) => v.balance && !v.method.excluded).reduce((n, v) => n + (convert(v.balance!.free, v.balance!.currency, 'EGP') ?? 0), 0)
 
 describe('Available now equals the sum of the account rows (R3)', () => {
-  it('an over-reserved account contributes zero and takes nothing from another account', () => {
+  it('an over-reserved account counts its negative free (T1: free is not clamped)', () => {
     const views = rows([pm('A', 20000), pm('B', 50000)], [pocket('trip', 30000, 'A')])
     const t = accountTotals(views, 'EGP', convert)
-    expect(views.map((v) => v.balance!.free)).toEqual([0, 50000])
-    expect(t.freeInBase).toBe(50000)
+    expect(views.map((v) => v.balance!.free)).toEqual([-10000, 50000])
+    expect(t.freeInBase).toBe(40000)
     expect(t.freeInBase).toBe(sumOfRows(views))
     expect(t.totalInBase).toBe(70000)
     expect(t.heldInBase).toBe(30000)

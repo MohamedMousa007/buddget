@@ -196,10 +196,6 @@ describe('T2: legacy carry label', () => {
   })
 })
 
-describe('T3 and T25: card plans', () => {
-  it.todo('P3: card plan owed once (NW 171,000 with a legacy separate plan) and instalments written as Installment')
-})
-
 describe('T19: part in a closed account', () => {
   it('counts 0 in net worth and is listed for repair', () => {
     const w = fixtureF()

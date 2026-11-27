@@ -76,7 +76,7 @@ export function planAssetPurchase(store: PlanStore, input: AssetPurchaseInput): 
     if (bal) {
       const inAccount = bal.currency === currency ? paid : ledger.convert(paid, currency, bal.currency)
       if (inAccount === null) return { action: 'refuse', reason: 'no_rate' }
-      if (inAccount > bal.free + balanceEpsilon(bal.currency as Currency)) return { action: 'refuse', reason: 'over_available' }
+      if (inAccount > Math.max(0, bal.free) + balanceEpsilon(bal.currency as Currency)) return { action: 'refuse', reason: 'over_available' }
     }
     return { action: 'account', accountId: method.id }
   }

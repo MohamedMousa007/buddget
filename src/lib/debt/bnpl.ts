@@ -15,3 +15,11 @@ export function isBnplPlan(debt: Debt, paymentMethods: PaymentMethod[]): boolean
   const pm = paymentMethods.find((m) => m.id === debt.linkedPaymentMethodId)
   return pm?.type === 'bnpl'
 }
+
+/** A card plan: an instalment plan that lives inside a credit card (LOGIC_SPEC §4.10). Owed once, as part of the card. */
+export const isCardPlan = (debt: Pick<Debt, 'debtType' | 'linkedCreditCardDebtId'>): boolean =>
+  debt.debtType === 'installment' && !!debt.linkedCreditCardDebtId
+
+/** Plans whose purchase was spending at checkout: each instalment written from now on is a non-spend `Installment` settlement. */
+export const isSettlementPlan = (debt: Debt, paymentMethods: PaymentMethod[]): boolean =>
+  isBnplPlan(debt, paymentMethods) || isCardPlan(debt)

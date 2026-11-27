@@ -83,7 +83,7 @@ export function MoveMoneySheet({ open, onClose, accounts, initialAccountId, init
   if (!account?.balance) return null
   const cur = String(account.method.currency)
   const name = account.method.label?.trim() || accountTitle(account.method)
-  const free = account.balance.free
+  const free = Math.max(0, account.balance.free)
   const v = parseFloat(amount) || 0
   const valid = v > 0 && v <= free && (mode === 'cash' || Boolean(pocket))
   const held = pocket?.heldInPaymentMethodId === account.method.id

@@ -86,8 +86,7 @@ export function useAddExpenseSheet() {
     if (!pm || pm.type !== 'credit_card') return null
     const cardDebt = debts.find((d) => d.debtType === 'credit_card' && d.linkedPaymentMethodId === pm.id)
     if (!cardDebt) return null
-    const pays = debtPayments.filter((p) => p.debtId === cardDebt.id)
-    const out = computeCreditCardOutstanding(cardDebt, expenses, pays, exchangeRates)
+    const out = computeCreditCardOutstanding(cardDebt, expenses, debtPayments, exchangeRates, debts)
     return { cardName: cardDebt.name, amountLabel: `${out < 0 ? '−' : ''}${formatFlex(out)} ${cardDebt.currency}` }
   }, [paymentMethodId, paymentMethods, debts, debtPayments, expenses, exchangeRates])
 

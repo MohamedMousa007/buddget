@@ -722,7 +722,7 @@ export async function createSmsInstallmentPayment(
 ): Promise<CreateSmsExpenseResult & { needsConfirm?: boolean }> {
   const { data: plans } = await service
     .from('debts')
-    .select('id, currency, is_gold, installment_amount, installment_provider_name, linked_payment_method_id')
+    .select('id, currency, is_gold, installment_amount, installment_provider_name, linked_payment_method_id, linked_credit_card_debt_id')
     .eq('user_id', row.userId)
     .eq('debt_type', 'installment')
     .eq('status', 'active')
@@ -750,17 +750,17 @@ export async function createSmsInstallmentPayment(
 
   if (!plan) return { ...emptyResult(), needsConfirm: true }
 
-  // BNPL plan (funded from a `bnpl` method) → the purchase was booked at checkout,
+  // BNPL plan (funded from a `bnpl` method) or card plan (inside a credit card) → the purchase was booked at checkout,
   // so the settlement is non-spend `Installment`; bank/other plans keep `Debt` spend.
-  let isBnpl = false
-  if (plan.linked_payment_method_id) {
+  let settles = !!plan.linked_credit_card_debt_id
+  if (!settles && plan.linked_payment_method_id) {
     const { data: pm } = await service
       .from('payment_methods')
       .select('type')
       .eq('id', plan.linked_payment_method_id as string)
       .is('deleted_at', null)
       .maybeSingle()
-    isBnpl = pm?.type === 'bnpl'
+    settles = pm?.type === 'bnpl'
   }
 
   // The SMS from an installment provider usually names the funding card directly.
@@ -772,7 +772,7 @@ export async function createSmsInstallmentPayment(
     isGold: plan.is_gold === true,
     fundingPaymentMethodId,
     description: smsTitle(row) ?? 'Installment payment',
-    category: isBnpl ? 'Installment' : 'Debt',
+    category: settles ? 'Installment' : 'Debt',
   })
 }
 

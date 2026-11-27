@@ -25,7 +25,7 @@ export interface AccountsModel {
   totalInBase: number
   /** Sum of held-in pockets in base currency. */
   heldInBase: number
-  /** "Available now": the sum of each account's own free money, so it equals the rows under it. */
+  /** "Free to spend": the sum of each account's own free money (negative ones included, T1), so it equals the rows under it. */
   freeInBase: number
   approx: boolean
   /** No tracked Cash yet (every user has an untracked one): the page offers to start tracking cash. */
@@ -33,8 +33,8 @@ export interface AccountsModel {
 }
 
 /**
- * The hero's totals over the counted rows (tracked, not excluded). Available is summed per account: an account with
- * more set aside than it holds contributes zero, it never eats into another account's money.
+ * The hero's totals over the counted rows (tracked, not excluded). Free is summed per account and is not clamped
+ * (LOGIC_SPEC I-3, T1): an account short of what it sets aside or owes on its cards shows, and counts, a negative free.
  */
 export function accountTotals(
   accounts: readonly Pick<AccountView, 'method' | 'balance'>[],

@@ -3197,6 +3197,7 @@ export type Database = {
           excluded: boolean
           id: string
           is_default: boolean
+          is_savings: boolean
           label: string | null
           last4: string | null
           last4_aliases: string[]
@@ -3205,6 +3206,7 @@ export type Database = {
           opening_at: string | null
           opening_balance: number | null
           parent_id: string | null
+          pays_from_payment_method_id: string | null
           provisional: boolean
           track_sms: boolean
           type: Database["public"]["Enums"]["payment_method_type"]
@@ -3223,6 +3225,7 @@ export type Database = {
           excluded?: boolean
           id?: string
           is_default?: boolean
+          is_savings?: boolean
           label?: string | null
           last4?: string | null
           last4_aliases?: string[]
@@ -3231,6 +3234,7 @@ export type Database = {
           opening_at?: string | null
           opening_balance?: number | null
           parent_id?: string | null
+          pays_from_payment_method_id?: string | null
           provisional?: boolean
           track_sms?: boolean
           type: Database["public"]["Enums"]["payment_method_type"]
@@ -3249,6 +3253,7 @@ export type Database = {
           excluded?: boolean
           id?: string
           is_default?: boolean
+          is_savings?: boolean
           label?: string | null
           last4?: string | null
           last4_aliases?: string[]
@@ -3257,6 +3262,7 @@ export type Database = {
           opening_at?: string | null
           opening_balance?: number | null
           parent_id?: string | null
+          pays_from_payment_method_id?: string | null
           provisional?: boolean
           track_sms?: boolean
           type?: Database["public"]["Enums"]["payment_method_type"]
@@ -3267,6 +3273,13 @@ export type Database = {
           {
             foreignKeyName: "payment_methods_parent_id_fkey"
             columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_methods_pays_from_payment_method_id_fkey"
+            columns: ["pays_from_payment_method_id"]
             isOneToOne: false
             referencedRelation: "payment_methods"
             referencedColumns: ["id"]

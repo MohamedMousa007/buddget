@@ -433,6 +433,8 @@ export const importDataSchema = z.object({
       z.object({
         id: z.string(),
         parentId: z.string().optional(),
+        paysFromPaymentMethodId: z.string().optional(),
+        isSavings: z.boolean().optional(),
         openingBalance: z.number().optional(),
         openingAt: z.string().optional(),
         closedAt: z.string().optional(),

@@ -12,7 +12,7 @@ const pm = (o: Partial<PaymentMethod> & Pick<PaymentMethod, 'id' | 'type' | 'nam
 const bank = pm({ id: 'b', type: 'bank_account', name: 'CIB ••2016', last4: '2016', color: '#1E4E9B' })
 const visa = pm({ id: 'v', type: 'debit_card', name: 'Visa Debit ••4417', last4: '4417', color: '#3669BB', parentId: 'b' })
 const mc = pm({ id: 'm', type: 'credit_card', name: 'Mastercard Platinum ••8821', last4: '8821', color: '#5560D8', parentId: 'b' })
-const bal = { id: 'b', currency: 'EGP', balance: 84250, held: 25000, free: 59250, approx: false }
+const bal = { id: 'b', currency: 'EGP', balance: 84250, held: 25000, cardHold: 0, free: 59250, approx: false }
 const noop = () => {}
 
 describe('accounts UI renders', () => {

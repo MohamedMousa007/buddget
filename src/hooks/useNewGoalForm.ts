@@ -93,7 +93,7 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
   // The same list the validation reads, so a required answer always has its question on screen.
   const homeAccounts = useMemo(() => {
     const balances = computeBalances(ledger)
-    return goalHomeAccounts(ledger.paymentMethods, currency).map((method) => ({ method, free: balances.get(method.id)?.free ?? 0 }))
+    return goalHomeAccounts(ledger.paymentMethods, currency).map((method) => ({ method, free: Math.max(0, balances.get(method.id)?.free ?? 0) }))
   }, [ledger, currency])
   const savedPocket = savedPocketId ? ledger.savingsAccounts.find((a) => a.id === savedPocketId) : undefined
   const savedProblem = savedPocketProblem(savedKind, savedPocketId, num(alreadySaved)) ?? (savedPocketId

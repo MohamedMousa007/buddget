@@ -3,8 +3,10 @@ import type { Currency, Debt, DebtPayment, Expense } from '@/lib/store/types'
 import { addCalendarDays } from '@/lib/time/calendarDays'
 import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
 import { sumConverted, tryConvertCurrency, type PartialSum } from '@/lib/utils/currency'
+import { isCardPlan } from '@/lib/debt/bnpl'
+import { addByFrequency } from '@/lib/debts/installmentSchedule'
 
-function paidToward(debtId: string, payments: DebtPayment[]): number {
+function paidToward(debtId: string, payments: readonly DebtPayment[]): number {
   return payments.filter((p) => p.debtId === debtId).reduce((sum, p) => sum + p.amountPaid, 0)
 }
 
@@ -54,25 +56,131 @@ export function cardChargesDetail(
   )
 }
 
+/** Converts an amount between currencies; null = no rate (the amount is left out). */
+export type Convert = (amount: number, from: string, to: string) => number | null
+
+/** The rows a card's balance reads. `debts` holds its plans; omit it and the card has none. */
+export interface CardRows {
+  expenses: readonly Expense[]
+  payments: readonly DebtPayment[]
+  debts?: readonly Debt[]
+}
+
+const DAY_MS = 86_400_000
+const daysApart = (a: string, b: string) =>
+  Math.abs(new Date(`${a.slice(0, 10)}T12:00:00`).getTime() - new Date(`${b.slice(0, 10)}T12:00:00`).getTime()) / DAY_MS
+
 /**
- * Outstanding revolving balance: starting balance + card charges (converted to debt currency) − payments.
+ * The plan's purchase charge on the card (§4.10): an expense on the card's method that is not an instalment, linked to the
+ * plan, or else unlinked at the plan's full price within 3 days of its start, its creation or `near`. Undefined = none.
+ */
+export function cardPlanPurchaseCharge(
+  plan: Debt, card: Pick<Debt, 'linkedPaymentMethodId'>, expenses: readonly Expense[], near: readonly string[] = [],
+): Expense | undefined {
+  const pm = card.linkedPaymentMethodId
+  if (!pm) return undefined
+  const onCard = expenses.filter((e) => e.paymentMethodId === pm && !e.isDebtPayment && !e.refundKind)
+  const days = [plan.startDate, plan.createdAt, ...near].filter((d): d is string => !!d)
+  return onCard.find((e) => e.linkedDebtId === plan.id)
+    ?? onCard.find((e) => !e.linkedDebtId && Math.abs(e.amount - plan.startingBalance) < 0.005 && String(e.currency) === String(plan.currency)
+      && days.some((d) => daysApart(e.date, d) <= 3))
+}
+
+/**
+ * The instalment plans that live inside this card (§4.10): linked to it AND with their purchase charged on it. A plan with
+ * no purchase on the card is owed on its own, never zero times. Cleared ones included (their payments still count).
+ */
+export function cardPlansOf(card: Pick<Debt, 'id' | 'linkedPaymentMethodId'>, debts: readonly Debt[] = [], expenses: readonly Expense[] = []): Debt[] {
+  return debts.filter((d) => isCardPlan(d) && d.linkedCreditCardDebtId === card.id && !!cardPlanPurchaseCharge(d, card, expenses))
+}
+
+/**
+ * A plan payment made with the card itself is the schedule ticking over: the card bill pays it, no money moved (§4.10),
+ * so neither it nor its own charge on the card changes what the card owes. Paid from an account or a pocket, it is money.
+ */
+export function isCardPlanTick(p: Pick<DebtPayment, 'paymentMethodId' | 'fundedFromSavings'>, card: Pick<Debt, 'linkedPaymentMethodId'>): boolean {
+  return !p.fundedFromSavings && (!p.paymentMethodId || p.paymentMethodId === card.linkedPaymentMethodId)
+}
+
+/**
+ * owed(c) (§4.1): starting balance + card charges − payments to the card − payments to its plans. The plan purchase is
+ * one full-price charge; an instalment row on the card (legacy `Debt` charge or a new `Installment` one) is not a charge.
+ */
+export function cardOwed(card: Debt, rows: CardRows, convert: Convert): number {
+  if (card.debtType !== 'credit_card') return card.startingBalance
+  const plans = cardPlansOf(card, rows.debts, rows.expenses)
+  const planIds = new Set(plans.map((p) => p.id))
+  let balance = card.startingBalance
+  const linked = card.linkedPaymentMethodId
+  if (linked) {
+    const charges = rows.expenses.filter((e) => chargesToCard(e, linked) && !(e.isDebtPayment && e.linkedDebtId && planIds.has(e.linkedDebtId)))
+    balance += sumConverted(charges, (e) => convert(Math.max(0, e.amount - (e.refundedAmount ?? 0)), e.currency, card.currency)).total
+  }
+  balance -= paidToward(card.id, rows.payments)
+  for (const plan of plans) {
+    const paid = rows.payments.filter((p) => p.debtId === plan.id && !isCardPlanTick(p, card)).reduce((sum, p) => sum + p.amountPaid, 0)
+    balance -= plan.currency === card.currency ? paid : (convert(paid, plan.currency, card.currency) ?? 0)
+  }
+  return Math.max(0, balance)
+}
+
+/**
+ * Outstanding revolving balance: starting balance + card charges (converted to debt currency) − payments, including
+ * payments to the card's plans when `debts` is given.
  */
 export function computeCreditCardOutstanding(
   debt: Debt,
   expenses: Expense[],
   payments: DebtPayment[],
-  exchangeRates: Record<string, number>
+  exchangeRates: Record<string, number>,
+  debts: readonly Debt[] = []
 ): number {
-  if (debt.debtType !== 'credit_card') return debt.startingBalance
+  return cardOwed(debt, { expenses, payments, debts }, (a, from, to) => tryConvertCurrency(a, from, to, exchangeRates))
+}
 
-  let balance = debt.startingBalance
-  const linked = debt.linkedPaymentMethodId
-  if (linked) {
-    balance += cardChargesDetail(debt, expenses, exchangeRates).total
+const dayKey = (d: Date) => format(d, 'yyyy-MM-dd')
+
+/** The card's next statement close (its `paymentDueDay`) on or after `ref`; a card with none bills up to `ref`. */
+export function nextStatementClose(card: Debt, ref: Date): string {
+  return getNextCreditCardDueDate(card, ref) ?? dayKey(ref)
+}
+
+/** Instalments of `plan` billed by `closeDay` (yyyy-MM-dd): its due dates on or before that day. */
+export function planBilledCount(plan: Debt, closeDay: string): number {
+  const count = plan.installmentCount ?? 0
+  if (!plan.startDate || count <= 0) return count
+  const start = parseISO(plan.startDate.slice(0, 10))
+  let n = 0
+  while (n < count && dayKey(addByFrequency(start, plan.installmentFrequency ?? 'monthly', n)) <= closeDay) n++
+  return n
+}
+
+/**
+ * unbilledPlan(P) (§4.1): min(the schedule not yet billed, the principal still owed), in the plan's currency. A cleared
+ * plan has nothing left to bill.
+ */
+export function planUnbilled(plan: Debt, payments: readonly DebtPayment[], closeDay: string): number {
+  if (plan.status === 'cleared' || !plan.installmentCount) return 0
+  const per = plan.installmentAmount ?? plan.startingBalance / plan.installmentCount
+  const schedule = per * Math.max(0, plan.installmentCount - planBilledCount(plan, closeDay))
+  const principal = plan.startingBalance - paidToward(plan.id, payments)
+  return Math.max(0, Math.min(schedule, principal))
+}
+
+/** Σ unbilledPlan over the card's plans at `ref`, in the card's currency (a plan with no rate is left out). */
+export function cardUnbilledPlans(card: Debt, rows: CardRows, convert: Convert, ref: Date): number {
+  const close = nextStatementClose(card, ref)
+  let total = 0
+  for (const plan of cardPlansOf(card, rows.debts, rows.expenses)) {
+    const left = planUnbilled(plan, rows.payments, close)
+    total += plan.currency === card.currency ? left : (convert(left, plan.currency, card.currency) ?? 0)
   }
+  return total
+}
 
-  balance -= paidToward(debt.id, payments)
-  return Math.max(0, balance)
+/** What the card holds back from its paying account (§4.1): everything owed except unbilled plan principal. */
+export function cardHoldBack(card: Debt, rows: CardRows, convert: Convert, ref: Date): number {
+  return Math.max(0, cardOwed(card, rows, convert) - cardUnbilledPlans(card, rows, convert, ref))
 }
 
 /**

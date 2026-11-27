@@ -25,7 +25,7 @@ export const ledgerOf = (s: LedgerState): LedgerInput => ({
 
 /** Money in the account that no pocket has set aside, in the account's currency. Zero for an untracked account. */
 export function availableIn(accountId: string, ledger: LedgerInput): number {
-  return computeBalances(ledger).get(accountId)?.free ?? 0
+  return Math.max(0, computeBalances(ledger).get(accountId)?.free ?? 0)
 }
 
 /**
@@ -66,7 +66,7 @@ function exceedsAvailable(ledger: LedgerInput, pocket: GuardedPocket, accountId:
   const holder = computeBalances(ledger).get(accountId)
   if (!holder) return false
   const inHolder = holder.currency === pocket.currency ? amount : ledger.convert(amount, pocket.currency, holder.currency)
-  return inHolder !== null && inHolder > holder.free + balanceEpsilon(pocket.currency)
+  return inHolder !== null && inHolder > Math.max(0, holder.free) + balanceEpsilon(pocket.currency)
 }
 
 /**
@@ -79,7 +79,7 @@ function transferRefusal(ledger: LedgerInput, pocket: GuardedPocket, sourceId: s
   if (!source) return 'over_available'
   const inSource = source.currency === pocket.currency ? amount : ledger.convert(amount, pocket.currency, source.currency)
   if (inSource === null) return 'no_rate'
-  return inSource > source.free + balanceEpsilon(pocket.currency) ? 'over_available' : null
+  return inSource > Math.max(0, source.free) + balanceEpsilon(pocket.currency) ? 'over_available' : null
 }
 
 /** The one guard behind every deposit writer: the store refuses on it, sheets and Buddgy explain it before submitting. */

@@ -25,7 +25,8 @@ import type {
   SavingsAccount,
   SavingsTransaction,
 } from '@/lib/store/types'
-import { computeCreditCardOutstanding } from '@/lib/debt/computeCreditCardBalance'
+import { cardPlanPurchaseCharge, computeCreditCardOutstanding, isCardPlanTick } from '@/lib/debt/computeCreditCardBalance'
+import { isCardPlan } from '@/lib/debt/bnpl'
 import { isNonSpendCategory, isNonSpendExpense } from '@/lib/constants/categoryMeta'
 import { convertCurrency, tryConvertCurrency, tryConvertWithGold, type GoldQuote } from './currency'
 import { monthlyPaydayCount, paydayDatesForWindow } from './paydaySchedule'
@@ -705,6 +706,9 @@ export function calculateCashOutflow(params: {
     // Savings-funded payoffs are a balance-sheet move (pocket → debt), already accounted
     // for by the pocket withdrawal; counting them as cash outflow would drop net worth twice.
     if (p.fundedFromSavings) continue
+    // A card-plan instalment made with the card itself moves no money: the card bill is the cash leaving.
+    const card = debt.linkedCreditCardDebtId ? debtById.get(debt.linkedCreditCardDebtId) : undefined
+    if (card && isCardPlanTick(p, card)) continue
     // No FX path: the payment cannot be valued, so it is left out rather than counted 1:1.
     outflow += tryConvertCurrency(p.amountPaid, debt.currency as Currency, baseCurrency, exchangeRates) ?? 0
   }
@@ -724,12 +728,18 @@ export function totalDebtRemainingInBase(
   rates: Record<string, number>,
   goldPricePerGram: number,
   goldPriceAvailable: boolean,
-  expenses?: Expense[]
+  expenses?: Expense[],
+  allDebts?: Debt[]
 ): number {
-  return totalDebtRemainingDetail(debts, debtPayments, baseCurrency, rates, goldPricePerGram, goldPriceAvailable, expenses).total
+  return totalDebtRemainingDetail(debts, debtPayments, baseCurrency, rates, goldPricePerGram, goldPriceAvailable, expenses, allDebts).total
 }
 
-/** Same total, plus `incomplete` when an owed gold debt was left out because gold has no price. */
+/**
+ * Same total, plus `incomplete` when an owed gold debt was left out because gold has no price. With `expenses`, a card
+ * plan whose purchase is charged on its card is owed once, inside the card (LOGIC_SPEC §4.10): its own remainder is not
+ * added again. A plan with no purchase on the card is still owed on its own.
+ * `allDebts` (default `debts`) holds the cards' plans when only some debts are totalled.
+ */
 export function totalDebtRemainingDetail(
   debts: Debt[],
   debtPayments: DebtPayment[],
@@ -737,16 +747,20 @@ export function totalDebtRemainingDetail(
   rates: Record<string, number>,
   goldPricePerGram: number,
   goldPriceAvailable: boolean,
-  expenses?: Expense[]
+  expenses?: Expense[],
+  allDebts: Debt[] = debts
 ): { total: number; incomplete: boolean } {
   const balanceCtx: DebtBalanceContext | undefined =
-    expenses !== undefined ? { expenses, exchangeRates: rates, allDebts: debts } : undefined
+    expenses !== undefined ? { expenses, exchangeRates: rates, allDebts } : undefined
+  const cards = new Map(allDebts.filter((d) => d.debtType === 'credit_card').map((d) => [d.id, d]))
   let total = 0
   let incomplete = false
   for (const debt of debts) {
     // A cleared debt is settled or written off: whatever its payments leave over is no longer owed (BUD-39).
     // A credit card revolves and is never really cleared, so its outstanding always counts.
     if (debt.status === 'cleared' && debt.debtType !== 'credit_card') continue
+    const card = isCardPlan(debt) ? cards.get(debt.linkedCreditCardDebtId as string) : undefined
+    if (balanceCtx && card && cardPlanPurchaseCharge(debt, card, balanceCtx.expenses)) continue
     const remaining = calculateDebtRemaining(debt, debtPayments, balanceCtx)
     if (remaining > 0 && goldDebtUnpriced(debt, goldPricePerGram, goldPriceAvailable)) incomplete = true
     total += calculateDebtRemainingInBaseCurrency(
@@ -822,7 +836,7 @@ export function calculateDebtRemainingRaw(
 ): number {
   if (debt.debtType === 'credit_card') {
     if (ctx?.expenses) {
-      return computeCreditCardOutstanding(debt, ctx.expenses, payments, ctx.exchangeRates)
+      return computeCreditCardOutstanding(debt, ctx.expenses, payments, ctx.exchangeRates, ctx.allDebts)
     }
     return Math.max(0, debt.startingBalance - totalPaidTowardDebt(debt.id, payments))
   }

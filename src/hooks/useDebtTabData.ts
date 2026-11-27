@@ -20,6 +20,7 @@ import {
 import { convertCurrency } from '@/lib/utils/currency'
 import {
   computeCreditCardOutstanding,
+  isCardPlanTick,
   getCurrentBillingCycleExpenses,
   sumExpensesInDebtCurrency,
   getNextCreditCardDueDate,
@@ -166,7 +167,12 @@ export function useDebtTabData() {
     // --- portfolio totals ---
     const owed = stats.debtRemainingTotal
     // Same population as `owed` (what the user owes): money coming back from a loan they gave is not debt paid off.
-    const paidOff = debts.filter((d) => !isOwedToUser(d)).reduce((s, d) => s + paidInBase(d, paymentsFor(d.id), base, exchangeRates, goldPricePerGram, goldPriceAvailable), 0)
+    // A card-plan instalment ticked on the card moved no money (the card bill did): only real payments count as paid off.
+    const paidPayments = (d: (typeof debts)[number]) => {
+      const card = d.linkedCreditCardDebtId ? debts.find((x) => x.id === d.linkedCreditCardDebtId) : undefined
+      return card ? paymentsFor(d.id).filter((p) => !isCardPlanTick(p, card)) : paymentsFor(d.id)
+    }
+    const paidOff = debts.filter((d) => !isOwedToUser(d)).reduce((s, d) => s + paidInBase(d, paidPayments(d), base, exchangeRates, goldPricePerGram, goldPriceAvailable), 0)
     const everBorrowed = owed + paidOff
     const clearedPct = everBorrowed > 0 ? Math.round((paidOff / everBorrowed) * 100) : 0
 
@@ -222,8 +228,7 @@ export function useDebtTabData() {
     const cards: CreditCardVM[] = active
       .filter((d) => d.debtType === 'credit_card')
       .map((d) => {
-        const pays = paymentsFor(d.id)
-        const outstanding = computeCreditCardOutstanding(d, expenses, pays, exchangeRates)
+        const outstanding = computeCreditCardOutstanding(d, expenses, debtPayments, exchangeRates, debts)
         const cycle = getCurrentBillingCycleExpenses(d, expenses, exchangeRates)
         const { regularDue, installmentDue, allDue, after } = cardDue({
           outstanding,

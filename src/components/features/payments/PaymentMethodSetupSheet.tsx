@@ -43,8 +43,9 @@ import { OptionChip } from '@/components/ui/OptionChip'
 import { isSavableTail } from '@/lib/accounts/identity/accountRef'
 import { useReattribute } from '@/lib/accounts/useReattribute'
 import { linkableAccounts, linksToAccount, matchLinkedAccount, relinkNeedsConfirm, savedParentId } from '@/lib/accounts/cardLink'
-import { hasAccountHistory } from '@/lib/accounts/kinds'
+import { canHoldParts, hasAccountHistory } from '@/lib/accounts/kinds'
 import { AccountPicker } from '@/components/features/accounts/AccountPicker'
+import { asksPaysFrom } from '@/lib/accounts/cardHold'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 
 /** Banks, wallets and cash have their own sheet; this one only adds cards, and edits an account's look, never its kind. */
@@ -124,6 +125,8 @@ export function PaymentMethodSetupSheet({
   const [isDefault, setIsDefault] = useState(false)
   const [providerSheetOpen, setProviderSheetOpen] = useState(false)
   const [linkedId, setLinkedId] = useState<string | undefined>(undefined)
+  // A credit card that hangs under no account: the account that pays its bill (its hold-back lands there).
+  const [paysFromId, setPaysFromId] = useState<string | undefined>(undefined)
   const [curTouched, setCurTouched] = useState(false)
   // Credit-card debt terms (only when type === 'credit_card').
   const [ccLimit, setCcLimit] = useState('')
@@ -149,7 +152,7 @@ export function PaymentMethodSetupSheet({
         const savedLabel = editing.label ?? decTag
         setBrandId(null); setProviderName(provider); setType(editing.type)
         setLast4(editing.last4 ?? ''); setLabel(savedLabel); setAliases(editing.last4Aliases ?? [])
-        setCurCode(editing.currency); setIsDefault(editing.isDefault); setLinkedId(editing.parentId)
+        setCurCode(editing.currency); setIsDefault(editing.isDefault); setLinkedId(editing.parentId); setPaysFromId(editing.paysFromPaymentMethodId)
         const look = cardLook(editing)
         setCardStyle(look.style); setCardTheme(look.theme)
         // Load the linked credit-card debt's terms so they're editable here.
@@ -158,7 +161,7 @@ export function PaymentMethodSetupSheet({
         setCcOutstanding(linked?.startingBalance ? String(linked.startingBalance) : '')
         setCcStatementDay(linked?.paymentDueDay != null ? String(linked.paymentDueDay) : '')
       } else {
-        setCcLimit(''); setCcOutstanding(''); setCcStatementDay('')
+        setCcLimit(''); setCcOutstanding(''); setCcStatementDay(''); setPaysFromId(undefined)
         const parent = parentAccountId ? useFinanceStore.getState().paymentMethods.find((m) => m.id === parentAccountId) : undefined
         if (parent) {
           // A card added under an account starts as that account's debit card: same bank, currency and theme.
@@ -252,6 +255,7 @@ export function PaymentMethodSetupSheet({
   const handleSave = async () => {
     if (!canSave) return
     const parentId = savedParentId(type, linkedId)
+    const paysFromPaymentMethodId = type === 'credit_card' && !parentId ? paysFromId : undefined
     if (editing && relinkNeedsConfirm(editing, parentId, hasAccountHistory(useFinanceStore.getState(), editing.id))) {
       const target = parentId ?? editing.parentId
       const name = accountTitle(paymentMethods.find((m) => m.id === target) ?? editing)
@@ -265,7 +269,7 @@ export function PaymentMethodSetupSheet({
     const name = composePaymentMethodName(provider, { last4: use4 ? last4 : undefined })
     // `color` stays a real hex (avatars and tints read it): the theme's first stop, or an edited method's own colour until a theme is picked.
     const color = editing?.color && !themePicked ? editing.color : CARD_THEMES[effectiveTheme].a
-    const payload = { name, type, currency: curCode, color, cardStyle, cardTheme: effectiveTheme, isDefault, ...(use4 ? { last4 } : {}), ...(words ? { label: words } : {}) }
+    const payload = { name, type, currency: curCode, color, cardStyle, cardTheme: effectiveTheme, isDefault, paysFromPaymentMethodId, ...(use4 ? { last4 } : {}), ...(words ? { label: words } : {}) }
     let pmId: string
     if (editing) {
       updatePaymentMethod(editing.id, { ...payload, last4: use4 ? last4 : undefined, last4Aliases: aliases.length > 0 ? aliases : undefined, label: words || undefined, ...(CARD_TYPES.includes(editing.type) ? { parentId } : {}) })
@@ -319,6 +323,7 @@ export function PaymentMethodSetupSheet({
   const pickSeg = (v: string) => (v === 'store' || v === 'virtual' ? pickChoice(v) : pickType(v as PaymentMethodType))
   const linked = linkedId ? linkable.find((a) => a.id === linkedId) : undefined
   const showUses = linksToAccount(type) && type !== 'credit_card' && linkable.length > 0
+  const payers = asksPaysFrom({ type, parentId: linkedId }) ? paymentMethods.filter((m) => canHoldParts(m)) : []
   // A card spending from an account takes that account's currency; one standing alone (or a credit card) picks its own.
   const showCurrency = !(showUses && linked)
   const defaultName = hasProvider ? `${providerName.trim()} ${kindLabel}${last4 ? ` \u2022\u2022${last4}` : ''}` : ''
@@ -411,6 +416,14 @@ export function PaymentMethodSetupSheet({
                     accounts={linkable.map((m) => ({ method: m, cards: [], balance: null }))}
                     value={linkedId ?? ''} onChange={(id) => (id ? pickLinked(id) : setLinkedId(undefined))}
                     label={lt.uses} noneLabel={lt.usesNone} showBalance={false} zIndexClassName={z.provider}
+                  />
+                ) : null}
+                {payers.length > 0 ? (
+                  <AccountPicker
+                    look="row"
+                    accounts={payers.map((m) => ({ method: m, cards: [], balance: null }))}
+                    value={paysFromId ?? ''} onChange={(id) => setPaysFromId(id || undefined)}
+                    label={lt.paysFrom} noneLabel={lt.usesNone} showBalance={false} zIndexClassName={z.provider}
                   />
                 ) : null}
                 {showCurrency ? (

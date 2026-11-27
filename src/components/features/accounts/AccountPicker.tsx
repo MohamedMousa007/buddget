@@ -60,7 +60,7 @@ function AccountPickerRow({ accounts, value, onChange, label, noneLabel, showBal
       name: accountDisplayName(a.method),
       subtitle: accountSubtitle({ ...a.method, label: undefined }, sharesProvider(a.method, methods)) ?? String(a.method.currency),
       glyph: <BrandMark name={accountTitle(a.method)} color={accountColor(a.method)} size={38} logo={bankLogoForName(accountTitle(a.method))} />,
-      trailing: showBalance && a.balance ? <span className="font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{moneyFlex(a.balance.free, String(a.method.currency))}</span> : undefined,
+      trailing: showBalance && a.balance ? <span className="font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{moneyFlex(Math.max(0, a.balance.free), String(a.method.currency))}</span> : undefined,
     })),
   ]
   return (
@@ -80,7 +80,7 @@ function AccountPickerInline({ accounts, value, onChange, label, noneLabel, show
   const current = found ?? (noneLabel !== undefined ? null : accounts[0])
   if (!current && noneLabel === undefined) return null
   const methods = accounts.map((a) => a.method)
-  const freeText = (a: AccountView) => (a.balance ? t.freeLabel(`${moneyFlex(a.balance.free, String(a.method.currency))} ${String(a.method.currency)}`) : t.setBalance)
+  const freeText = (a: AccountView) => (a.balance ? t.freeLabel(`${moneyFlex(Math.max(0, a.balance.free), String(a.method.currency))} ${String(a.method.currency)}`) : t.setBalance)
   // The user's Name leads (as on Accounts); the line under it carries the digits, never the Name a second time.
   const subtitle = (a: AccountView) => accountSubtitle({ ...a.method, label: undefined }, sharesProvider(a.method, methods)) ?? String(a.method.currency)
   const noneMark = <BrandMark name="" color="var(--color-brand-sunken)" size={36} icon={<CreditCard className="size-4 text-[var(--color-brand-text-muted)]" aria-hidden />} />

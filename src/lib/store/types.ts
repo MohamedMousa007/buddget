@@ -59,6 +59,10 @@ export type PaymentMethodType =
 export interface PaymentMethod {
   /** Cards hang under an account (cash / bank_account / wallet). Absent = standalone. */
   parentId?: string
+  /** A standalone credit card: the account that pays its bill (its hold-back lands there, LOGIC_SPEC §4.1). */
+  paysFromPaymentMethodId?: string
+  /** A savings account (payment_methods.is_savings). */
+  isSavings?: boolean
   /** Account balance at `openingAt`; undefined = not set yet (excluded from totals). */
   openingBalance?: number
   openingAt?: string

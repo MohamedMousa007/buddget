@@ -35,7 +35,7 @@ export function cardDetails(
   if (!debt) return { kind: 'credit', outstanding: null, limit: null, currency: String(card.currency), dueDay: null }
   return {
     kind: 'credit',
-    outstanding: computeCreditCardOutstanding(debt, expenses, payments, rates),
+    outstanding: computeCreditCardOutstanding(debt, expenses, payments, rates, debts),
     limit: debt.creditLimit ?? null,
     currency: String(debt.currency),
     dueDay: debt.paymentDueDay ?? null,

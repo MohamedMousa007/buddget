@@ -6,6 +6,7 @@ import { resolveAccountId } from './resolve'
 import { isOwedToUser } from '@/lib/debts/debtDirection'
 import { paidAsEntered } from '@/lib/debts/paymentAmounts'
 import { incomeEventIdForTx } from '@/lib/savings/accountLeg'
+import { cardHolds } from './cardHold'
 
 export interface LedgerInput {
   paymentMethods: readonly PaymentMethod[]
@@ -29,7 +30,9 @@ export interface AccountBalance {
   balance: number
   /** Sum of held-in pockets, in account currency. */
   held: number
-  /** Spendable: balance minus what is set aside, never below zero. */
+  /** What the credit cards this account pays hold back (LOGIC_SPEC §4.1), in account currency. */
+  cardHold: number
+  /** Free to spend: balance − set aside − card hold-back (I-3). Can be negative; caps use `Math.max(0, free)`. */
   free: number
   /** True when any movement needed a currency conversion with no rate. */
   approx: boolean
@@ -96,6 +99,11 @@ export function computeBalances(input: LedgerInput, asOf: number = Date.now()): 
 
   walkLegs(input, apply)
 
+  const holds = cardHolds({
+    ...input,
+    expenses: input.expenses.filter((e) => instantOf(e.occurredAt, e.date) <= asOf),
+    debtPayments: input.debtPayments.filter((p) => instantOf(p.occurredAt, p.date) <= asOf),
+  }, asOf)
   const out = new Map<string, AccountBalance>()
   for (const [id, a] of acc) {
     if (a.from > asOf) continue // the account did not have a known balance yet at that instant
@@ -108,9 +116,12 @@ export function computeBalances(input: LedgerInput, asOf: number = Date.now()): 
       if (c == null) approx = true
       else heldMinor += Math.round(c * u)
     }
+    const hold = holds.get(id)
+    if (hold?.approx) approx = true
+    const holdMinor = hold ? Math.round(hold.amount * u) : 0
     out.set(id, {
       id, currency: a.currency, approx,
-      balance: a.minor / u, held: heldMinor / u, free: Math.max(0, a.minor - heldMinor) / u,
+      balance: a.minor / u, held: heldMinor / u, cardHold: holdMinor / u, free: (a.minor - heldMinor - holdMinor) / u,
       ...(flowsFrom !== undefined ? { flowsIn: a.inMinor / u, flowsOut: a.outMinor / u } : {}),
     })
   }

@@ -7,7 +7,7 @@ import { settleInstallmentAmount } from '@/lib/debts/installmentPlan'
 import { installmentPaymentsCompleted } from '@/lib/debts/installmentSchedule'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import { paymentExpenseMoney } from '@/lib/debts/paymentAmounts'
-import { isBnplPlan } from '@/lib/debt/bnpl'
+import { isSettlementPlan } from '@/lib/debt/bnpl'
 import { settlesWithoutExpense } from '@/lib/debts/debtDirection'
 
 /**
@@ -94,14 +94,18 @@ export function confirmRecurringDebtPayment(scheduleId: string): boolean {
   )
   if (!result.ok) return false
 
+  // A card plan's instalment moves no money by itself: the card bill pays it (LOGIC_SPEC §4.10), so with no account named on
+  // the schedule it ticks on the card. A schedule that names an account keeps paying from it.
+  const cardPm = debt.linkedCreditCardDebtId ? state.debts.find((d) => d.id === debt.linkedCreditCardDebtId)?.linkedPaymentMethodId : undefined
   const pmId =
     due.paymentMethodId ||
+    cardPm ||
     state.paymentMethods.find((m) => m.isDefault)?.id ||
     state.paymentMethods[0]?.id ||
     ''
 
   const paymentDate = due.nextDueDate
-  const bnpl = isBnplPlan(debt, state.paymentMethods)
+  const settlement = isSettlementPlan(debt, state.paymentMethods)
 
   const paymentPayload = {
     debtId: due.debtId,
@@ -120,12 +124,12 @@ export function confirmRecurringDebtPayment(scheduleId: string): boolean {
     state.addDebtPayment(paymentPayload)
   } else {
     const expenseMoney = paymentExpenseMoney(payAmount, due.currency, result.amountInBase, state.settings.baseCurrency)
-    // BNPL plan: the purchase was counted as spend at checkout, so the settlement
-    // is non-spend (`Installment`). Bank/other installment plans keep `Debt` spend.
+    // BNPL or card plan: the purchase was counted as spend at checkout, so the settlement
+    // is non-spend (`Installment`). Bank/other installment plans keep `Debt` spend. Rows already written stay as they are.
     state.addDebtPaymentWithExpense(paymentPayload, {
       date: paymentDate,
-      description: `${debt.name || debt.personName || debt.person} — ${bnpl ? 'installment' : 'debt payment'}`,
-      category: bnpl ? 'Installment' : 'Debt',
+      description: `${debt.name || debt.personName || debt.person} — ${settlement ? 'installment' : 'debt payment'}`,
+      category: settlement ? 'Installment' : 'Debt',
       amount: expenseMoney.amount,
       currency: expenseMoney.currency as Currency,
       paymentMethodId: pmId,

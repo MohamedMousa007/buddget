@@ -11,8 +11,8 @@ import { tryConvertCurrency } from '@/lib/utils/currency'
 
 /**
  * LOGIC_SPEC §6, P2 rows (T4, T5, T6, T21, T22, T48, N7) on fixture F (dates in 2025, as in ledgerCorrectnessP1).
- * Wedding's 10 g of 21k is stored as 8.75 g at the 24k price until P5. P2 has no card hold-back (P3), so free(A) here is
- * balance − held: the spec's free values plus the 6,000 hold-back (66,000 there = 72,000 here).
+ * Wedding's 10 g of 21k is stored as 8.75 g at the 24k price until P5. Since P3 the card holds back what it owes; this
+ * seed has no TV plan debt, so the whole 16,000 is held back from CIB (free 56,000; the spec's F, with the plan, has 66,000).
  */
 const RATES = { USD_EGP: 50, EGP_USD: 0.02 }
 const GOLD = 4000
@@ -102,10 +102,10 @@ describe('T4: labels never move balances', () => {
       [() => S().markSpent('ms', 3000, dec), 23000],
       [() => S().setAsideInPart('travel', 1000, dec), 24000],
     ]
-    expect(bal('CIB')).toMatchObject({ balance: 100000, held: 28000, free: 72000 })
+    expect(bal('CIB')).toMatchObject({ balance: 100000, held: 28000, cardHold: 16000, free: 56000 })
     for (const [write, held] of steps) {
       expect(write()).toBe(true)
-      expect(bal('CIB')).toMatchObject({ balance: 100000, held, free: 100000 - held })
+      expect(bal('CIB')).toMatchObject({ balance: 100000, held, free: 100000 - held - 16000 })
       expect(netWorth()).toBe(171000)
     }
     const labels = S().savingsTransactions
@@ -140,7 +140,7 @@ describe('T4: labels never move balances', () => {
     const { canDeletePocket } = await import('@/lib/savings/canDeletePocket')
     expect(canDeletePocket(S(), 'ms')).toEqual({ ok: false, reason: 'system' })
     S().deleteSavingsAccount('travel')
-    expect(bal('CIB')).toMatchObject({ balance: 100000, held: 23000, free: 77000 })
+    expect(bal('CIB')).toMatchObject({ balance: 100000, held: 23000, free: 61000 })
     expect(netWorth()).toBe(171000)
   })
   it('moving a goal part to another account labels both sides; the new part has the deterministic id', () => {
@@ -292,7 +292,7 @@ describe('regression: no labels, anchors or booked amounts = today\'s numbers', 
     }))
     const b = computeBalances(ledger())
     expect(Object.fromEntries([...b].map(([id, a]) => [id, [a.balance, a.held, a.free]]))).toEqual({
-      CIB: [104750, 28000, 76750], Deel: [1000, 200, 800], Cash: [2000, 0, 2000], NBE: [0, 0, 0],
+      CIB: [104750, 28000, 60750], Deel: [1000, 200, 800], Cash: [2000, 0, 2000], NBE: [0, 0, 0],
     })
     expect(netWorth()).toBe(175750)
     expect(anchorGaps(ledger())).toEqual([])

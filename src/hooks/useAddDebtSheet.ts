@@ -15,7 +15,7 @@ import {
   type DebtBalanceContext,
 } from '@/lib/utils/calculations'
 import { formatCurrency, formatFlex } from '@/lib/utils/formatters'
-import { isBnplPlan } from '@/lib/debt/bnpl'
+import { isSettlementPlan } from '@/lib/debt/bnpl'
 import { isOwedToUser, settlesWithoutExpense } from '@/lib/debts/debtDirection'
 import { parseCardDay, parseCardPercent } from '@/lib/debts/cardTerms'
 import { reconcileDebtSchedule } from '@/lib/debts/recurringDebtDueHandlers'
@@ -44,6 +44,7 @@ import { principalDuplicateKey } from '@/lib/debts/principalDuplicate'
 import { debtPayMethodId } from '@/lib/debts/debtPayMethod'
 import { switchBorrowGold, type GoldSwitchMemo } from '@/lib/debts/borrowGold'
 import { BLANK_DEBT_DRAFT, debtDraftDirty, debtDraftMissing, draftOfDebt } from '@/lib/debts/debtDraft'
+import { bookCardPlanPurchase } from '@/lib/debts/cardPlanPurchase'
 import { findPrincipalMatch, linkedExpensePatch, linkedIncomePatch, principalAccount, principalLegAt, principalLegFields, principalMovesByDefault } from '@/lib/debts/principalLeg'
 
 type NewDebtPayload = Omit<Debt, 'id' | 'createdAt'>
@@ -623,11 +624,14 @@ export function useAddDebtSheet() {
         : undefined
       const principalAt = editedAt && legAccount ? principalLegAt(legAccount, editedAt) : editedAt
       updateDebt(editingDebt.id, { ...(currencyLocked ? unlocked : rest), ...(principalAt ? { principalAt } : {}) })
+      // A plan linked to a card while editing gets its purchase on the card (once; an existing charge is linked).
+      bookCardPlanPurchase(editingDebt.id)
     } else {
       // A borrow or lend moved the money on its picked day and time; other debts book it now.
       const movedAt = debtType === 'personal' ? manualOccurredAt(installmentStartDate, borrowTime) : new Date().toISOString()
       const leg = principalAcct && principalMoved ? principalLegFields(principalAcct, total, payload.currency, movedAt) : {}
       const debtId = addDebt({ ...payload, ...leg })
+      bookCardPlanPurchase(debtId)
       if (principalLinked && principalMatch) {
         if (principalMatch.kind === 'expense') updateExpense(principalMatch.id, linkedExpensePatch(debtId))
         else updateIncomeEvent(principalMatch.id, linkedIncomePatch(debtId))
@@ -761,9 +765,9 @@ export function useAddDebtSheet() {
       closeSheet()
       return
     }
-    // BNPL plan: purchase counted as spend at checkout → settlement is non-spend
+    // BNPL or card plan: purchase counted as spend at checkout → settlement is non-spend
     // (`Installment`). Bank/other installment + person debts keep `Debt` spend.
-    const bnpl = isBnplPlan(selectedDebt, paymentMethods)
+    const settlement = isSettlementPlan(selectedDebt, paymentMethods)
     const expenseMoney = paymentExpenseMoney(amount, payCur, amountInBase, settings.baseCurrency)
     addDebtPaymentWithExpense(
       {
@@ -780,8 +784,8 @@ export function useAddDebtSheet() {
       },
       {
         date: paymentDate,
-        description: `${selectedDebt.name || selectedDebt.personName || selectedDebt.person} — ${bnpl ? 'installment' : 'debt payment'}`,
-        category: bnpl ? 'Installment' : 'Debt',
+        description: `${selectedDebt.name || selectedDebt.personName || selectedDebt.person} — ${settlement ? 'installment' : 'debt payment'}`,
+        category: settlement ? 'Installment' : 'Debt',
         amount: expenseMoney.amount,
         currency: expenseMoney.currency as Currency,
         paymentMethodId: pmId,

@@ -7,7 +7,7 @@ const pm = (id: string, name: string, type: PaymentMethod['type'], over: Partial
   ({ id, name, type, currency: 'EGP', isDefault: false, createdAt: '2026-01-01', ...over }) as PaymentMethod
 const view = (method: PaymentMethod, balance: number | null, cards: PaymentMethod[] = [], held = 0): AccountView => ({
   method, cards,
-  balance: balance === null ? null : { id: method.id, currency: String(method.currency), balance, held, free: Math.max(0, balance - held), approx: false },
+  balance: balance === null ? null : { id: method.id, currency: String(method.currency), balance, held, cardHold: 0, free: Math.max(0, balance - held), approx: false },
 })
 const convert = (a: number, from: string, to: string) => (from === to ? a : from === 'USD' && to === 'EGP' ? a * 50 : null)
 

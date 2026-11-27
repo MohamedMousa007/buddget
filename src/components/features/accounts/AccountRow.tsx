@@ -68,7 +68,7 @@ export function AccountRow({ account, masked, gap, shared = false, baseEquivalen
               <span className="block font-mono-numbers text-base font-medium tracking-[-0.02em] text-[var(--color-brand-text-primary)]">
                 {masked ? MASK : money.int + money.dec}
               </span>
-              {!masked && balance && balance.held > 0 ? (
+              {!masked && balance && (balance.held > 0 || balance.cardHold > 0) ? (
                 <span dir="auto" className="mt-0.5 block font-mono-numbers text-[0.71875rem] font-semibold text-[var(--color-brand-primary-ink)]">{t.freeLabel(moneyFlex(balance.free, cur))}</span>
               ) : null}
               {!masked && baseEquivalent ? (

@@ -133,7 +133,7 @@ describe('Phase 0 wealth rules, through the real store actions', () => {
       overspend()
       expect(acct('H').balance).toBe(1000)
       expect(pocketBalance('Trip')).toBe(3000)
-      expect(acct('H').free).toBe(0)
+      expect(acct('H').free).toBe(-2000) // I-3: free is not clamped; caps still read it as 0
       expect(netWorth()).toBe(2500)
       expect(S().depositToSavings('Trip', 1, 'EGP', undefined, { mode: 'declare', paymentMethodId: 'H' })).toBe(false)
     })

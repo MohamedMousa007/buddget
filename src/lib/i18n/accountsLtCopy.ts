@@ -47,6 +47,8 @@ export interface AccountsLtCopy {
     bankOrWallet: string
     uses: string
     usesNone: string
+    /** A credit card with no linked account: the account that pays its bill. */
+    paysFrom: string
     credit: string
     limit: string
     owedNow: string
@@ -131,6 +133,7 @@ export const ACCOUNTS_LT_COPY: Record<Locale, AccountsLtCopy> = {
       bankOrWallet: 'Bank or wallet',
       uses: 'Uses',
       usesNone: 'No account',
+      paysFrom: 'Pays this card from',
       credit: 'Credit',
       limit: 'Limit',
       owedNow: 'Owed now',
@@ -213,6 +216,7 @@ export const ACCOUNTS_LT_COPY: Record<Locale, AccountsLtCopy> = {
       bankOrWallet: 'البنك أو المحفظة',
       uses: 'تسحب من',
       usesNone: 'بدون حساب',
+      paysFrom: 'تُسدَّد البطاقة من',
       credit: 'الائتمان',
       limit: 'الحد',
       owedNow: 'المستحق الآن',

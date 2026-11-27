@@ -86,9 +86,9 @@ describe('computeBalances', () => {
     expect(b.held).toBe(250)
     expect(b.free).toBe(650)
   })
-  it('free never goes below zero', () => {
+  it('free goes below zero when more is set aside than the account holds (I-3, unclamped)', () => {
     const held = { id: 'p', currency: 'EGP', currentBalance: 5000, heldInPaymentMethodId: 'bank' } as SavingsAccount
-    expect(bal(base({ savingsAccounts: [held] }), 'bank')?.free).toBe(0)
+    expect(bal(base({ savingsAccounts: [held] }), 'bank')?.free).toBe(-4000)
   })
   it('adjustments apply; asOf excludes later rows', () => {
     const adj = { id: 'j', paymentMethodId: 'bank', delta: -120, reason: 'gap', occurredAt: '2026-10-12T10:00:00Z', createdAt: '', updatedAt: '' } as const
