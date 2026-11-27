@@ -1,6 +1,7 @@
 import type { Snapshot } from './snapshot'
 import { serverInstant } from './serverClock'
 import { withoutDeleted } from './pendingDeletes'
+import { withAchievedKept } from '@/lib/goals/achievedWins'
 
 const instant = (iso: string | undefined): number | null => {
   const t = Date.parse(iso ?? '')
@@ -75,7 +76,8 @@ export function mergeSnapshots(local: Snapshot, server: Snapshot, deletedHere?: 
     investmentHoldings: merge(local.investmentHoldings, server.investmentHoldings),
     savingsTransactions: merge(local.savingsTransactions as WithId[], server.savingsTransactions as WithId[]) as Snapshot['savingsTransactions'],
     recurringSavingsDeposits: merge(local.recurringSavingsDeposits, server.recurringSavingsDeposits),
-    goals: merge(local.goals, server.goals),
+    // I-12: an achieved copy wins over an active one whatever the edit times.
+    goals: withAchievedKept(merge(local.goals, server.goals), server.goals, local.goals),
     budgetPlans: merge(local.budgetPlans as WithId[], server.budgetPlans as WithId[]) as Snapshot['budgetPlans'],
     buddgyMemories: merge(local.buddgyMemories as WithId[], server.buddgyMemories as WithId[]) as Snapshot['buddgyMemories'],
     accountAdjustments: merge(local.accountAdjustments as WithId[], server.accountAdjustments as WithId[]) as Snapshot['accountAdjustments'],

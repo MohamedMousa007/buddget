@@ -19,12 +19,20 @@ export function savingsAccountBalanceInBase(
   goldPricePerGram: number,
   goldPriceAvailable: boolean
 ): number | null {
-  const c = account.currency
-  if (c === 'XAU') {
-    if (!goldPriceAvailable) return null
-    return goldGramsToMoney(account.currentBalance, goldPricePerGram, 24)
-  }
-  return tryConvertCurrency(account.currentBalance, c, baseCurrency, rates)
+  return partAmountInBase(account, account.currentBalance, baseCurrency, rates, goldPricePerGram, goldPriceAvailable)
+}
+
+/** `amount` of a part (in its own unit) in base currency: gold at the part's karat (24k when unset). Null = no price. */
+export function partAmountInBase(
+  part: Pick<SavingsAccount, 'currency' | 'karat'>,
+  amount: number,
+  baseCurrency: Currency,
+  rates: Record<string, number>,
+  goldPricePerGram: number,
+  goldPriceAvailable: boolean
+): number | null {
+  if (part.currency === 'XAU') return goldPriceAvailable ? goldGramsToMoney(amount, goldPricePerGram, part.karat ?? 24) : null
+  return tryConvertCurrency(amount, part.currency, baseCurrency, rates)
 }
 
 /** Like {@link savingsAccountBalanceInBase}, but a BTC/ETH pocket is priced from the live crypto cache (valued in EGP, then to base); null when that price is missing. */
@@ -69,7 +77,7 @@ export function savingsAccountConversionAmounts(
   const toCurrency = (target: Currency): number | null => {
     if (account.currency === target) return null
     if (account.currency === 'XAU') {
-      const base = goldGramsToMoney(account.currentBalance, goldPricePerGram, 24)
+      const base = goldGramsToMoney(account.currentBalance, goldPricePerGram, account.karat ?? 24)
       return target === primary ? base : tryConvertCurrency(base, primary, target, rates)
     }
     return tryConvertCurrency(account.currentBalance, account.currency, target, rates)

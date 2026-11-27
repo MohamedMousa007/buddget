@@ -1,6 +1,5 @@
 import { defineTools } from '@/lib/buddgy/tools/define'
 import { goalCategoryName, goalLabels } from '@/lib/buddgy/tools/exec/goalsCopy'
-import { restoreRows } from '@/lib/buddgy/tools/exec/restoreKit'
 import { inPocketCurrency, ledgerUndo, no, pick, posted, snapshotLedger, type Refusal } from '@/lib/buddgy/tools/exec/wealthKit'
 import type { EditableField, PreviewRow, Proposal } from '@/lib/buddgy/tools/proposal'
 import { refOf, resolveByRefOrName } from '@/lib/buddgy/tools/refs'
@@ -9,6 +8,7 @@ import { fin, ui } from '@/lib/buddgy/tools/stores'
 import type { ReadImpl, ToolContext, WriteImpl } from '@/lib/buddgy/tools/types'
 import { makeProposal, money, num, ok, parseIsoDate, text } from '@/lib/buddgy/tools/writeKit'
 import { GOAL_CATEGORIES } from '@/lib/constants/goalCategories'
+import { deleteGoalWithUndo } from '@/lib/goals/goalDeleteUndo'
 import { buildGoalProgressContext, computeGoalProgress } from '@/lib/goals/computeGoalProgress'
 import { withDebtDerived } from '@/lib/goals/debtGoal'
 import { periodsUntil } from '@/lib/goals/goalPlan'
@@ -18,7 +18,7 @@ import { availableIn, depositRefusal, explainDepositRefusal, ledgerOf, pocketHom
 import { createGoalPocket, ELSEWHERE, goalHomeAccounts, savedHomeProblem } from '@/lib/goals/goalPocket'
 import { accountsNamedIn, userNamedHome } from '@/lib/goals/namedHome'
 import type { Currency, FinanceStore, Goal, GoalCategory, GoalFundingMode, PaymentMethod } from '@/lib/store/types'
-import { useFinanceStore, goldQuoteOf } from '@/lib/store/useFinanceStore'
+import { goldQuoteOf } from '@/lib/store/useFinanceStore'
 import { tryConvertCurrency, tryConvertWithGold } from '@/lib/utils/currency'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { localTodayISO } from '@/lib/utils/localDate'
@@ -534,9 +534,10 @@ const achieve_goal: WriteImpl = {
   apply(proposal) {
     const plan = planAchieve(proposal.args)
     if ('ok' in plan) return { ok: false, error: plan.error }
-    const { id, status, achievedAt, name } = plan.goal
+    const { id, name } = plan.goal
     fin().achieveGoal(id)
-    return { ok: true, message: name, undo: () => fin().updateGoal(id, { status, achievedAt }) }
+    // Achieved is final (I-12): no undo back to active.
+    return { ok: true, message: name }
   },
 }
 
@@ -573,13 +574,8 @@ const delete_goal: WriteImpl = {
     if (!again.ok) return { ok: false, error: again.error }
     const hit = resolveGoal(fin(), again.proposal.args.goal)
     if ('error' in hit) return { ok: false, error: 'That goal no longer exists.' }
-    const before = fin().goals
-    fin().deleteGoal(hit.item.id)
-    return {
-      ok: true,
-      message: hit.item.name,
-      undo: () => useFinanceStore.setState((st) => ({ goals: restoreRows(st.goals, before, new Set([hit.item.id])) })),
-    }
+    const undo = deleteGoalWithUndo(hit.item.id)
+    return { ok: true, message: hit.item.name, undo }
   },
 }
 

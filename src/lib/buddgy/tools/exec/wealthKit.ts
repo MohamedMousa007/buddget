@@ -71,7 +71,6 @@ export interface LedgerSnapshot {
   txIds: Set<string>
   incomeIds: Set<string>
   balances: Map<string, number>
-  goals: Map<string, { status: Goal['status']; achievedAt: string | null }>
   noIncomeDeclared: boolean
 }
 
@@ -81,14 +80,13 @@ export function snapshotLedger(): LedgerSnapshot {
     txIds: new Set(s.savingsTransactions.map((t) => t.id)),
     incomeIds: new Set(s.incomeEvents.map((e) => e.id)),
     balances: new Map(s.savingsAccounts.map((a) => [a.id, a.currentBalance])),
-    goals: new Map(s.goals.map((g) => [g.id, { status: g.status, achievedAt: g.achievedAt }])),
     noIncomeDeclared: s.settings.noIncomeDeclared,
   }
 }
 
 /**
  * Call right after a ledger mutation. Returns the exact inverse of what that mutation did: drops the
- * rows it added, takes back its balance deltas and reopens goals it auto-achieved. Anything that
+ * rows it added and takes back its balance deltas. A goal it achieved stays achieved (I-12). Anything that
  * changed since is left alone.
  */
 export function ledgerUndo(before: LedgerSnapshot): () => void {
@@ -100,11 +98,6 @@ export function ledgerUndo(before: LedgerSnapshot): () => void {
     const was = before.balances.get(a.id)
     if (was !== undefined && was !== a.currentBalance) deltas.set(a.id, a.currentBalance - was)
   }
-  const reopened = new Map<string, { status: Goal['status']; achievedAt: string | null }>()
-  for (const g of s.goals) {
-    const was = before.goals.get(g.id)
-    if (was && (was.status !== g.status || was.achievedAt !== g.achievedAt)) reopened.set(g.id, was)
-  }
   const flagWritten = s.settings.noIncomeDeclared
   const flagChanged = flagWritten !== before.noIncomeDeclared
   return () =>
@@ -114,7 +107,6 @@ export function ledgerUndo(before: LedgerSnapshot): () => void {
       savingsAccounts: st.savingsAccounts.map((a) =>
         deltas.has(a.id) ? { ...a, currentBalance: Math.max(0, a.currentBalance - (deltas.get(a.id) as number)) } : a,
       ),
-      goals: st.goals.map((g) => (reopened.has(g.id) ? { ...g, ...reopened.get(g.id) } : g)),
       ...(flagChanged && st.settings.noIncomeDeclared === flagWritten ? { settings: { ...st.settings, noIncomeDeclared: before.noIncomeDeclared } } : {}),
     }))
 }

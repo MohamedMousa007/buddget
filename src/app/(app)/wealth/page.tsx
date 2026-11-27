@@ -80,6 +80,7 @@ export default function WealthPage() {
   const {
     savingsAccounts, savingsTransactions, investmentHoldings, goals, profile, settings, exchangeRates,
     budgetPlans, activeBudgetPlanId, debts, goldPricePerGram, goldPriceAvailable, expenses, debtPayments,
+    paymentMethods, ledgerDebts, ledgerDebtPayments, incomeEvents, accountAdjustments, goldPriceStale, lastGoldFetch,
   } = useFinanceStore(
     useShallow((s) => ({
       savingsAccounts: s.savingsAccounts,
@@ -96,6 +97,13 @@ export default function WealthPage() {
       goldPriceAvailable: s.goldPriceAvailable,
       expenses: s.expenses,
       debtPayments: countedDebtPayments(s.debtPayments, s.debts, s.paymentMethods),
+      paymentMethods: s.paymentMethods,
+      ledgerDebts: s.debts,
+      ledgerDebtPayments: s.debtPayments,
+      incomeEvents: s.incomeEvents,
+      accountAdjustments: s.accountAdjustments,
+      goldPriceStale: s.goldPriceStale,
+      lastGoldFetch: s.lastGoldFetch,
     })),
   )
   const base = settings.baseCurrency
@@ -172,7 +180,15 @@ export default function WealthPage() {
 
   // Goals as a lens: a pocket's sub-line names the first active goal it feeds.
   const goalLines = useMemo(() => {
-    const ctx = buildGoalProgressContext({ savingsAccounts, debts, debtPayments, expenses, exchangeRates, goldPricePerGram, goldPriceAvailable, settings }, monthFilter)
+    // Covered parts walk the whole ledger (raw debts); debt-goal progress reads the counted ones.
+    const ctx = {
+      ...buildGoalProgressContext({
+        savingsAccounts, debts: ledgerDebts, debtPayments: ledgerDebtPayments, expenses, exchangeRates, goldPricePerGram, goldPriceAvailable, settings,
+        goals, paymentMethods, incomeEvents, savingsTransactions, accountAdjustments, goldPriceStale, lastGoldFetch,
+      }, monthFilter),
+      debts,
+      debtPayments,
+    }
     const lines: Record<string, string> = {}
     for (const a of pockets) {
       const g = goals.find((x) => x.status === 'active' && x.linkedSavingsAccountIds.includes(a.id))
@@ -181,7 +197,8 @@ export default function WealthPage() {
       lines[a.id] = t.feeds(g.name, pct)
     }
     return lines
-  }, [pockets, goals, savingsAccounts, debts, debtPayments, expenses, exchangeRates, goldPricePerGram, goldPriceAvailable, settings, monthFilter, t])
+  }, [pockets, goals, savingsAccounts, debts, debtPayments, expenses, exchangeRates, goldPricePerGram, goldPriceAvailable, settings, monthFilter, t,
+    paymentMethods, ledgerDebts, ledgerDebtPayments, incomeEvents, savingsTransactions, accountAdjustments, goldPriceStale, lastGoldFetch])
 
   const pocketVMs = useMemo<PocketVM[]>(
     () => pockets.map((account) => {

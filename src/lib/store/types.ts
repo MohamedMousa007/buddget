@@ -694,6 +694,8 @@ export interface SavingsAccount {
   isMonthlySavings?: boolean
   currency: Currency
   currentBalance: number
+  /** Gold parts (XAU, grams): the karat they are valued at (`metadata.karat`). Absent = 24k. */
+  karat?: GoldKarat
   createdAt: string
   notes?: string
   /** v3 pocket display colour token (see the design accents). */

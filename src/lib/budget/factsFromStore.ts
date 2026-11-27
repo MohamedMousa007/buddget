@@ -22,6 +22,7 @@ export type FactsSlice = Pick<
   | 'profile' | 'settings' | 'incomeSources' | 'incomeEvents' | 'expenses' | 'recurringExpenses'
   | 'subscriptions' | 'debts' | 'debtPayments' | 'goals' | 'savingsAccounts' | 'exchangeRates'
   | 'budgetCategories' | 'budgetPlans' | 'activeBudgetPlanId' | 'goldPricePerGram' | 'goldPriceAvailable'
+  | 'goldPriceStale' | 'lastGoldFetch' | 'paymentMethods' | 'savingsTransactions' | 'accountAdjustments'
 >
 
 /** Ledger category to the everyday slot its average feeds. */

@@ -38,6 +38,7 @@ export function normalizeSavingsAccountRow(row: unknown): SavingsAccount {
     ...(a.isMonthlySavings ? { isMonthlySavings: true } : {}),
     currency: (a.currency as Currency) ?? 'USD',
     currentBalance: Number(a.currentBalance) || 0,
+    ...(a.karat ? { karat: a.karat } : {}),
     createdAt: String(a.createdAt ?? new Date().toISOString()),
     ...(a.notes ? { notes: a.notes } : {}),
   }

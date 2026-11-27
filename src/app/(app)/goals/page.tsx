@@ -92,7 +92,7 @@ export default function GoalsPage() {
   const openAdd = (seed: FlowSeed = {}) => setFlow(seed)
   const openDetail = (g: Goal) => setDetailId(g.id)
   const onAction = (g: Goal, a: GoalCardAction) => {
-    if (a === 'resume') return updateGoal(g.id, { status: 'active' })
+    if (a === 'resume') return g.status === 'paused' ? updateGoal(g.id, { status: 'active' }) : undefined
     if (a === 'addMoney') return g.category === 'debt_freedom' ? navigate('/debts') : setMoneyGoal(g)
     openDetail(g)
   }

@@ -16,6 +16,7 @@ import { useMask } from '@/lib/privacy/useMask'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { GoalGlyph } from '@/components/features/goals/GoalGlyph'
+import { GoalPriceNote } from '@/components/features/goals/GoalPriceNote'
 import { useFundSummary } from '@/components/features/goals/FundItSheet'
 import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
 import { formatWhole } from '@/lib/utils/formatters'
@@ -103,6 +104,7 @@ function LightGoalCard({ row, onOpen }: { row: GoalRow; onOpen: (g: Goal) => voi
         </span>
         {basis > 0 ? <span>{isLimit ? c.ofLimit(money(basis)) : c.toGo(money(Math.max(0, basis - current)))}</span> : null}
       </span>
+      <GoalPriceNote stalePrice={row.stalePrice} priceMissing={row.priceMissing} achieved={goal.status === 'achieved'} look="line" />
     </button>
   )
 }

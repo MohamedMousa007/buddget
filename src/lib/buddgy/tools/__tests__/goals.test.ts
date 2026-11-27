@@ -252,7 +252,7 @@ describe('add_to_goal', () => {
     expect(st().goals[0].linkedSavingsAccountIds).toEqual([])
   })
 
-  it('achieves the goal when it reaches the target and undo reopens it', () => {
+  it('achieves the goal when it reaches the target; undo takes the money back and the goal stays achieved (I-12)', () => {
     const add = write('add_to_goal')
     const p = add.propose({ goal: 'Car', amount: 700 }, ctx)
     expect(p.ok && p.proposal.preview.effect).toMatch(/achieved/)
@@ -260,7 +260,7 @@ describe('add_to_goal', () => {
     const applied = add.apply(p.proposal, ctx)
     expect(st().goals.find((g) => g.id === G1)?.status).toBe('achieved')
     if (applied.ok) applied.undo?.()
-    expect(st().goals.find((g) => g.id === G1)).toMatchObject({ status: 'active', achievedAt: null })
+    expect(st().goals.find((g) => g.id === G1)?.status).toBe('achieved')
     expect(st().savingsAccounts.find((a) => a.id === P1)?.currentBalance).toBe(300)
   })
 
@@ -297,7 +297,7 @@ describe('add_to_goal', () => {
 })
 
 describe('achieve_goal', () => {
-  it('marks achieved and undo restores the previous status', () => {
+  it('marks achieved for good: no undo back to active (I-12)', () => {
     const ach = write('achieve_goal')
     const p = ach.propose({ goal: 'Trip' }, ctx)
     expect(p.ok).toBe(true)
@@ -305,8 +305,9 @@ describe('achieve_goal', () => {
     const applied = ach.apply(p.proposal, ctx)
     expect(st().goals.find((g) => g.id === G2)).toMatchObject({ status: 'achieved' })
     expect(st().goals.find((g) => g.id === G2)?.achievedAt).toBeTruthy()
-    if (applied.ok) applied.undo?.()
-    expect(st().goals.find((g) => g.id === G2)).toMatchObject({ status: 'active', achievedAt: null })
+    expect(applied.ok && applied.undo).toBeFalsy()
+    st().updateGoal(G2, { status: 'active', achievedAt: null })
+    expect(st().goals.find((g) => g.id === G2)).toMatchObject({ status: 'achieved' })
   })
 
   it('refuses an already achieved goal', () => {
@@ -324,7 +325,7 @@ describe('delete_goal', () => {
     expect(p.proposal.risk).toBe('strong')
     expect(p.proposal.preview.tone).toBe('danger')
     expect(p.proposal.preview.rows.some((r) => r.value.includes('Car pocket'))).toBe(true)
-    expect(p.proposal.preview.effect).toMatch(/stay in Wealth/)
+    expect(p.proposal.preview.effect).toMatch(/stays as a pocket/)
     const applied = del.apply(p.proposal, ctx)
     expect(st().goals.map((g) => g.id)).toEqual([G2])
     expect(st().savingsAccounts.find((a) => a.id === P1)?.currentBalance).toBe(300)

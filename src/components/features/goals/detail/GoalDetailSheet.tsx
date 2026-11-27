@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react'
 import { Check, MoreHorizontal, Pause, Pencil, Play, Repeat, Trash2, Trophy } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { goalCategoryLabelKey } from '@/components/features/goals/goalCategoryLabel'
+import { GoalPriceNote } from '@/components/features/goals/GoalPriceNote'
 import { CheckpointBar, type CheckpointTone } from '@/components/features/goals/CheckpointBar'
 import { FundItSheet, useFundSummary, type FundPlan } from '@/components/features/goals/FundItSheet'
 import { CoachCard } from '@/components/features/goals/detail/CoachCard'
@@ -152,9 +153,10 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
 
   const menuItems = [
     { label: d.menuEdit, icon: <Pencil className="size-4" />, onSelect: () => setEdit(true) },
-    goal.status === 'paused'
+    // Achieved is final (I-12): no pause or resume on it.
+    ...(goal.status === 'achieved' ? [] : [goal.status === 'paused'
       ? { label: d.menuResume, icon: <Play className="size-4" />, onSelect: () => s.updateGoal(goal.id, { status: 'active' }) }
-      : { label: d.menuPause, icon: <Pause className="size-4" />, onSelect: () => s.updateGoal(goal.id, { status: 'paused' }) },
+      : { label: d.menuPause, icon: <Pause className="size-4" />, onSelect: () => s.updateGoal(goal.id, { status: 'paused' }) }]),
     ...(goal.status === 'achieved' ? [] : [{ label: d.menuAchieve, icon: <Trophy className="size-4" />, onSelect: () => { s.achieveGoal(goal.id); onClose() } }]),
   ]
   const reachedCount = info.nodes.filter((n) => n.reached).length
@@ -220,6 +222,8 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
                 </>
               ) : null}
             </div>
+
+            <GoalPriceNote stalePrice={row.stalePrice} priceMissing={row.priceMissing} achieved={goal.status === 'achieved'} look="notice" />
 
             {coach && goal.targetDate ? (
               <CoachCard

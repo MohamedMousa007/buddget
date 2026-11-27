@@ -5,7 +5,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
-import { buildGoalProgressContext, computeGoalProgress } from '@/lib/goals/computeGoalProgress'
+import { buildGoalProgressContext, computeGoalProgressDetail } from '@/lib/goals/computeGoalProgress'
 import { withDebtDerived } from '@/lib/goals/debtGoal'
 import type { Goal } from '@/lib/store/types'
 
@@ -23,17 +23,25 @@ export function useGoalProgress(stored: Goal) {
       exchangeRates: s.exchangeRates,
       goldPricePerGram: s.goldPricePerGram,
       goldPriceAvailable: s.goldPriceAvailable,
+      goldPriceStale: s.goldPriceStale,
+      lastGoldFetch: s.lastGoldFetch,
       settings: s.settings,
       paymentMethods: s.paymentMethods,
+      goals: s.goals,
+      incomeEvents: s.incomeEvents,
+      savingsTransactions: s.savingsTransactions,
+      accountAdjustments: s.accountAdjustments,
     }))
   )
 
   return useMemo(() => {
-    const ctx = buildGoalProgressContext(
-      { ...slice, debts: countedDebts(slice.debts, slice.paymentMethods), debtPayments: countedDebtPayments(slice.debtPayments, slice.debts, slice.paymentMethods) },
-      monthFilter,
-    )
-    const currentAmount = computeGoalProgress(stored, ctx)
+    // Covered parts walk the whole ledger; only debt-goal progress reads the counted debts.
+    const ctx = {
+      ...buildGoalProgressContext(slice, monthFilter),
+      debts: countedDebts(slice.debts, slice.paymentMethods),
+      debtPayments: countedDebtPayments(slice.debtPayments, slice.debts, slice.paymentMethods),
+    }
+    const { amount: currentAmount, stalePrice, priceMissing } = computeGoalProgressDetail(stored, ctx)
     const goal = withDebtDerived(stored, ctx)
 
     if (goal.category === 'spending_control' && goal.monthlySpendingLimit && goal.monthlySpendingLimit > 0) {
@@ -45,6 +53,8 @@ export function useGoalProgress(stored: Goal) {
         currentAmount,
         percent: pct,
         monthsRemaining: null as number | null,
+        stalePrice,
+        priceMissing,
       }
     }
 
@@ -61,6 +71,6 @@ export function useGoalProgress(stored: Goal) {
         ? Math.max(0, Math.ceil((goal.targetAmount - currentAmount) / goal.monthlyContribution))
         : null
 
-    return { currentAmount, percent, monthsRemaining }
+    return { currentAmount, percent, monthsRemaining, stalePrice, priceMissing }
   }, [stored, slice, monthFilter])
 }

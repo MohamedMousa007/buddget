@@ -386,6 +386,7 @@ export const importDataSchema = z.object({
         isMonthlySavings: z.boolean().optional(),
         currency: savingsCurrencySchema,
         currentBalance: z.number(),
+        karat: z.union([z.literal(24), z.literal(22), z.literal(21), z.literal(18)]).optional(),
         createdAt: z.string(),
         notes: z.string().optional(),
         autoSave: z.unknown().optional(),

@@ -1,4 +1,4 @@
-import type { SavingsAccount, Currency, SavingsAccountCategory, SavingsType } from '@/lib/store/types'
+import type { SavingsAccount, Currency, GoldKarat, SavingsAccountCategory, SavingsType } from '@/lib/store/types'
 import type { SavingsAccountRow, SavingsAccountInsert } from '@/lib/supabase/remote/types'
 import { serverPaymentMethodId } from './serverPaymentMethodId'
 import { systemVaultId } from '@/lib/savings/pocketIdentity'
@@ -21,6 +21,7 @@ interface PocketMeta {
   accountLast4?: string
   maturityDate?: string
   yearlyReturn?: number
+  karat?: GoldKarat
 }
 
 export function savingsAccountToRow(a: SavingsAccount, userId: string): SavingsAccountInsert {
@@ -29,6 +30,7 @@ export function savingsAccountToRow(a: SavingsAccount, userId: string): SavingsA
   if (a.accountLast4) metadata.accountLast4 = a.accountLast4
   if (a.maturityDate) metadata.maturityDate = a.maturityDate
   if (a.yearlyReturn != null) metadata.yearlyReturn = a.yearlyReturn
+  if (a.karat != null) metadata.karat = a.karat
 
   return {
     id: a.id,
@@ -76,6 +78,7 @@ export function savingsAccountFromRow(row: SavingsAccountRow): SavingsAccount {
     accountLast4: meta.accountLast4,
     maturityDate: meta.maturityDate,
     yearlyReturn: meta.yearlyReturn,
+    ...(meta.karat != null ? { karat: meta.karat } : {}),
     createdAt: row.created_at,
     updatedAt: row.edited_at,
   }

@@ -224,7 +224,7 @@ describe('deposit_to_savings', () => {
     expect(st().savingsTransactions.at(-1)?.isCashFlow).toBe(false)
   })
 
-  it('reopens a goal that the deposit auto-achieved when undone', () => {
+  it('a goal the deposit achieved stays achieved when the deposit is undone (I-12)', () => {
     useFinanceStore.setState({ goals: [goal()] })
     const dep = write('deposit_to_savings')
     const p = dep.propose({ pocket: 'CIB', amount: 600 }, ctx)
@@ -233,7 +233,7 @@ describe('deposit_to_savings', () => {
     const applied = dep.apply(p.proposal, ctx)
     expect(st().goals[0].status).toBe('achieved')
     if (applied.ok) applied.undo?.()
-    expect(st().goals[0]).toMatchObject({ status: 'active', achievedAt: null })
+    expect(st().goals[0].status).toBe('achieved')
   })
 
   it('converts a foreign amount and refuses a currency with no path or not enabled', () => {

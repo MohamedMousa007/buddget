@@ -69,7 +69,9 @@ import { createSafeLocalStorage } from '@/lib/store/safeLocalStorage'
 import { watchForeignWrites } from '@/lib/store/crossTabSync'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { buildGoalProgressContext } from '@/lib/goals/computeGoalProgress'
-import { reconcileAchievedGoals } from '@/lib/goals/reconcileAchievedGoals'
+import { keepAchieved, reconcileAchievedGoals } from '@/lib/goals/reconcileAchievedGoals'
+import { isMonthlySavingsPart } from '@/lib/savings/canDeletePocket'
+import { withAchievedKept } from '@/lib/goals/achievedWins'
 import { clearIfFullyPaid, isDebtFullyPaid } from '@/lib/utils/calculations'
 import { advanceRecurringDebtDueDate, scheduledDueDate } from '@/lib/utils/recurringDebtPayments'
 import { overpaysDebt } from '@/lib/debts/overpaysDebt'
@@ -1491,19 +1493,28 @@ export const useFinanceStore = create<FinanceStore>()(
 
       updateGoal: (id, updates) =>
         set((state) => {
-          const nextGoals = state.goals.map((g) => (g.id === id ? { ...g, ...updates, updatedAt: new Date().toISOString() } : g))
+          const nextGoals = state.goals.map((g) => (g.id === id ? { ...g, ...keepAchieved(g, updates), updatedAt: new Date().toISOString() } : g))
           const nextState: FinanceStore = { ...state, goals: nextGoals }
           return { goals: reconcileGoalsForState(nextState) }
         }),
 
       deleteGoal: (id) =>
-        set((state) => ({
-          goals: state.goals.filter((g) => g.id !== id),
-          // Its parts become pockets (goal_id ON DELETE SET NULL on the server; null is sent, never a dead goal id).
-          savingsAccounts: state.savingsAccounts.some((a) => a.goalId === id)
-            ? state.savingsAccounts.map((a) => (a.goalId === id ? { ...a, goalId: null } : a))
-            : state.savingsAccounts,
-        })),
+        set((state) => {
+          // The goal's own parts set aside in an account are released there (T41), the way a pocket delete releases
+          // it. A row the goal only lists (Monthly savings, a shared or legacy pocket) is never removed.
+          const held = state.savingsAccounts.filter((p) => p.goalId === id && p.heldInPaymentMethodId && !isMonthlySavingsPart(p))
+          let next: FinanceStore = { ...state, goals: state.goals.filter((g) => g.id !== id) }
+          for (const p of held) next = { ...next, ...withoutPocket(next, p.id) }
+          // Outside parts stay as pockets (goal_id ON DELETE SET NULL on the server; null is sent, never a dead goal id).
+          const savingsAccounts = next.savingsAccounts.some((a) => a.goalId === id)
+            ? next.savingsAccounts.map((a) => (a.goalId === id ? { ...a, goalId: null } : a))
+            : next.savingsAccounts
+          return {
+            goals: next.goals, savingsAccounts, savingsTransactions: next.savingsTransactions,
+            recurringSavingsDeposits: next.recurringSavingsDeposits, accountAdjustments: next.accountAdjustments,
+            incomeEvents: next.incomeEvents, incomeSources: next.incomeSources, profile: next.profile,
+          }
+        }),
 
       achieveGoal: (id) =>
         set((state) => ({
@@ -2326,7 +2337,8 @@ export const useFinanceStore = create<FinanceStore>()(
             settings: data.settings
               ? { ...state.settings, ...data.settings, weekStartDay: data.settings.weekStartDay ?? state.settings.weekStartDay }
               : state.settings,
-            goals: data.goals ? data.goals.map(withGoalDefaults) : state.goals,
+            // A goal achieved here stays achieved (I-12), whatever the file says.
+            goals: data.goals ? withAchievedKept(data.goals.map(withGoalDefaults), state.goals) : state.goals,
             subscriptions: data.subscriptions ?? state.subscriptions,
           }
           return {
