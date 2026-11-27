@@ -85,15 +85,15 @@ async function checkFromServer(browser: Browser, email: string, e: Expected) {
 
 async function newPocket(page: Page, o: { kind: RegExp; name: string; amount: number }) {
   await goto(page, '/wealth')
-  await page.getByRole('button', { name: 'Add pocket or asset' }).click()
-  const add = dialog(page, 'Add to Wealth')
+  await page.getByRole('button', { name: 'Add pocket', exact: true }).first().click()
+  const add = dialog(page, 'Add pocket')
   await add.getByRole('radio', { name: o.kind }).click()
-  await add.getByRole('button', { name: 'Continue' }).click()
-  const form = page.getByRole('dialog').filter({ has: page.getByRole('button', { name: 'Create pocket' }) })
+  await add.getByRole('button', { name: 'Add pocket', exact: true }).click()
+  const form = dialog(page, /^New /)
   await form.getByRole('textbox').first().fill(o.name)
   await form.getByRole('textbox', { name: 'Amount' }).fill(String(o.amount))
   await blur(page)
-  await form.getByRole('button', { name: 'Create pocket' }).click()
+  await form.getByRole('button', { name: 'Add pocket', exact: true }).click()
   await expect(form).toBeHidden()
   return localWait(page, (s) => s.savingsAccounts.find((a: any) => a.name === o.name))
 }

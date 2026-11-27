@@ -16,7 +16,7 @@ test('N1 navigation: every main tab, header Budget, profile menu pages @desktop'
   const nav = appNav(page)
   for (const [name, path, heading] of [
     ['Accounts', '/accounts', 'Accounts'],
-    ['Wealth', '/wealth', 'Wealth'],
+    ['Savings', '/wealth', 'Savings'],
     ['Debts', '/debts', 'Debts'],
     ['Flow', '/flow', 'Flow'],
   ] as const) {
@@ -40,7 +40,7 @@ test('N1 navigation: every main tab, header Budget, profile menu pages @desktop'
     await page.keyboard.press('Escape')
   })
   for (const [item, path] of [
-    ['Goals', /\/goals$/], ['Paydays', /\/paydays$/], ['Subscriptions', /\/subscriptions$/], ['Insights', /\/reports$/], ['Settings', /\/settings/]
+    ['Goals', /\/goals$/], ['Income', /\/paydays$/], ['Subscriptions', /\/subscriptions$/], ['Insights', /\/reports$/], ['Settings', /\/settings/]
   ] as const) {
     await test.step(`profile menu > ${item}`, async () => {
       await goto(page, '/flow')

@@ -8,7 +8,7 @@ await c.addInitScript(()=>{const s=document.createElement('style');s.textContent
 await p.goto(BASE+'/flow',{waitUntil:'networkidle',timeout:60000}); await p.waitForTimeout(2500)
 await c.setOffline(true); await p.waitForTimeout(1500)
 const res=[]
-for(const [name,re] of [['Accounts',/^Accounts$/],['Wealth',/^Wealth$/],['Debts',/^Debts$/],['Flow',/^Flow$/]]){
+for(const [name,re] of [['Accounts',/^Accounts$/],['Savings',/^Savings$/],['Debts',/^Debts$/],['Flow',/^Flow$/]]){
   await p.getByRole('navigation').getByRole('link',{name:re}).first().click().catch(()=>{}); await p.waitForTimeout(2500)
   await p.screenshot({path:SHOTS+`offline-nav-${name}.png`})
   res.push({to:name,url:p.url().replace(BASE,''),text:(await p.evaluate(()=>document.body.innerText.replace(/\s+/g,' ').slice(0,80)))})
