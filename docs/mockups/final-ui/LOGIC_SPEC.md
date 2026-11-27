@@ -592,3 +592,12 @@ All numbers in this table were rechecked with a script (`scratchpad/me2.py`, `le
 | OQ-2 | Fixed-amount goals (`monthly_contribution`) get no split line. | No automatic line. One-time note on the split screen: "Car used to get 2,000 a month; add it here as a %". |
 | OQ-3 | Legacy card plans with no purchase charge (0361 count). | If > 0, insert the remaining-principal charge with `spend_exclusion='manual'` and leave history as it is. The owner confirms the count. |
 | OQ-4 | Targeted pockets with no goal (0355 count). | Likely 0. If not: a goal in `quality_of_life`, name kept. |
+
+## 8. Owner approval and council verdicts on §7 (2026-11-27)
+
+Owner approved the mockup v9 and asked the council to decide OQ-1..OQ-4 (3/3 on each):
+
+- **OQ-1 Release order (replaces "native build, then gate bump, then migrations", which cannot run: native-release.sh needs HEAD on origin/main, and updated apps would hit a schema without the new columns).** For every phase: apply its additive migrations first → push the phase's code (web deploys) → the next phase. Old native builds tolerate added columns (label rows skipped, extra parts look like pockets). After P6: bump `APP_CLIENT_VERSION` (src/lib/appVersion.ts, e.g. 1.1.0) and `PERSIST_VERSION` (its migrate drops the cached savings and goals slices so the app refetches) → push (web deploys) → `scripts/native-release.sh` (both apps) → wait until TestFlight shows the build ready and the APK link is live, set the portal update URLs → raise the min version in the admin portal → re-run the idempotent goal_id backfill → contract migrations (drop `target_amount` 0364, final unique indexes). One forced update for the whole rebuild, not one per phase.
+- **OQ-2 Fixed monthly amounts:** no automatic line. Each fixed-amount goal shows a note on the split screen until the user adds a % for it or dismisses it. Once a % exists for that goal, `monthly_contribution` is no longer read (grep every reader so nothing counts both).
+- **OQ-3 Card plans with no purchase charge:** no insert code. After the single-card linking step, 0361 counts plans linked to a card with no purchase charge and raises a notice if > 0 (live today: 0); any found are fixed by hand with an idempotent key.
+- **OQ-4 Targeted pockets with no goal:** each becomes a goal (same name and target, category quality_of_life) with its `goal_id` set by id; never link by name; `target_amount` stays until the contract migration.
