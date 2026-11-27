@@ -14,6 +14,7 @@ import { usePendingEntries } from '@/lib/alerts/usePending'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { MemberHead } from '@/components/features/membership/MemberHead'
+import { WeekRing } from '@/components/features/membership/WeekRing'
 import { ProPlanRow } from '@/components/features/membership/ProPlanRow'
 import { Button } from '@/components/ui/button'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -143,6 +144,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
               name={profile.name}
               avatarSrc={avatarSrc}
               onNavigate={delayedClose}
+              tierTrailing={<WeekRing onNavigate={delayedClose} />}
               trailing={
                 <Link
                   href="/notifications"
