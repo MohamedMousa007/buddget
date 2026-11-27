@@ -167,21 +167,8 @@ const bg8 = (f, sc = 1) => {
   if (f.d === 'metal') return `linear-gradient(180deg, rgba(255,255,255,.10), rgba(0,0,0,.2)), ${base}`
   return base
 }
-/* light on Modern faces: a key light from the upper left, a slow specular sweep (big face only), metal gets an anisotropic band */
-const light8 = (f, big) => {
-  if (DES8[f.d][1] !== 'modern') return '<i aria-hidden="true" class="absolute inset-0" style="background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.07) 46%, transparent 62%)"></i>'
-  const scrim = '<i aria-hidden="true" class="absolute inset-0" style="background:linear-gradient(180deg, rgba(0,0,0,.28) 0%, transparent 30%, transparent 62%, rgba(0,0,0,.34) 100%)"></i>'
-  if (f.l === false) return scrim
-  const band = f.d === 'metal' ? '<i aria-hidden="true" class="absolute inset-0" style="background:linear-gradient(100deg, transparent 8%, rgba(255,255,255,.16) 26%, transparent 40%, rgba(255,255,255,.09) 66%, transparent 80%)"></i>' : ''
-  const key = '<i aria-hidden="true" class="absolute inset-0" style="background:radial-gradient(120% 90% at 0% 0%, rgba(255,255,255,.14), transparent 55%), linear-gradient(135deg, transparent 55%, rgba(0,0,0,.28) 100%)"></i>'
-  const sweep = big ? '<i aria-hidden="true" class="a8-sheen absolute inset-y-0 -left-1/2 w-[200%]" style="background:linear-gradient(105deg, transparent 38%, rgba(255,255,255,.13) 47%, rgba(255,255,255,.04) 52%, transparent 60%)"></i>' : '<i aria-hidden="true" class="absolute inset-0" style="background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.1) 46%, transparent 62%)"></i>'
-  return `${band}${scrim}${key}${sweep}`
-}
-{
-  const css = document.createElement('style')
-  css.textContent = '@keyframes a8sheen{0%{transform:translateX(-22%)}100%{transform:translateX(22%)}}.a8-sheen{animation:a8sheen 7s ease-in-out infinite alternate}@media (prefers-reduced-motion: reduce){.a8-sheen{animation:none}}'
-  document.head.append(css)
-}
+/* round 9b: no lighting on any face (no key light, no sweep); Modern keeps only a text scrim so white text stays ≥4.5:1 */
+const light8 = (f) => (DES8[f.d][1] === 'modern' ? '<i aria-hidden="true" class="absolute inset-0" style="background:linear-gradient(180deg, rgba(0,0,0,.28) 0%, transparent 30%, transparent 62%, rgba(0,0,0,.34) 100%)"></i>' : '')
 const FACE8_OF = { cib: ['lion', 'teal'], cibcc: ['wave', 'black'], usd: ['globe', 'navy'], cibpre: ['chrome', 'rose'], qnb: ['ribbon', 'rose'], qnbdeb: ['emboss', 'navy'], qnbplat: ['carbon', 'black'], nbe: ['guilloche', 'teal'], nbecc: ['metal', 'sand'], deel: ['glass', 'navy'], payo: ['twotone', 'sand'], valu: ['facet', 'teal'], cca: ['ribbon', 'sand'], hsbc: ['facet', 'black'], bm: ['guilloche', 'navy'] }
 Object.assign(PM, { hsbc: { bank: 'HSBC', name: 'HSBC Credit', kind: 'Credit', last4: '4471', mono: 'HS', color: '#DB0011', cur: 'EGP' } })
 const card8of = (k) => { const p = PM[k] || PM.cibcc; const [d, c] = FACE8_OF[k] || ['guilloche', 'teal']; return { ...p, face: { d, c, l: true } } }
@@ -195,7 +182,7 @@ const card8 = (k, w = 280) => {
   const modern = DES8[p.face.d][1] === 'modern'
   const sc = w / 340
   const chip = modern ? 'linear-gradient(135deg, #a3a7ad, #5e6166)' : 'linear-gradient(135deg, #f3dc9a, #c9a85a 50%, #9c7b34)'
-  return `<div dir="ltr" data-card-face="big" class="relative mx-auto shrink-0 text-start" style="width:${w}px;height:${Math.round(214 * sc)}px"><div class="absolute left-0 top-0 box-border flex flex-col overflow-hidden" style="width:340px;height:214px;padding:18px 20px;border-radius:13px;color:#fff;background:${bg8(p.face)};box-shadow:0 24px 40px -18px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18), inset 0 -1px 0 rgba(0,0,0,.25)${p.face.d === 'glass' ? ', inset 0 0 0 1px rgba(255,255,255,.16)' : ''};transform:scale(${sc});transform-origin:top left">${svg8(p.face, 340, 214)}${light8(p.face, true)}<div class="relative flex min-h-[34px] items-start justify-between gap-2.5"><div class="min-w-0"><span class="block truncate font-bold" style="font-size:${modern ? 12 : 15}px;letter-spacing:${modern ? '.16em' : '.01em'};text-transform:${modern ? 'uppercase' : 'none'};text-shadow:${ENG8}">${p.bank}</span><span class="mt-0.5 block text-[0.59375rem] font-bold uppercase tracking-[0.16em]" style="text-shadow:${ENG8}">${p.kind}</span></div><span class="font-mono-numbers text-[0.6875rem] font-semibold" style="text-shadow:${ENG8}">${p.cur || 'EGP'}</span></div><div class="relative mt-4 flex items-center gap-3"><i aria-hidden="true" class="h-[34px] w-11 shrink-0 rounded-md" style="background:${chip};box-shadow:inset 0 0 0 1px rgba(0,0,0,.28)"></i>${CONTACTLESS}</div><div class="relative mt-auto"><span class="block whitespace-nowrap font-mono-numbers font-medium" style="font-size:17px;letter-spacing:.14em;text-shadow:${ENG8}">•••• •••• •••• <span data-a8-digits>${digits8(p.last4)}</span></span><div class="mt-2 min-h-[30px]"></div></div></div></div>`
+  return `<div dir="ltr" data-card-face="big" class="relative mx-auto shrink-0 text-start" style="width:${w}px;height:${Math.round(214 * sc)}px"><div class="absolute left-0 top-0 box-border flex flex-col overflow-hidden" style="width:340px;height:214px;padding:18px 20px;border-radius:13px;color:#fff;background:${bg8(p.face)};box-shadow:0 24px 40px -18px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18), inset 0 -1px 0 rgba(0,0,0,.25)${p.face.d === 'glass' ? ', inset 0 0 0 1px rgba(255,255,255,.16)' : ''};transform:scale(${sc});transform-origin:top left">${svg8(p.face, 340, 214)}${light8(p.face)}<div class="relative flex min-h-[34px] items-start justify-between gap-2.5"><div class="min-w-0"><span class="block truncate font-bold" style="font-size:${modern ? 12 : 15}px;letter-spacing:${modern ? '.16em' : '.01em'};text-transform:${modern ? 'uppercase' : 'none'};text-shadow:${ENG8}">${p.bank}</span><span class="mt-0.5 block text-[0.59375rem] font-bold uppercase tracking-[0.16em]" style="text-shadow:${ENG8}">${p.kind}</span></div><span class="font-mono-numbers text-[0.6875rem] font-semibold" style="text-shadow:${ENG8}">${p.cur || 'EGP'}</span></div><div class="relative mt-4 flex items-center gap-3"><i aria-hidden="true" class="h-[34px] w-11 shrink-0 rounded-md" style="background:${chip};box-shadow:inset 0 0 0 1px rgba(0,0,0,.28)"></i>${CONTACTLESS}</div><div class="relative mt-auto"><span class="block whitespace-nowrap font-mono-numbers font-medium" style="font-size:17px;letter-spacing:.14em;text-shadow:${ENG8}">•••• •••• •••• <span data-a8-digits>${digits8(p.last4)}</span></span><div class="mt-2 min-h-[30px]"></div></div></div></div>`
 }
 /* NEW component: CardFaceChip v8, 88×56 */
 const mini8 = (k, sel = false) => {
@@ -203,7 +190,7 @@ const mini8 = (k, sel = false) => {
   const modern = DES8[p.face.d][1] === 'modern'
   const chip = modern ? 'linear-gradient(135deg, #c4c7cc, #6e7277)' : 'linear-gradient(135deg, #f3dc9a, #c9a85a 50%, #9c7b34)'
   const eng = '0 1px 0 rgba(0,0,0,.55)'
-  return `<span dir="ltr" data-card-face="mini" class="relative box-border flex h-14 w-[88px] shrink-0 flex-col overflow-hidden rounded-[7px] px-[7px] py-1.5 text-start" style="color:#fff;background:${bg8(p.face, 88 / 340)};box-shadow:${sel ? '0 0 0 2px var(--color-brand-card), 0 0 0 4px var(--color-brand-primary), ' : ''}0 1px 2px rgba(13,26,24,.18), inset 0 1px 0 rgba(255,255,255,.14)">${svg8(p.face, 88, 56)}${light8(p.face, false)}<span class="relative flex items-baseline justify-between gap-1"><span class="shrink-0 text-[0.625rem] font-bold leading-3 tracking-[0.01em]" style="text-shadow:${eng}">${p.bank}</span><span class="min-w-0 truncate text-[0.53125rem] font-extrabold uppercase leading-[11px] tracking-[0.08em]" style="text-shadow:${eng}">${p.kind}</span></span><span class="relative mt-auto flex items-center justify-between gap-1"><i aria-hidden="true" class="h-2.5 w-[13px] shrink-0 rounded-[2.5px]" style="background:${chip};box-shadow:inset 0 0 0 .75px rgba(0,0,0,.3)"></i><span class="font-mono-numbers text-[0.6875rem] font-semibold leading-3 tracking-[0.04em]" style="text-shadow:${eng}">••${p.last4 || '••'}</span></span></span>`
+  return `<span dir="ltr" data-card-face="mini" class="relative box-border flex h-14 w-[88px] shrink-0 flex-col overflow-hidden rounded-[7px] px-[7px] py-1.5 text-start" style="color:#fff;background:${bg8(p.face, 88 / 340)};box-shadow:${sel ? '0 0 0 2px var(--color-brand-card), 0 0 0 4px var(--color-brand-primary), ' : ''}0 1px 2px rgba(13,26,24,.18), inset 0 1px 0 rgba(255,255,255,.14)">${svg8(p.face, 88, 56)}${light8(p.face)}<span class="relative flex items-baseline justify-between gap-1"><span class="shrink-0 text-[0.625rem] font-bold leading-3 tracking-[0.01em]" style="text-shadow:${eng}">${p.bank}</span><span class="min-w-0 truncate text-[0.53125rem] font-extrabold uppercase leading-[11px] tracking-[0.08em]" style="text-shadow:${eng}">${p.kind}</span></span><span class="relative mt-auto flex items-center justify-between gap-1"><i aria-hidden="true" class="h-2.5 w-[13px] shrink-0 rounded-[2.5px]" style="background:${chip};box-shadow:inset 0 0 0 .75px rgba(0,0,0,.3)"></i><span class="font-mono-numbers text-[0.6875rem] font-semibold leading-3 tracking-[0.04em]" style="text-shadow:${eng}">••${p.last4 || '••'}</span></span></span>`
 }
 window.FACE8 = { mini: mini8, big: card8 }
 
@@ -284,12 +271,10 @@ const hero8 = (st) => {
   const nw = `<button type="button" data-a8-exact="nw" aria-label="Net worth, ${f0(D.nw)} EGP" class="-me-1 min-h-11 shrink-0 rounded-lg px-1 text-end text-[0.71875rem] leading-[1.3] text-[var(--flow-band-fg-2)]"><b class="block font-mono-numbers text-[0.9375rem] text-[var(--flow-band-fg)] ${D.nw >= 1e7 ? 'underline decoration-dotted underline-offset-4' : ''}">${fit8(D.nw)}</b>Net worth${new9()}</button>`
   return `<div class="mx-4 mt-3"><section class="overflow-hidden rounded-3xl text-[var(--flow-band-fg)]" style="background: linear-gradient(120deg, var(--flow-band-a) 0%, var(--flow-band-b) 100%);"><div class="px-[18px] pb-4 pt-2.5">
     <div class="flex h-[22px] items-center"><span class="min-w-0 flex-1 truncate text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--flow-band-fg-2)]">Free to spend</span></div>
-    <div class="mt-1.5 flex items-end justify-between gap-3"><p class="flex min-w-0 items-baseline gap-1.5">${big8('home', free, 'Free to spend')}<span class="text-[0.8125rem] text-[var(--flow-band-fg-2)]">EGP</span></p>${nw}</div>
+    <div class="mt-1.5 flex h-[34.5px] items-end justify-between gap-3"><p class="flex min-w-0 items-baseline gap-1.5">${big8('home', free, 'Free to spend')}<span class="text-[0.8125rem] text-[var(--flow-band-fg-2)]">EGP</span></p>${nw}</div>
     ${exact8(st, 'home', free)}${exact8(st, 'nw', D.nw, 'Net worth')}
-    <p class="mt-1 text-[0.8125rem] text-[var(--flow-band-fg-2)]">of <b class="font-mono-numbers font-semibold text-[var(--flow-band-fg)]">${f0(D.inAcc)}</b> in your accounts</p>
-    ${D.short ? `<p class="mt-2"><button type="button" data-a8-short class="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-[var(--flow-band-fg)] px-3 text-[0.78125rem] font-bold" style="color:var(--flow-chip-over)">${ICON('triangle-alert', 'size-[14px]')}CIB is short <span class="font-mono-numbers">${f0(D.short)}</span>${ICON('chevron-right', 'size-3.5')}</button></p>` : ''}
     <div class="pt-3"><div class="flex h-1.5 gap-[3px]">${[[c, 1], [d, 0.75], [q, 0.55], [100 - c - d - q, 0.35]].map(([w, op]) => `<span class="h-full rounded-full bg-[var(--flow-band-fg)]" style="width:${w}%;opacity:${op}"></span>`).join('')}</div><div class="mt-[5px] flex items-center justify-between gap-2 overflow-hidden font-mono-numbers text-[0.65625rem] font-semibold leading-[15.75px] text-[var(--flow-band-fg-2)]"><span class="flex gap-3">${legend(1, `CIB ${c}%`)}${legend(0.75, `DEEL ${d}%`)}${legend(0.55, `QNB ${q}%`)}</span><span>11 accounts</span></div></div>
-    <div class="mt-2 flex flex-wrap items-center gap-x-3 text-xs text-[var(--flow-band-fg-2)]"><button type="button" data-a8-aside class="-ms-1 inline-flex min-h-11 items-center gap-1 rounded-lg px-1 text-[var(--flow-band-fg)]"><b class="font-mono-numbers font-semibold">${f0(D.aside)}</b><span class="text-[var(--flow-band-fg-2)]">set aside</span>${ICON('chevron-right', 'size-3.5')}</button><span class="inline-flex min-h-11 items-center gap-1"><b class="font-mono-numbers font-semibold text-[var(--flow-band-fg)]">${f0(D.owed)}</b> owed on cards</span></div>
+    <p class="mt-2 text-xs leading-relaxed text-[var(--flow-band-fg-2)]">${D.short ? `<button type="button" data-a8-short class="relative font-bold text-[var(--flow-band-fg)] after:absolute after:-inset-x-1 after:-inset-y-3 after:content-['']">CIB is short <span class="font-mono-numbers">${f0(D.short)}</span></button> · ` : ''}<button type="button" data-a8-aside class="relative text-[var(--flow-band-fg-2)] after:absolute after:-inset-x-1 after:-inset-y-3 after:content-['']"><b class="font-mono-numbers font-semibold text-[var(--flow-band-fg)]">${f0(D.aside)}</b> set aside</button> · <b class="font-mono-numbers font-semibold text-[var(--flow-band-fg)]">${f0(D.owed)}</b> owed${D.short ? '' : ' on cards'}</p>
   </div></section></div>`
 }
 const sample8 = (st) => `<div role="group" aria-label="Sample data" class="mx-4 mt-3 rounded-2xl border border-dashed border-[var(--color-brand-border-strong)] p-1.5">${[[[['normal', 'Normal'], ['huge', 'Huge balances']], 'data', st.a8data || 'normal'], [[['0', 'Set aside covered'], ['1', 'CIB short']], 'over', st.a8over ? '1' : '0']].map(([opts, a, on], i) => `<div class="${i ? 'mt-1 ' : ''}inline-flex w-full gap-0.5 rounded-xl bg-[var(--color-brand-elevated)] p-[3px]">${opts.map(([k, l]) => `<button type="button" data-a8-${a}="${k}" aria-pressed="${on === k}" class="${on === k ? SEG_ON : SEG_OFF}"><span class="truncate">${l}</span></button>`).join('')}</div>`).join('')}</div>`
@@ -318,7 +303,7 @@ const prov8 = (st) => {
   const total = val8(st, p.v)
   const tint = `--provider-brand:#1D5FA8;background:linear-gradient(160deg, color-mix(in oklab, var(--provider-brand) var(--provider-hero-amt), var(--provider-hero-base)), color-mix(in oklab, var(--provider-brand) calc(var(--provider-hero-amt) - 14%), var(--provider-hero-base)))`
   const c = CC8.cibcc
-  return `<div class="mx-4 mt-2"><div class="flex items-center"><button type="button" data-a8-back class="-ms-2 inline-flex h-11 items-center gap-1 px-2 text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">${ICON('chevron-left', 'size-5')}Accounts</button><button type="button" data-a8-provmenu aria-label="More actions" class="${CLOSE_BTN} ms-auto">${ICON('ellipsis', 'size-4')}</button></div>
+  return `<div class="mx-4 mt-2"><div class="flex items-center"><button type="button" data-a8-back class="-ms-2 inline-flex h-11 items-center gap-1 px-2 text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">${ICON('chevron-left', 'size-5')}Accounts</button><button type="button" data-a8-provmenu aria-label="More actions" class="${CLOSE_BTN} ms-auto">${ICON('ellipsis-vertical', 'size-4')}</button></div>
     <section class="mt-1 overflow-hidden rounded-3xl px-[18px] pb-4 pt-4 text-[var(--flow-band-fg)]" style="${tint}"><div class="flex items-center gap-3">${brand('cib', 40)}<span class="min-w-0 flex-1"><span class="block truncate text-[1.0625rem] font-bold">CIB</span><span class="block text-[0.78125rem] opacity-80">Commercial International Bank</span></span></div><p class="mt-4 text-xs font-semibold opacity-80">Total here</p><p class="flex min-w-0 items-baseline gap-1.5"><span class="text-lg">≈</span>${big8('prov', total, 'Total at CIB')}<span class="text-[0.8125rem] font-semibold">EGP</span></p>${exact8(st, 'prov', total)}<p class="mt-2 text-xs opacity-80">3 accounts · 4 cards · <b class="font-mono-numbers">${f0(ds8(st).cibAside)}</b> set aside</p></section></div>
     <div class="space-y-5 px-4 pb-6 pt-4">
       <section>${head8('Accounts', 3, link8('data-a8-addacct', 'Add account', new9()))}<div class="${LISTCARD}">${ACCTS8.map((a) => acctRow8(st, a)).join('')}</div></section>
@@ -327,12 +312,31 @@ const prov8 = (st) => {
 }
 const TIP8 = "Spending on this card is added to what you owe. It isn't taken from any account until you pay the card."
 P8.accounts = (st) => (st.a8prov ? prov8(st) : home8(st))
-NOTES8.accounts = 'Hero: Free to spend with net worth beside it (both shorten past 10M; tap for the exact figure). Rows show the bank balance and what is free, or “Short X” in amber. A stack spreads on the first tap and opens a card on the second; new Modern faces are lit textures. Flip the Sample switch for huge balances and a CIB shortfall.'
+NOTES8.accounts = 'Hero: Free to spend with net worth beside it (both shorten past 10M; tap for the exact figure). Rows show the bank balance and what is free, or “Short X” in amber. A stack spreads on the first tap and opens a card on the second; new Modern faces are textures. Flip the Sample switch for huge balances and a CIB shortfall.'
 
-/* ---------- small menu sheet (3-dot) ---------- */
-const menu8 = (S, title, items) => {
-  const sh = ltSheet(S, title, '', `<div class="mx-4 divide-y divide-[var(--color-brand-border)] overflow-hidden ${CARDBOX}">${items.map(([ic, l, msg, red], i) => `<button type="button" data-m8="${i}" class="flex min-h-[52px] w-full items-center gap-3 px-4 text-start text-[0.9375rem] font-medium ${red ? 'text-[var(--color-brand-red-text)]' : 'text-[var(--color-brand-text-primary)]'} hover:bg-[var(--color-brand-elevated)]">${ic}${l}</button>`).join('')}</div>`, '', 260)
-  sh.el.addEventListener('click', (e) => { const b = e.target.closest('[data-m8]'); if (!b) return; sh.close(); const m = items[+b.dataset.m8][2]; typeof m === 'function' ? m() : toast(S, m) })
+/* ---------- ⋮ menu (round 9b council: mirrors src/components/ui/CardActionMenu.tsx): popover under the trigger, right-aligned, scrim-dismissed; destructive items confirm first ---------- */
+const menu8 = (S, title, items, anchor) => {
+  const root = S.vp.querySelector('[data-layer-root]')
+  const wrap = document.createElement('div')
+  wrap.setAttribute('role', 'presentation')
+  wrap.className = 'fixed inset-0'
+  wrap.style.zIndex = '400'
+  root.append(wrap)
+  const box = wrap.getBoundingClientRect(), a = (anchor || wrap).getBoundingClientRect()
+  const W = 216, ROW = 44
+  const left = Math.max(8, Math.min(a.right - box.left - W, box.width - W - 8))
+  const top = Math.min(a.bottom - box.top + 6, box.height - 8 - items.length * ROW - (title ? 40 : 0))
+  wrap.innerHTML = `<div role="menu" data-new9-menu class="absolute overflow-hidden rounded-[14px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]" style="top:${top}px;left:${left}px;width:${W}px;box-shadow:var(--shadow-lg)">${title ? `<div class="truncate border-b border-[var(--color-brand-border)] px-3.5 py-2 text-[0.71875rem] font-semibold text-[var(--color-brand-text-muted)]">${title}${new9()}</div>` : ''}${items.map(([ic, l, , red], i) => `<button type="button" role="menuitem" data-m8="${i}" class="flex min-h-11 w-full items-center gap-2.5 px-3.5 py-2 text-start text-sm font-medium" style="color:${red ? 'var(--color-brand-red)' : 'var(--color-brand-text-primary)'};${i ? 'border-top:1px solid var(--color-brand-border)' : ''}">${ic}<span class="truncate">${l}</span></button>`).join('')}</div>`
+  wrap.querySelector('[role="menuitem"]')?.focus()
+  wrap.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-m8]')
+    if (!b && e.target.closest('[role="menu"]')) return
+    wrap.remove()
+    if (!b) return
+    const [, l, m, red] = items[+b.dataset.m8]
+    const run = () => (typeof m === 'function' ? m() : toast(S, m))
+    red ? ltAlert(S, `${l}?`, 'This can’t be undone.', [['solidDanger', 'Delete', run], ['ghost', 'Cancel']]) : run()
+  })
 }
 /* radio row in a grouped card, like the shared picker rows */
 const pickRow8 = (attr, on, lead, title, sub = '', right = '') => `<button type="button" ${attr} role="radio" aria-checked="${on}" class="flex min-h-[60px] w-full items-center gap-3 px-4 py-2.5 text-start hover:bg-[var(--color-brand-elevated)]">${lead}<span class="min-w-0 flex-1"><span class="block text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">${title}</span>${sub ? `<span class="mt-0.5 block text-xs leading-snug ${SECOND}">${sub}</span>` : ''}</span>${right}${tick(on, false)}</button>`
@@ -348,8 +352,8 @@ const pay8 = (S, k) => {
   const owed = bal + pl.month
   const line = (st) => { const v = num4(st.amt); return v >= owed ? (pl.month ? `Clears what's due now: ${f0(bal)} + ${f0(pl.month)} in installments` : `Clears the ${f0(owed)} you owe on this card`) : v ? `${f0(owed - v)} left to pay after this` : `${f0(owed)} due now · ${f0(min)} minimum by ${due}` }
   return form4(S, {
-    title: `Pay ${p.name}`, z: 220, state: { amt: '', from: 'cib' },
-    body: (st) => `${hero4({ amt: st.amt, ctl: unit4('EGP'), line: line(st) })}<div class="-mt-2 flex justify-center gap-2 px-4"><button type="button" data-v="full" aria-pressed="${num4(st.amt) === owed}" class="${OPT_BASE} ${num4(st.amt) === owed ? OPT_ON : OPT_OFF} h-11 rounded-full px-4 text-[0.875rem]">Full amount <span class="font-mono-numbers">${f0(owed)}</span></button>${new9()}</div>${grp4([row4('From', pmV(st.from), 'from'), date4('Date', 'Today')], '', 'The money leaves that account and what you owe on the card goes down. It isn’t counted as spending; the purchases already were.')}`,
+    title: `Pay ${p.name}`, z: 220, state: { amt: '', from: 'cib', cur: 'EGP' },
+    body: (st) => `${hero4({ amt: st.amt, ctl: ctl4('cur', st.cur), line: line(st) })}<div class="relative -mt-2 flex justify-center px-4"><button type="button" data-v="full" aria-pressed="${num4(st.amt) === owed}" class="${OPT_BASE} ${num4(st.amt) === owed ? OPT_ON : OPT_OFF} h-11 rounded-full px-4 text-[0.875rem]">Full amount <span class="font-mono-numbers">${f0(owed)}</span></button><span class="absolute end-4 top-3">${new9()}</span></div>${grp4([row4('From', pmV(st.from), 'from'), date4('Date', 'Today')], '', 'The money leaves that account and what you owe on the card goes down. It isn’t counted as spending; the purchases already were.')}`,
     foot: () => foot4('Pay card'), done: 'Card payment saved',
     onInput: (f, st, sh) => { if (f.dataset.in === 'amt') { sh.el.querySelector('[data-line]').textContent = line(st); const c = sh.el.querySelector('[data-v="full"]'); const on = num4(st.amt) === owed; c.setAttribute('aria-pressed', on); c.className = `${OPT_BASE} ${on ? OPT_ON : OPT_OFF} h-11 rounded-full px-4 text-[0.875rem]` } },
     on: { full: (v, draw, st) => { st.amt = f0(owed); draw() }, from: (v, draw, st) => ltMethodPicker(S, st.from, (x) => { st.from = x; draw() }) },
@@ -383,7 +387,7 @@ F8.card8 = (S, cardKey = 'cibcc') => {
     if (a === 'pay') return pay8(S, k)
     if (a === 'plan') return toast(S, `Opens ${b.dataset.plan}`)
     if (a === 'acct') return link?.startsWith('CIB Current') ? (sh.close(), ltAcctSheet(S, 'a1')) : link ? toast(S, `Opens ${link}`) : toast(S, 'Opens your accounts to link one')
-    if (a === 'menu') { const f = card8of(k).face; return menu8(S, p.name, [[ICON('pencil', `size-[18px] ${SECOND}`), 'Edit card', () => a8AddCard(S, { edit: true, type: p.kind, prov: p.bank, last4: p.last4, d: f.d, c: f.c })], [ICON('trash-2', 'size-[18px]'), 'Delete card', 'Card deleted · its spending stays in Flow', true]]) }
+    if (a === 'menu') { const f = card8of(k).face; return menu8(S, p.name, [[ICON('pencil', `size-[18px] ${SECOND}`), 'Edit card', () => a8AddCard(S, { edit: true, type: p.kind, prov: p.bank, last4: p.last4, d: f.d, c: f.c })], [ICON('trash-2', 'size-[18px]'), 'Delete card', 'Card deleted · its spending stays in Flow', true]], b) }
   })
   return sh
 }
@@ -393,19 +397,18 @@ const KEYS8 = [['1', ''], ['2', 'ABC'], ['3', 'DEF'], ['4', 'GHI'], ['5', 'JKL']
 const kb8 = () => `<div data-a8-kb class="shrink-0 border-t border-[var(--color-brand-border)] bg-[var(--color-brand-sunken)]"><div class="flex h-11 items-center justify-between ps-4 pe-2"><span class="text-xs ${MUTED}">Keyboard open · simulated</span><button type="button" data-a8-kbdone class="h-11 px-3 text-[0.9375rem] font-semibold text-[var(--color-brand-primary-ink)]">Done</button></div><div class="grid grid-cols-3 gap-1.5 px-1.5 pb-[34px]" dir="ltr">${KEYS8.map(([d, l]) => (!d ? '<span></span>' : d === 'del' ? `<button type="button" data-a8-key="del" aria-label="Delete" class="flex h-[46px] items-center justify-center rounded-[6px] text-[var(--color-brand-text-primary)]">${ICON('delete', 'size-6')}</button>` : `<button type="button" data-a8-key="${d}" class="flex h-[46px] flex-col items-center justify-center rounded-[6px] bg-[var(--color-brand-card)] text-[1.5rem] leading-none text-[var(--color-brand-text-primary)] shadow-[0_1px_0_var(--color-brand-border-strong)]">${d}${l ? `<span class="mt-0.5 text-[0.5625rem] font-semibold tracking-[0.14em]">${l}</span>` : ''}</button>`)).join('')}</div></div>`
 const a8AddCard = (S, o = {}) => {
   const H = S.vp.clientHeight || 844
-  const prev = (st) => ({ bank: st.prov || 'Your bank', kind: st.type, last4: st.last4, cur: 'EGP', face: { d: st.d, c: st.c, l: st.l8 } })
+  const prev = (st) => ({ bank: st.prov || 'Your bank', kind: st.type, last4: st.last4, cur: 'EGP', face: { d: st.d, c: st.c } })
   const look = (st) => {
     const modern = DES8[st.d][1] === 'modern'
     return `${sectionHead('Card face').replace('pt-1', 'pt-5')}<div class="mx-4 ${CARDBOX} p-3">
     <div class="inline-flex w-full gap-0.5 rounded-xl bg-[var(--color-brand-elevated)] p-[3px]">${[['modern', 'Modern'], ['classic', 'Classic']].map(([v, l]) => `<button type="button" data-v="a8style:${v}" class="${DES8[st.d][1] === v ? SEG_ON : SEG_OFF}">${l}</button>`).join('')}</div>
-    <div class="hide-scrollbar -mx-3 mt-3 flex gap-2.5 overflow-x-auto px-3 pb-1 pt-1">${(modern ? MODERN8 : CLASSIC8).map((d) => `<button type="button" data-v="set:d:${d}" aria-pressed="${st.d === d}" class="flex shrink-0 flex-col items-center gap-1.5">${mini8({ ...prev(st), face: { d, c: st.c, l: st.l8 } }, st.d === d)}<span class="text-xs font-semibold ${st.d === d ? 'text-[var(--color-brand-primary-ink)]' : SECOND}">${DES8[d][0]}</span></button>`).join('')}</div>
-    <div role="radiogroup" aria-label="Card colour" class="mt-2 flex justify-between px-2">${Object.entries(COL8).map(([c, [a, b, n]]) => `<button type="button" role="radio" aria-checked="${st.c === c}" aria-label="${n}" data-v="set:c:${c}" class="grid size-11 place-items-center"><span aria-hidden="true" class="block size-[34px] rounded-full" style="background:linear-gradient(135deg, ${a}, ${b});box-shadow:${st.c === c ? '0 0 0 2px var(--color-brand-card), 0 0 0 4px var(--color-brand-primary)' : 'none'}"></span></button>`).join('')}</div>
-    ${modern ? `<div class="-mx-3 -mb-3 mt-2 border-t border-[var(--color-brand-border)]">${sw4('l8', `Lighting ${st.l8 ? 'on' : 'off'}${new9()}`, 'Light moves across the texture', st.l8)}</div>` : ''}</div>`
+    <div class="hide-scrollbar -mx-3 mt-3 flex gap-2.5 overflow-x-auto px-3 pb-1 pt-1">${(modern ? MODERN8 : CLASSIC8).map((d) => `<button type="button" data-v="set:d:${d}" aria-pressed="${st.d === d}" class="flex shrink-0 flex-col items-center gap-1.5">${mini8({ ...prev(st), face: { d, c: st.c } }, st.d === d)}<span class="text-xs font-semibold ${st.d === d ? 'text-[var(--color-brand-primary-ink)]' : SECOND}">${DES8[d][0]}</span></button>`).join('')}</div>
+    <div role="radiogroup" aria-label="Card colour" class="mt-2 flex justify-between px-2">${Object.entries(COL8).map(([c, [a, b, n]]) => `<button type="button" role="radio" aria-checked="${st.c === c}" aria-label="${n}" data-v="set:c:${c}" class="grid size-11 place-items-center"><span aria-hidden="true" class="block size-[34px] rounded-full" style="background:linear-gradient(135deg, ${a}, ${b});box-shadow:${st.c === c ? '0 0 0 2px var(--color-brand-card), 0 0 0 4px var(--color-brand-primary)' : 'none'}"></span></button>`).join('')}</div></div>`
   }
   const linkV = (st) => (st.link === 'none' ? `<span class="${SECOND}">None</span>` : `${brand('cib', 24)}<span class="truncate">${st.link}</span>`)
   const sh = form4(S, {
     title: o.edit ? 'Edit card' : 'Add a card', z: 140,
-    state: { type: o.type || 'Debit', prov: o.prov ?? '', last4: o.last4 || '', name: '', link: 'none', d: o.d || 'wave', c: o.c || 'black', l8: true, limit: '', owed: '', due: 15, def: false, kb: !!o.kb },
+    state: { type: o.type || 'Debit', prov: o.prov ?? '', last4: o.last4 || '', name: '', link: 'none', d: o.d || 'wave', c: o.c || 'black', limit: '', owed: '', due: 15, def: false, kb: !!o.kb },
     body: (st) => `${seg4('type', [['Debit', 'Debit'], ['Credit', 'Credit'], ['Prepaid', 'Prepaid']], st.type)}
       ${grp4([row4('Bank or wallet', st.prov ? `${provMark(provByName(st.prov), 24)}${st.prov}` : `<span class="${MUTED}">Choose</span>`, 'prov'), tiles4(st.last4), in4('name', 'Name', defName(st.prov, st.last4, ` ${st.type}`) || 'Optional', st.name), st.type === 'Credit' ? '' : row4('Linked account', linkV(st), 'link')], '', st.type === 'Credit' ? '' : 'None is fine for a store card, a prepaid card or a card from a bank where you have no account.')}
       ${st.type === 'Credit' ? grp4([in4('limit', 'Limit', '30,000', st.limit, 'decimal'), in4('owed', 'Owed now', '0', st.owed, 'decimal'), pick4('Due day', ORD(st.due), 'due', 'calendar')], 'Credit', 'Spending on this card is added to what you owe.') : ''}
@@ -417,7 +420,7 @@ const a8AddCard = (S, o = {}) => {
       el.style.setProperty('height', `${H - 56}px`, 'important'); el.style.setProperty('max-height', `${H - 56}px`, 'important')
       let pv = el.querySelector('[data-a8-prev]')
       if (!pv) { pv = document.createElement('div'); pv.setAttribute('data-a8-prev', ''); pv.setAttribute('aria-hidden', 'true'); pv.className = 'flex shrink-0 justify-center px-4 pb-3'; s.body.before(pv) }
-      const key = `${st.type}|${st.prov}|${st.d}|${st.c}|${st.l8}`
+      const key = `${st.type}|${st.prov}|${st.d}|${st.c}`
       if (pv.dataset.k !== key) { pv.dataset.k = key; pv.innerHTML = card8(prev(st), 280) }
       const f = el.querySelector('[data-foot]'); if (f) f.style.display = st.kb ? 'none' : ''
       const kb = el.querySelector('[data-a8-kb]')
@@ -561,6 +564,6 @@ document.addEventListener('click', (e) => {
   if ((b = hit('[data-a8-acct]'))) { stop(); return ltAcctSheet(S, b.dataset.a8Acct) }
   if ((b = hit('[data-a8-prov]'))) { stop(); if (b.dataset.a8Prov !== 'cib') return toast(S, 'The sample opens CIB'); S.st.a8prov = 'cib'; S.st.a8exact = null; S.scroll.scrollTop = 0; return render(S) }
   if (hit('[data-a8-back]')) { stop(); S.st.a8prov = null; S.st.a8exact = null; return render(S) }
-  if (hit('[data-a8-provmenu]')) { stop(); return menu8(S, 'CIB', [[ICON('pencil', `size-[18px] ${SECOND}`), 'Edit name', 'Opens the provider name'], [ICON('archive', `size-[18px] ${SECOND}`), 'Close CIB Current', () => F8.acc_close(S)], [ICON('history', `size-[18px] ${SECOND}`), 'Closed accounts · 2', 'Shows 2 closed accounts; their history is kept'], [ICON('trash-2', 'size-[18px]'), 'Delete CIB', 'Deletes CIB and its accounts after you confirm', true]]) }
+  if (hit('[data-a8-provmenu]')) { stop(); return menu8(S, 'CIB', [[ICON('pencil', `size-[18px] ${SECOND}`), 'Edit name', 'Opens the provider name'], [ICON('archive', `size-[18px] ${SECOND}`), 'Close CIB Current', () => F8.acc_close(S)], [ICON('history', `size-[18px] ${SECOND}`), 'Closed accounts · 2', 'Shows 2 closed accounts; their history is kept'], [ICON('trash-2', 'size-[18px]'), 'Delete CIB', 'CIB and its accounts deleted', true]], hit('[data-a8-provmenu]')) }
 }, true)
 }

@@ -180,7 +180,7 @@
     sh.el.addEventListener('click', (e) => {
       const b = e.target.closest('[data-d8s]'); if (!b) return
       const [a, v] = b.dataset.d8s.split(':')
-      if (a === 'menu') return F8.d8menu(S, sh)
+      if (a === 'menu') return F8.d8menu(S, sh, b)
       if (a === 'pay') return F8.d8pay(S, v || undefined)
       if (a === 'editpay') return F8.d8pay(S, 'edit', +v)
       if (a === 'edit') return d.kind === 'install' ? F8.d8addinst(S, true) : AFTER.s_borrow(S)
@@ -190,15 +190,29 @@
     return sh
   }
   /* vertical 3-dot menu: Edit, Mark settled / Pay off early, Delete */
-  F8.d8menu = (S, parent) => {
+  /* CardActionMenu (src/components/ui/CardActionMenu.tsx): popover anchored to the tapped ⋮, scrim-dismissed */
+  F8.d8menu = (S, parent, trigger) => {
     const d = cur(S)
     const extra = d.kind === 'install' ? ['early', 'Pay off early', `Clear all ${f0(left(d))} today`, 'zap'] : ['settle', 'Mark settled', d.dir === 'owed' ? 'They paid you back in full' : 'You paid it all back', 'circle-check']
-    const items = [['edit', 'Edit', d.kind === 'install' ? 'Item, provider, plan, card' : 'Amount, person, due date', 'pencil'], extra, ['delete', 'Delete', 'Removes it and its payment links', 'trash-2']]
-    const row = ([v, t, s, ic], i) => `${i ? '<div class="ms-[60px] h-px bg-[var(--color-brand-border)]"></div>' : ''}<button type="button" data-m="${v}" class="flex min-h-[56px] w-full items-center gap-3 px-4 py-2.5 text-start hover:bg-[var(--color-brand-elevated)]"><span aria-hidden="true" class="flex size-9 shrink-0 items-center justify-center rounded-[11px] ${v === 'delete' ? 'bg-[var(--color-brand-red-soft)] text-[var(--color-brand-red)]' : `bg-[var(--color-brand-elevated)] ${SECOND}`}">${ICON(ic, 'size-[18px]')}</span><span class="min-w-0 flex-1"><span class="block text-[0.9375rem] font-semibold ${v === 'delete' ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-text-primary)]'}">${t}</span><span class="block text-xs ${MUTED}">${s}</span></span></button>`
-    const sh = ltSheet(S, d.title, '', `<div class="mx-4 overflow-hidden ${CARDBOX}">${items.map(row).join('')}</div><div class="h-4"></div>`, '', 220)
-    sh.el.addEventListener('click', (e) => {
-      const b = e.target.closest('[data-m]'); if (!b) return
+    const items = [['edit', 'Edit', '', 'pencil'], extra, ['delete', 'Delete', '', 'trash-2']]
+    const WIDTH = 216
+    const root = S.vp.querySelector('[data-layer-root]')
+    const vr = S.vp.getBoundingClientRect()
+    const a = (trigger || parent?.el.querySelector('[data-d8s="menu"]'))?.getBoundingClientRect() || { right: vr.right - 16, bottom: vr.top + 120 }
+    const x = Math.max(8,Math.min(a.right - vr.left - WIDTH, vr.width - WIDTH - 8))
+    const top = Math.min(a.bottom - vr.top + 6, vr.height - 8 - items.length * 44 - 40)
+    const row = ([v, t, s, ic], i) => `<button type="button" role="menuitem" data-m="${v}" class="flex min-h-11 w-full items-center gap-2.5 px-3.5 py-2 text-start text-sm font-medium" style="color:${v === 'delete' ? 'var(--color-brand-red)' : 'var(--color-brand-text-primary)'};${i ? 'border-top:1px solid var(--color-brand-border)' : ''}">${ICON(ic, 'size-4 shrink-0')}<span class="flex min-w-0 flex-col"><span class="truncate">${t}</span>${s ? `<span class="truncate text-[0.71875rem] font-normal text-[var(--color-brand-text-muted)]">${s}</span>` : ''}</span></button>`
+    const scrim = document.createElement('div')
+    scrim.className = 'fixed inset-0'
+    scrim.style.zIndex = '400'
+    scrim.setAttribute('role', 'presentation')
+    scrim.innerHTML = `<div role="menu" class="absolute overflow-hidden rounded-[14px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]" style="top:${top}px;left:${x}px;width:${WIDTH}px;box-shadow:var(--shadow-lg)"><div class="flex items-center truncate border-b border-[var(--color-brand-border)] px-3.5 py-2 text-[0.71875rem] font-semibold text-[var(--color-brand-text-muted)]">${d.title}${new9()}</div>${items.map(row).join('')}</div>`
+    root.append(scrim)
+    const sh = { close: () => scrim.remove() }
+    scrim.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-m]')
       sh.close()
+      if (!b) return
       const m = b.dataset.m
       if (m === 'edit') return d.kind === 'install' ? F8.d8addinst(S, true) : AFTER.s_borrow(S)
       if (m === 'early') return F8.d8pay(S, 'early')
@@ -219,7 +233,7 @@
     const base = left(d) + (edit ? was[2] : 0)
     const line = (s) => { const n = num4(s.amt); return n >= base ? `Clears it · ${f0(base)} → 0 left` : `${f0(base)} → ${f0(base - n)} left` }
     const chips = (s) => {
-      const opts = [d.monthly ? ['each', `${d.kind === 'install' ? 'This payment' : 'Monthly'} · ${f0(each)}`, each] : null, ['full', `Full amount · ${f0(base)}`, base]].filter(Boolean)
+      const opts = [d.monthly && d.kind !== 'install' ? ['each', `${d.kind === 'install' ? 'This payment' : 'Monthly'} · ${f0(each)}`, each] : null, ['full', `Full amount · ${f0(base)}`, base]].filter(Boolean)
       return `<div class="hide-scrollbar flex justify-center gap-2 overflow-x-auto px-4 pb-1">${opts.map(([k, l, n]) => `<button type="button" data-v="chip:${k}" aria-pressed="${num4(s.amt) === n}" class="${OPT_BASE} ${num4(s.amt) === n ? OPT_ON : OPT_OFF} shrink-0"><span class="font-mono-numbers">${l}</span></button>`).join('')}${new9()}</div>`
     }
     const title = edit ? (owed ? 'Edit repayment' : 'Edit payment') : owed ? `${d.who} paid you back` : d.kind === 'install' ? `Pay ${d.who}` : `Pay ${d.title}`
@@ -297,7 +311,7 @@
   F8.d8cleared = (S) => showCleared(S, true)
   F8.d8empty = (S) => { toDebts(S); S.st.d8view = null; S.st.d8empty = !S.st.d8empty; S.scroll.scrollTop = 0; render(S) }
   F8.d8addpay = (S) => { S.st.d8cur = 'valu'; F8.d8pay(S) }
-  F8.d8menuopen = (S) => { S.st.d8cur = 'mona'; F8.d8menu(S) }
+  F8.d8menuopen = (S) => { const sh = openDetail(S, 'mona'); setTimeout(() => F8.d8menu(S, sh), 350) }
   T8.d8cleared = (S) => AFTER.s_vault(S)
   T8.d8empty = (S) => { toDebts(S); S.st.state = S.st.state === 'emptydebts' ? null : 'emptydebts'; render(S) }
   T8.d8addinst = (S) => AFTER.s_install(S)

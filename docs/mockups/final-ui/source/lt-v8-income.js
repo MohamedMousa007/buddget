@@ -1,7 +1,7 @@
 /* ================= round 8/9: Income (was Paydays), Assign, Add income source, streak ring in the profile menu ================= */
 /* icons passed through data, listed so the sprite build picks them up:
    ICON('briefcase' ICON('laptop' ICON('store' ICON('building-2' ICON('gift' ICON('trending-up' ICON('wallet' ICON('pencil'
-   ICON('target' ICON('calendar-clock' ICON('refresh-cw' ICON('chart-column' ICON('settings' ICON('bell' ICON('user'
+   ICON('target' ICON('calendar-clock' ICON('refresh-cw' ICON('chart-column' ICON('settings' ICON('bell' ICON('user' ICON('ellipsis-vertical' ICON('trash-2'
    icon picker (lt-v6 ICONSET, passed as data): ICON('graduation-cap' ICON('heart-pulse' ICON('shopping-bag' ICON('scale' */
 {
   /* ---------- sample data ---------- */
@@ -86,7 +86,7 @@
   const sourceView = (st, id) => {
     const s = SRC[id]
     const back = `<button type="button" data-i8back class="-ms-2 mb-1 inline-flex h-11 items-center gap-1 px-2 text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">${ICON('chevron-left', 'size-5')}Income</button>`
-    const hero = `<section class="overflow-hidden rounded-3xl px-[18px] pb-4 pt-3 text-[var(--flow-band-fg)]" style="${TINT}"><div class="flex items-center gap-3">${tile(srcIcon(s.icon, 'size-5'), ['var(--flow-band-fg)', 'var(--flow-band-b)'], 10)}<span class="min-w-0 flex-1"><span class="flex min-w-0 items-center text-[1.0625rem] font-bold"><span class="truncate">${s.name} · ${s.who}</span>${new9()}</span><span class="block truncate text-[0.78125rem] text-[var(--flow-band-fg-2)]">${s.freq} → ${PM[s.pm].name}</span></span><button type="button" data-i8menu aria-label="More actions" class="-me-2 flex size-11 shrink-0 items-center justify-center rounded-full">${ICON('ellipsis', 'size-5')}</button></div><p class="mt-4 flex items-baseline gap-1.5"><span class="font-mono-numbers text-[32px] font-semibold leading-[34.5px] tracking-[-0.03em]">${s.irr ? '≈ ' : ''}${f0(s.amt)}</span><span class="text-[0.8125rem] text-[var(--flow-band-fg-2)]">EGP ${s.irr ? 'a month on average' : 'each month'}</span></p><div class="mt-4 flex items-start justify-between">${timeline(st, id).map(cell).join('')}</div>${s.irr ? `<p class="mt-3 text-xs text-[var(--flow-band-fg-2)]">A dash is a month with nothing in. Irregular income is never late.</p>` : `<p class="mt-3 text-xs text-[var(--flow-band-fg-2)]">On time <b class="font-mono-numbers text-[var(--flow-band-fg)]">${id === 'salary' ? '6 of 6' : '4 of 5'}</b> · ${id === 'salary' ? 'last 6 months' : 'last 5 months'}</p>`}</section>`
+    const hero = `<section class="overflow-hidden rounded-3xl px-[18px] pb-4 pt-3 text-[var(--flow-band-fg)]" style="${TINT}"><div class="flex items-center gap-3">${tile(srcIcon(s.icon, 'size-5'), ['var(--flow-band-fg)', 'var(--flow-band-b)'], 10)}<span class="min-w-0 flex-1"><span class="flex min-w-0 items-center text-[1.0625rem] font-bold"><span class="truncate">${s.name} · ${s.who}</span>${new9()}</span><span class="block truncate text-[0.78125rem] text-[var(--flow-band-fg-2)]">${s.freq} → ${PM[s.pm].name}</span></span><button type="button" data-i8menu aria-label="More actions" class="-me-2 flex size-11 shrink-0 items-center justify-center rounded-full">${ICON('ellipsis-vertical', 'size-5')}</button></div><p class="mt-4 flex items-baseline gap-1.5"><span class="font-mono-numbers text-[32px] font-semibold leading-[34.5px] tracking-[-0.03em]">${s.irr ? '≈ ' : ''}${f0(s.amt)}</span><span class="text-[0.8125rem] text-[var(--flow-band-fg-2)]">EGP ${s.irr ? 'a month on average' : 'each month'}</span></p><div class="mt-4 flex items-start justify-between">${timeline(st, id).map(cell).join('')}</div>${s.irr ? `<p class="mt-3 text-xs text-[var(--flow-band-fg-2)]">A dash is a month with nothing in. Irregular income is never late.</p>` : `<p class="mt-3 text-xs text-[var(--flow-band-fg-2)]">On time <b class="font-mono-numbers text-[var(--flow-band-fg)]">${id === 'salary' ? '6 of 6' : '4 of 5'}</b> · ${id === 'salary' ? 'last 6 months' : 'last 5 months'}</p>`}</section>`
     const det = `<div class="mx-4 mt-5">${sectionHead('Details').replace('px-5', 'px-1')}<div class="${LISTCARD}">${row4('Amount', `<span class="font-mono-numbers">${s.irr ? 'About ' : ''}${f0(s.amt)} EGP</span>`)}${row4('How often', s.freq)}${row4('Paid into', pmV(s.pm))}</div></div>`
     const rows = HIST[id].map(([m, sub, n]) => ({ pm: s.pm, title: `${s.name} · ${m}`, sub, n, tap: `Opens this ${noun(id)} in Flow` }))
     if (id === 'free' && freeIn(st)) rows.unshift({ pm: 'cib', title: 'Freelance · October', sub: 'Oct 26 · ACME LLC', n: 4000, tap: 'Opens this income in Flow' })
@@ -102,19 +102,16 @@
   /* ---------- sheets: income transaction, assign, add income source, source menu, confirm ---------- */
   F8.incometx = (S, t = tx6(S.st)) => {
     if (!t.unlinked) return AFTER.income(S, t)
-    const tip = `<p class="mx-5 mt-3 flex items-start gap-2 text-[0.8125rem] leading-relaxed ${SECOND}">${ICON('link', 'mt-[3px] size-4 shrink-0 text-[var(--color-brand-primary-ink)]')}<span>Assign links this money to a salary or income you get regularly${new9()}</span></p>`
-    ltTx(S, { title: t.title, icon: ['wallet', ...IC.green], sign: '+', amt: f0(t.amt), cur: 'EGP', day: t.d, time: t.time, del: true, delTitle: 'Delete this income?', delText: 'It leaves Flow and your account balance.', line: 'One-time money in · not in expected', rows: [{ k: 'Type', v: 'One-time' }, { k: 'Received in', pm: t.m }, { k: 'Assigned to', v: `<span class="${MUTED}">Not assigned</span>`, fn: () => F8.assign(S, t) }, { k: 'Recorded from', v: `<span class="inline-flex items-center gap-1.5">${ICON('message-square', `size-4 ${MUTED}`)}Bank SMS · CIB</span>`, static: true }], extra: tip, cta: 'Assign', done: 'Assigned' })
-    /* the CTA opens Assign instead of saving */
-    const el = [...S.vp.querySelectorAll('[data-layer-root] [role="dialog"]')].pop()
-    el?.addEventListener('click', (e) => { if (e.target.closest('[data-a="save"]')) { e.stopPropagation(); F8.assign(S, t) } }, true)
+    const tip = `<div class="mx-4 mt-3 ${CARDBOX} p-4"><div class="flex gap-3">${tile(ICON('repeat', 'size-[18px]'), ['var(--color-brand-primary-soft)', 'var(--color-brand-primary-ink)'])}<div class="min-w-0 flex-1"><p class="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">One-time, or part of a salary?</p><p class="mt-0.5 text-[0.8125rem] leading-relaxed ${SECOND}">Assign links this money to a salary or income you get regularly.${new9()}</p></div></div><button type="button" data-i8asg class="${BTN_SOFT} ${SZ.block} mt-3">${ICON('link', 'size-[18px]')}Assign to a salary</button></div>`
+    ltTx(S, { title: t.title, icon: ['wallet', ...IC.green], sign: '+', amt: f0(t.amt), cur: 'EGP', day: t.d, time: t.time, del: true, delTitle: 'Delete this income?', delText: 'It leaves Flow and your account balance.', line: 'One-time money in · not in expected', rows: [{ k: 'Type', v: 'One-time' }, { k: 'Received in', pm: t.m }, { k: 'Assigned to', v: `<span class="${MUTED}">Not assigned</span>`, fn: () => F8.assign(S, t) }, { k: 'Recorded from', v: `<span class="inline-flex items-center gap-1.5">${ICON('message-square', `size-4 ${MUTED}`)}Bank SMS · CIB</span>`, static: true }], extra: tip, cta: 'Save changes', done: 'Changes saved' })
   }
   T8.incometx = (S) => AFTER.income(S, tx6(S.st))
 
   const ASG = [['free', 'Freelance · ACME LLC', 'October · about 4,000 · irregular', 'Best match', 'laptop'], ['salary', 'Salary · Nexta payroll', 'Nov 25 · 31,500 · 87% off', '', 'briefcase']]
-  const addTile = (k, l, sub) => `<button type="button" data-i8new="${k}" class="flex min-h-[96px] w-full flex-col items-start justify-between gap-2 rounded-2xl border-[1.5px] border-dashed border-[var(--color-brand-border-strong)] p-3.5 text-start hover:bg-[var(--color-brand-elevated)]">${tile(ICON('plus', 'size-[18px]'), ['var(--color-brand-elevated)', 'var(--color-brand-primary-ink)'])}<span class="min-w-0"><span class="flex items-center text-[0.90625rem] font-bold text-[var(--color-brand-text-primary)]">${l}${new9()}</span><span class="block text-[0.75rem] ${SECOND}">${sub}</span></span></button>`
+  const addTile = `<button type="button" data-i8new="salary" class="flex min-h-[60px] w-full items-center gap-3 rounded-2xl border-[1.5px] border-dashed border-[var(--color-brand-border-strong)] p-3.5 text-start hover:bg-[var(--color-brand-elevated)]">${tile(ICON('plus', 'size-[18px]'), ['var(--color-brand-elevated)', 'var(--color-brand-primary-ink)'])}<span class="min-w-0 flex-1"><span class="flex items-center text-[0.90625rem] font-bold text-[var(--color-brand-text-primary)]">Add salary${new9()}</span><span class="block text-[0.78125rem] ${SECOND}">Create a new salary and assign this to it</span></span></button>`
   F8.assign = (S, t = tx6(S.st)) => {
     let pick = 'free'
-    const body = () => `<div role="radiogroup" aria-label="Salary or income" class="mx-4 flex flex-col gap-3">${ASG.map(([k, ti, sub, b, ic]) => `<button type="button" role="radio" aria-checked="${k === pick}" data-i8p="${k}" class="${k === pick ? CARD_SEL : CARD_UNSEL}">${tile(srcIcon(ic, 'size-4'), ['var(--color-brand-green-soft)', 'var(--color-brand-green)'])}<span class="min-w-0 flex-1"><span class="block text-[0.90625rem] font-bold text-[var(--color-brand-text-primary)]">${ti}</span><span class="block text-[0.78125rem] ${SECOND}">${sub}</span></span>${b ? badge('brand', b) : ''}</button>`).join('')}<div class="grid grid-cols-2 gap-3">${addTile('salary', 'Add salary', 'A new salary for this')}${addTile('free', 'Add income', 'Freelance, rent, family…')}</div></div>`
+    const body = () => `<div role="radiogroup" aria-label="Salary or income" class="mx-4 flex flex-col gap-3">${ASG.map(([k, ti, sub, b, ic]) => `<button type="button" role="radio" aria-checked="${k === pick}" data-i8p="${k}" class="${k === pick ? CARD_SEL : CARD_UNSEL}">${tile(srcIcon(ic, 'size-4'), ['var(--color-brand-green-soft)', 'var(--color-brand-green)'])}<span class="min-w-0 flex-1"><span class="block text-[0.90625rem] font-bold text-[var(--color-brand-text-primary)]">${ti}</span><span class="block text-[0.78125rem] ${SECOND}">${sub}</span></span>${b ? badge('brand', b) : ''}</button>`).join('')}${addTile}</div>`
     const foot = () => btn('primary', 'block', `Assign to ${pick === 'free' ? 'Freelance' : 'Salary'}`, 'data-i8go')
     const sub = `<b class="font-mono-numbers text-[var(--color-brand-text-primary)]">${f0(t.amt)}</b> EGP from ${esc(t.title)} arrived on <b>Oct ${t.d}</b>. Assigning keeps that date and links it to a salary or income you get regularly.`
     const sh = ltSheet(S, 'Which income is this?', sub, body(), foot(), 140)
@@ -187,18 +184,24 @@
     sh.el.addEventListener('click', (e) => { if (e.target.closest('[data-done]')) { S.st.i8momOk = true; if (!S.st.tx.some((x) => x.id === 'i8mom')) S.st.tx.push({ id: 'i8mom', d: 27, time: '18:00', dir: 'in', title: 'From Mom', type: 'Family', m: 'cash', amt: 2000, recurring: true }); render(S) } })
   }
   const SEED_WHAT = { salary: 'salary', free: 'free', rent: 'rent', mom: 'family' }
-  const sourceMenu = (S, id) => {
+  /* CardActionMenu.tsx (council ⋮ decision): a popover anchored under the tapped ⋮, right-aligned, scrim-dismissed */
+  const cardMenu = (S, anchor, title, items) => {
+    const vp = S.vp.getBoundingClientRect(), r = anchor.getBoundingClientRect(), W = 216
+    const left = Math.max(8, Math.min(r.right - vp.left - W, vp.width - W - 8)), top = r.bottom - vp.top + 6
+    const root = S.vp.querySelector('[data-layer-root]')
+    const wrap = document.createElement('div')
+    wrap.className = 'fixed inset-0 z-[60]'; wrap.setAttribute('role', 'presentation')
+    wrap.innerHTML = `<div role="menu" class="absolute overflow-hidden rounded-[14px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]" style="top:${top}px;left:${left}px;width:${W}px;box-shadow:var(--shadow-lg)">${title ? `<div class="truncate border-b border-[var(--color-brand-border)] px-3.5 py-2 text-[0.71875rem] font-semibold text-[var(--color-brand-text-muted)]">${title}</div>` : ''}${items.map(([l, ic, red], n) => `<button type="button" role="menuitem" data-cm="${n}" class="flex min-h-11 w-full items-center gap-2.5 px-3.5 py-2 text-start text-sm font-medium" style="color:${red ? 'var(--color-brand-red)' : 'var(--color-brand-text-primary)'};${n ? 'border-top:1px solid var(--color-brand-border)' : ''}">${ICON(ic, 'size-4')}<span class="truncate">${l}</span></button>`).join('')}</div>`
+    root.append(wrap)
+    wrap.addEventListener('click', (e) => { const b = e.target.closest('[data-cm]'); wrap.remove(); if (b) items[+b.dataset.cm][3]() })
+  }
+  const sourceMenu = (S, id, anchor) => {
     const s = SRC[id], w = noun(id)
-    const item = (k, ic, l, red) => `<button type="button" data-i8m="${k}" class="flex min-h-[52px] w-full items-center gap-3 px-4 text-start hover:bg-[var(--color-brand-elevated)] ${red ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-text-primary)]'}">${ic}<span class="text-[0.9375rem] font-medium">${l}</span></button>`
-    const sh = ltSheet(S, `${s.name} · ${s.who}`, s.freq, `<div class="mx-4 ${LISTCARD}">${item('edit', ICON('pencil', `size-[18px] ${SECOND}`), `Edit ${w}`)}${item('log', ICON('plus', `size-[18px] ${SECOND}`), `Log a past ${w}`)}${item('del', ICON('trash-2', 'size-[18px]'), `Delete ${w}`, true)}</div>`, '', 160)
-    sh.el.addEventListener('click', (e) => {
-      const m = e.target.closest('[data-i8m]'); if (!m) return
-      sh.close()
-      const k = m.dataset.i8m
-      if (k === 'edit') return addIncome(S, { what: SEED_WHAT[id], amt: f0(s.amt), name: s.who, freq: s.irr ? 'i' : 'm', day: s.day || 25, pm: s.pm }, { title: `Edit ${w}`, cta: 'Save changes', done: 'Changes saved' })
-      if (k === 'log') return toast(S, `Opens a past ${w} to fill in`)
-      ltAlert(S, `Delete this ${w}?`, 'What already arrived stays in Flow as one-time income.', [['solidDanger', 'Delete', () => { S.st.i8src = null; render(S); toast(S, `${s.name} deleted`) }], ['ghost', 'Cancel']])
-    })
+    cardMenu(S, anchor, `${s.name} · ${s.who}`, [
+      [`Edit ${w}`, 'pencil', false, () => addIncome(S, { what: SEED_WHAT[id], amt: f0(s.amt), name: s.who, freq: s.irr ? 'i' : 'm', day: s.day || 25, pm: s.pm }, { title: `Edit ${w}`, cta: 'Save changes', done: 'Changes saved' })],
+      [`Log a past ${w}`, 'plus', false, () => toast(S, `Opens a past ${w} to fill in`)],
+      [`Delete ${w}`, 'trash-2', true, () => ltAlert(S, `Delete this ${w}?`, 'What already arrived stays in Flow as one-time income.', [['solidDanger', 'Delete', () => { S.st.i8src = null; render(S); toast(S, `${s.name} deleted`) }], ['ghost', 'Cancel']])],
+    ])
   }
   F8.source = (S) => { if (S.st.page !== 'paydays') setPage('paydays'); S.st.i8src = 'mom'; S.scroll.scrollTop = 0; render(S) }
   T8.source = (S) => { if (S.st.page !== 'paydays') setPage('paydays') }
@@ -307,6 +310,7 @@
       if (m.dataset.i8pm === 'income') { setPage('paydays'); return }
       return toast(S, m.dataset.i8pm)
     }
+    if (hit('data-i8asg')) { stop(); return F8.assign(S, tx6(st)) }
     if (t.closest('[data-layer-root]') || S.suppressClick) return
     if (!st.page || st.page === 'flow') {
       const as = hit('data-assign'); if (as) { stop(); closeOpen(S); return F8.assign(S, st.tx.find((x) => x.id === as.dataset.assign)) }
@@ -318,7 +322,7 @@
       if (hit('data-i8back')) { stop(); st.i8src = null; S.scroll.scrollTop = 0; return render(S) }
       if (hit('data-i8add')) { stop(); return addIncome(S) }
       if (hit('data-i8asgopen')) { stop(); return F8.assign(S, tx6(st)) }
-      if (hit('data-i8menu')) { stop(); return sourceMenu(S, st.i8src) }
+      if (hit('data-i8menu')) { stop(); return sourceMenu(S, st.i8src, hit('data-i8menu')) }
       if (hit('data-i8confirm')) { stop(); return confirmMom(S) }
     }
   }, true)

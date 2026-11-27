@@ -127,12 +127,16 @@
     const pc = (n) => Math.round((n / t.all) * 100)
     const parts = [[pc(t.pockets), 'var(--flow-band-fg)', 'Pockets', 1], [pc(t.goals), 'color-mix(in oklab, var(--flow-band-fg) 62%, transparent)', 'Goals', 0.62], [100 - pc(t.pockets) - pc(t.goals), 'color-mix(in oklab, var(--flow-band-fg) 40%, transparent)', 'Investments', 0.4]]
     const scale = [`<span class="flex gap-3">${parts.map(([p, c, l]) => legend(c, `${l} ${p}%`)).join('')}</span>`]
-    const inv = H.filter((h) => h.paid)
-    return heroBand({ label: 'Saved and invested', big: fit8(t.all), n: t.all, bar: { split: parts.map(([p, , , o]) => [p, o]), lscale: scale }, lnote: noteLine(`${B(`+${f0(ME.fit.saved)}`)} added in October`, `Investments ${B(up({ n: 1, pct: (inv.reduce((s, h) => s + h.val - h.paid, 0) / inv.reduce((s, h) => s + h.paid, 0)) * 100 }))} since bought`) }, true)
+    return heroBand({ label: 'Saved and invested', big: fit8(t.all), n: t.all, bar: { split: parts.map(([p, , , o]) => [p, o]), lscale: scale }, lnote: noteLine(`${B(`+${f0(ME.fit.saved)}`)} added in October${new9()}`) }, true)
   }
-  const splitRow = (st) => {
-    const n = Object.values(split(st)).filter((x) => x > 0).length
-    return `<div class="mx-4 mt-3 ${CARD8}"><button type="button" data-sv8="split" class="flex min-h-[64px] w-full items-center gap-3 px-4 py-2.5 text-start transition-colors hover:bg-[var(--color-brand-elevated)]">${tile('split', IC.teal)}<span class="min-w-0 flex-1"><span class="block text-[0.9375rem] font-semibold leading-snug text-[var(--color-brand-text-primary)]">Where your monthly savings go${new9()}</span><span class="mt-1 block truncate font-mono-numbers text-xs font-medium ${MUTED}">${splitSum(st)}% to ${n} items · rest to Monthly savings</span></span>${ICON('chevron-right', `size-4 shrink-0 ${MUTED}`)}</button></div>`
+  /* round-8 Monthly saving row, same look; now shows this month's leftover */
+  const planRow = (st) => {
+    const r = monthEnd(st)
+    const over = r.left <= 0
+    const done = st.sv8medone && !over
+    const right = over ? `<span class="text-[var(--color-brand-amber)]">${MINUS}${f0(-r.left)}</span>` : `${f0(r.placed)}<span class="${MUTED}"> / ${f0(r.left)}</span>`
+    const sub = over ? `October: you spent ${f0(-r.left)} more than you received` : done ? `October leftover set aside · applied Nov 1` : r.short ? `October leftover · ${f0(r.short)} fits nowhere · confirm by Nov 3` : `October leftover · confirm by Nov 3`
+    return `<div class="mx-4 mt-3 ${CARD8}"><button type="button" data-sv8="plan" class="flex min-h-[72px] w-full items-center gap-3 px-4 py-3 text-start transition-colors hover:bg-[var(--color-brand-elevated)]">${tile('calendar-check', IC.teal)}<span class="min-w-0 flex-1"><span class="flex items-baseline justify-between gap-2"><span class="truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">Monthly saving</span><span class="shrink-0 font-mono-numbers text-[0.8125rem] font-semibold text-[var(--color-brand-text-primary)]">${right}</span></span>${bar(over ? 0 : (r.placed / r.left) * 100)}<span class="mt-1.5 flex min-w-0 items-center text-xs font-medium ${MUTED}"><span class="truncate">${sub}</span>${new9()}</span></span>${ICON('chevron-right', `size-4 shrink-0 ${MUTED}`)}</button></div>`
   }
   const variantBar = (st) => `<div role="group" aria-label="Sample month end" class="mx-4 mt-3 flex items-center gap-2 rounded-2xl border border-dashed border-[var(--color-brand-border-strong)] p-1.5"><span class="ps-2 text-xs font-semibold ${MUTED}">Month end</span><div class="inline-flex min-w-0 flex-1 gap-0.5 rounded-xl bg-[var(--color-brand-elevated)] p-[3px]">${[['fit', 'Fits'], ['cap', 'Capped'], ['over', 'Overspent']].map(([k, l]) => `<button type="button" data-sv8="mev:${k}" aria-pressed="${(st.sv8me || 'fit') === k}" class="${(st.sv8me || 'fit') === k ? SEG_ON : SEG_OFF}">${l}</button>`).join('')}</div></div>`
   const acctChip = (id, n) => `<span class="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-[var(--color-brand-elevated)] px-2.5 text-xs font-semibold text-[var(--color-brand-text-primary)]">${brand(acct(id).prov, 18)}${acct(id).name}<span class="font-mono-numbers">${f0(n)}</span></span>`
@@ -187,16 +191,59 @@
     const rest = 100 - sum
     const restRow = `${SEP}<div class="flex min-h-[64px] items-center gap-3 bg-[var(--color-brand-elevated)] px-4 py-2.5">${pMark(pk('monthly'))}<span class="min-w-0 flex-1"><span class="block truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">Rest → Monthly savings</span><span class="mt-0.5 block truncate font-mono-numbers text-xs ${MUTED}">≈ ${f0(left - Object.values(sp).reduce((s, n) => s + Math.round((left * n) / 100), 0))} in October</span></span><span class="me-[34px] w-11 shrink-0 text-center font-mono-numbers text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">${rest}%</span></div>`
     const segs = Object.keys(sp).map((k) => `<span class="h-full rounded-full bg-[var(--color-brand-primary)]" style="width:${sp[k]}%"></span>`).join('')
-    return `<div class="mx-4 mt-2">${back}<h2 class="flex items-center text-[1.375rem] font-bold leading-tight text-[var(--color-brand-text-primary)]">Where your monthly savings go${new9()}</h2><p class="mt-1 text-[0.875rem] leading-snug ${SECOND}">At each month end, what’s left after spending is split like this and set aside in the accounts that hold it.</p></div>
-    <div class="mx-4 mt-4 ${CARD8} p-4"><div class="flex items-baseline justify-between"><span class="text-[0.84375rem] font-semibold text-[var(--color-brand-text-primary)]">Split</span><span class="font-mono-numbers text-[0.84375rem] font-semibold ${sum > 100 ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-text-primary)]'}">${sum}% <span class="font-medium ${MUTED}">of 100%</span></span></div><div class="mt-2 flex h-2 gap-[3px] overflow-hidden rounded-full bg-[var(--color-brand-elevated)]">${segs}</div><p class="mt-1.5 font-mono-numbers text-xs ${MUTED}">${rest}% rest goes to Monthly savings</p></div>
-    <div class="px-4 pb-8 pt-5"><section>${head('Goals and pockets', Object.keys(sp).length)}<div class="${CARD8}">${rows}${restRow}</div><div class="mt-1 flex justify-center">${textLink('spadd', `${ICON('plus', 'size-4')}Add a goal or pocket`)}</div><p class="mt-1 px-1 text-xs leading-[1.45] ${MUTED}">The total can’t go above 100%. Each share is capped at the free money in its account; what fits nowhere is shown on the month-end card, never invented.</p></section></div>`
+    return `${sectionHead('Where your monthly savings go').replace('pt-1', 'pt-5')}<p class="mx-5 -mt-1 text-[0.8125rem] leading-snug ${SECOND}">At each month end, what’s left after spending is split like this and set aside in the accounts that hold it.</p>
+    <div class="mx-4 mt-3 ${CARD8} p-4"><div class="flex items-baseline justify-between"><span class="text-[0.84375rem] font-semibold text-[var(--color-brand-text-primary)]">Split</span><span class="font-mono-numbers text-[0.84375rem] font-semibold ${sum > 100 ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-text-primary)]'}">${sum}% <span class="font-medium ${MUTED}">of 100%</span></span></div><div class="mt-2 flex h-2 gap-[3px] overflow-hidden rounded-full bg-[var(--color-brand-elevated)]">${segs}</div><p class="mt-1.5 font-mono-numbers text-xs ${MUTED}">${rest}% rest goes to Monthly savings</p></div>
+    <div class="px-4 pt-3"><div class="${CARD8}">${rows}${restRow}</div><div class="mt-1 flex justify-center">${textLink('spadd', `${ICON('plus', 'size-4')}Add a goal or pocket`)}</div><p class="mt-1 px-1 text-xs leading-[1.45] ${MUTED}">The total can’t go above 100%. Each share is capped at the free money in its account; what fits nowhere is shown above, never invented.</p></div>`
+  }
+  /* Monthly saving sheet: this month's leftover (Fits / Capped / Overspent sample) + the editable split */
+  const planSheet = (S, focusSplit) => {
+    const body = () => `${variantBar(S.st).replace('mt-3', 'mt-0')}${S.st.sv8medis ? '' : meCard(S.st)}${splitPage(S.st)}`
+    const sh = ltSheet(S, 'Monthly saving', 'This month’s leftover, and where it goes', body(), '', 90)
+    const redraw = () => { const y = sh.body.scrollTop; sh.body.innerHTML = body(); sh.body.scrollTop = y; render(S) }
+    if (focusSplit) setTimeout(() => { sh.body.scrollTop = sh.body.scrollHeight }, 0)
+    sh.el.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-sv8]'); if (!b || b.disabled) return
+      const parts = b.dataset.sv8.split(':')
+      const [k, a] = parts
+      if (k === 'mev') { S.st.sv8me = a; S.st.sv8medone = false; S.st.sv8medis = false; return redraw() }
+      if (k === 'sp') { const key = parts.slice(2).join(':'); const sp = split(S.st); sp[key] = Math.max(0, Math.min(sp[key] + (a === 'inc' ? 5 : -5), sp[key] + 100 - splitSum(S.st))); return redraw() }
+      if (k === 'spadd') return toast(S, 'Opens your goals and pockets to add one')
+      if (k !== 'me') return
+      if (a === 'ok') { S.st.sv8medone = true; redraw(); return toast(S, 'October leftover set aside') }
+      if (a === 'undo') { S.st.sv8medone = false; redraw(); return toast(S, 'Undone · nothing set aside for October') }
+      if (a === 'edit') return meEdit(S)
+      if (a === 'dismiss') { S.st.sv8medis = true; return redraw() }
+    })
+    return sh
+  }
+  /* ⋮ menu = the app's CardActionMenu: popover anchored to the tapped trigger, scrim-dismissed (mirrors src/components/ui/CardActionMenu.tsx) */
+  const cam8 = (S, trigger, items, title = '') => {
+    const root = S.vp.querySelector('[data-layer-root]')
+    const wrap = document.createElement('div')
+    wrap.setAttribute('role', 'presentation')
+    wrap.className = 'fixed inset-0'
+    wrap.style.zIndex = 400
+    root.append(wrap)
+    const o = wrap.getBoundingClientRect()
+    const a = trigger.getBoundingClientRect()
+    const W = 216
+    const left = Math.max(8, Math.min(a.right - o.left - W, o.width - W - 8))
+    const top = Math.min(a.bottom - o.top + 6, o.height - 8 - items.length * 44 - (title ? 40 : 0))
+    wrap.innerHTML = `<div role="menu" class="absolute overflow-hidden rounded-[14px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]" style="top:${top}px;left:${left}px;width:${W}px;box-shadow:var(--shadow-lg)">${title ? `<div class="truncate border-b border-[var(--color-brand-border)] px-3.5 py-2 text-[0.71875rem] font-semibold text-[var(--color-brand-text-muted)]">${title}</div>` : ''}${items.map((it, i) => `<button type="button" role="menuitem" data-cam="${i}" ${it.disabled ? 'disabled aria-disabled="true"' : ''} class="flex min-h-11 w-full items-center gap-2.5 px-3.5 py-2 text-start text-sm font-medium disabled:cursor-not-allowed disabled:opacity-45" style="color:${it.destructive ? 'var(--color-brand-red)' : 'var(--color-brand-text-primary)'};${i ? 'border-top:1px solid var(--color-brand-border)' : ''}">${it.icon ? ICON(it.icon, 'size-4 shrink-0') : ''}<span class="flex min-w-0 flex-col"><span class="truncate">${it.label}</span>${it.hint ? `<span class="truncate text-[0.71875rem] font-normal text-[var(--color-brand-text-muted)]">${it.hint}</span>` : ''}</span></button>`).join('')}</div>`
+    wrap.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const b = e.target.closest('[data-cam]')
+      if (b && b.disabled) return
+      wrap.remove()
+      if (b) items[+b.dataset.cam].onSelect()
+    })
   }
 
   /* ---------- holding detail page (unchanged) ---------- */
   const tint = (c) => `--provider-brand:${c};background:linear-gradient(160deg, color-mix(in oklab, var(--provider-brand) var(--provider-hero-amt), var(--provider-hero-base)), color-mix(in oklab, var(--provider-brand) calc(var(--provider-hero-amt) - 14%), var(--provider-hero-base)))`
   const pill = (t) => `<span class="inline-flex min-h-7 items-center gap-1.5 rounded-full bg-[color-mix(in_oklab,var(--flow-band-fg)_14%,transparent)] px-3 text-[0.78125rem] font-semibold">${t}</span>`
   const heroMark = (ic) => `<span aria-hidden="true" class="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--flow-band-mix)]">${ICON(ic, 'size-5')}</span>`
-  const menuBtn = `<button type="button" data-sv8="menu" aria-label="More actions" class="-me-1.5 flex size-11 shrink-0 items-center justify-center rounded-full">${ICON('ellipsis', 'size-5')}</button>`
+  const menuBtn = `<button type="button" data-sv8="menu" aria-label="More actions" class="-me-1.5 flex size-11 shrink-0 items-center justify-center rounded-full">${ICON('ellipsis-vertical', 'size-5')}</button>`
   const ctas = (a, b) => `<div class="mx-4 mt-3 grid grid-cols-2 gap-2"><button type="button" data-sv8="addmoney" class="${BTN.primary} ${SZ.touch}">${ICON('plus', 'size-[18px]')}${a}</button><button type="button" data-sv8="withdraw" class="${BTN_SOFT} ${SZ.touch}">${ICON('arrow-up-right', 'size-[18px]')}${b}</button></div>`
   const moveRows = (moves, cur) => moves.map(([d, t, s, n], i) => `${i ? SEP : ''}<div class="flex min-h-[60px] items-center gap-3 px-4 py-2.5">${tile(d === 'in' ? 'arrow-down-left' : 'arrow-up-right', d === 'in' ? IC.green : ['var(--color-brand-elevated)', 'var(--color-brand-text-secondary)'])}<span class="min-w-0 flex-1"><span class="block truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">${t}</span><span class="mt-1 block truncate text-xs font-medium ${MUTED}">${s}</span></span><span class="shrink-0 whitespace-nowrap font-mono-numbers text-[0.9375rem] font-medium" style="color:${typeof n === 'string' || n > 0 ? 'var(--color-brand-green)' : 'var(--color-brand-text-primary)'}">${typeof n === 'string' ? n : `${n > 0 ? '+' : MINUS}${f0(n)} <span class="text-[0.6875rem] font-normal ${MUTED}">${cur}</span>`}</span></div>`).join('')
   const empty = `<div class="flex flex-col items-center px-6 py-7 text-center"><span class="flex size-11 items-center justify-center rounded-[14px] bg-[var(--color-brand-elevated)] ${SECOND}">${ICON('arrow-left-right', 'size-5')}</span><p class="mt-3 text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">No moves yet</p><p class="mt-1 max-w-[30ch] text-[0.84375rem] leading-snug ${SECOND}">Money you add to this pocket or take out of it shows here.</p></div>`
@@ -218,9 +265,8 @@
     const S = Object.values(screens).find((x) => x.st === st)
     const h1 = S && S.el.querySelector('header h1'); if (h1) h1.textContent = 'Savings'
     const v = st.sv8v
-    if (v === 'split') return splitPage(st)
     if (v && v.startsWith('h:')) return holdPage(hd(v.slice(2)))
-    return `${variantBar(st)}${hero()}${splitRow(st)}${st.sv8medis ? '' : meCard(st)}${home(st)}`
+    return `${hero()}${planRow(st)}${home(st)}`
   }
   NAV_PAGE.Savings = 'wealth'
   setTimeout(() => { Object.values(screens).forEach((S) => { if (S.v7) return; S.el.querySelectorAll('nav a span').forEach((n) => { if (n.textContent.trim() === 'Wealth') n.textContent = 'Savings' }) }) }, 0)
@@ -328,17 +374,12 @@
 
   /* ---------- pocket: a single item, so a sheet (vertical 3-dot: Edit, Delete) ---------- */
   const mrow = (ic, t, s, act, red, dis) => `<button type="button" data-sv8m="${act}" ${dis ? 'aria-disabled="true"' : ''} class="flex min-h-[60px] w-full items-center gap-3 px-4 py-2.5 text-start ${dis ? 'opacity-60' : 'hover:bg-[var(--color-brand-elevated)]'}">${tile(ic, red && !dis ? ['var(--color-brand-red-soft)', 'var(--color-brand-red)'] : ['var(--color-brand-elevated)', 'var(--color-brand-text-secondary)'])}<span class="min-w-0 flex-1"><span class="block text-[0.9375rem] font-semibold ${red && !dis ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-text-primary)]'}">${t}</span><span class="mt-0.5 block text-xs leading-snug ${MUTED}">${s}</span></span></button>`
-  const pocketMenu = (S, p, parent) => {
-    const delSub = p.sys ? 'Monthly savings can’t be deleted. It hides when empty.' : p.home ? `Its ${f0(p.bal)} stays in ${acct(p.home).name}, back to Free to spend` : `We’ll ask what happens to its ${amtOf(p)}`
-    const body = `<div class="mx-4 overflow-hidden ${CARDBOX}">${mrow('pencil', 'Edit pocket', p.sys ? 'Name and icon' : 'Name, icon, where it’s kept', 'edit')}${SEP}${mrow('trash-2', 'Delete pocket', delSub, 'del', true, p.sys)}</div>`
-    const sh = ltSheet(S, p.name, '', body, '', 240)
-    sh.el.addEventListener('click', (e) => {
-      const b = e.target.closest('[data-sv8m]'); if (!b || b.getAttribute('aria-disabled')) return
-      if (b.dataset.sv8m === 'edit') return toast(S, 'Opens Edit pocket')
-      const gone = (msg) => () => { sh.close(); parent?.close(); toast(S, msg) }
-      if (p.home) return ltAlert(S, `Delete ${p.name}?`, `Its ${f0(p.bal)} stays in ${acct(p.home).name}, back to Free to spend. Its moves stay in Flow.`, [['solidDanger', 'Delete', gone(`${p.name} deleted`)], ['ghost', 'Cancel']])
-      ltAlert(S, `Delete ${p.name}?`, `Do you still have the ${amtOf(p)}? Keep it as something you hold, or remove it from what you own.`, [['solidDanger', 'Delete, keep the money', gone(`${p.name} deleted · ${amtOf(p)} kept as a holding`)], ['danger', 'Delete and remove it', gone(`${p.name} and its ${amtOf(p)} removed`)], ['ghost', 'Cancel']])
-    })
+  const pocketMenu = (S, p, parent, trigger) => {
+    const gone = (msg) => () => { parent?.close(); toast(S, msg) }
+    const del = () => (p.home
+      ? ltAlert(S, `Delete ${p.name}?`, `Its ${f0(p.bal)} stays in ${acct(p.home).name}, back to Free to spend. Its moves stay in Flow.`, [['solidDanger', 'Delete', gone(`${p.name} deleted`)], ['ghost', 'Cancel']])
+      : ltAlert(S, `Delete ${p.name}?`, `Do you still have the ${amtOf(p)}? Keep it as something you hold, or remove it from what you own.`, [['solidDanger', 'Delete, keep the money', gone(`${p.name} deleted · ${amtOf(p)} kept as a holding`)], ['danger', 'Delete and remove it', gone(`${p.name} and its ${amtOf(p)} removed`)], ['ghost', 'Cancel']]))
+    cam8(S, trigger, [{ label: 'Edit', icon: 'pencil', onSelect: () => toast(S, 'Opens Edit pocket') }, { label: 'Delete', icon: 'trash-2', destructive: true, disabled: !!p.sys, hint: p.sys ? 'Can’t be deleted · hides when empty' : '', onSelect: del }])
   }
   const pocketSheet = (S, p) => {
     const inBank = !!p.home
@@ -352,18 +393,14 @@
     sh.el.addEventListener('click', (e) => {
       const b = e.target.closest('[data-sv8s]'); if (!b) return
       const a = b.dataset.sv8s
-      if (a === 'menu') return pocketMenu(S, p, sh)
+      if (a === 'menu') return pocketMenu(S, p, sh, b)
       if (a === 'add') return addMoney(S, p)
       if (a === 'out') return inBank ? release(S, p) : withdraw(S, p)
-      if (a === 'split') { sh.close(); return go(S, 'split') }
+      if (a === 'split') { sh.close(); return planSheet(S, true) }
     })
     return sh
   }
-  const holdMenu = (S, h) => {
-    const body = `<div class="mx-4 overflow-hidden ${CARDBOX}"><button type="button" data-sv8m="edit" class="flex min-h-[60px] w-full items-center gap-3 px-4 text-start">${tile('pencil', ['var(--color-brand-elevated)', 'var(--color-brand-text-secondary)'])}<span class="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">Edit ${h.kind.toLowerCase()}</span></button>${SEP}<button type="button" data-sv8m="del" class="flex min-h-[60px] w-full items-center gap-3 px-4 text-start">${tile('trash-2', ['var(--color-brand-red-soft)', 'var(--color-brand-red)'])}<span class="text-[0.9375rem] font-semibold text-[var(--color-brand-red)]">Delete</span></button></div>`
-    const sh = ltSheet(S, h.name, '', body, '', 200)
-    sh.el.addEventListener('click', (e) => { const b = e.target.closest('[data-sv8m]'); if (!b) return; if (b.dataset.sv8m === 'edit') return toast(S, `Opens Edit ${h.kind.toLowerCase()}`); ltAlert(S, `Delete ${h.name}?`, 'It leaves what you hold. Purchases stay in Flow.', [['solidDanger', 'Delete', () => { sh.close(); S.st.sv8v = null; render(S); toast(S, 'Deleted') }], ['ghost', 'Cancel']]) })
-  }
+  const holdMenu = (S, h, trigger) => cam8(S, trigger, [{ label: 'Edit', icon: 'pencil', onSelect: () => toast(S, `Opens Edit ${h.kind.toLowerCase()}`) }, { label: 'Delete', icon: 'trash-2', destructive: true, onSelect: () => ltAlert(S, `Delete ${h.name}?`, 'It leaves what you hold. Purchases stay in Flow.', [['solidDanger', 'Delete', () => { S.st.sv8v = null; render(S); toast(S, 'Deleted') }], ['ghost', 'Cancel']]) }])
 
   /* ---------- month-end Edit: amounts tappable, account per item from the bank-then-account picker ---------- */
   const meEdit = (S) => {
@@ -415,34 +452,26 @@
     if (k === 'addinv') return addPocket(S, 'inv')
     if (k === 'ef') return efSheet(S)
     if (k === 'zakat') return zakatSheet(S)
-    if (k === 'split') return go(S, 'split')
-    if (k === 'spadd') return toast(S, 'Opens your goals and pockets to add one')
-    if (k === 'sp') { const key = parts.slice(2).join(':'); const sp = split(S.st); sp[key] = Math.max(0, Math.min(sp[key] + (a === 'inc' ? 5 : -5), sp[key] + 100 - splitSum(S.st))); return render(S) }
-    if (k === 'mev') { S.st.sv8me = a; S.st.sv8medone = false; S.st.sv8medis = false; return render(S) }
-    if (k === 'me') {
-      if (a === 'ok') { S.st.sv8medone = true; render(S); return toast(S, 'October leftover set aside') }
-      if (a === 'undo') { S.st.sv8medone = false; render(S); return toast(S, 'Undone · nothing set aside for October') }
-      if (a === 'edit') return meEdit(S)
-      if (a === 'dismiss') { S.st.sv8medis = true; return render(S) }
-    }
-    if (k === 'menu' && hold) return holdMenu(S, hold)
+    if (k === 'plan') return planSheet(S)
+    if (k === 'menu' && hold) return holdMenu(S, hold, b)
     if (k === 'addmoney' && hold) return hold.id === 'gold' ? addGold(S) : toast(S, `Opens ${hold.cta[0]}`)
     if (k === 'withdraw' && hold) return toast(S, `Opens ${hold.cta[1]}`)
   }, true)
 
   /* ---------- sheet bar ---------- */
-  const meVar = (S, k, done = false) => { go(S, null); S.st.sv8me = k; S.st.sv8medone = done; S.st.sv8medis = false; render(S) }
+  const meVar = (S, k, done = false, focusSplit = false) => { go(S, null); S.st.sv8me = k; S.st.sv8medone = done; S.st.sv8medis = false; render(S); return planSheet(S, focusSplit) }
   Object.assign(F8, {
+    sv8plan: (S) => meVar(S, S.st.sv8me || 'fit', !!S.st.sv8medone),
     sv8addpocket: (S) => { go(S, null); addPocket(S) },
     sv8pocket: (S) => { go(S, null); pocketSheet(S, pk('monthly')) },
     sv8pocketcar: (S) => { go(S, null); pocketSheet(S, pk('car')) },
     sv8empty: (S) => { go(S, null); pocketSheet(S, pk('cash')) },
-    sv8menu: (S) => { go(S, null); pocketMenu(S, pk('car'), pocketSheet(S, pk('car'))) },
+    sv8menu: (S) => { go(S, null); const sh = pocketSheet(S, pk('car')); setTimeout(() => pocketMenu(S, pk('car'), sh, sh.el.querySelector('[data-sv8s="menu"]')), 380) },
     sv8release: (S) => { go(S, null); release(S, pk('car')) },
     sv8gold: (S) => go(S, 'h:gold'),
     sv8addmoney: (S) => { go(S, null); addMoney(S, pk('car')); setTimeout(() => ltMethodPicker(S, 'cib', () => {}), 50) },
     sv8where: (S) => { go(S, null); whereSheet(S, null, () => {}) },
-    sv8split: (S) => go(S, 'split'),
+    sv8split: (S) => meVar(S, 'fit', false, true),
     sv8me: (S) => meVar(S, 'fit'),
     sv8mecap: (S) => meVar(S, 'cap'),
     sv8meover: (S) => meVar(S, 'over'),
@@ -452,7 +481,7 @@
     sv8zakat: (S) => { go(S, null); zakatSheet(S) },
   })
   Object.assign(T8, { sv8addmoney: (S) => AFTER.deposit(S), sv8ef: (S) => AFTER.s_ef(S), sv8zakat: (S) => AFTER.s_zakat(S), sv8gold: (S) => AFTER.s_gold(S) })
-  SHEETS8.push(['sv8me', 'Month end · fits'], ['sv8mecap', 'Month end · capped'], ['sv8meover', 'Month end · spent more'], ['sv8medone', 'Month end · applied, Undo'], ['sv8meedit', 'Month end · Edit'], ['sv8split', 'Where your monthly savings go'], ['sv8pocket', 'Pocket · Monthly savings'], ['sv8pocketcar', 'Pocket · in a bank (Release)'], ['sv8empty', 'Pocket · outside (Withdraw)'], ['sv8menu', 'Pocket menu'], ['sv8release', 'Release'], ['sv8addmoney', 'Add money · Paid with list'], ['sv8where', 'Where is this money?'], ['sv8addpocket', 'Add pocket'], ['sv8gold', 'Gold page'], ['sv8ef', 'Emergency fund'], ['sv8zakat', 'Zakat'])
-  NEW9.push('wealth', 'sv8me', 'sv8mecap', 'sv8meover', 'sv8medone', 'sv8meedit', 'sv8split', 'sv8pocket', 'sv8pocketcar', 'sv8empty', 'sv8menu', 'sv8release', 'sv8addmoney', 'sv8where', 'sv8addpocket')
-  NOTES8.wealth = 'Savings: “Saved and invested” hero, a row to “Where your monthly savings go”, the October month-end card (Fits / Capped / Spent more at the top), then Pockets, Goals (savings goals with their homes), Savings accounts (one row, in Accounts), Investments, Emergency fund and Zakat. A pocket opens as a sheet: Add money plus Release (in a bank) or Withdraw (outside), Edit and Delete under the vertical 3-dot.'
+  SHEETS8.push(['sv8plan', 'Monthly saving sheet'], ['sv8me', 'Monthly saving · fits'], ['sv8mecap', 'Monthly saving · capped'], ['sv8meover', 'Monthly saving · overspent'], ['sv8medone', 'Monthly saving · applied, Undo'], ['sv8meedit', 'Monthly saving · Edit'], ['sv8split', 'Monthly saving · the split'], ['sv8pocket', 'Pocket · Monthly savings'], ['sv8pocketcar', 'Pocket · in a bank (Release)'], ['sv8empty', 'Pocket · outside (Withdraw)'], ['sv8menu', 'Pocket menu'], ['sv8release', 'Release'], ['sv8addmoney', 'Add money · Paid with list'], ['sv8where', 'Where is this money?'], ['sv8addpocket', 'Add pocket'], ['sv8gold', 'Gold page'], ['sv8ef', 'Emergency fund'], ['sv8zakat', 'Zakat'])
+  NEW9.push('wealth', 'sv8plan', 'sv8me', 'sv8mecap', 'sv8meover', 'sv8medone', 'sv8meedit', 'sv8split', 'sv8pocket', 'sv8pocketcar', 'sv8empty', 'sv8menu', 'sv8release', 'sv8addmoney', 'sv8where', 'sv8addpocket')
+  NOTES8.wealth = 'Savings: “Saved and invested” hero, the Monthly saving row (its sheet holds this month’s leftover with Fits / Capped / Overspent, Confirm / Edit / Undo, and the editable “Where your monthly savings go” split), then Pockets, Goals (savings goals with their homes), Savings accounts (one row, in Accounts), Investments, Emergency fund and Zakat. A pocket opens as a sheet: Add money plus Release (in a bank) or Withdraw (outside); its ⋮ opens the anchored card menu (Edit, Delete).'
 }
