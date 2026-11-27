@@ -70,7 +70,13 @@ const paymentMethodTypeSchema = z.enum([
   'other',
 ])
 
-/** Validates JSON passed to `importData` in the finance store. */
+const installmentItemTypeSchema = z.enum(['phone', 'laptop', 'appliance', 'furniture', 'car', 'other'])
+
+/**
+ * Validates JSON passed to `importData` in the finance store. Record schemas are loose: a field this file does not
+ * list passes through untouched, because importData writes the result over the store and syncs it, so a stripped
+ * field would be wiped on the server too. Only the top level strips unknown keys, so a file cannot add store keys.
+ */
 export const importDataSchema = z.object({
   profile: z
     .object({
@@ -83,15 +89,25 @@ export const importDataSchema = z.object({
       city: z.string().optional(),
       phone: z.string().optional(),
       gender: z.enum(['male', 'female', 'prefer_not_to_say']).nullable().optional(),
-      baseCurrency: currencySchema,
+      baseCurrency: currencySchema.optional(),
       household: z.enum(['solo', 'couple', 'family']).nullable().optional(),
       lifestyleTier: z.enum(['minimal', 'balanced', 'comfortable']).nullable().optional(),
       foodFrequency: z.enum(['everyday', 'mostdays', 'sometimes', 'rarely']).nullable().optional(),
       transportMode: z.enum(['public', 'car', 'taxi', 'walk']).nullable().optional(),
       monthlyRent: z.number().nullable().optional(),
       rentIncludesUtilities: z.boolean().optional(),
+      defaultCarryPocketId: z.string().nullable().optional(),
+      savingsSplit: z.array(z.looseObject({ target_id: z.string(), pct: z.number() })).optional(),
+      emergencyFundConfig: z.looseObject({ targetMonths: z.number() }).nullable().optional(),
+      zakatConfig: z
+        .looseObject({ nisabBasis: z.enum(['silver', 'gold']), holdsForTrading: z.boolean() })
+        .nullable()
+        .optional(),
+      financialProfile: z.looseObject({}).nullable().optional(),
       createdAt: z.string(),
     })
+      // Currency lives in settings since store v18; older backups still carry it on the profile.
+      .transform(({ baseCurrency: _baseCurrency, ...p }) => p)
     .optional(),
   settings: z
     .object({
@@ -117,14 +133,19 @@ export const importDataSchema = z.object({
     .optional(),
   incomeSources: z
     .array(
-      z.object({
+      z.looseObject({
         id: z.string(),
         name: z.string(),
         amount: z.number(),
         currency: fiatCurrencySchema,
         isRecurring: z.boolean(),
         recurringFrequency: z.enum(['monthly', 'biweekly', 'weekly']).optional(),
+        irregular: z.boolean().optional(),
         dayOfMonth: z.number().int().min(1).max(31).optional(),
+        paydayDays: z.array(z.number().int().min(1).max(31)).optional(),
+        paydayDriftDays: z.number().nullable().optional(),
+        icon: z.string().optional(),
+        sortOrder: z.number().optional(),
         notes: z.string().optional(),
         createdAt: z.string(),
         updatedAt: z.string().optional(),
@@ -158,7 +179,7 @@ export const importDataSchema = z.object({
     .optional(),
   incomeEvents: z
     .array(
-      z.object({
+      z.looseObject({
         id: z.string(),
         occurredAt: stampString.optional(),
         templateId: z.string().nullable().optional(),
@@ -192,12 +213,13 @@ export const importDataSchema = z.object({
         updatedAt: z.string().optional(),
       })
         // smsLogId is dropped on import: a restore into the same account would hit the unique booking index (23505).
-        .transform(({ smsLogId: _smsLogId, ...o }) => ({ ...o, updatedAt: o.updatedAt ?? o.createdAt }))
+        // serverRev is dropped too: echoing a stale row version makes the server keep its values over the restore.
+        .transform(({ smsLogId: _smsLogId, serverRev: _serverRev, ...o }) => ({ ...o, updatedAt: o.updatedAt ?? o.createdAt }))
     )
     .optional(),
   expenses: z
     .array(
-      z.object({
+      z.looseObject({
         id: z.string(),
         occurredAt: stampString.optional(),
         toPaymentMethodId: z.string().optional(),
@@ -223,11 +245,13 @@ export const importDataSchema = z.object({
         linkedDebtId: z.string().optional(),
         isDebtPayment: z.boolean().optional(),
       })
+        // Same as income events: the SMS booking key and the server row version stay with the server.
+        .transform(({ smsLogId: _smsLogId, serverRev: _serverRev, ...o }) => o)
     )
     .optional(),
   recurringExpenses: z
     .array(
-      z.object({
+      z.looseObject({
         id: z.string(),
         description: z.string(),
         category: z.string(),
@@ -244,7 +268,7 @@ export const importDataSchema = z.object({
     .optional(),
   budgetCategories: z
     .array(
-      z.object({
+      z.looseObject({
         category: z.string(),
         budgetedAmount: z.number(),
         currency: fiatCurrencySchema,
@@ -254,13 +278,13 @@ export const importDataSchema = z.object({
     )
     .optional(),
   budgetPlanActivations: z
-    .array(z.object({ id: z.string(), planId: z.string(), effectiveFrom: dayString, createdAt: z.string() }))
+    .array(z.looseObject({ id: z.string(), planId: z.string(), effectiveFrom: dayString, createdAt: z.string() }))
     .optional(),
   receipts: z.array(z.looseObject({ id: z.string() })).optional(),
   investmentHoldings: z.array(z.looseObject({ id: z.string() })).optional(),
   accountAdjustments: z
     .array(
-      z.object({
+      z.looseObject({
         id: z.string(),
         paymentMethodId: z.string(),
         delta: z.number(),
@@ -275,7 +299,7 @@ export const importDataSchema = z.object({
     .optional(),
   buddgyMemories: z
     .array(
-      z.object({
+      z.looseObject({
         id: z.string(),
         text: z.string().max(280),
         kind: z.enum(['fact', 'preference', 'constraint']),
@@ -289,7 +313,7 @@ export const importDataSchema = z.object({
     .optional(),
   budgetPlans: z
     .array(
-      z.object({
+      z.looseObject({
         id: z.string(),
         name: z.string(),
         createdAt: z.string(),
@@ -300,7 +324,7 @@ export const importDataSchema = z.object({
         intent: z.enum(['balanced', 'saver', 'debt_crusher', 'custom']).optional(),
         origin: z.enum(['ai', 'manual', 'template', 'clone']).optional(),
         incomeOverride: z.number().min(0).nullable().optional(),
-        rationale: z.object({ reasons: z.array(z.string()), risks: z.array(z.string()).optional() }).nullable().optional(),
+        rationale: z.looseObject({ reasons: z.array(z.string()), risks: z.array(z.string()).optional() }).nullable().optional(),
         engineVersion: z.string().nullable().optional(),
         buddgyFlow: z
           .object({
@@ -314,7 +338,7 @@ export const importDataSchema = z.object({
             flowFinished: z.boolean().optional(),
             aiSuggestions: z
               .array(
-                z.object({
+                z.looseObject({
                   name: z.string(),
                   emoji: z.string(),
                   amount: z.number(),
@@ -326,7 +350,7 @@ export const importDataSchema = z.object({
           .nullable()
           .optional(),
         categories: z.array(
-          z.object({
+          z.looseObject({
             id: z.string(),
             name: z.string(),
             icon: z.string(),
@@ -343,7 +367,7 @@ export const importDataSchema = z.object({
             confidence: z.enum(['high', 'estimated']).nullable().optional(),
             expenseCategories: z.array(z.string()).optional(),
             subcategories: z.array(
-              z.object({
+              z.looseObject({
                 id: z.string(),
                 name: z.string(),
                 amount: z.number(),
@@ -358,7 +382,7 @@ export const importDataSchema = z.object({
   activeBudgetPlanId: z.string().nullable().optional(),
   savingsHoldings: z
     .array(
-      z.object({
+      z.looseObject({
         id: z.string(),
         name: z.string(),
         bucket: z.enum(['liquid', 'investment']),
@@ -374,7 +398,7 @@ export const importDataSchema = z.object({
     .optional(),
   savingsAccounts: z
     .array(
-      z.object({
+      z.looseObject({
         id: z.string(),
         heldInPaymentMethodId: z.string().optional(),
         name: z.string(),
@@ -395,7 +419,7 @@ export const importDataSchema = z.object({
     .optional(),
   recurringSavingsDeposits: z
     .array(
-      z.object({
+      z.looseObject({
         id: z.string(),
         accountId: z.string(),
         amount: z.number(),
@@ -411,7 +435,7 @@ export const importDataSchema = z.object({
     .optional(),
   savingsTransactions: z
     .array(
-      z.object({
+      z.looseObject({
         id: z.string(),
         occurredAt: stampString.optional(),
         paymentMethodId: z.string().optional(),
@@ -423,6 +447,8 @@ export const importDataSchema = z.object({
         source: z.string().optional(),
         notes: z.string().optional(),
         isAutoSave: z.boolean().optional(),
+        isCashFlow: z.boolean().optional(),
+        transferGroupId: z.string().optional(),
         idempotencyKey: z.string().optional(),
         pairId: z.string().optional(),
         accountAmount: z.number().optional(),
@@ -431,7 +457,7 @@ export const importDataSchema = z.object({
     .optional(),
   paymentMethods: z
     .array(
-      z.object({
+      z.looseObject({
         id: z.string(),
         parentId: z.string().optional(),
         paysFromPaymentMethodId: z.string().optional(),
@@ -455,7 +481,7 @@ export const importDataSchema = z.object({
     .optional(),
   debts: z
     .array(
-      z.object({
+      z.looseObject({
         id: z.string(),
         name: z.string(),
         person: z.string(),
@@ -477,6 +503,9 @@ export const importDataSchema = z.object({
         linkedPaymentMethodId: z.string().optional(),
         minimumPaymentPercent: z.number().optional(),
         installmentProvider: z.enum(['credit_card', 'tabby', 'tamara', 'other']).optional(),
+        installmentProviderName: z.string().optional(),
+        installmentItemType: installmentItemTypeSchema.optional(),
+        installmentItemIcon: z.string().optional(),
         linkedCreditCardDebtId: z.string().optional(),
         principalPaymentMethodId: z.string().optional(),
         defaultPaymentMethodId: z.string().optional(),
@@ -507,7 +536,7 @@ export const importDataSchema = z.object({
     .optional(),
   debtPayments: z
     .array(
-      z.object({
+      z.looseObject({
         id: z.string(),
         occurredAt: stampString.optional(),
         debtId: z.string(),
@@ -525,7 +554,7 @@ export const importDataSchema = z.object({
     .optional(),
   recurringDebtPayments: z
     .array(
-      z.object({
+      z.looseObject({
         id: z.string(),
         debtId: z.string(),
         amount: z.number(),
@@ -542,7 +571,7 @@ export const importDataSchema = z.object({
   financialGoalsNotes: z.string().optional(),
   subscriptions: z
     .array(
-      z.object({
+      z.looseObject({
         id: z.string(),
         name: z.string(),
         brandKey: z.string().nullable(),
@@ -570,7 +599,7 @@ export const importDataSchema = z.object({
         trialEnd: z.string().nullable().optional(),
         endsOn: z.string().nullable().optional(),
         pausedAt: z.string().nullable().optional(),
-        priceHistory: z.array(z.object({ amount: z.number(), from: z.string() })).optional(),
+        priceHistory: z.array(z.looseObject({ amount: z.number(), from: z.string() })).optional(),
         pendingPlanFrom: z.string().nullable().optional(),
         sharedWith: z.array(z.string()).nullable().optional(),
         myShare: z.number().nullable().optional(),
@@ -579,7 +608,7 @@ export const importDataSchema = z.object({
     .optional(),
   goals: z
     .array(
-      z.object({
+      z.looseObject({
         id: z.string(),
         name: z.string(),
         emoji: z.string(),

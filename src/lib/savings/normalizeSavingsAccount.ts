@@ -18,16 +18,20 @@ function coerceCategory(type: SavingsType, raw: unknown): SavingsAccountCategory
 }
 
 /**
- * Coerce imported or legacy persisted rows into the current `SavingsAccount` shape.
+ * Coerce imported or legacy persisted rows into the current `SavingsAccount` shape. Fields it does not coerce are kept
+ * as they are (held-in account, colour, maturity, return...): a restore must not drop them. Only the retired `autoSave`
+ * is removed.
  */
 export function normalizeSavingsAccountRow(row: unknown): SavingsAccount {
-  const a = row as Partial<SavingsAccount> & { emoji?: string; autoSave?: unknown }
+  const { autoSave: _retired, ...a } = row as Partial<SavingsAccount> & { emoji?: string; autoSave?: unknown }
+  void _retired
   const type = coerceType(a.type)
   const category = coerceCategory(type, a.category)
   const icon =
     typeof a.icon === 'string' && a.icon.trim() ? a.icon.trim() : SAVINGS_TYPE_ICONS[type]
 
   return {
+    ...a,
     id: String(a.id ?? ''),
     name: String(a.name ?? 'Savings'),
     category,
