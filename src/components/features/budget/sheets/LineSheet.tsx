@@ -29,6 +29,7 @@ import { joinList, useBudgetLtCopy } from '@/lib/i18n/budgetLtCopy'
 import type { LineView, PlanView } from '@/lib/budget/planView.types'
 import type { BudgetPlanCategory } from '@/lib/store/types'
 import { formatFlex, formatWhole } from '@/lib/utils/formatters'
+import { tryConvertCurrency } from '@/lib/utils/currency'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 import { useLightTouchCopy } from '@/lib/i18n/lightTouchCopy'
 
@@ -73,6 +74,8 @@ function LineForm({
   const linked = !!line.linkType && line.linkType !== 'none'
   const shown = Math.round(lv.amount * 100) / 100
   const [amount, setAmount] = useState(String(shown))
+  // v9: the currency beside the amount is the shared inline picker; the line is still written in base money.
+  const [cur, setCur] = useState<string>(view.base)
   const [essential, setEssential] = useState(!!line.essential)
   const [locked, setLocked] = useState(!!line.locked)
   const initialDue = lv.dueDay ?? line.dueDay ?? null
@@ -88,7 +91,9 @@ function LineForm({
     [linked, line.name, categories, expenses, monthStartDay, view.base, rates],
   )
   const parsed = Number(amount)
-  const value = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0
+  const typed = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0
+  const converted = cur === view.base ? typed : tryConvertCurrency(typed, cur, view.base, rates)
+  const value = converted === null ? 0 : Math.round(converted * 100) / 100
   const pct = view.income > 0 ? Math.round((value / view.income) * 100) : 0
   const liveDiffers = linked && lv.liveAmount !== null && Math.round(lv.liveAmount) !== Math.round(lv.amount)
   const catsChanged = categories.join('|') !== (line.expenseCategories ?? []).join('|')
@@ -96,7 +101,7 @@ function LineForm({
     { amount: shown, essential: !!line.essential, locked: !!line.locked, dueDay: initialDue, categories: line.expenseCategories ?? [] },
     { amount: value, essential, locked, dueDay, categories },
     linked,
-  )
+  ) && converted !== null
 
   const save = () => {
     const patch = lineEditPatch({ shown, value, base: view.base, linked, essential, locked, isBill: lv.block === 'bills', dueDay })
@@ -141,9 +146,11 @@ function LineForm({
           <AmountHero
             value={amount}
             onChange={setAmount}
-            currency={view.base}
+            currency={cur}
+            onCurrencyChange={setCur}
+            base={view.base}
             // Mockup `s_line`: "EGP a month" is a small 15px caption beside the digits, not the big currency code.
-            unit={<span className="font-sans text-[0.9375rem] tracking-normal">{`${view.base} ${lt.perMonth}`}</span>}
+            unit={<span className="font-sans text-[0.9375rem] tracking-normal">{`${cur} ${lt.perMonth}`}</span>}
             line={lt.ofIncome(pct)}
             aria-label={c.line.amountLabel}
             className="px-0 pb-0"

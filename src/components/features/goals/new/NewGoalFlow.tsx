@@ -16,6 +16,7 @@ import { IconPickerSheet } from '@/components/features/goals/IconPickerSheet'
 import { goalCategoryLabelKey } from '@/components/features/goals/goalCategoryLabel'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { MoneySourceField, type MoneySource } from '@/components/features/savings-v3/MoneySourceField'
+import { useSavingsV9Copy } from '@/lib/i18n/savingsV9Copy'
 import { useDiscardPrompt } from '@/components/features/savings-v3/useDiscardPrompt'
 import type { PocketVM } from '@/components/features/savings-v3/types'
 import { accountTitle } from '@/components/features/accounts/accountDisplay'
@@ -63,6 +64,7 @@ function SavedBlock({ form }: { form: Form }) {
   const c = lt.goals
   const t = useT()
   const sf = t.savingsForms
+  const v9 = useSavingsV9Copy().goals
   const accounts = useFinanceStore((s) => s.savingsAccounts)
   const kind = form.savedKind
   const pockets: PocketVM[] = useMemo(
@@ -98,7 +100,10 @@ function SavedBlock({ form }: { form: Form }) {
 
   return (
     <div className="mt-1">
-      <p className="mb-2 ms-1 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{c.savedTitle}</p>
+      {/* v9: "Already saved · optional" heads the block; the amount comes first, then where it is. */}
+      <p className="mb-2 ms-1 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
+        {v9.alreadySaved} <span className="font-medium normal-case tracking-normal">· {v9.optional}</span>
+      </p>
       <MoneySourceField
         value={value}
         onChange={pick}
@@ -108,13 +113,13 @@ function SavedBlock({ form }: { form: Form }) {
         look="grouped"
       >
         <PickerRow
-          label={c.alreadySaved}
+          label={t.wealthSheets.money.amount}
           value={
             <AmountTextInput
               value={form.alreadySaved}
               onChange={form.setAlreadySaved}
               currency={form.currency}
-              placeholder={c.alreadySavedPlaceholder}
+              placeholder="0"
               aria-label={c.alreadySaved}
               className="w-full min-w-0 bg-transparent text-end font-mono-numbers outline-none placeholder:text-[var(--color-brand-text-muted)]"
             />
