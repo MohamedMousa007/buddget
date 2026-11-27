@@ -40,6 +40,8 @@ export interface WealthListProps {
    * pocket); tapping it shows or hides them, each with its own menu as before.
    */
   goalPocketIds?: ReadonlySet<string>
+  /** Section heading (v9 Savings "Investments" with its count, 17px). Default: the small-caps "Holdings". */
+  heading?: { title: string; count: number; addLabel: string }
 }
 
 /** Return since bought, from the holding's own cost per unit; null without a cost in the price's currency. */
@@ -97,7 +99,7 @@ export function rowTitle(row: WealthRowVM, systemNames: ReturnType<typeof useT>[
 }
 
 /** Light touch Holdings: every balance and position in one rounded list; the quiet "+ Add" sits in the section head. */
-export function WealthList({ rows, onRowPress, onAdd, goalLines, currency, goalPocketIds }: WealthListProps) {
+export function WealthList({ rows, onRowPress, onAdd, goalLines, currency, goalPocketIds, heading }: WealthListProps) {
   const t = useT().wealthPage
   const sf = useT().savingsForms
   const lt = useWealthLtCopy()
@@ -123,10 +125,17 @@ export function WealthList({ rows, onRowPress, onAdd, goalLines, currency, goalP
   return (
     <section className="px-4 lg:px-0">
       <div className="mb-1 flex min-h-11 items-center gap-2 ps-1">
-        <h2 className="text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{lt.holdings}</h2>
+        {heading ? (
+          <>
+            <h2 className="text-[17px] font-bold text-[var(--color-brand-text-primary)]">{heading.title}</h2>
+            <span className="font-mono-numbers text-[0.8125rem] font-semibold text-[var(--color-brand-text-muted)]">{heading.count}</span>
+          </>
+        ) : (
+          <h2 className="text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{lt.holdings}</h2>
+        )}
         <Button variant="ghost" size="touch" onClick={onAdd} aria-label={t.addPocketOrAsset}
           className="ms-auto gap-1 px-1 text-[0.875rem] font-semibold text-[var(--color-brand-primary-ink)] hover:text-[var(--color-brand-primary-ink)] [&_svg:not([class*='size-'])]:size-4">
-          <Plus aria-hidden />{lt.add}
+          <Plus aria-hidden />{heading?.addLabel ?? lt.add}
         </Button>
       </div>
       {rows.length === 0 ? (

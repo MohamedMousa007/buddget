@@ -11,20 +11,18 @@ import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccount
 import { AssetFormSheet } from '@/components/features/savings-v3/AssetFormSheet'
 import { PocketFormSheet } from '@/components/features/savings-v3/PocketFormSheet'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
-import { accountTitle } from '@/components/features/accounts/accountDisplay'
+import { Card } from '@/components/ui/card'
+import { BankAccountPicker } from '@/components/features/savings-v3/BankAccountPicker'
+import { useSavingsV9Copy } from '@/lib/i18n/savingsV9Copy'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { POCKET_KINDS, type PocketKind, type PocketKindDef } from '@/lib/savings/pocketKinds'
 import { micro as label } from '@/lib/ui/microLabelStyle'
-import type { Currency, InvestmentAssetType, PaymentMethod, SavingsType } from '@/lib/store/types'
+import type { Currency, InvestmentAssetType, PaymentMethod } from '@/lib/store/types'
 
 type Tab = 'pocket' | 'investment'
 
 const KINDS: PocketKind[] = ['bank', 'cash', 'certificate', 'wallet']
-const HOLDS_MONEY = new Set(['bank_account', 'wallet', 'prepaid_card', 'debit_card'])
-const PM_TYPE_LABEL: Record<string, string> = {
-  bank_account: 'Bank account', debit_card: 'Debit card', wallet: 'Wallet', prepaid_card: 'Prepaid',
-}
 
 const tint = (color: string, pct: number) => `color-mix(in oklab, ${color} ${pct}%, transparent)`
 
@@ -55,7 +53,7 @@ export function AddHoldingSheet({ open, ...rest }: AddHoldingSheetProps) {
 function AddHoldingBody({ onClose, initialTab, presetAssetType, pocketOnly, onPocketCreated }: Omit<AddHoldingSheetProps, 'open'>) {
   const t = useT().addHolding
   const sf = useT().savingsForms
-  const paymentMethods = useFinanceStore((s) => s.paymentMethods)
+  const v9 = useSavingsV9Copy()
   const wealthGoldStrip = useFinanceStore((s) => s.settings.wealthGoldStrip)
   const updateSettings = useFinanceStore((s) => s.updateSettings)
 
@@ -64,8 +62,6 @@ function AddHoldingBody({ onClose, initialTab, presetAssetType, pocketOnly, onPo
   const [method, setMethod] = useState<PaymentMethod | null>(null)
   const [formDef, setFormDef] = useState<{ def: PocketKindDef; method: PaymentMethod | null } | null>(null)
   const [asset, setAsset] = useState<InvestmentAssetType | null>(presetAssetType ?? null)
-
-  const holdablePms = paymentMethods.filter((pm) => HOLDS_MONEY.has(pm.type))
 
   const pickKind = (k: PocketKind) => { setKind(k); setMethod(null) }
   const pickMethod = (pm: PaymentMethod) => { setMethod(pm); setKind(null) }
@@ -82,7 +78,7 @@ function AddHoldingBody({ onClose, initialTab, presetAssetType, pocketOnly, onPo
       <ModalShell open={!formDef && !asset} onBackdropClick={onClose} scrollChild>
         <div className="flex min-h-0 flex-1 flex-col">
           <V3SheetHeader onClose={onClose}>
-            <V3SheetHeader.Title>{t.title}</V3SheetHeader.Title>
+            <V3SheetHeader.Title>{tab === 'pocket' ? v9.page.addPocket : t.title}</V3SheetHeader.Title>
             <V3SheetHeader.Subtitle>{tab === 'pocket' ? t.subtitlePocket : t.subtitleInvestment}</V3SheetHeader.Subtitle>
           </V3SheetHeader>
 
@@ -98,31 +94,13 @@ function AddHoldingBody({ onClose, initialTab, presetAssetType, pocketOnly, onPo
 
             {tab === 'pocket' ? (
               <>
-                {holdablePms.length > 0 && (
-                  <div>
-                    <p style={label}>{t.fromAccount}</p>
-                    <div className="mt-2 space-y-2.5" role="radiogroup" aria-label={t.fromAccount}>
-                      {holdablePms.map((pm) => {
-                        const kindDef = pm.type === 'wallet' ? POCKET_KINDS.wallet : POCKET_KINDS.bank
-                        return (
-                          <SelectableCard key={pm.id} selected={method?.id === pm.id} onClick={() => pickMethod(pm)}>
-                            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-card)] text-[var(--color-brand-text-secondary)]">
-                              <SavingsAccountIcon account={{ type: kindDef.savingsType as SavingsType, icon: kindDef.icon }} className="h-5 w-5" />
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">
-                                {accountTitle(pm)}{pm.last4 ? <span className="font-mono-numbers"> ••{pm.last4}</span> : null}
-                              </p>
-                              <p className="truncate text-xs text-[var(--color-brand-text-muted)]">
-                                {`${PM_TYPE_LABEL[pm.type] ?? ''} · ${pm.currency}`}
-                              </p>
-                            </div>
-                          </SelectableCard>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
+                <div>
+                  <p style={label}>{v9.picker.title}</p>
+                  <Card padding="none" className="mt-2 overflow-hidden">
+                    <BankAccountPicker value={method} onChange={pickMethod} />
+                  </Card>
+                  <p className="mt-2 px-1 text-xs leading-relaxed text-[var(--color-brand-text-muted)]">{v9.picker.groupNote}</p>
+                </div>
 
                 <div>
                   <p style={label}>{t.startFromKind}</p>
@@ -143,7 +121,7 @@ function AddHoldingBody({ onClose, initialTab, presetAssetType, pocketOnly, onPo
                 </div>
 
                 <Button size="cta-block" onClick={proceed} disabled={!kind && !method} className="font-semibold">
-                  {t.continue}
+                  {v9.page.addPocket}
                 </Button>
               </>
             ) : (

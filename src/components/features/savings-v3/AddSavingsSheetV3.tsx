@@ -27,6 +27,11 @@ import { localTodayISO } from '@/lib/utils/localDate'
 import { manualOccurredAt } from '@/lib/time/occurredAt'
 import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
 import type { Currency } from '@/lib/store/types'
+import { WhereMoneySheet, type MoneyWhere } from '@/components/features/savings-v3/WhereMoneySheet'
+import { useSavingsV9Copy } from '@/lib/i18n/savingsV9Copy'
+import { ensureCashAccount } from '@/lib/accounts/actions'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { navigate } from '@/lib/navigation/navigate'
 
 export interface AddSavingsSheetV3Props {
   open: boolean
@@ -67,6 +72,20 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
     if (source.kind === 'pocket' && source.id === id) setSource({ kind: 'account' })
   }
   const [note, setNote] = useState('')
+  const where = useSavingsV9Copy().where
+  const [whereOpen, setWhereOpen] = useState(false)
+  const [whereIs, setWhereIs] = useState<MoneyWhere | null>(null)
+  // Outside money is counted where it really is (final-ui v9): Cash is the Cash account; a new account is added first.
+  const pickWhere = (w: MoneyWhere) => {
+    setWhereOpen(false)
+    if (w === 'cash') return setSource({ kind: 'account', id: ensureCashAccount() })
+    if (w === 'new') {
+      onClose()
+      useSettingsStore.getState().openAddAccountWithPrefill({ provider: '', last4: '' })
+      return navigate('/accounts')
+    }
+    setWhereIs(w)
+  }
   const discard = useDiscardPrompt(amount.trim() !== '' || note.trim() !== '', onClose)
 
   const amountNum = parseFloat(amount) || 0
@@ -80,7 +99,7 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
     ? null
     : guard.refusalFor({ amount: amountNum, currency, mode: effective.kind === 'outside' ? 'declare' : 'allocate', fromAccountId: effective.id ?? null })
   const pocketShort = fromPocket && fromPocket.currency === currency && amountNum > fromPocket.currentBalance
-  const canSubmit = amountNum > 0 && !!selected && !refusal && !pocketShort && (effective.kind !== 'pocket' || (!!fromPocket && fromPocket.id !== selected.account.id))
+  const canSubmit = amountNum > 0 && !!selected && !refusal && !pocketShort && (effective.kind !== 'pocket' || (!!fromPocket && fromPocket.id !== selected.account.id)) && (effective.kind !== 'outside' || whereIs !== null)
 
   const sourceLine = (() => {
     if (effective.kind === 'outside') return c.srcOutside
@@ -149,6 +168,12 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
             paymentMethods={leg.views.map((v) => v.method)}
             pockets={pockets}
             excludePocketIds={selected ? [selected.account.id] : undefined}
+            outsidePick={{
+              value: whereIs === 'gold'
+                ? <span dir="auto" className="truncate">{where.gold}</span>
+                : <span className="text-[0.875rem] font-semibold text-[var(--color-brand-primary-ink)]">{where.row}</span>,
+              onPress: () => setWhereOpen(true),
+            }}
           >
             <PocketPickerField look="row" pockets={pockets} value={selected?.account.id ?? null} onChange={pickPocket} label={c.into} onAdd={() => setAddingPocket(true)} />
           </MoneySourceField>
@@ -174,6 +199,7 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
       </div>
     </ModalShell>
     {/* A sibling sheet above this one, so the typed amount survives creating a pocket. */}
+    <WhereMoneySheet open={whereOpen} value={whereIs} onPick={pickWhere} onClose={() => setWhereOpen(false)} />
     <AddHoldingSheet open={addingPocket} pocketOnly onClose={() => setAddingPocket(false)} onPocketCreated={pickPocket} />
     </>
   )

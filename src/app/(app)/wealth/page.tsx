@@ -4,8 +4,7 @@ import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
 import { selectActivePlan } from '@/lib/budget/activePlan'
 import { useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { ArrowDownLeft, ArrowUpRight, Pencil, Plus, RefreshCw, Trash2, TriangleAlert } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { ArrowDownLeft, ArrowUpRight, Pencil, RefreshCw, Trash2, TriangleAlert } from 'lucide-react'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { StatusPill } from '@/components/ui/StatusPill'
@@ -15,7 +14,6 @@ import { deleteHoldingWithUndo, deletePocketWithUndo } from '@/lib/savings/pocke
 import { PageGrid } from '@/components/layout/PageGrid'
 import { PageHero } from '@/components/layout/PageHero'
 import { FlowStickyStrip } from '@/components/features/flow/FlowStickyStrip'
-import { ActivityLedger } from '@/components/features/savings-v3/ActivityLedger'
 import { AddHoldingSheet } from '@/components/features/savings-v3/AddHoldingSheet'
 import { AddSavingsSheetV3 } from '@/components/features/savings-v3/AddSavingsSheetV3'
 import { EmergencyFundSheet } from '@/components/features/savings-v3/EmergencyFundSheet'
@@ -27,6 +25,18 @@ import { monthNames } from '@/lib/i18n/dateFormat'
 import { SavingsHero, type HeroSplitSegment } from '@/components/features/savings-v3/SavingsHero'
 import { WealthPlanRows } from '@/components/features/savings-v3/WealthPlanRows'
 import { WealthList } from '@/components/features/savings-v3/WealthList'
+import { GoalsSection, PocketsSection, SavingsAccountsSection, type PocketItem } from '@/components/features/savings-v3/SavingsSections'
+import { PocketSheet } from '@/components/features/savings-v3/PocketSheet'
+import { ReleaseSheet } from '@/components/features/savings-v3/ReleaseSheet'
+import { useGoalRows } from '@/hooks/useGoalRows'
+import { useAccounts } from '@/lib/accounts/useAccounts'
+import { partitionGoals } from '@/lib/goals/partitionGoals'
+import { partsOfGoal } from '@/lib/goals/computeGoalProgress'
+import { isMonthlySavingsPart } from '@/lib/savings/canDeletePocket'
+import { useSavingsV9Copy } from '@/lib/i18n/savingsV9Copy'
+import { navigate } from '@/lib/navigation/navigate'
+import { cashSavingsDepositsInBaseForMonth } from '@/lib/utils/calculations'
+import { tryConvertCurrency } from '@/lib/utils/currency'
 import { WithdrawSheetV3 } from '@/components/features/savings-v3/WithdrawSheetV3'
 import { ZakatBasisPrompt } from '@/components/features/savings-v3/ZakatBasisPrompt'
 import { ZakatSheet } from '@/components/features/savings-v3/ZakatSheet'
@@ -47,10 +57,8 @@ import { useLocale, useT } from '@/lib/i18n'
 import { useWealthLtCopy } from '@/lib/i18n/wealthLtCopy'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { localTodayISO } from '@/lib/utils/localDate'
-import { buildGoalProgressContext, computeGoalProgress } from '@/lib/goals/computeGoalProgress'
 import { computeEmergencyFund } from '@/lib/savings/emergencyFund'
 import { parseDateOnly } from '@/lib/time/calendarDays'
-import { changePct, formatChangePct } from '@/lib/utils/changePct'
 import { deriveHawl } from '@/lib/savings/hawl'
 import { deriveSimpleMonth } from '@/lib/savings/simpleMonth'
 import { savingsAccountBalanceInBase } from '@/lib/savings/savingsConversions'
@@ -83,8 +91,7 @@ export default function WealthPage() {
   const wl = useWealthLtCopy()
   const {
     savingsAccounts, savingsTransactions, investmentHoldings, goals, profile, settings, exchangeRates,
-    budgetPlans, activeBudgetPlanId, debts, goldPricePerGram, goldPriceAvailable, expenses, debtPayments,
-    paymentMethods, ledgerDebts, ledgerDebtPayments, incomeEvents, accountAdjustments, goldPriceStale, lastGoldFetch,
+    budgetPlans, activeBudgetPlanId, debts, goldPricePerGram, goldPriceAvailable, debtPayments, paymentMethods,
   } = useFinanceStore(
     useShallow((s) => ({
       savingsAccounts: s.savingsAccounts,
@@ -99,15 +106,8 @@ export default function WealthPage() {
       debts: countedDebts(s.debts, s.paymentMethods),
       goldPricePerGram: s.goldPricePerGram,
       goldPriceAvailable: s.goldPriceAvailable,
-      expenses: s.expenses,
       debtPayments: countedDebtPayments(s.debtPayments, s.debts, s.paymentMethods),
       paymentMethods: s.paymentMethods,
-      ledgerDebts: s.debts,
-      ledgerDebtPayments: s.debtPayments,
-      incomeEvents: s.incomeEvents,
-      accountAdjustments: s.accountAdjustments,
-      goldPriceStale: s.goldPriceStale,
-      lastGoldFetch: s.lastGoldFetch,
     })),
   )
   const base = settings.baseCurrency
@@ -115,13 +115,18 @@ export default function WealthPage() {
 
   const [addOpen, setAddOpen] = useState(false)
   const [withdrawOpen, setWithdrawOpen] = useState(false)
-  const [holdingOpen, setHoldingOpen] = useState<{ preset: InvestmentAssetType | null } | null>(null)
+  const [holdingOpen, setHoldingOpen] = useState<{ preset: InvestmentAssetType | null; investment?: boolean } | null>(null)
   const [editAcc, setEditAcc] = useState<SavingsAccount | null>(null)
   const [prefillId, setPrefillId] = useState<string | null>(null)
   const [menu, setMenu] = useState<{ row: WealthRowVM; anchor: DOMRect } | null>(null)
   const [emergencyOpen, setEmergencyOpen] = useState(false)
   const [zakatOpen, setZakatOpen] = useState(false)
   const [monthEndOpen, setMonthEndOpen] = useState(false)
+  const [pocketOpen, setPocketOpen] = useState<string | null>(null)
+  const [releaseOf, setReleaseOf] = useState<SavingsAccount | null>(null)
+  const v9 = useSavingsV9Copy().page
+  const goalRows = useGoalRows()
+  const accountsModel = useAccounts()
   const monthEnd = useMonthEnd()
   const mc = useMonthEndCopy()
   // Quick add > Savings lands here asking for the add-money sheet (auth was checked at the tile). The request stays in
@@ -184,28 +189,6 @@ export default function WealthPage() {
     goldNisab: formatWhole(goldNisab),
   }
 
-  // Goals as a lens: a pocket's sub-line names the first active goal it feeds.
-  const goalLines = useMemo(() => {
-    // Covered parts walk the whole ledger (raw debts); debt-goal progress reads the counted ones.
-    const ctx = {
-      ...buildGoalProgressContext({
-        savingsAccounts, debts: ledgerDebts, debtPayments: ledgerDebtPayments, expenses, exchangeRates, goldPricePerGram, goldPriceAvailable, settings,
-        goals, paymentMethods, incomeEvents, savingsTransactions, accountAdjustments, goldPriceStale, lastGoldFetch,
-      }, monthFilter),
-      debts,
-      debtPayments,
-    }
-    const lines: Record<string, string> = {}
-    for (const a of pockets) {
-      const g = goals.find((x) => x.status === 'active' && x.linkedSavingsAccountIds.includes(a.id))
-      if (!g) continue
-      const pct = g.targetAmount ? Math.min(100, Math.round((computeGoalProgress(g, ctx) / g.targetAmount) * 100)) : 0
-      lines[a.id] = t.feeds(g.name, pct)
-    }
-    return lines
-  }, [pockets, goals, savingsAccounts, debts, debtPayments, expenses, exchangeRates, goldPricePerGram, goldPriceAvailable, settings, monthFilter, t,
-    paymentMethods, ledgerDebts, ledgerDebtPayments, incomeEvents, savingsTransactions, accountAdjustments, goldPriceStale, lastGoldFetch])
-
   const pocketVMs = useMemo<PocketVM[]>(
     () => pockets.map((account) => {
       const linked = goals.filter((g) => g.status === 'active' && g.linkedSavingsAccountIds.includes(account.id))
@@ -219,35 +202,52 @@ export default function WealthPage() {
     [pockets, goals, coverPocketIds],
   )
 
-  const trendRaw = useNetWorthTrend(nw.netWorth, base, dataReady && !model.anyUnpriced && !nw.netWorthIncomplete, netWorthBasisOf(nw))
-  // The chip is capped (">999%") and left out when the first snapshot is near zero: a percent from almost nothing means nothing.
-  const trendPct = trendRaw ? changePct(trendRaw.points[trendRaw.points.length - 1], trendRaw.points[0]) : null
-  const trend = trendRaw && trendPct !== null ? { points: trendRaw.points, dir: trendRaw.dir, pct: formatChangePct(trendPct, 1) } : undefined
+  // The v9 band shows no net worth; the hook still writes today's snapshot, as it did when the trend was shown.
+  useNetWorthTrend(nw.netWorth, base, dataReady && !model.anyUnpriced && !nw.netWorthIncomplete, netWorthBasisOf(nw))
 
-  // Light touch legend (`lt.js` wealth): by what is held, "Savings 52% · Gold 31% · Stocks 17%"; pockets and accounts are Savings.
+  // Final-ui v9 sections: savings goals (running and paused) own their parts; every other savings row is a pocket.
+  const savingGoals = useMemo(() => {
+    const { running, paused } = partitionGoals(goalRows)
+    return [...running, ...paused].filter((r) => r.goal.category !== 'debt_freedom' && r.goal.category !== 'spending_control')
+  }, [goalRows])
+  const goalPartIds = useMemo(
+    () => new Set(savingGoals.flatMap((r) => partsOfGoal(r.goal, savingsAccounts).map((p) => p.id))),
+    [savingGoals, savingsAccounts],
+  )
+  const pocketItems = useMemo<PocketItem[]>(
+    () => model.rows
+      .filter((r) => r.account?.category === 'savings' && !goalPartIds.has(r.id) && !(isMonthlySavingsPart(r.account) && !(r.account.currentBalance > 0)))
+      .map((r) => ({ account: r.account!, amount: r.amount })),
+    [model.rows, goalPartIds],
+  )
+  const investmentRows = useMemo(() => model.rows.filter((r) => r.source === 'holding' || r.account?.category === 'investment'), [model.rows])
+  const savingsAccountsInfo = useMemo(() => {
+    const list = accountsModel.accounts.filter((a) => a.method.isSavings && !a.method.closedAt)
+    const total = list.reduce((sum, a) => sum + (a.balance ? tryConvertCurrency(a.balance.balance, a.balance.currency, base, exchangeRates) ?? 0 : 0), 0)
+    return { count: list.length, total }
+  }, [accountsModel.accounts, base, exchangeRates])
+
+  // Hero legend (v9): Pockets · Goals · Investments, by value.
   const split = useMemo<HeroSplitSegment[]>(() => {
-    const by = { savings: 0, gold: 0, stock: 0, crypto: 0, property: 0 }
+    const by = { pockets: 0, goals: 0, investments: 0 }
     for (const r of model.rows) {
       if (r.amount == null) continue
-      const k = r.cat === 'gold' || r.cat === 'stock' || r.cat === 'crypto' || r.cat === 'property' ? r.cat : 'savings'
-      by[k] += r.amount
+      if (r.source === 'holding' || r.account?.category === 'investment') by.investments += r.amount
+      else if (goalPartIds.has(r.id)) by.goals += r.amount
+      else by.pockets += r.amount
     }
     const pct = (v: number) => (model.total > 0 ? (v / model.total) * 100 : 0)
     const seg = (key: keyof typeof by, label: string): HeroSplitSegment => ({ key, label, value: formatWhole(by[key]), pct: pct(by[key]) })
-    return [
-      seg('savings', wl.savings),
-      seg('gold', t.catLabels.gold),
-      seg('stock', t.catLabels.stock),
-      seg('crypto', t.catLabels.crypto),
-      seg('property', t.catLabels.property),
-    ].filter((x) => x.pct > 0)
-  }, [model, t, wl])
+    return [seg('pockets', v9.pockets), seg('goals', v9.goals), seg('investments', v9.investments)].filter((x) => x.pct > 0)
+  }, [model, goalPartIds, v9])
 
-  // Pockets that hold a goal's money fold into one Holdings row.
-  const goalPocketIds = useMemo(
-    () => new Set(goals.flatMap((g) => g.linkedSavingsAccountIds)),
-    [goals],
-  )
+  // "+X added in November": this month's deposits into savings, the same figure Insights reports.
+  const addedNote = useMemo(() => {
+    const n = cashSavingsDepositsInBaseForMonth(savingsTransactions, monthFilter, settings.monthStartDay, base, exchangeRates, { pricePerGram: goldPricePerGram, available: goldOk })
+    if (!(n > 0)) return null
+    const month = monthNames(locale)[Number(monthFilter.slice(5, 7)) - 1]
+    return <span>{v9.added(formatWhole(n), month)}</span>
+  }, [savingsTransactions, monthFilter, settings.monthStartDay, base, exchangeRates, goldPricePerGram, goldOk, locale, v9])
 
   const devBypass = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === '1'
   const guard = (fn: () => void) => (devBypass ? fn() : requireAuth(fn, 'Sign in to manage savings'))
@@ -257,7 +257,6 @@ export default function WealthPage() {
 
   if (!dataReady) return <div className="p-4"><SkeletonList /></div>
 
-  const brandNew = model.rows.length === 0
   const unpricedGrams = model.rows.filter((r) => r.cat === 'gold' && r.amount == null).reduce((s, r) => s + (r.quantity ?? 0), 0)
   const totalText = formatWhole(model.total)
   // Whole units, as the mockup ("103,907"); the sign stays for a negative net worth.
@@ -328,10 +327,9 @@ export default function WealthPage() {
         total={totalText}
         currency={base}
         totalPrefix={model.anyUnpriced ? 'At least' : undefined}
-        netWorth={netWorthText}
-        netWorthPrefix={nw.netWorthIncomplete ? 'At least' : undefined}
         split={split}
-        netWorthTrend={model.anyUnpriced ? undefined : trend}
+        label={v9.heroLabel}
+        note={addedNote}
       />
       </PageHero>
 
@@ -339,44 +337,38 @@ export default function WealthPage() {
           stack
           className="pt-4"
           primary={
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-2 px-4 lg:px-0">
-                {brandNew ? (
-                  <>
-                    <Button size="touch" onClick={() => openHolding()}><Plus />{t.addHolding}</Button>
-                    <Button size="touch" variant="secondary" onClick={() => openAdd(null)}><ArrowDownLeft />{t.addMoney}</Button>
-                  </>
-                ) : (
-                  <>
-                    <Button size="touch" onClick={() => openAdd(null)}><Plus />{t.addMoney}</Button>
-                    <Button size="touch" variant="secondary" onClick={() => openWithdraw(null)}><ArrowUpRight />{t.withdraw}</Button>
-                  </>
-                )}
-              </div>
-
+            <div className="space-y-5">
               <MonthlySavingRow {...monthlyRow(monthEnd.view)} />
 
+              <PocketsSection
+                pockets={pocketItems}
+                methods={paymentMethods}
+                currency={base}
+                onOpen={(a) => guard(() => setPocketOpen(a.id))}
+                onAdd={() => openHolding()}
+              />
+
+              <GoalsSection rows={savingGoals} onOpen={() => navigate('/goals')} onGoals={() => navigate('/goals')} />
+
+              <SavingsAccountsSection count={savingsAccountsInfo.count} total={savingsAccountsInfo.total} currency={base} onOpen={() => navigate('/accounts')} />
+
               <WealthList
-                rows={model.rows}
+                rows={investmentRows}
                 currency={base}
                 onRowPress={(row, anchor) => setMenu({ row, anchor })}
-                onAdd={() => openHolding()}
-                goalLines={goalLines}
-                goalPocketIds={goalPocketIds}
+                onAdd={() => guard(() => setHoldingOpen({ preset: null, investment: true }))}
+                heading={{ title: v9.investments, count: investmentRows.length, addLabel: v9.add }}
               />
             </div>
           }
           secondary={
-            <div className="mt-2 lg:mt-0">
-              <ActivityLedger transactions={savingsTransactions} accounts={savingsAccounts} baseCurrency={base} exchangeRates={exchangeRates} limit={3} />
-              <div className="mt-4">
-                <WealthPlanRows
-                  emergency={{ state: efState, months: emergency.monthsCovered.toFixed(1), target: targetMonths }}
-                  zakat={hasZakat ? { amount: formatWhole(zakatYear.result.zakat), due: hawl.isPlaceholder ? '' : formatLocalized(parseDateOnly(hawl.dueDate), 'd MMM', locale) } : undefined}
-                  onOpenEmergency={() => guard(() => setEmergencyOpen(true))}
-                  onOpenZakat={() => guard(() => setZakatOpen(true))}
-                />
-              </div>
+            <div className="mt-1 lg:mt-0">
+              <WealthPlanRows
+                emergency={{ state: efState, months: emergency.monthsCovered.toFixed(1), target: targetMonths }}
+                zakat={hasZakat ? { amount: formatWhole(zakatYear.result.zakat), due: hawl.isPlaceholder ? '' : formatLocalized(parseDateOnly(hawl.dueDate), 'd MMM', locale) } : undefined}
+                onOpenEmergency={() => guard(() => setEmergencyOpen(true))}
+                onOpenZakat={() => guard(() => setZakatOpen(true))}
+              />
             </div>
           }
         />
@@ -416,7 +408,7 @@ export default function WealthPage() {
           onNeedAsset={(type) => { setWithdrawOpen(false); setPrefillId(null); openHolding(type) }}
         />
       )}
-      {holdingOpen && <AddHoldingSheet open presetAssetType={holdingOpen.preset} onClose={() => setHoldingOpen(null)} />}
+      {holdingOpen && <AddHoldingSheet open presetAssetType={holdingOpen.preset} initialTab={holdingOpen.investment ? 'investment' : undefined} onClose={() => setHoldingOpen(null)} />}
       {emergencyOpen && (
         <EmergencyFundSheet
           open mode={efState === 'unset' ? 'edit' : 'details'} onClose={() => setEmergencyOpen(false)}
@@ -425,6 +417,26 @@ export default function WealthPage() {
       )}
       {monthEndOpen && <MonthEndSheet open monthEnd={monthEnd} onClose={() => setMonthEndOpen(false)} focusSplit={!monthEnd.view} />}
       {zakatOpen && <ZakatSheet open onClose={() => setZakatOpen(false)} sources={zakatSources} year={zakatYear} hawlDate={hawlDate} />}
+      {pocketOpen && (() => {
+        const a = savingsAccounts.find((x) => x.id === pocketOpen)
+        if (!a) return null
+        const close = () => setPocketOpen(null)
+        return (
+          <PocketSheet
+            account={a}
+            onClose={close}
+            onAddMoney={(p) => { close(); openAdd(p.id) }}
+            onRelease={(p) => { close(); setReleaseOf(p) }}
+            onWithdraw={(p) => { close(); openWithdraw(p.id) }}
+            onEdit={(p) => { close(); setEditAcc(p) }}
+            onDelete={(p) => {
+              const row = model.rows.find((r) => r.id === p.id)
+              if (row) { close(); void askDelete(row) }
+            }}
+          />
+        )
+      })()}
+      {releaseOf && <ReleaseSheet account={releaseOf} onClose={() => setReleaseOf(null)} />}
       {editAcc && <EditSavingsAccountSheet open account={editAcc} onClose={() => setEditAcc(null)} />}
     </div>
   )

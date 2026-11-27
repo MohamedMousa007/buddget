@@ -109,7 +109,7 @@ export const savingsFormsCopyEn: SavingsFormsCopy = {
     inItNow: 'What’s in it now',
     currency: 'Currency',
     colour: 'Colour',
-    create: 'Create pocket',
+    create: 'Add pocket',
   },
   zakat: {
     title: 'Zakat',
@@ -201,7 +201,7 @@ export const savingsFormsCopyAr: SavingsFormsCopy = {
     inItNow: 'ما فيها الآن',
     currency: 'العملة',
     colour: 'اللون',
-    create: 'إنشاء الجيب',
+    create: 'أضف الجيب',
   },
   zakat: {
     title: 'الزكاة',

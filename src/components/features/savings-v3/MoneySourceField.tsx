@@ -49,6 +49,8 @@ export interface MoneySourceFieldProps {
    * inside the group under `children`, and no row for Outside, which has nothing to pick.
    */
   look?: 'stacked' | 'grouped'
+  /** Outside tab: a tappable row ("Where is this money?") instead of the static "Outside buddget". Absent = unchanged. */
+  outsidePick?: { value: ReactNode; onPress: () => void }
 }
 
 /**
@@ -56,7 +58,7 @@ export interface MoneySourceFieldProps {
  * opens the payment-method sheet (or the inline account list), Pocket the pocket picker, Outside has nothing to pick.
  * Switching tabs brings back the account or pocket chosen before.
  */
-export function MoneySourceField({ value, onChange, paymentMethods, accounts, pockets, excludePocketIds, onAddPocket, children, labels, accountLook = 'inline', after, look = 'stacked' }: MoneySourceFieldProps) {
+export function MoneySourceField({ value, onChange, paymentMethods, accounts, pockets, excludePocketIds, onAddPocket, children, labels, accountLook = 'inline', after, look = 'stacked', outsidePick }: MoneySourceFieldProps) {
   const c = { ...useLightTouchCopy().moneySource, ...labels }
   const [last, setLast] = useState<Partial<Record<MoneySourceKind, string>>>(() => (value.id ? { [value.kind]: value.id } : {}))
   const [methodSheet, setMethodSheet] = useState(false)
@@ -68,7 +70,9 @@ export function MoneySourceField({ value, onChange, paymentMethods, accounts, po
   const pocketChoices = excludePocketIds?.length ? pockets.filter((p) => !excludePocketIds.includes(p.account.id)) : pockets
 
   let row: ReactNode
-  if (value.kind === 'outside') {
+  if (value.kind === 'outside' && outsidePick) {
+    row = <PickerRow label={c.from} onClick={outsidePick.onPress} value={outsidePick.value} />
+  } else if (value.kind === 'outside') {
     row = <PickerRow label={c.from} value={<span className="text-[0.875rem] font-normal text-[var(--color-brand-text-secondary)]">{c.outsideValue}</span>} />
   } else if (value.kind === 'pocket') {
     row = <PocketPickerField look="row" label={c.fromPocket} pockets={pocketChoices} value={value.id ?? null} onChange={(id) => pick('pocket', id)} onAdd={onAddPocket} />
