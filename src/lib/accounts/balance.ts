@@ -180,6 +180,9 @@ function walkLegs(input: LedgerInput, apply: ApplyLeg): void {
       continue
     }
     if (!holder) continue // 2: standalone pocket, counted on its own
+    // 5 first: a month-end carry is a label on money already in the holder. The server stores its idempotency key as
+    // transfer_group_id, so without this the row would read as an orphan move (rule 3) and move the holder.
+    if (t.source === 'carry') continue
     if (t.transferGroupId) { // 3: pocket-to-pocket move, a leg only across holders
       const other = groups.get(t.transferGroupId)?.find((o) => o.id !== t.id)
       if (other && pockets.get(other.accountId)?.heldInPaymentMethodId === holder) continue
@@ -187,7 +190,6 @@ function walkLegs(input: LedgerInput, apply: ApplyLeg): void {
       continue
     }
     if (t.isCashFlow === false) continue // 4: opening, declared money, correction
-    if (t.source === 'carry') continue // 5: month-carry label move
     if (isDeposit) continue // 6: earmark of money already in the holder
     const ev = eventsById.get(incomeEventIdForTx(t.id))
     if (ev && !ev.paymentMethodId) continue // 7: released inside the holder

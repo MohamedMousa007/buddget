@@ -82,7 +82,13 @@ export async function loadCycle(service: Service, userId: string, monthKey: stri
   const createdAt = profileR.data?.created_at ? new Date(profileR.data.created_at as string) : null
   const base = ((profileR.data?.base_currency as string | null) ?? 'EGP') as Currency
   const defaultCarryPocketId = (profileR.data?.default_carry_pocket_id as string | null) ?? null
-  const accounts: SavingsAccount[] = accountRows.map(savingsAccountFromRow)
+  const mapped: SavingsAccount[] = accountRows.map(savingsAccountFromRow)
+  // A pocket counts as set aside only while its holder is a live tracked account (open, not deleted, with a balance);
+  // otherwise it is outside money and the carry must not label more of it (that would count the leftover twice).
+  const heldIds = [...new Set(mapped.map((a) => a.heldInPaymentMethodId).filter((id): id is string => !!id))]
+  const liveHolders = new Set(heldIds.length === 0 ? [] : (must(await service.from('payment_methods').select('id')
+    .eq('user_id', userId).in('id', heldIds).is('deleted_at', null).is('closed_at', null).not('opening_balance', 'is', null), 'holders').data ?? []).map((r) => r.id as string))
+  const accounts = mapped.map((a) => (a.heldInPaymentMethodId && !liveHolders.has(a.heldInPaymentMethodId) ? { ...a, heldInPaymentMethodId: undefined } : a))
   const savingsPockets = accounts.filter((a) => a.category === 'savings')
   const goals = goalRows.map(goalFromRow)
   // Resolve destination (default fiat pocket → active goal's pocket → the vault).

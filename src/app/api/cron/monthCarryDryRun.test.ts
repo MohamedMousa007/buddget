@@ -56,7 +56,7 @@ const writesTo = (table: string, op?: string) => h.writes.filter((w) => w.table 
 
 describe('month-carry dry run', () => {
   beforeEach(() => {
-    h.writes = []; h.rpcs = []; h.tables = {}; h.latestSummary = null; h.deposits = []; h.figures = null; h.figuresCalls = 0
+    h.writes = []; h.rpcs = []; h.tables = { payment_methods: [{ id: 'acct1', type: 'bank_account', created_at: 'x', currency: 'EGP', opening_balance: 0 }] }; h.latestSummary = null; h.deposits = []; h.figures = null; h.figuresCalls = 0
     process.env.CRON_SECRET = 's3cret'
     vi.stubGlobal('fetch', async () => ({ json: async () => ({ rates: { EGP: 50, USD: 1 } }) }))
   })
@@ -81,7 +81,7 @@ describe('month-carry live run', () => {
   const pocketRow = (o: Record<string, unknown>) => ({ id: 'p1', name: 'p', category: 'savings', type: 'bank', currency: 'EGP', current_balance: 0, held_in_payment_method_id: 'acct1', created_at: '2026-01-01', ...o })
 
   beforeEach(() => {
-    h.writes = []; h.rpcs = []; h.tables = {}; h.deposits = []; h.figuresCalls = 0
+    h.writes = []; h.rpcs = []; h.tables = { payment_methods: [{ id: 'acct1', type: 'bank_account', created_at: 'x', currency: 'EGP', opening_balance: 0 }] }; h.deposits = []; h.figuresCalls = 0
     h.figures = () => ({ income: 1000, spend: 0, allocated: 0 })
     h.latestSummary = { month_key: '2000-01' }
     process.env.CRON_SECRET = 's3cret'
@@ -149,6 +149,14 @@ describe('month-carry live run', () => {
     await GET(req())
     expect(writesTo('savings_accounts', 'insert')).toEqual([])
     expect(writesTo('goals', 'update')).toEqual([])
+  })
+
+  it('a pocket whose account is gone is outside money: the leftover is set aside elsewhere, never in it, and never moved', async () => {
+    h.tables.payment_methods = []
+    h.tables.savings_accounts = [pocketRow({ id: 'p1', type: 'vault' })]
+    await GET(req())
+    expect(h.deposits.length).toBeGreaterThan(0)
+    expect(h.deposits.every((d) => d.pocketId !== 'p1' && d.accountId === null)).toBe(true)
   })
 
   it('REG-11: stops starting users when the time budget is spent and says where to resume', async () => {

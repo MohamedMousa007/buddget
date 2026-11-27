@@ -140,8 +140,8 @@ describe('W13 / W14', () => {
     expect(actualIncomeForMonth([tpl], [], 'EGP', rates, '2026-09', 1, true)).toBe(0)
   })
   it('vault fallback skips goal-owned vault pockets', () => {
-    const goalPocket = pocket('gp', { type: 'vault' as never })
-    const shared = pocket('shared', { type: 'vault' as never })
+    const goalPocket = pocket('gp', { type: 'vault' as never, heldInPaymentMethodId: 'bank' })
+    const shared = pocket('shared', { type: 'vault' as never, heldInPaymentMethodId: 'bank' })
     const done = { id: 'g', status: 'achieved', linkedSavingsAccountIds: ['gp'] } as never
     expect(resolveCarryDestination(null, [goalPocket, shared], [done])).toEqual({ kind: 'pocket', pocketId: 'shared' })
     expect(resolveCarryDestination(null, [goalPocket], [done])).toEqual({ kind: 'create-vault' })

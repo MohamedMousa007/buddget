@@ -49,3 +49,20 @@ describe('computeBalances month flows (account sheet "In / Out this month")', ()
     expect(run([])?.flowsIn).toBeUndefined()
   })
 })
+
+describe('month-end carry is a label on money already in the account', () => {
+  const bank = { id: 'bank', name: 'CIB', type: 'bank_account', currency: 'EGP', openingBalance: 1000, openingAt: '2026-10-01T00:00:00.000Z' } as PaymentMethod
+  const vault = { id: 'v', name: 'Monthly Savings', category: 'savings', type: 'vault', currency: 'EGP', currentBalance: 300, heldInPaymentMethodId: 'bank', createdAt: '2026-10-01' }
+  // adjust_pocket_balance stores its idempotency key as transfer_group_id, so a server carry row has a group of one.
+  const carry = (type: 'deposit' | 'withdrawal', amount: number) => ({
+    id: `t-${type}`, accountId: 'v', type, amount, currency: 'EGP', date: '2026-10-31', source: 'carry', transferGroupId: `g-${type}`, isCashFlow: true,
+  })
+  const bal = (txs: unknown[]) =>
+    computeBalances({ paymentMethods: [bank], expenses: [], incomeEvents: [], debtPayments: [], debts: [], savingsTransactions: txs as never, savingsAccounts: [vault] as never, adjustments: [], convert: (a) => a }).get('bank')?.balance
+  it('a carry deposit with no account leg leaves the bank balance alone', () => {
+    expect(bal([carry('deposit', 300)])).toBe(1000)
+  })
+  it('a carry adjustment withdrawal with no account leg leaves it alone too', () => {
+    expect(bal([carry('withdrawal', 100)])).toBe(1000)
+  })
+})
