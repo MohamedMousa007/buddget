@@ -27,3 +27,16 @@ Voices: Architect, Skeptic, Pragmatist, Critic.
 - **Monthly savings pocket (3/4, against the owner's delete rule).** Stays as the remainder: whatever is not split goes there. It can be renamed and hides when empty, but is not deletable, because with splits under 100% the rest needs a home.
 - **Bugs found in today's model:** a pocket linked to two goals counts in full for both (`computeGoalProgress.ts` 68-72); goal shares compute amounts but never move money (`allocateMonth.ts`), and the month-carry cron is not scheduled; deleting a goal's only pocket drops the goal to 0 with no warning (`canDeletePocket.ts`).
 - **Migration:** row counts first; goals with several pockets keep the largest (or merge), shares convert to pocket percentages.
+
+## Round 3 (2026-11-27): does a goal need a pocket; pockets and bank accounts
+
+Voices: Architect, Skeptic, Pragmatist, Critic. 4/4 on both.
+
+- **A savings goal is the money container the user sees.** No separate pocket, no linking step, the word "pocket" never appears for a goal. In the data it is one savings row with a target and date (the `SavingsAccount.targetAmount` field already exists, "reserved for a future Goals feature"); a pocket without a target is the same object (Monthly savings, emergency fund). The Goal table keeps only goals that hold no money (debt pay-off, spending limits). Reached = marked achieved, money stays. Deleted = money released back to free (held) or kept as a plain savings item / moved to Monthly savings (outside), never deleted with it. Gold/USD goal: target in its own unit, conversion for display only.
+- **Pockets are money set aside inside an account, never added on top.** Several per account is fine (several earmarks). A separate savings account or certificate is an Account (SMS keeps it updated) marked as savings and shown on Savings by reference, never a second balance. Items outside any account are only for what no SMS can see: cash at home, gold, an untracked bank.
+- **Bugs to fix before the redesign ships:**
+  - `balance.ts:109` clamps free at 0, so an SMS debit below the set-aside total is hidden; show "Set aside N more than you have" with Release / take from.
+  - Goal progress and the Savings page keep counting set-aside money the account no longer holds.
+  - Month carry (`cron/month-carry/route.ts:167`) posts from the primary account without the free check and can book a bank transfer that never happened; cross-bank pocket moves can be booked twice when the real transfer arrives by SMS (needs pairing).
+  - Unpriced gold or FX silently drops out of goal progress (`computeGoalProgress`).
+  - `SavingsAccount.linkedPaymentMethodId` has no reader for pockets: define it as the savings-account flag or remove it.
