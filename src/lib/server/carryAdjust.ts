@@ -2,7 +2,7 @@ import type { createServiceRoleClient } from '@/lib/supabase/service'
 import { carryDrift } from '@/lib/savings/monthCarry'
 import { convertCurrency } from '@/lib/utils/currency'
 import { carryPostDate, closedCycleDrift, must, type CycleDriftItem } from '@/lib/server/carryCycle'
-import { depositToPocket, groupIdFor, primaryTrackedAccountId } from '@/lib/server/pocketLedger'
+import { depositToPocket, groupIdFor } from '@/lib/server/pocketLedger'
 
 type Service = ReturnType<typeof createServiceRoleClient>
 
@@ -51,7 +51,8 @@ export async function applyCarryDrift(service: Service, userId: string, monthKey
   const nothing = { cycle: item, unapplied: round2(Math.abs(item.delta)), outcome: 'unapplied' as const }
 
   const pocket = item.pocketId ? ctx.accounts.find((a) => a.id === item.pocketId) : undefined
-  if (item.pocketId && !pocket) return nothing
+  // The carry is set-aside money inside the pocket's account; a pocket with no holder cannot take a label move.
+  if (item.pocketId && (!pocket || !pocket.heldInPaymentMethodId)) return nothing
   let applied = item.delta
   let wanted = 0
   let take = 0
@@ -75,13 +76,12 @@ export async function applyCarryDrift(service: Service, userId: string, monthKey
       const key = `carry-adjust|${userId}|${monthKey}|${item.settledAt}`
       const date = carryPostDate(ctx.end)
       const note = `Carry adjustment · ${monthKey}`
-      const accountId = await primaryTrackedAccountId(service, userId)
       if (item.delta > 0) {
-        await depositToPocket(service, { userId, pocketId: pocket.id, amount: take, date, source: 'carry', note, key, accountId })
+        await depositToPocket(service, { userId, pocketId: pocket.id, amount: take, date, source: 'carry', note, key, accountId: null })
       } else {
         const { error } = await service.rpc('adjust_pocket_balance', {
           p_user: userId, p_pocket: pocket.id, p_delta: -take, p_kind: 'withdrawal', p_group: groupIdFor(key),
-          p_payment_method: accountId ?? undefined, p_date: date, p_note: note, p_source: 'carry',
+          p_date: date, p_note: note, p_source: 'carry',
         })
         if (error) throw new Error(`withdrawal failed: ${error.message}`)
       }

@@ -2,7 +2,7 @@ import type { createServiceRoleClient } from '@/lib/supabase/service'
 import { allocateMonth } from '@/lib/goals/allocateMonth'
 import { periodMonths } from '@/lib/goals/goalPlan'
 import { crossedCheckpoints } from '@/lib/notifications/evaluateGoalAlerts'
-import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
+import { isCarrySetAside, isEligibleCarryPocket } from '@/lib/savings/monthCarry'
 import { convertCurrency, tryConvertCurrency } from '@/lib/utils/currency'
 import type { Currency, Goal, SavingsAccount } from '@/lib/store/types'
 import { depositToPocket, primaryTrackedAccountId } from '@/lib/server/pocketLedger'
@@ -72,7 +72,7 @@ export async function allocateGoalFunding(c: Ctx): Promise<number> {
   for (const [goalId, amount] of done) if (due.some((g) => g.id === goalId)) left = cents(left - amount)
 
   const lines = allocateMonth({ goals: due, periodSavings: c.carry, current })
-  const primaryId = await primaryTrackedAccountId(service, userId)
+  const primaryId = await primaryTrackedAccountId(service, userId, base)
   for (const line of lines) {
     const goal = due.find((g) => g.id === line.goalId)!
     // A claimed run whose deposit never landed (timeout between claim and pay) is re-paid here: the deposit key is idempotent.
@@ -91,8 +91,11 @@ export async function allocateGoalFunding(c: Ctx): Promise<number> {
       if (prior === undefined) await service.from('goal_allocation_runs').delete().eq('goal_id', goal.id).eq('period', monthKey)
     }
     try {
-      let pocket = c.accounts.filter(isEligibleCarryPocket).find((a) => goal.linkedSavingsAccountIds.includes(a.id))
+      let pocket = c.accounts.filter(isCarrySetAside).find((a) => goal.linkedSavingsAccountIds.includes(a.id))
       if (!pocket) {
+        // No account in the base currency to set it aside in: nothing is set aside (never money from nowhere).
+        if (!primaryId) throw new Error('no account to set aside in')
+        if (c.accounts.some((a) => isEligibleCarryPocket(a) && goal.linkedSavingsAccountIds.includes(a.id))) throw new Error('goal saves outside any account')
         const { data: created, error } = await service.from('savings_accounts').insert({
           user_id: userId, name: `${goal.name} pocket`, category: 'savings', type: 'vault', currency: base,
           current_balance: 0, opening_balance: 0, is_emergency_cover: false, held_in_payment_method_id: primaryId,
@@ -106,7 +109,7 @@ export async function allocateGoalFunding(c: Ctx): Promise<number> {
       if (inPocket === null) throw new Error('no FX path to pocket currency')
       await depositToPocket(service, {
         userId, pocketId: pocket.id, amount: inPocket, date: c.postDate, source: 'carry',
-        note: `Goal funding · ${goal.name} · ${monthKey}`, key: `goal-funding|${goal.id}|${monthKey}`, accountId: primaryId,
+        note: `Goal funding · ${goal.name} · ${monthKey}`, key: `goal-funding|${goal.id}|${monthKey}`, accountId: null,
       })
     } catch (e) {
       console.error('[allocateGoalFunding]', goal.id, monthKey, e)

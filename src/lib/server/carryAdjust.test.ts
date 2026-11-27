@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-const h = vi.hoisted(() => ({ pocket: { id: 'p', currency: 'EGP', currentBalance: 100 }, balance: 100 }))
+const h = vi.hoisted(() => ({ pocket: { id: 'p', currency: 'EGP', currentBalance: 100, heldInPaymentMethodId: 'acct1' }, balance: 100 }))
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/server/carryCycle', () => ({
   must: <T,>(r: T) => r,

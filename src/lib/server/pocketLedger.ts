@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { pickPrimaryAccountId } from '@/lib/accounts/primary'
 import type { createServiceRoleClient } from '@/lib/supabase/service'
+import type { Currency } from '@/lib/store/types'
 
 type Service = ReturnType<typeof createServiceRoleClient>
 
@@ -14,10 +15,13 @@ export function groupIdFor(key: string): string {
  * The account leftover money sits in: the user's oldest tracked bank account (then wallet). null while they track none,
  * in which case server deposits behave exactly as before accounts existed.
  */
-export async function primaryTrackedAccountId(service: Service, userId: string): Promise<string | null> {
-  const { data } = await service.from('payment_methods').select('id, type, created_at')
+export async function primaryTrackedAccountId(service: Service, userId: string, currency?: Currency): Promise<string | null> {
+  let q = service.from('payment_methods').select('id, type, created_at')
     .eq('user_id', userId).is('deleted_at', null).is('closed_at', null)
-    .in('type', ['bank_account', 'wallet']).not('opening_balance', 'is', null).order('created_at', { ascending: true })
+    .in('type', ['bank_account', 'wallet']).not('opening_balance', 'is', null)
+  // A pocket set aside in an account shares its currency, or the earmark would be valued at a moving rate.
+  if (currency) q = q.eq('currency', currency)
+  const { data } = await q.order('created_at', { ascending: true })
   return pickPrimaryAccountId((data ?? []).map((r) => ({ id: r.id, type: r.type, createdAt: r.created_at })))
 }
 

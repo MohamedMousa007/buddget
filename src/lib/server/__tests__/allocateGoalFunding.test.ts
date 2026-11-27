@@ -69,7 +69,7 @@ const goal = (id: string, priority: number, sharePct: number, over: Partial<Goal
   planStart: null, notes: null, createdAt: '2026-01-01', achievedAt: null, ...over,
 })
 const pocket = (id: string): SavingsAccount =>
-  ({ id: `p-${id}`, name: id, category: 'savings', type: 'vault', currency: 'EGP', currentBalance: 0, createdAt: 'x' }) as SavingsAccount
+  ({ id: `p-${id}`, name: id, category: 'savings', type: 'vault', currency: 'EGP', currentBalance: 0, heldInPaymentMethodId: 'pm1', createdAt: 'x' }) as SavingsAccount
 
 const base = { userId: 'u', monthKey: '2026-09', base: 'EGP' as const, rates: {}, postDate: '2026-09-30' }
 const seed = (): Record<string, Row[]> => ({
@@ -136,14 +136,22 @@ describe('allocateGoalFunding', () => {
     expect(db.savings_accounts[0].current_balance).toBe(0)
   })
 
-  it('0198 guard: a payment method the server rejects releases the claim and keeps the money', async () => {
+  it('sets money aside with no account leg: a server that rejects any leg still takes it', async () => {
     const { service, db } = fakeService(
-      { ...seed(), payment_methods: [{ id: 'pm1', user_id: 'u', type: 'bank_account', created_at: 'x' }] },
+      { ...seed(), payment_methods: [{ id: 'pm1', user_id: 'u', type: 'bank_account', created_at: 'x', currency: 'EGP' }] },
       { foreignPaymentMethod: true },
     )
     const left = await allocateGoalFunding({ ...base, service, carry: 1000, goals: [goal('a', 0, 50)], accounts })
+    expect(left).toBe(500)
+    expect(db.savings_accounts[0].current_balance).toBe(500)
+  })
+
+  it('a goal that saves outside any account is skipped, never given a second pocket', async () => {
+    const outside = { ...pocket('a'), heldInPaymentMethodId: undefined } as SavingsAccount
+    const { service, db } = fakeService({ ...seed(), payment_methods: [{ id: 'pm1', user_id: 'u', type: 'bank_account', created_at: 'x', currency: 'EGP' }] })
+    const left = await allocateGoalFunding({ ...base, service, carry: 1000, goals: [goal('a', 0, 50)], accounts: [outside] })
     expect(left).toBe(1000)
-    expect(db.goal_allocation_runs ?? []).toHaveLength(0)
+    expect(db.savings_accounts).toHaveLength(2)
   })
 
   it('quarterly goals are funded monthly, fixed amounts split across the quarter', async () => {
@@ -176,10 +184,11 @@ describe('allocateGoalFunding', () => {
   })
 
   it('creates and links a pocket when the goal has none', async () => {
-    const { service, db } = fakeService({ ...seed(), goals: [{ id: 'a', linked_savings_account_ids: [] }] })
+    const { service, db } = fakeService({ ...seed(), goals: [{ id: 'a', linked_savings_account_ids: [] }], payment_methods: [{ id: 'pm1', user_id: 'u', type: 'bank_account', created_at: 'x', currency: 'EGP' }] })
     await allocateGoalFunding({ ...base, service, carry: 500, accounts: [], goals: [goal('a', 0, 100, { linkedSavingsAccountIds: [] })] })
     const created = db.savings_accounts.find((r) => r.name === 'a pocket')!
     expect(created.current_balance).toBe(500)
+    expect(created.held_in_payment_method_id).toBe('pm1')
     expect((db.goals[0].linked_savings_account_ids as string[])).toEqual([created.id])
   })
 })

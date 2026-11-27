@@ -78,7 +78,7 @@ describe('month-carry dry run', () => {
 
 describe('month-carry live run', () => {
   const goalRow = (o: Record<string, unknown>) => ({ id: 'g1', name: 'Car', category: 'purchase', status: 'active', priority: 1, funding_mode: 'manual', linked_savings_account_ids: [], created_at: '2026-01-01', ...o })
-  const pocketRow = (o: Record<string, unknown>) => ({ id: 'p1', name: 'p', category: 'savings', type: 'bank', currency: 'EGP', current_balance: 0, created_at: '2026-01-01', ...o })
+  const pocketRow = (o: Record<string, unknown>) => ({ id: 'p1', name: 'p', category: 'savings', type: 'bank', currency: 'EGP', current_balance: 0, held_in_payment_method_id: 'acct1', created_at: '2026-01-01', ...o })
 
   beforeEach(() => {
     h.writes = []; h.rpcs = []; h.tables = {}; h.deposits = []; h.figuresCalls = 0

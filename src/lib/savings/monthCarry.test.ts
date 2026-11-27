@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { Goal, SavingsAccount } from '@/lib/store/types'
-import { carryDrift, CARRY_STALE_THRESHOLD, computeMonthCarry, resolveCarryDestination, isEligibleCarryPocket, findUnlinkedGoalPocket } from './monthCarry'
+import { carryDrift, CARRY_STALE_THRESHOLD, computeMonthCarry, resolveCarryDestination, isEligibleCarryPocket, isCarrySetAside, findUnlinkedGoalPocket } from './monthCarry'
 
 describe('computeMonthCarry', () => {
   it('banks the whole surplus', () => {
@@ -31,7 +31,7 @@ describe('computeMonthCarry', () => {
 })
 
 const pocket = (over: Partial<SavingsAccount>): SavingsAccount => ({
-  id: 'p', name: 'p', category: 'savings', type: 'bank', currency: 'EGP', currentBalance: 0,
+  id: 'p', name: 'p', category: 'savings', type: 'bank', currency: 'EGP', currentBalance: 0, heldInPaymentMethodId: 'acct',
   createdAt: '2026-01-01', ...over,
 })
 const goal = (over: Partial<Goal>): Goal => ({
@@ -150,5 +150,20 @@ describe('carryDrift', () => {
   it('a negative remainder bigger than the carry is dropped, not carried forward', () => {
     const r = computeMonthCarry({ income: 1_000, spend: 0, allocated: 0, priorAdjustment: -1_500 })
     expect(r.carry).toBe(0)
+  })
+})
+
+describe('the leftover is set aside inside an account, never minted', () => {
+  it('only a pocket held in an account can take it', () => {
+    expect(isCarrySetAside(pocket({}))).toBe(true)
+    expect(isCarrySetAside(pocket({ heldInPaymentMethodId: undefined }))).toBe(false)
+  })
+  it('a default pocket outside every account is passed over for the vault', () => {
+    expect(resolveCarryDestination('out', [pocket({ id: 'out', heldInPaymentMethodId: undefined })], [])).toEqual({ kind: 'create-vault' })
+  })
+  it('a goal that saves outside any account is skipped, not given a second pocket', () => {
+    const goals = [goal({ id: 'g1', name: 'Cash goal', priority: 1, linkedSavingsAccountIds: ['cash'] }), goal({ id: 'g2', name: 'Car', priority: 2, linkedSavingsAccountIds: ['car'] })]
+    const pockets = [pocket({ id: 'cash', type: 'cash', heldInPaymentMethodId: undefined }), pocket({ id: 'car', type: 'vault' })]
+    expect(resolveCarryDestination(null, pockets, goals)).toEqual({ kind: 'pocket', pocketId: 'car' })
   })
 })

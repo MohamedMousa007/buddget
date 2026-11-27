@@ -128,7 +128,15 @@ async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string
     return true
   }
 
-  const primaryId = await primaryTrackedAccountId(service, userId)
+  const primaryId = await primaryTrackedAccountId(service, userId, base)
+  // An existing system vault with no holder is outside every account: setting the leftover aside there would count it twice.
+  const vaultOutside = dest.kind === 'create-vault' && savingsPockets.some((p) => p.id === systemVaultId(userId) && !p.heldInPaymentMethodId)
+  if ((dest.kind !== 'pocket' && !primaryId) || vaultOutside) {
+    // No account in the base currency to set the leftover aside in: record the cycle, set nothing aside.
+    must(await service.from('savings_month_summary').insert({ user_id: userId, month_key: monthKey, target: 0, allocated, carry, carry_adjustment: carryAdjustment, saved, currency: base, closed_at: now.toISOString() }), 'summary')
+    claims.length = 0
+    return true
+  }
   let pocketId: string
   if (dest.kind === 'pocket') {
     pocketId = dest.pocketId
@@ -165,7 +173,7 @@ async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string
   if (!alreadySwept) {
     await depositToPocket(service, {
       userId, pocketId, amount: carryInPocketCcy, date: postDate, source: 'carry',
-      note: `Month-end carry · ${monthKey}`, key: `month-carry|${userId}|${monthKey}`, accountId: primaryId,
+      note: `Month-end carry · ${monthKey}`, key: `month-carry|${userId}|${monthKey}`, accountId: null,
     })
   }
 

@@ -82,7 +82,7 @@ describe('month carry drift', () => {
     h.db = {
       user_settings: [{ user_id: 'u1', month_start_day: 1, language: 'en', goal_progress_alerts: true, timezone: 'Africa/Cairo' }],
       profiles: [{ id: 'u1', created_at: '2020-01-01T00:00:00Z', base_currency: 'EGP', default_carry_pocket_id: null }],
-      savings_accounts: [{ id: 'p1', user_id: 'u1', name: 'Vault', category: 'savings', type: 'vault', currency: 'EGP', current_balance: 5000, created_at: '2026-01-01' }],
+      savings_accounts: [{ id: 'p1', user_id: 'u1', name: 'Vault', category: 'savings', type: 'vault', currency: 'EGP', current_balance: 5000, held_in_payment_method_id: 'acct1', created_at: '2026-01-01' }],
       savings_month_summary: [summaryRow({ month_key: '2026-09', carry: 1000 })],
       goals: [], expenses: [{ id: 'late', user_id: 'u1', expense_date: '2026-09-10', updated_at: '2026-10-20' }], income_events: [], income_sources: [], savings_transactions: [], payment_methods: [],
     }

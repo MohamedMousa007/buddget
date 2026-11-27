@@ -83,12 +83,21 @@ export function isEligibleCarryPocket(p: SavingsAccount): boolean {
 }
 
 /**
+ * Where the server may put a month's leftover: an eligible pocket set aside inside a tracked account. The carry is a
+ * label on money already in that account (no account leg), so a pocket with no holder would mint money that the
+ * bank balance still holds.
+ */
+export function isCarrySetAside(p: SavingsAccount): boolean {
+  return isEligibleCarryPocket(p) && !!p.heldInPaymentMethodId
+}
+
+/**
  * A pocket an earlier run created for `goalName` but never got to link (crash between the insert and the
  * goal update): reuse it instead of minting a duplicate. Only an unowned base-currency vault matches.
  */
 export function findUnlinkedGoalPocket(pockets: SavingsAccount[], goals: Goal[], goalName: string, currency: string): SavingsAccount | undefined {
   const owned = new Set(goals.flatMap((g) => g.linkedSavingsAccountIds))
-  return pockets.find((p) => isEligibleCarryPocket(p) && p.type === 'vault' && p.name === goalName && p.currency === currency && !owned.has(p.id))
+  return pockets.find((p) => isCarrySetAside(p) && p.type === 'vault' && p.name === goalName && p.currency === currency && !owned.has(p.id))
 }
 
 export type CarryDestination =
@@ -108,7 +117,7 @@ export function resolveCarryDestination(
   goals: Goal[],
 ): CarryDestination {
   // Funded (share/fixed) goals draw their own money before the carry; they only count as pocket owners below.
-  const eligible = pockets.filter(isEligibleCarryPocket)
+  const eligible = pockets.filter(isCarrySetAside)
 
   if (defaultPocketId) {
     const d = eligible.find((p) => p.id === defaultPocketId)
@@ -129,6 +138,8 @@ export function resolveCarryDestination(
       .map((id) => eligible.find((p) => p.id === id))
       .find((p): p is SavingsAccount => !!p)
     if (linked) return { kind: 'pocket', pocketId: linked.id }
+    // The goal saves outside any account (cash, an untracked bank): a set-aside cannot reach it, and a second pocket would split it.
+    if (g.linkedSavingsAccountIds.some((id) => pockets.some((p) => p.id === id && isEligibleCarryPocket(p)))) continue
     // Winning goal with no eligible pocket → make one named after the goal and link it.
     return { kind: 'create-goal-pocket', goalId: g.id, name: g.name }
   }
