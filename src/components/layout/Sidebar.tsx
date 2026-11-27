@@ -44,7 +44,7 @@ export function Sidebar() {
     { href: '/reports', label: t.nav.reports, icon: BarChart3 },
   ]
   const MORE: NavItem[] = [
-    { href: '/paydays', label: t.nav.paydays, icon: CalendarClock },
+    { href: '/paydays', label: t.nav.income, icon: CalendarClock },
     { href: '/goals', label: t.nav.goals, icon: Target },
     { href: '/subscriptions', label: t.nav.subscriptions, icon: RotateCwClock },
     { href: '/notifications', label: t.notifications.title, icon: Bell },

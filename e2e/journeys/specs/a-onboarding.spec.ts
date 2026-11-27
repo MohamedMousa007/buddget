@@ -159,9 +159,9 @@ test.describe('A registration and onboarding', () => {
       await page.goto('/flow', { waitUntil: 'domcontentloaded' })
       await expect(page.getByRole('button', { name: 'Quick add' }).first()).toBeVisible({ timeout: 60_000 })
       await addBorrow(page, { person: 'QA A3', what: 'QA A3 loan', amount: 100 })
-      // Light touch: the debt row opens its actions; the payment's "Paid from" opens the same method carousel.
+      // v9: the debt row opens its detail sheet; Add payment's "Paid from" opens the same method carousel.
       await page.getByRole('button', { name: /^QA A3 loan/ }).first().click()
-      await dialog(page, 'QA A3 loan').getByRole('radio', { name: 'Record a payment' }).click()
+      await dialog(page, 'QA A3 loan').getByRole('button', { name: 'Add payment' }).click()
       const pay = page.getByRole('dialog', { name: 'Make a payment' })
       await pay.getByRole('button', { name: /^Paid from/ }).click()
       const labels = await carouselLabels(page)
@@ -188,23 +188,22 @@ test('A4 account > income > create/apply budget > expense > Flow and budget cons
 
   await test.step('salary payday 5,000 on the 25th into QNB (the budget templates are sized on it)', async () => {
     await goto(page, '/paydays')
-    // With a payday already set, Add sits behind the quiet "Paydays and pay cycle" row (light touch).
-    if (!(await page.getByRole('button', { name: 'Add a payday' }).isVisible())) await page.getByRole('button', { name: 'Paydays and pay cycle' }).click()
-    await page.getByRole('button', { name: /^Add a payday/ }).first().click()
-    const d = page.getByRole('dialog', { name: 'New payday' })
+    // Income (v9): "Add income" is the Sources link, or the empty state's CTA.
+    await page.getByRole('button', { name: 'Add income', exact: true }).first().click()
+    const d = page.getByRole('dialog', { name: 'Add income source' })
     await d.getByRole('textbox', { name: 'Amount' }).fill('5000')
     await d.getByRole('textbox', { name: 'Name' }).fill('QA Payroll')
-    // Light touch: the day sits behind a "Payday › 26th of each month" row (day picker + Done); the account behind "Received in".
-    await d.getByRole('button', { name: /^Payday/ }).click()
-    const day = dialog(page, /^Payday$/)
+    // The day sits behind a "Salary day › 26th of each month" row (day picker + Done); the account behind "Into".
+    await d.getByRole('button', { name: /^Salary day/ }).click()
+    const day = dialog(page, /^Salary day$/)
     await day.getByRole('radio', { name: '25', exact: true }).click()
     await day.getByRole('button', { name: 'Done' }).click()
     await expect(day).toBeHidden()
-    await expect(d.getByRole('button', { name: /^Payday/ })).toContainText('25th')
-    await d.getByRole('button', { name: /^Received in/ }).click()
+    await expect(d.getByRole('button', { name: /^Salary day/ })).toContainText('25th')
+    await d.getByRole('button', { name: /^Into/ }).click()
     await pickMethod(page, /QNB/)
     await blur(page)
-    await d.getByRole('button', { name: 'Add payday' }).click()
+    await d.getByRole('button', { name: 'Add income source' }).click()
     await expect(d).toBeHidden()
     const src = await localWait(page, (s) => s.incomeSources.find((i: any) => i.name === 'QA Payroll'))
     await serverRows('income_sources', user.id, `id=eq.${src.id}`, (r: any[]) => r.length === 1 && Number(r[0].amount) === 5000 && r[0].day_of_month === 25)

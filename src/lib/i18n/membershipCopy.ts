@@ -168,6 +168,10 @@ export interface MembershipCopy {
     close: string
     noRecord: string
     pending: string
+    /** The 3-segment week ring beside the tier in the profile menu (round 9). */
+    ringAria: (records: number, needed: number) => string
+    /** The streak bar's legend (round 9). */
+    legend: { kept: string; now: string; missed: string; up: string }
   }
 }
 
@@ -409,6 +413,8 @@ const en: MembershipCopy = {
     close: 'Close',
     noRecord: 'No records this week. Your streak is kept.',
     pending: 'Keeping…',
+    ringAria: (r, n) => `This week: ${r} of ${n} records. Opens Rewards`,
+    legend: { kept: 'Kept', now: 'This week', missed: 'Missed', up: 'Coming up' },
   },
 }
 
@@ -650,6 +656,8 @@ const ar: MembershipCopy = {
     close: 'إغلاق',
     noRecord: 'لا سجلات هذا الأسبوع. سلسلتك محفوظة.',
     pending: 'جارٍ الحفظ…',
+    ringAria: (r, n) => `هذا الأسبوع: ${r} من ${n} تسجيلات. يفتح المكافآت`,
+    legend: { kept: 'محفوظ', now: 'هذا الأسبوع', missed: 'فائت', up: 'قادم' },
   },
 }
 

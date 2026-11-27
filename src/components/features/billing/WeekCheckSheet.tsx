@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { SheetBody, SheetFooter } from '@/components/features/savings-v3/MoneySheetParts'
-import { SegmentStrip, type Segment } from '@/components/features/membership/SegmentStrip'
+import { SegmentStrip, WEEK_LOOK, type Segment } from '@/components/features/membership/SegmentStrip'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useMembershipCopy } from '@/lib/i18n/membershipCopy'
@@ -15,10 +15,18 @@ import { requestSmsReview } from '@/lib/sms/reviewRequest'
 
 const STRIP = 8
 
-function streakSegments(weeks: number): Segment[] {
-  const kept = Math.min(weeks, STRIP - 1)
-  return Array.from({ length: STRIP }, (_, i) => (i < kept ? 'kept' : i === kept ? 'now' : 'empty'))
+/**
+ * Kept weeks, then this week, then the weeks to come. A missed week is shown only where the data proves one: a streak at
+ * zero after weeks were kept before means last week broke it.
+ */
+function streakSegments(weeks: number, keptBefore: number): Segment[] {
+  const missed = weeks === 0 && keptBefore > 0 ? 1 : 0
+  const kept = Math.min(weeks, STRIP - 1 - missed)
+  const now = kept + missed
+  return Array.from({ length: STRIP }, (_, i) => (i < kept ? 'kept' : i < now ? 'missed' : i === now ? 'now' : 'up'))
 }
+
+const LEGEND = ['kept', 'now', 'missed', 'up'] as const
 
 /** The weekly check: keep the week, see the streak. The server decides whether the week may be kept and what it pays; this sheet only asks and shows. */
 export function WeekCheckSheet() {
@@ -58,7 +66,15 @@ export function WeekCheckSheet() {
           <div className="rounded-[20px] bg-[image:var(--member-aurora)] p-4 text-[var(--member-fg)]">
             <p dir="ltr" className="font-mono-numbers text-[2.75rem] font-semibold leading-none">{streak}</p>
             <p dir="auto" className="mt-1 text-sm text-[var(--member-fg-2)]">{c.streak(streak)}</p>
-            <div className="mt-3"><SegmentStrip segments={streakSegments(streak)} label={c.streak(streak)} onSurface /></div>
+            <div className="mt-3"><SegmentStrip segments={streakSegments(streak, summary.lastWeekOpen ? 0 : summary.keptWeeksTotal)} label={c.streak(streak)} onSurface look="week" /></div>
+            <div className="mt-2.5 flex flex-wrap gap-x-3.5 gap-y-1.5">
+              {LEGEND.map((s) => (
+                <span key={s} className="inline-flex items-center gap-1.5 text-[0.71875rem] text-[var(--member-fg-2)]">
+                  <span aria-hidden className={`h-2 w-3.5 rounded-full ${WEEK_LOOK[s]}`} />
+                  {c.legend[s]}
+                </span>
+              ))}
+            </div>
             {summary.freezesBanked > 0 ? <Badge tone="onBrand" size="sm" className="mt-3">{c.freeze(summary.freezesBanked)}</Badge> : null}
           </div>
           {kept ? (

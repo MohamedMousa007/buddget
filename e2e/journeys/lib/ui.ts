@@ -182,12 +182,12 @@ export async function addBorrow(page: Page, o: { person: string; what: string; a
 }
 
 /**
- * Debts > a debt row > "Record a payment" (light touch: the row opens an action list, no "Pay <debt>" button), then the
+ * Debts > a debt row > its detail sheet's CTA ("Add payment", or "Pay 1,400" for an installment; v9), then the
  * "Paid from" field's carousel. `nth` picks among same-named methods in the carousel.
  */
 export async function payDebt(page: Page, o: { debt: string; amount: number; method: string; nth?: number }) {
-  await page.getByRole('button', { name: new RegExp(`^${o.debt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}( ·|$)`) }).first().click()
-  await dialog(page, o.debt).getByRole('radio', { name: 'Record a payment' }).click()
+  await page.getByRole('button', { name: new RegExp(`^${o.debt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) }).first().click()
+  await dialog(page, o.debt).getByRole('button', { name: /^(Add payment|Pay [\d,]+)$/ }).click()
   const d = dialog(page, 'Make a payment')
   await d.getByRole('textbox', { name: 'Amount' }).fill(String(o.amount))
   const from = d.getByRole('button', { name: /^Paid from/ })
@@ -198,6 +198,9 @@ export async function payDebt(page: Page, o: { debt: string; amount: number; met
   await blur(page)
   await d.getByRole('button', { name: /^(Record payment|Pay [\d,]+ EGP)$/ }).click()
   await expect(d).toBeHidden()
+  // The debt's own sheet stays under the payment (v9); close it so the page is back in reach.
+  const detail = dialog(page, o.debt)
+  if (await detail.isVisible()) await detail.getByRole('button', { name: 'Close' }).first().click()
 }
 
 /** Touch layouts hide sheet CTAs while the on-screen keyboard would be up; drop focus first, as a user closing the keyboard would. */

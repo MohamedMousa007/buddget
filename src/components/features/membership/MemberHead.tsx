@@ -20,6 +20,8 @@ export interface MemberHeadProps {
   hint?: string
   /** Sits at the end: the bell, or the setup ring and chevron. */
   trailing?: ReactNode
+  /** Beside the tier badge on the menu variant (the week ring). Omitted = nothing, as before. */
+  tierTrailing?: ReactNode
   onNavigate?: () => void
 }
 
@@ -27,7 +29,7 @@ export interface MemberHeadProps {
  * The person at the top of the profile menu and the Settings page: the avatar with its PRO tag, the name on one line (full when it fits,
  * else the first name), and under it the marks. The whole surface opens the profile; the founder chip opens the Founders club.
  */
-export function MemberHead({ variant, name, avatarSrc, hint, trailing, onNavigate }: MemberHeadProps) {
+export function MemberHead({ variant, name, avatarSrc, hint, trailing, tierTrailing, onNavigate }: MemberHeadProps) {
   const t = useT()
   const { locale } = useLocale()
   const marks = useMemberMarks()
@@ -64,6 +66,7 @@ export function MemberHead({ variant, name, avatarSrc, hint, trailing, onNavigat
           ) : hint ? (
             <span className="truncate text-xs text-[var(--color-brand-text-muted)]">{hint}</span>
           ) : null}
+          {variant === 'menu' ? tierTrailing : null}
           {founder}
         </span>
       </span>

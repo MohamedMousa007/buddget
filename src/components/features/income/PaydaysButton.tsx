@@ -13,13 +13,13 @@ import { useT } from '@/lib/i18n'
 export function PaydaysButton({ onClick, iconOnly }: { onClick: () => void; iconOnly: boolean }) {
   const t = useT()
   return iconOnly ? (
-    <IconButton variant="outlined" size="md" aria-label={t.nav.paydays} onClick={onClick}>
+    <IconButton variant="outlined" size="md" aria-label={t.nav.income} onClick={onClick}>
       <CalendarClock className="size-[19px]" strokeWidth={1.75} />
     </IconButton>
   ) : (
     <Button variant="outline" size="touch" onClick={onClick}>
       <CalendarClock className="size-4" strokeWidth={1.75} />
-      {t.nav.paydays}
+      {t.nav.income}
     </Button>
   )
 }

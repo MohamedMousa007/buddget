@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import { parseISO } from 'date-fns'
-import { Repeat } from 'lucide-react'
+import { Car, Laptop, Package, Refrigerator, Repeat, Smartphone, Sofa, type LucideIcon } from 'lucide-react'
+import { OptionChip } from '@/components/ui/OptionChip'
+import { useDebtsV9Copy } from '@/lib/i18n/debtsV9Copy'
 import type { AddDebtHook } from '@/hooks/useAddDebtSheet'
 import type { Currency } from '@/lib/store/types'
 import { AmountHero } from '@/components/ui/AmountHero'
@@ -13,7 +15,7 @@ import { Pill } from '@/components/ui/PillButton'
 import { PickerRow } from '@/components/ui/PickerRow'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { MethodPickerRow } from '@/components/features/debts/lt/MethodPickerRow'
-import { SheetGroup, TextRow } from '@/components/features/debts/lt/SheetParts'
+import { SheetGroup } from '@/components/features/debts/lt/SheetParts'
 import { InstallmentProviderPickerSheet } from './InstallmentProviderPickerSheet'
 import { ProviderBadge } from './ProviderBadge'
 import { coarseProvider } from '@/lib/constants/installmentProviders'
@@ -26,6 +28,16 @@ import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 
 type PlanMode = 'total' | 'per'
+type ItemKey = 'phone' | 'laptop' | 'appliance' | 'furniture' | 'car' | 'other'
+/** Item types for the tile (not stored: a debt has no icon column, so the tile follows the type picked here). */
+const ITEMS: { key: ItemKey; Icon: LucideIcon; tone: string }[] = [
+  { key: 'phone', Icon: Smartphone, tone: 'shopping' },
+  { key: 'laptop', Icon: Laptop, tone: 'education' },
+  { key: 'appliance', Icon: Refrigerator, tone: 'utilities' },
+  { key: 'furniture', Icon: Sofa, tone: 'rent' },
+  { key: 'car', Icon: Car, tone: 'transport' },
+  { key: 'other', Icon: Package, tone: 'neutral' },
+]
 const PAYMENT_PRESETS = [3, 6, 9, 12, 18, 24, 36, 60] as const
 const EVERY: PlanFrequency[] = ['weekly', 'monthly', 'quarterly']
 
@@ -40,6 +52,9 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
   const [sheet, setSheet] = useState<'provider' | 'count' | 'every' | null>(null)
   const [mode, setMode] = useState<PlanMode>('total')
   const [perStr, setPerStr] = useState('')
+  const v9 = useDebtsV9Copy().install
+  const [item, setItem] = useState<ItemKey>(d.isEditFlow ? 'other' : 'phone')
+  const picked = ITEMS.find((x) => x.key === item)!
 
   const frequency = d.installmentFrequency as PlanFrequency
   const count = Math.max(1, parseInt(d.installmentCount, 10) || 12)
@@ -72,7 +87,31 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
 
   return (
     <div className="flex flex-col gap-4 pt-1">
+      {/* The Add goal C top (round 9): item type chips, then the item tile and its name above the amount. */}
+      <div className="hide-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
+        {ITEMS.map(({ key, Icon }) => (
+          <OptionChip key={key} size="sm" surface="card" selected={item === key} onClick={() => setItem(key)} className="shrink-0">
+            <Icon aria-hidden />
+            {v9.items[key]}
+          </OptionChip>
+        ))}
+      </div>
       <AmountHero
+        top={
+          <div className="flex w-full flex-col items-center">
+            <span aria-hidden className="flex size-16 items-center justify-center rounded-[19px] [&_svg]:size-7" style={{ background: `var(--cat-${picked.tone}-bg)`, color: `var(--cat-${picked.tone}-fg)` }}>
+              <picked.Icon />
+            </span>
+            <input
+              value={d.installmentItemName}
+              onChange={(e) => d.setInstallmentItemName(e.target.value)}
+              placeholder={v9.namePh}
+              aria-label={v9.nameAria}
+              dir="auto"
+              className="mt-3 h-11 w-full bg-transparent text-center text-[1.0625rem] font-semibold text-[var(--color-brand-text-primary)] outline-none placeholder:text-[var(--color-brand-text-muted)]"
+            />
+          </div>
+        }
         value={mode === 'total' ? d.startingBalance : perStr}
         onChange={mode === 'total' ? d.setStartingBalance : changePer}
         currency={d.currency}
@@ -95,7 +134,6 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
       />
 
       <SheetGroup note={c.paidWithNote}>
-        <TextRow label={c.item} value={d.installmentItemName} onChange={d.setInstallmentItemName} placeholder={c.itemPh} />
         <PickerRow
           label={c.provider}
           onClick={locked ? undefined : () => setSheet('provider')}

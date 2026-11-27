@@ -3,54 +3,57 @@
 import { countedDebts } from '@/lib/spending/exclusion'
 import { PageGrid } from '@/components/layout/PageGrid'
 import { PageHero } from '@/components/layout/PageHero'
-import { DebtGoalPrompt } from '@/components/features/goals/DebtGoalPrompt'
-import { GoalLensList } from '@/components/features/goals/GoalLensList'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Award, ChevronRight, Pencil, ReceiptText, ShieldCheck, Trash2, Undo2, Wallet } from 'lucide-react'
+import { ShieldCheck, Trophy } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { DebtPortfolioHero } from '@/components/features/debts/redesign/DebtPortfolioHero'
 import { DebtFamilyTabs } from '@/components/features/debts/redesign/DebtFamilyTabs'
 import { DebtsActiveList } from '@/components/features/debts/redesign/DebtsActiveList'
-import { DebtPaymentsFeed } from '@/components/features/debts/redesign/DebtPaymentsFeed'
-import { ClearedVaultSheet } from '@/components/features/debts/redesign/ClearedVaultSheet'
-import { ChargesSheet, type ChargesSheetTarget } from '@/components/features/debts/redesign/ChargesSheet'
+import { DebtDetailSheet } from '@/components/features/debts/redesign/DebtDetailSheet'
+import { ClearedDebtsView, type NextToClear } from '@/components/features/debts/redesign/ClearedDebtsView'
 import { AssignPaymentBanner, type AssignCandidate } from '@/components/features/debts/redesign/AssignPaymentBanner'
+import { CardDetailSheet } from '@/components/features/accounts/CardDetailSheet'
+import { PaymentMethodSetupSheet } from '@/components/features/payments/PaymentMethodSetupSheet'
 import { useDebtTabData } from '@/hooks/useDebtTabData'
 import { firstNonEmptyFamily, type DebtFamily } from '@/lib/debts/debtFamily'
-import { isOwedToUser } from '@/lib/debts/debtDirection'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
+import { registerBackGuard } from '@/lib/navigation/backGuard'
 import { useT } from '@/lib/i18n'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
+import { useDebtsV9Copy } from '@/lib/i18n/debtsV9Copy'
+import { useMask } from '@/lib/privacy/useMask'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { convertCurrency } from '@/lib/utils/currency'
-import { formatCurrency, formatWhole } from '@/lib/utils/formatters'
+import { formatCurrency } from '@/lib/utils/formatters'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { OptionSheet } from '@/components/ui/OptionSheet'
+import { OptionChip } from '@/components/ui/OptionChip'
 import { AddDebtOptionSheet } from '@/components/features/debts/redesign/AddDebtOptionSheet'
-import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 
-type RowAction = 'pay' | 'edit' | 'charges' | 'delete'
+type Detail = { id: string; readOnly: boolean }
 
 export default function DebtsPage() {
   const dataReady = useFinanceStore((s) => s.dataReady)
-  const { settings, exchangeRates } = useFinanceStore(
-    useShallow((s) => ({ settings: s.settings, exchangeRates: s.exchangeRates })),
+  const { settings, exchangeRates, debts, paymentMethods } = useFinanceStore(
+    useShallow((s) => ({ settings: s.settings, exchangeRates: s.exchangeRates, debts: s.debts, paymentMethods: s.paymentMethods })),
   )
-  const { activeModal, setActiveModal, setEditingDebtId, openDebtSheetNew, openDebtSheetRecordPayment } = useSettingsStore()
+  const { setActiveModal, setEditingDebtId, openDebtSheetNew, openDebtSheetRecordPayment } = useSettingsStore()
   const requireAuth = useRequireAuthAction()
   const t = useT()
   const c = useDebtsSubsLtCopy().debts
-  const confirm = useConfirm()
+  const v9 = useDebtsV9Copy().list
+  const masked = useMask('lists')
   const data = useDebtTabData()
 
   const [tab, setTab] = useState<DebtFamily>('borrow')
+  const [clearedView, setClearedView] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
-  const [rowId, setRowId] = useState<string | null>(null)
+  const [detail, setDetail] = useState<Detail | null>(null)
+  const [cardId, setCardId] = useState<string | null>(null)
+  const [editCardId, setEditCardId] = useState<string | null>(null)
   const [dismissedAssign, setDismissedAssign] = useState<string | null>(null)
-  const [chargesTarget, setChargesTarget] = useState<ChargesSheetTarget | null>(null)
   const pickedDefault = useRef(false)
 
   // Smart default: land on the first non-empty family (once, when data is ready).
@@ -62,37 +65,69 @@ export default function DebtsPage() {
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [dataReady])
 
+  // Hardware / gesture back leaves the Cleared page before leaving Debts.
+  useEffect(() => {
+    if (!clearedView) return
+    return registerBackGuard(() => { setClearedView(false); return true })
+  }, [clearedView])
+
   const secondaryText = useMemo(() => {
     if (!settings.showSecondaryCurrency || !settings.secondaryCurrency) return null
     return formatCurrency(convertCurrency(data.owed, data.base, settings.secondaryCurrency, exchangeRates), settings.secondaryCurrency)
   }, [settings.showSecondaryCurrency, settings.secondaryCurrency, data.owed, data.base, exchangeRates])
 
+  const nextToClear = useMemo<NextToClear | null>(() => {
+    const plans = data.installments.filter((p) => p.count > 0).map((p) => ({ id: p.id, name: p.item || p.providerName, paymentsLeft: Math.max(0, p.count - p.paid), pct: Math.round((p.paid / p.count) * 100) }))
+    return plans.sort((a, b) => a.paymentsLeft - b.paymentsLeft)[0] ?? null
+  }, [data.installments])
+
   const assignPayment = (a: AssignCandidate) =>
     requireAuth(() => (a.debtId ? openDebtSheetRecordPayment(a.debtId) : openDebtSheetNew('installment')), t.debts.requireAuthPayment)
-
-  const rowDebt = rowId ? useFinanceStore.getState().debts.find((d) => d.id === rowId) : undefined
-  const runRow = (action: RowAction) => {
-    const debt = rowDebt
-    if (!debt) return
-    if (action === 'pay') requireAuth(() => openDebtSheetRecordPayment(debt.id), t.debts.requireAuthPayment)
-    else if (action === 'edit') { setEditingDebtId(debt.id); setActiveModal('editDebt') }
-    else if (action === 'charges') {
-      const vm = data.cards.find((x) => x.id === debt.id)
-      if (debt.linkedPaymentMethodId) setChargesTarget({ pmId: debt.linkedPaymentMethodId, name: vm?.bank ?? debt.name, last4: vm?.last4 })
-    } else {
-      void confirm({ title: c.deleteTitle(debt.name || debt.person), body: c.deleteBody, confirmLabel: t.common.delete, destructive: true })
-        .then((ok) => { if (ok) useFinanceStore.getState().deleteDebt(debt.id) })
+  const pay = (id: string, full?: boolean) => requireAuth(() => openDebtSheetRecordPayment(id, full), t.debts.requireAuthPayment)
+  const edit = (id: string) => { setEditingDebtId(id); setActiveModal('editDebt') }
+  // A credit card opens the shared card sheet (Pay card, its plans); a card with no linked method falls back to Add payment.
+  const open = (id: string, readOnly = false) => {
+    const debt = debts.find((d) => d.id === id)
+    if (debt?.debtType === 'credit_card') {
+      const pm = paymentMethods.find((m) => m.id === debt.linkedPaymentMethodId)
+      if (pm) setCardId(pm.id)
+      else if (!readOnly) pay(id)
+      return
     }
+    setDetail({ id, readOnly })
   }
 
   if (!dataReady) return <div className="p-4"><SkeletonList /></div>
 
   const noneActive = data.counts.borrow + data.counts.credit_card + data.counts.installment === 0
   const clearedCount = data.cleared.length
-  const clearedTotal = data.cleared.reduce((s, x) => s + x.original, 0)
-
   // The empty page is the empty card alone (mockup state-emptydebts): no zero hero above it.
   const empty = noneActive && clearedCount === 0
+  const card = cardId ? paymentMethods.find((m) => m.id === cardId) : undefined
+  const editCard = editCardId ? paymentMethods.find((m) => m.id === editCardId) : undefined
+  const parentOf = (pmId?: string | null) => (pmId ? paymentMethods.find((m) => m.id === pmId) : undefined)
+
+  const sheets = (
+    <>
+      <AddDebtOptionSheet open={addOpen} onClose={() => setAddOpen(false)} />
+      {detail ? <DebtDetailSheet key={detail.id} debtId={detail.id} readOnly={detail.readOnly} onClose={() => setDetail(null)} onPay={pay} onEdit={edit} /> : null}
+      {card ? (
+        <CardDetailSheet key={card.id} open card={card} parent={parentOf(card.parentId)} masked={masked} behind={editCard !== undefined} onClose={() => setCardId(null)} onEdit={() => setEditCardId(card.id)} />
+      ) : null}
+      {editCard ? (
+        <PaymentMethodSetupSheet key={`e-${editCard.id}`} open editing={editCard} baseCurrency={settings.baseCurrency} nested onClose={() => setEditCardId(null)} />
+      ) : null}
+    </>
+  )
+
+  if (clearedView) {
+    return (
+      <div className="mx-auto w-full max-w-[var(--page-max)] px-4 pb-6 pt-2 lg:px-6">
+        <ClearedDebtsView cleared={data.cleared} base={data.base} next={nextToClear} onBack={() => setClearedView(false)} onOpen={(id) => open(id, id !== nextToClear?.id)} />
+        {sheets}
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -121,7 +156,7 @@ export default function DebtsPage() {
       <PageGrid
           stack
           primary={
-            <div className="px-4 pt-4 lg:px-0 lg:pt-0">
+            <div className="px-4 pb-6 pt-4 lg:px-0 lg:pt-0">
                 {empty ? (
                   <EmptyState
                     variant="card"
@@ -134,8 +169,16 @@ export default function DebtsPage() {
                   />
                 ) : (
                   <>
-                    <div className="mt-5 lg:mt-0">
-                      <DebtFamilyTabs active={tab} onChange={setTab} />
+                    <div className="mt-1 flex items-center gap-2 lg:mt-0">
+                      <div className="min-w-0 flex-1">
+                        <DebtFamilyTabs active={tab} onChange={setTab} />
+                      </div>
+                      {clearedCount > 0 ? (
+                        <OptionChip size="sm" surface="card" selected={false} onClick={() => setClearedView(true)} aria-label={v9.clearedAria(clearedCount)} className="h-[42px] flex-none">
+                          <Trophy aria-hidden className="size-[18px]" />
+                          <span className="font-mono-numbers">{clearedCount}</span>
+                        </OptionChip>
+                      ) : null}
                     </div>
 
                     {tab === 'installment' && data.assignCandidate && data.assignCandidate.id !== dismissedAssign ? (
@@ -144,70 +187,23 @@ export default function DebtsPage() {
                       </div>
                     ) : null}
 
-                    <div className="mt-6">
+                    <div className="mt-4">
                       <DebtsActiveList
                         family={tab}
                         borrow={data.borrow}
                         installments={data.installments}
                         cards={data.cards}
                         onAdd={() => setAddOpen(true)}
-                        onOpen={setRowId}
+                        onOpen={(id) => open(id)}
                       />
                     </div>
                   </>
                 )}
             </div>
           }
-          secondary={
-            <div className="px-4 lg:px-0">
-              <DebtPaymentsFeed payments={data.payments} family={empty ? undefined : tab} />
-              {clearedCount > 0 ? (
-                <Button
-                  variant="outline"
-                  size="touch"
-                  onClick={() => setActiveModal('clearedVault')}
-                  className="mb-6 mt-3 w-full justify-start rounded-[14px] border-dashed text-[0.8125rem] font-semibold text-[var(--color-brand-text-secondary)]"
-                >
-                  <Award aria-hidden />
-                  <span className="flex-1 text-start">{c.cleared(clearedCount, formatWhole(clearedTotal))}</span>
-                  <ChevronRight aria-hidden className="rtl:rotate-180" />
-                </Button>
-              ) : null}
-              {/* Not in the mockup page: the debt-as-goal offer and debt goals sit after everything it shows. */}
-              <div className="mb-6 empty:hidden">
-                <DebtGoalPrompt />
-                <GoalLensList categories={['debt_freedom']} />
-              </div>
-            </div>
-          }
         />
 
-      <AddDebtOptionSheet open={addOpen} onClose={() => setAddOpen(false)} />
-
-      <OptionSheet<RowAction>
-        open={rowDebt !== undefined}
-        onClose={() => setRowId(null)}
-        title={rowDebt ? rowDebt.name || rowDebt.person : ''}
-        value={null}
-        onChange={runRow}
-        options={[
-          rowDebt && isOwedToUser(rowDebt)
-            ? { value: 'pay' as const, title: c.rowActions.receive, icon: <Undo2 />, tone: 'var(--color-brand-green)' }
-            : { value: 'pay' as const, title: c.rowActions.pay, icon: <Wallet /> },
-          { value: 'edit' as const, title: c.rowActions.edit, icon: <Pencil /> },
-          ...(rowDebt?.debtType === 'credit_card' && rowDebt.linkedPaymentMethodId ? [{ value: 'charges' as const, title: c.rowActions.charges, icon: <ReceiptText /> }] : []),
-          { value: 'delete' as const, title: c.rowActions.delete, icon: <Trash2 />, tone: 'var(--color-brand-red)' },
-        ]}
-      />
-
-      <ClearedVaultSheet
-        open={activeModal === 'clearedVault'}
-        onClose={() => setActiveModal(null)}
-        cleared={data.cleared}
-        base={data.base}
-      />
-
-      <ChargesSheet open={chargesTarget !== null} onClose={() => setChargesTarget(null)} target={chargesTarget} />
+      {sheets}
     </div>
   )
 }

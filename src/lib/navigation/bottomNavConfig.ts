@@ -34,7 +34,7 @@ export function sectionTitleNavKey(pathname: string | null): keyof Dictionary['n
   if (!pathname) return null
   if (pathname === '/') return 'flow'
   if (pathname.startsWith('/flow')) return 'flow'
-  if (pathname.startsWith('/paydays')) return 'paydays'
+  if (pathname.startsWith('/paydays')) return 'income'
   if (pathname.startsWith('/expenses')) return 'flow'
   if (pathname.startsWith('/accounts')) return 'accounts'
   if (pathname.startsWith('/debts')) return 'debts'

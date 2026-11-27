@@ -6,6 +6,7 @@ import { ChevronDown, Landmark, Undo2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { AddDebtHook } from '@/hooks/useAddDebtSheet'
 import { AmountHero } from '@/components/ui/AmountHero'
+import { OptionChip } from '@/components/ui/OptionChip'
 import { OptionSheet } from '@/components/ui/OptionSheet'
 import { PickerRow } from '@/components/ui/PickerRow'
 import { SettingsSwitchRow } from '@/components/features/settings/SettingsSwitchRow'
@@ -18,6 +19,7 @@ import { useLocale, useT } from '@/lib/i18n'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 import { useLightTouchCopy } from '@/lib/i18n/lightTouchCopy'
+import { useDebtsV9Copy } from '@/lib/i18n/debtsV9Copy'
 
 /** "Car loan · CIB": the debt's name, then the lender when it has one of its own. */
 export function payDebtTitle(debt: { name?: string; person?: string; creditor?: string; installmentProviderName?: string }): string {
@@ -35,6 +37,7 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
   const dict = useT()
   const t = dict.debts
   const c = useDebtsSubsLtCopy().pay
+  const v9 = useDebtsV9Copy().pay
   const ordinal = useLightTouchCopy().dayOfMonth.ordinal
   const debt = d.selectedDebt
   const receiving = debt ? isOwedToUser(debt) : false
@@ -81,6 +84,18 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
               ? [what && since ? c.forOn(what, since) : '', thisOf].filter(Boolean).join(' · ')
               : c.left(`${formatFlex(d.selectedRemaining)}${unit}`, `${formatFlex(after)}${unit}`)}
           </p>
+        </div>
+      ) : null}
+      {debt && d.selectedRemaining > 0 ? (
+        <div className="-mt-1 flex justify-center">
+          <OptionChip
+            size="sm"
+            surface="card"
+            selected={sameUnit && Math.abs(paid - d.selectedRemaining) < 0.005}
+            onClick={() => { d.setPaymentCurrency(debt.isGold ? 'XAU' : debt.currency); d.setPaymentAmount(String(Math.round(d.selectedRemaining * 100) / 100)); d.setPaymentRateError('') }}
+          >
+            <span className="font-mono-numbers">{v9.fullAmount(`${formatFlex(d.selectedRemaining)}${unit}`)}</span>
+          </OptionChip>
         </div>
       ) : null}
       {d.paymentRateError ? <p role="alert" className="text-center text-xs text-[var(--color-brand-red)]">{d.paymentRateError}</p> : null}

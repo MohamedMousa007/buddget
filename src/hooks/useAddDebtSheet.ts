@@ -109,6 +109,7 @@ export function useAddDebtSheet() {
     setActiveModal,
     debtSheetPaymentOnly,
     debtSheetPrefillDebtId,
+    debtSheetPayFull,
     resetDebtSheetIntent,
     editingDebtId,
     setEditingDebtId,
@@ -381,7 +382,7 @@ export function useAddDebtSheet() {
     if (!isOpen || !inPayForm || !selectedDebt) { if (!isOpen) payAmountPrefilled.current = null; return }
     if (payAmountPrefilled.current === selectedDebt.id) return
     payAmountPrefilled.current = selectedDebt.id
-    const def = selectedDebt.debtType === 'installment' && selectedDebt.installmentAmount
+    const def = !debtSheetPayFull && selectedDebt.debtType === 'installment' && selectedDebt.installmentAmount
       ? settleInstallmentAmount(
           selectedDebt.installmentAmount,
           selectedRemaining,
@@ -392,7 +393,7 @@ export function useAddDebtSheet() {
       : selectedRemaining
     if (def > 0) setPaymentAmount(String(Math.round(def * 100) / 100))
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [isOpen, isPayDebtFlow, payDebtStep, debtSheetPaymentOnly, selectedDebt, selectedRemaining, debtPayments])
+  }, [isOpen, isPayDebtFlow, payDebtStep, debtSheetPaymentOnly, debtSheetPayFull, selectedDebt, selectedRemaining, debtPayments])
 
   // A payment starts on the plan's default card (installments); once per debt per opening, so a manual pick sticks.
   const methodPresetFor = useRef(new Set<string>())

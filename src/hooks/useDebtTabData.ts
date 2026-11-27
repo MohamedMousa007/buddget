@@ -6,7 +6,7 @@ import { useLocale, useT } from '@/lib/i18n'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { useShallow } from 'zustand/react/shallow'
 import { currentCycle } from '@/lib/settings/payCycle'
-import { parseISO, isWithinInterval } from 'date-fns'
+import { differenceInCalendarMonths, parseISO, isWithinInterval } from 'date-fns'
 import { borrowGoalSchedule, borrowScheduleStart } from '@/lib/debts/borrowGoal'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
@@ -53,6 +53,8 @@ export interface BorrowVM {
   total: number
   paid: number
   remaining: number
+  /** What is left in the main currency (gold at today’s price, 0 without one). */
+  remainingBase: number
   currency: string
   accent: string
   gold?: { grams: number; karat: GoldKarat }
@@ -68,6 +70,7 @@ export interface CreditCardVM {
   currency: string
   limit?: number
   outstanding: number
+  remainingBase: number
   utilPct: number | null
   overBy: number
   regularDue: number
@@ -76,6 +79,8 @@ export interface CreditCardVM {
   after: number
   due?: string
   daysLeft?: number
+  /** Installment plans paid on this card: owed once, inside the card (LOGIC_SPEC card plan). */
+  plans?: { n: number; monthly: number; left: number }
 }
 
 export interface InstallmentVM {
@@ -88,12 +93,15 @@ export interface InstallmentVM {
   paid: number
   per: number
   remaining: number
+  remainingBase: number
   currency: string
   next?: string
   /** Local days the next unpaid instalment is past due; 0 when it is not. */
   overdueDays: number
   method?: string
   onCardLast4?: string
+  /** The card debt this plan is paid on; such a plan shows under its card, not in the Installments list. */
+  onCardId?: string
 }
 
 export type ScheduledPaymentVM = ScheduledDebtPayment
@@ -115,6 +123,8 @@ export interface ClearedVM {
   original: number
   currency: string
   clearedMonth: string
+  /** Whole months from the start (or creation) to the day it was cleared. */
+  months: number
   history: { date: string; method?: string; amount: number; currency: string }[]
 }
 
@@ -163,6 +173,9 @@ export function useDebtTabData() {
     const balanceCtx = { expenses, exchangeRates, allDebts: debts }
     const paymentsFor = (id: string) => debtPayments.filter((p) => p.debtId === id)
     const last4Of = (pmId?: string) => (pmId ? paymentMethods.find((m) => m.id === pmId)?.last4 : undefined)
+    // What is left in the main currency, for section totals: gold at today's price (0 without one), else converted.
+    const leftInBase = (d: Debt, left: number) =>
+      d.isGold ? (goldPriceAvailable ? goldGramsToMoney(left, goldPricePerGram, d.goldKarat) : 0) : convertCurrency(left, d.currency, base, exchangeRates)
 
     // --- portfolio totals ---
     const owed = stats.debtRemainingTotal
@@ -205,6 +218,7 @@ export function useDebtTabData() {
           total: d.startingBalance,
           paid,
           remaining,
+          remainingBase: leftInBase(d, remaining),
           currency: d.currency,
           accent: d.isGold ? 'var(--color-brand-gold)' : d.direction === 'they_owe' ? 'var(--color-brand-green)' : 'var(--color-brand-primary)',
           gold: d.isGold && d.goldKarat ? { grams: remaining, karat: d.goldKarat } : undefined,
@@ -249,6 +263,7 @@ export function useDebtTabData() {
           currency: d.currency,
           limit: d.creditLimit,
           outstanding,
+          remainingBase: leftInBase(d, outstanding),
           utilPct: creditUtilizationRatio(outstanding, d.creditLimit) != null ? Math.round(creditUtilizationRatio(outstanding, d.creditLimit)! * 100) : null,
           overBy: d.creditLimit != null ? Math.max(0, outstanding - d.creditLimit) : 0,
           regularDue,
@@ -266,6 +281,7 @@ export function useDebtTabData() {
       .map((d) => {
         const pays = paymentsFor(d.id)
         const paid = installmentPaymentsCompleted(d, pays)
+        const remaining = calculateDebtRemaining(d, pays, balanceCtx)
         const count = d.installmentCount ?? 0
         const per = d.installmentAmount ?? 0
         const brand = findProviderBrand(
@@ -288,14 +304,20 @@ export function useDebtTabData() {
           count,
           paid,
           per,
-          remaining: calculateDebtRemaining(d, pays, balanceCtx),
+          remaining,
+          remainingBase: leftInBase(d, remaining),
           currency: d.currency,
           next: nextInstallmentDueFormatted(d, paid, locale) ?? undefined,
           overdueDays: installmentOverdueDays(d, paid),
           method,
           onCardLast4: cardLast4 ?? undefined,
+          onCardId: d.linkedCreditCardDebtId || undefined,
         }
       })
+    for (const card of cards) {
+      const mine = installments.filter((p) => p.onCardId === card.id)
+      if (mine.length) card.plans = { n: mine.length, monthly: mine.reduce((s, p) => s + p.per, 0), left: mine.reduce((s, p) => s + p.remaining, 0) }
+    }
 
     // --- payments feed (newest first) ---
     const payments: PaymentVM[] = [...debtPayments]
@@ -323,6 +345,7 @@ export function useDebtTabData() {
         original: d.startingBalance,
         currency: d.currency,
         clearedMonth: d.clearedAt ? formatLocalized(parseISO(d.clearedAt), 'MMM yyyy', locale) : '—',
+        months: d.clearedAt ? Math.max(1, differenceInCalendarMonths(parseISO(d.clearedAt), parseISO((d.startDate || d.createdAt).slice(0, 10)))) : 0,
         history: paymentsFor(d.id)
           .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
           .map((p) => ({

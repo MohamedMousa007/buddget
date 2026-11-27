@@ -169,6 +169,8 @@ interface SettingsState {
   /** When opening add-debt sheet from "Record payment" on a card */
   debtSheetPaymentOnly: boolean
   debtSheetPrefillDebtId: string | null
+  /** Record payment opened as Pay off early: prefill everything that is left. */
+  debtSheetPayFull: boolean
   /** When opening add-debt, jump straight to this family's form (skip the picker). */
   debtSheetPresetFamily: 'personal' | 'installment' | null
   /** Edit sheet opened from a card's "Set a payoff goal" CTA: open with the goal toggle on. */
@@ -211,7 +213,7 @@ interface SettingsState {
   setFocusInsightId: (id: string | null) => void
   openDebtSheetNew: (family?: 'personal' | 'installment') => void
   openPayDebtSheet: () => void
-  openDebtSheetRecordPayment: (debtId: string) => void
+  openDebtSheetRecordPayment: (debtId: string, full?: boolean) => void
   resetDebtSheetIntent: () => void
   resetSettings: () => void
   /** Same as `resetSettings` (logout UI state). */
@@ -303,6 +305,7 @@ export const useSettingsStore = create<SettingsState>()(
         }),
       debtSheetPaymentOnly: false,
       debtSheetPrefillDebtId: null,
+      debtSheetPayFull: false,
       debtSheetPresetFamily: null,
       debtSheetGoalIntent: false,
       buddgyOrb: { side: 'left', top: 620 },
@@ -348,6 +351,7 @@ export const useSettingsStore = create<SettingsState>()(
         set({
           debtSheetPaymentOnly: false,
           debtSheetPrefillDebtId: null,
+          debtSheetPayFull: false,
           debtSheetPresetFamily: family ?? null,
           activeModal: 'addDebt',
         }),
@@ -355,18 +359,20 @@ export const useSettingsStore = create<SettingsState>()(
         set({
           debtSheetPaymentOnly: false,
           debtSheetPrefillDebtId: null,
+          debtSheetPayFull: false,
           activeModal: 'payDebt',
         }),
-      openDebtSheetRecordPayment: (debtId) =>
+      openDebtSheetRecordPayment: (debtId, full = false) =>
         set({
           debtSheetPaymentOnly: true,
           debtSheetPrefillDebtId: debtId,
+          debtSheetPayFull: full,
           activeModal: 'addDebt',
         }),
       openDebtGoalEdit: (debtId) =>
         set({ editingDebtId: debtId, debtSheetGoalIntent: true, debtSheetPaymentOnly: false, debtSheetPrefillDebtId: null, activeModal: 'editDebt' }),
       resetDebtSheetIntent: () =>
-        set({ debtSheetPaymentOnly: false, debtSheetPrefillDebtId: null, debtSheetPresetFamily: null, debtSheetGoalIntent: false }),
+        set({ debtSheetPaymentOnly: false, debtSheetPrefillDebtId: null, debtSheetPayFull: false, debtSheetPresetFamily: null, debtSheetGoalIntent: false }),
       resetSettings: () =>
         set({
           sidebarOpen: false,
@@ -389,6 +395,7 @@ export const useSettingsStore = create<SettingsState>()(
           aiChatSeedSend: false,
           debtSheetPaymentOnly: false,
           debtSheetPrefillDebtId: null,
+          debtSheetPayFull: false,
         }),
 
       reset: () => {

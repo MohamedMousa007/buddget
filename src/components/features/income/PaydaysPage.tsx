@@ -2,13 +2,19 @@
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { addMonths, format, parseISO } from 'date-fns'
-import { ArrowUpDown, ArrowUpRight, Briefcase, Building2, CalendarCog, Check, ChevronRight, Contrast, GripVertical, Plus, TrendingUp, X, type LucideIcon } from 'lucide-react'
+import { addMonths, differenceInCalendarDays, format, parseISO } from 'date-fns'
+import { ArrowUpDown, Briefcase, Building2, Calendar, CalendarCheck, CalendarCog, Check, ChevronLeft, ChevronRight, Contrast, GripVertical, MoreVertical, Pencil, Plus, Trash2, TrendingUp, X, type LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { OptionSheet } from '@/components/ui/OptionSheet'
+import { CardActionMenu, type CardMenuItem } from '@/components/ui/CardActionMenu'
+import { IconButton } from '@/components/ui/IconButton'
+import { PickerRow } from '@/components/ui/PickerRow'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
+import { useActionToast } from '@/components/ui/ActionToast'
+import { IncomeHome } from '@/components/features/income/IncomeHome'
 import { SelectableCard } from '@/components/ui/SelectableCard'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { HeroBand } from '@/components/features/hero/HeroBand'
@@ -28,7 +34,7 @@ import { fillSlots } from '@/lib/ui/fillSlots'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import { cn } from '@/lib/utils'
 import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
-import { usePaydaysLtCopy } from '@/lib/i18n/paydaysLtCopy'
+import { usePaydaysLtCopy, type IncomeNoun } from '@/lib/i18n/paydaysLtCopy'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 import { formatLocalized, intlTag } from '@/lib/i18n/dateFormat'
 import { bankLogoForName } from '@/lib/payment/bankLogos'
@@ -92,6 +98,10 @@ export function PaydaysPage() {
   useEffect(() => {
     useSettingsStore.getState().setPaydayFocusId(null)
   }, [])
+  const [menu, setMenu] = useState<DOMRect | null>(null)
+  const confirm = useConfirm()
+  const showToast = useActionToast()
+  const deleteIncomeSource = useFinanceStore((s) => s.deleteIncomeSource)
   const [cycleOpen, setCycleOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
@@ -101,11 +111,15 @@ export function PaydaysPage() {
   const listRef = useRef<HTMLDivElement>(null)
   const reordering = order !== null
 
-  // Hardware / gesture back leaves the reorder before leaving the page.
+  // Hardware / gesture back leaves the reorder, then a source page, before leaving Income.
   useEffect(() => {
     if (!reordering) return
     return registerBackGuard(() => { setOrder(null); return true })
   }, [reordering])
+  useEffect(() => {
+    if (!pickedId || reordering) return
+    return registerBackGuard(() => { setPickedId(null); setSelectedKey(null); return true })
+  }, [pickedId, reordering])
 
   const streams = useMemo(() => {
     const { start, end } = getMonthRange(monthFilter, monthStartDay)
@@ -113,24 +127,48 @@ export function PaydaysPage() {
       .filter((s) => s.isRecurring && recurringActiveForWindow(s, start, end))
       .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.createdAt.localeCompare(b.createdAt))
   }, [incomeSources, monthFilter, monthStartDay])
-  const source = streams.find((s) => s.id === pickedId) ?? streams[0]
-
-  // This month across every payday, each converted to the main currency (one with no rate is left out, never mixed in).
-  const progress = useMemo(() => {
-    let expected = 0
-    let received = 0
-    for (const s of streams) {
-      for (const o of buildOccurrences(s, incomeEvents, monthFilter, monthStartDay)) {
-        const e = tryConvertCurrency(s.amount, s.currency, base, rates)
-        if (e == null) continue
-        expected += e
-        if (isRealizedOccurrence(o)) received += tryConvertCurrency(o.amount, o.currency, base, rates) ?? 0
-      }
-    }
-    return { expected, received }
-  }, [streams, incomeEvents, monthFilter, monthStartDay, base, rates])
+  const source = streams.find((s) => s.id === pickedId)
 
   const today = useMemo(() => new Date(), [])
+
+  // This month across every source, each converted to the main currency (one with no rate is left out, never mixed in),
+  // plus each source's row on the Income home: its cadence, next date and whether this month is in.
+  const home = useMemo(() => {
+    const todayISO = toISODate(today)
+    const per = streams.map((s) => {
+      const occ = buildOccurrences(s, incomeEvents, monthFilter, monthStartDay)
+      const e = tryConvertCurrency(s.amount, s.currency, base, rates)
+      const exp = e == null ? 0 : e * occ.length
+      const rec = e == null ? 0 : occ.filter(isRealizedOccurrence).reduce((sum, o) => sum + (tryConvertCurrency(o.amount, o.currency, base, rates) ?? 0), 0)
+      const open = occ.find((o) => !isRealizedOccurrence(o))
+      const allIn = occ.length > 0 && !open
+      const runAhead = recentPaydays(s, incomeEvents, format(addMonths(today, 1), 'yyyy-MM'), monthStartDay, RUN_LEN, today, weekendFirst)
+      const upcoming = paydayHeroFacts(runAhead, today).next
+      const freq = s.recurringFrequency ?? 'monthly'
+      return { exp, rec, allIn, upcoming, row: {
+        id: s.id,
+        name: s.name,
+        type: s.sourceType,
+        amount: s.amount,
+        currency: s.currency,
+        method: paymentMethods.find((m) => m.id === paydayMethodId(s, paymentMethods)),
+        line: allIn && upcoming ? c.home.cadenceNext(c.home.cadence[freq], shortDate(upcoming.dueDate)) : c.home.cadence[freq],
+        status: allIn
+          ? { tone: 'ok' as const, text: c.home.statusReceived }
+          : open
+            ? { tone: open.dueDate <= todayISO ? ('due' as const) : ('soon' as const), text: c.home.statusDue(shortDate(open.dueDate)) }
+            : { tone: 'soon' as const, text: upcoming ? c.home.statusDue(shortDate(upcoming.dueDate)) : '' },
+      } }
+    })
+    const soonest = per.filter((p) => p.upcoming).sort((a, b) => a.upcoming!.dueDate.localeCompare(b.upcoming!.dueDate))[0]
+    return {
+      expected: per.reduce((s, p) => s + p.exp, 0),
+      received: per.reduce((s, p) => s + p.rec, 0),
+      inCount: per.filter((p) => p.allIn).length,
+      rows: per.map((p) => p.row),
+      next: soonest ? { name: soonest.row.name, date: shortDate(soonest.upcoming!.dueDate) } : null,
+    }
+  }, [streams, incomeEvents, monthFilter, monthStartDay, base, rates, today, weekendFirst, paymentMethods, c, shortDate])
   // Up to next month, so the next payday is in the run even late in this one.
   const run = useMemo(
     () => (source ? recentPaydays(source, incomeEvents, format(addMonths(today, 1), 'yyyy-MM'), monthStartDay, RUN_LEN, today, weekendFirst) : []),
@@ -148,15 +186,15 @@ export function PaydaysPage() {
     )
   }
 
-  if (!source) {
+  if (streams.length === 0) {
     return (
       <div className={column}>
         <div className="lg:mx-auto lg:mt-6 lg:max-w-md">
           <EmptyState
             variant="card"
-            title={t.paydays.emptyTitle}
-            description={t.paydays.emptyBody}
-            action={<Button size="cta" onClick={() => add()}>{t.paydays.emptyCta}</Button>}
+            title={c.home.emptyTitle}
+            description={c.home.emptyBody}
+            action={<Button size="cta" onClick={() => add()}>{c.home.add}</Button>}
           />
         </div>
         <p className="mx-0.5 mb-2 mt-5 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)] lg:text-center">
@@ -180,20 +218,6 @@ export function PaydaysPage() {
         </div>
       </div>
     )
-  }
-
-  const facts = paydayHeroFacts(run, today)
-  const freq = source.recurringFrequency ?? 'monthly'
-  const freqLabel = freq === 'monthly' ? t.addIncome.freqMonthly : freq === 'weekly' ? t.addIncome.freqWeekly : t.addIncome.freqBiweekly
-  const typeLabel = incomeSourceTypeLabel(t.income, source.sourceType)
-  const account = paydayMethodLabel(source, paymentMethods)
-  // The band names the account alone, as the mockup does ("Salary · Monthly → CIB Payroll"); the digits are in Edit.
-  const landsIn = paymentMethods.find((m) => m.id === paydayMethodId(source, paymentMethods))
-  const toLog = run.find((o) => o.actionable && !isRealizedOccurrence(o))
-  const selected = run.find((o) => o.key === selectedKey)
-  const editPayday = () => {
-    setEditingIncomeId(source.id)
-    setActiveModal('editIncome')
   }
 
   const move = (id: string, to: number) => setOrder((prev) => (prev ? moveInOrder(prev, id, to) : prev))
@@ -268,6 +292,85 @@ export function PaydaysPage() {
   }
 
   const monthName = new Intl.DateTimeFormat(intlTag(locale), { month: 'long' }).format(new Date(`${monthFilter}-01T00:00:00`))
+  const moreSheet = (
+    <>
+      <PayCycleSheet open={cycleOpen} onClose={() => setCycleOpen(false)} />
+      {/* Pay cycle and reorder sit behind one quiet row at the end of the home. */}
+      <Button variant="ghost" size="touch" onClick={() => setMoreOpen(true)} aria-haspopup="dialog" className="mt-3 px-1 text-[0.8125rem] font-semibold text-[var(--color-brand-text-secondary)]">
+        <CalendarCog aria-hidden />
+        {c.more}
+        <ChevronRight aria-hidden className="rtl:rotate-180" />
+      </Button>
+      <OptionSheet<string>
+        open={moreOpen}
+        onClose={() => setMoreOpen(false)}
+        title={c.sources}
+        subtitle={home.expected > 0
+          ? fillSlots(t.paydays.receivedLine, { month: monthName, received: formatWhole(home.received), expected: formatWhole(home.expected), currency: base })
+          : undefined}
+        value={null}
+        onChange={(v) => {
+          if (v === 'cycle') setCycleOpen(true)
+          else if (v === 'reorder') setOrder(streams.map((s) => s.id))
+        }}
+        options={[
+          { value: 'cycle', title: c.payCycle, icon: <CalendarCog /> },
+          ...(streams.length > 1 ? [{ value: 'reorder', title: t.paydays.reorderAria, icon: <ArrowUpDown /> }] : []),
+        ]}
+      />
+    </>
+  )
+
+  if (!source) {
+    return (
+      <div className={column}>
+        <IncomeHome
+          month={monthName}
+          base={base}
+          expected={home.expected}
+          received={home.received}
+          inCount={home.inCount}
+          next={home.next}
+          rows={home.rows}
+          onOpen={(id) => { setPickedId(id); setSelectedKey(null) }}
+          onAdd={() => add()}
+        />
+        {moreSheet}
+      </div>
+    )
+  }
+
+  const noun: IncomeNoun = source.sourceType === 'salary' ? 'salary' : 'income'
+  const facts = paydayHeroFacts(run, today)
+  const freq = source.recurringFrequency ?? 'monthly'
+  const freqLabel = freq === 'monthly' ? t.addIncome.freqMonthly : freq === 'weekly' ? t.addIncome.freqWeekly : t.addIncome.freqBiweekly
+  const typeLabel = incomeSourceTypeLabel(t.income, source.sourceType)
+  const account = paydayMethodLabel(source, paymentMethods)
+  const landsIn = paymentMethods.find((m) => m.id === paydayMethodId(source, paymentMethods))
+  const toLog = run.find((o) => o.actionable && !isRealizedOccurrence(o))
+  const selected = run.find((o) => o.key === selectedKey)
+  const editPayday = () => {
+    setEditingIncomeId(source.id)
+    setActiveModal('editIncome')
+  }
+  const logOne = (o: IncomeOccurrence) => openAmountReceived(source.id, o.key, o.dueDate.slice(0, 7))
+  const menuItems: CardMenuItem[] = [
+    { label: c.source.edit(noun), icon: <Pencil className="size-4 shrink-0" />, onSelect: editPayday },
+    ...(toLog ? [{ label: c.source.logPast(noun), icon: <Plus className="size-4 shrink-0" />, onSelect: () => logOne(toLog) }] : []),
+    // Same guard and path as the edit sheet's delete: a shared plan's source is not deleted here; Undo brings it back.
+    ...(source.sharedPlanId ? [] : [{
+      label: c.source.delete(noun),
+      destructive: true,
+      icon: <Trash2 className="size-4 shrink-0" />,
+      onSelect: () => void confirm({ title: c.source.deleteTitle(noun), body: c.source.deleteBody, confirmLabel: t.common.delete, destructive: true })
+        .then((ok) => {
+          if (!ok) return
+          deleteIncomeSource(source.id)
+          setPickedId(null)
+          showToast(t.moneyFlows.incomeDeleted, { undo: () => useFinanceStore.getState().restoreIncomeSource(source), undoLabel: t.common.undo })
+        }),
+    }]),
+  ]
   const todayISO = toISODate(today)
   const history = run.filter((o) => o.eventId || o.dueDate <= todayISO).reverse()
   const rows: FlowLedgerRow[] = history.map((o) => {
@@ -317,47 +420,60 @@ export function PaydaysPage() {
 
   return (
     <div className={column}>
-      <PayCycleSheet open={cycleOpen} onClose={() => setCycleOpen(false)} />
+      <Button variant="ghost" size="touch" onClick={() => { setPickedId(null); setSelectedKey(null) }} className="-ms-2 mb-1 px-2 text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">
+        <ChevronLeft aria-hidden className="size-5 rtl:rotate-180" />
+        {c.source.back}
+      </Button>
 
       <HeroBand
         contained
         label={`${typeLabel} · ${freqLabel}${landsIn ? ` → ${accountTitle(landsIn)}` : ''}`}
+        aside={
+          <IconButton aria-label={c.source.more} aria-haspopup="menu" aria-expanded={menu !== null} variant="sheetAction" onClick={(e) => setMenu(e.currentTarget.getBoundingClientRect())}>
+            <MoreVertical size={16} />
+          </IconButton>
+        }
         numbers={
-          <p className="flex min-w-0 items-baseline gap-1.5">
+          <p className="flex min-w-0 items-center gap-3">
+            {/* The icon the user chose for this source (its type), not the bank logo. */}
+            <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-[var(--flow-band-fg)] text-[var(--flow-band-b)]">
+              <IncomeTypeIcon type={source.sourceType} className="size-5" />
+            </span>
             <span className="font-mono-numbers text-[32px] font-semibold leading-none tracking-[-0.03em]">{formatFlex(source.amount)}</span>
             <span className="truncate text-[0.8125rem] text-[var(--flow-band-fg-2)]">{freq === 'monthly' ? c.eachMonth(source.currency) : c.eachPayday(source.currency)}</span>
           </p>
         }
-        note={
-          <span className="flex flex-wrap gap-x-3 gap-y-1">
-            {facts.next ? (
-              <span>{c.nextPayday} <b className="font-mono-numbers font-semibold text-[var(--flow-band-fg)]">{shortDate(facts.next.dueDate)}</b></span>
-            ) : null}
-            {facts.last.length ? (
-              <span>{c.onTime} <b className="font-mono-numbers font-semibold text-[var(--flow-band-fg)]">{c.ofN(facts.onTime, facts.last.length)}</b></span>
-            ) : null}
-          </span>
-        }
+        note={facts.last.length ? (
+          <span>{c.onTime} <b className="font-mono-numbers font-semibold text-[var(--flow-band-fg)]">{c.ofN(facts.onTime, facts.last.length)}</b></span>
+        ) : undefined}
         extra={facts.last.length ? <MonthCircles occ={facts.last} today={today} locale={locale} selectedKey={selectedKey} onSelect={(k) => setSelectedKey((cur) => (cur === k ? null : k))} /> : undefined}
       />
+      <CardActionMenu anchor={menu} items={menuItems} onClose={() => setMenu(null)} title={source.name} />
 
-      {account ? null : (
-        <Button variant="ghost" size="touch" onClick={editPayday} className="mt-1 px-1 text-[var(--color-brand-text-secondary)]">
-          {c.noAccount}
-          <ChevronRight aria-hidden className="rtl:rotate-180" />
-        </Button>
-      )}
+      {toLog ? (
+        <Card className="mt-3 p-4">
+          <div className="flex items-center gap-3">
+            <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]"><CalendarCheck className="size-[18px]" /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{c.source.dueTitle(formatLocalized(parseISO(toLog.dueDate), 'MMMM', locale), noun, shortDate(toLog.dueDate))}</span>
+              <span className="block text-xs text-[var(--color-brand-text-secondary)]">{c.source.dueBody}</span>
+            </span>
+          </div>
+          <Button size="cta-block" onClick={() => logOne(toLog)} className="mt-3">{c.source.confirm}</Button>
+        </Card>
+      ) : facts.next ? (
+        <Card className="mt-3 flex min-h-14 items-center gap-3 px-4 py-3">
+          <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]"><Calendar className="size-[18px]" /></span>
+          <span className="text-[0.875rem] font-medium text-[var(--color-brand-text-primary)]">{c.source.nextLine(noun, shortDate(facts.next.dueDate), differenceInCalendarDays(parseISO(facts.next.dueDate), today))}</span>
+        </Card>
+      ) : null}
 
-      <div className="mt-4 grid grid-cols-2 gap-2.5">
-        <Button size="touch" disabled={!toLog} onClick={() => toLog && openAmountReceived(source.id, toLog.key, toLog.dueDate.slice(0, 7))} className="rounded-2xl">
-          <Plus aria-hidden />
-          {lt.logPayday}
-        </Button>
-        <Button variant="secondary" size="touch" onClick={editPayday} className="rounded-2xl">
-          <ArrowUpRight aria-hidden />
-          {lt.editPayday}
-        </Button>
-      </div>
+      <p className="mx-1 mb-2 mt-5 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{c.source.details}</p>
+      <Card padding="none" divide className="overflow-hidden">
+        <PickerRow label={c.source.amount} onClick={editPayday} value={<span className="font-mono-numbers">{formatFlex(source.amount)} {source.currency}</span>} />
+        <PickerRow label={c.source.howOften} onClick={editPayday} value={freqLabel} />
+        <PickerRow label={c.source.paidInto} onClick={editPayday} value={<span dir="auto" className="truncate">{account ?? c.noAccount}</span>} />
+      </Card>
 
       {selected ? <PaydayActionsCard source={source} occ={selected} /> : null}
 
@@ -369,36 +485,6 @@ export function PaydaysPage() {
           </div>
         </>
       ) : null}
-
-      {/* The mockup page ends at the history: other paydays, add, pay cycle and reorder sit behind one quiet row. */}
-      <Button variant="ghost" size="touch" onClick={() => setMoreOpen(true)} aria-haspopup="dialog" className="mt-3 px-1 text-[0.8125rem] font-semibold text-[var(--color-brand-text-secondary)]">
-        <CalendarCog aria-hidden />
-        {c.more}
-        <ChevronRight aria-hidden className="rtl:rotate-180" />
-      </Button>
-      <OptionSheet<string>
-        open={moreOpen}
-        onClose={() => setMoreOpen(false)}
-        title={c.sources}
-        subtitle={progress.expected > 0
-          ? fillSlots(t.paydays.receivedLine, { month: monthName, received: formatWhole(progress.received), expected: formatWhole(progress.expected), currency: base })
-          : undefined}
-        value={streams.length > 1 ? `src:${source.id}` : null}
-        onChange={(v) => {
-          if (v.startsWith('src:')) { setPickedId(v.slice(4)); setSelectedKey(null) }
-          else if (v === 'add') add()
-          else if (v === 'cycle') setCycleOpen(true)
-          else if (v === 'reorder') setOrder(streams.map((s) => s.id))
-        }}
-        options={[
-          ...(streams.length > 1
-            ? streams.map((s) => ({ value: `src:${s.id}`, title: s.name, subtitle: `${formatFlex(s.amount)} ${s.currency}`, icon: <IncomeTypeIcon type={s.sourceType} />, tone: 'var(--color-brand-green)' }))
-            : []),
-          { value: 'add', title: c.addPayday, subtitle: t.paydays.oneTimeNote, icon: <Plus /> },
-          { value: 'cycle', title: c.payCycle, icon: <CalendarCog /> },
-          ...(streams.length > 1 ? [{ value: 'reorder', title: t.paydays.reorderAria, icon: <ArrowUpDown /> }] : []),
-        ]}
-      />
     </div>
   )
 }
