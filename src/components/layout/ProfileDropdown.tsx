@@ -190,7 +190,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
           <Divider />
           <div className="grid grid-cols-3 gap-1.5 p-2.5">
             {link('/goals', Target, t.nav.goals)}
-            {link('/paydays', CalendarClock, t.nav.paydays)}
+            {link('/paydays', CalendarClock, t.nav.income)}
             {link('/subscriptions', RotateCwClock, t.nav.subscriptions)}
             {link('/reports', BarChart3, t.nav.reports)}
             {link('/settings', Settings, copy.menu.openSettings)}
