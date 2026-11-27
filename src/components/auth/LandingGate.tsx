@@ -1,6 +1,5 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import type { CSSProperties } from 'react'
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { AuthModalBody } from '@/components/features/auth-modal/AuthModalBody'
@@ -35,31 +34,14 @@ const ACCENT: CSSProperties = { fontWeight: 700, color: 'var(--color-brand-prima
  * viewport with a large "buddget" wordmark sitting above it.
  *
  * In dark mode the background matches the WelcomeScreen gradient with an
- * ambient red glow and a cycling marketing ticker at the bottom.
+ * ambient glow and a cycling marketing ticker under the legal footer. The ticker
+ * is part of the page, not pinned to the screen: it never covers the form when
+ * the keyboard is up, and it keeps cycling while typing (BUD-68).
  */
 export function LandingGate() {
   const t = useT()
   const { locale } = useLocale()
   const isArabic = locale === 'ar'
-  const [keyboardOpen, setKeyboardOpen] = useState(false)
-
-  // Hide the bottom ticker only when the keyboard physically reduces the viewport
-  // (i.e. it overlaps the ticker). Focus alone must not affect the ticker.
-  useEffect(() => {
-    if (!window.matchMedia?.('(pointer: coarse)').matches) return
-    const vv = window.visualViewport
-    const onViewport = () => {
-      setKeyboardOpen(vv ? window.innerHeight - vv.height > 120 : false)
-    }
-    vv?.addEventListener('resize', onViewport)
-    vv?.addEventListener('scroll', onViewport)
-    onViewport()
-    return () => {
-      vv?.removeEventListener('resize', onViewport)
-      vv?.removeEventListener('scroll', onViewport)
-    }
-  }, [])
-
   return (
     <>
       <style>{`
@@ -88,7 +70,6 @@ export function LandingGate() {
           .lg-ticker p { animation: none !important; opacity: 0; }
           .lg-ticker p:first-child { opacity: 1 !important; }
         }
-        .lg-ticker-hide { display: none !important; }
       `}</style>
 
       {/* Layout note: top-aligned on phones so the soft keyboard doesn't push the
@@ -146,48 +127,44 @@ export function LandingGate() {
               Terms of Service
             </Link>
           </p>
-        </main>
 
-        {/* Marketing ticker — both themes, fixed to viewport bottom; hidden while typing */}
-        <div
-          className={`lg-ticker${keyboardOpen ? ' lg-ticker-hide' : ''}`}
-          style={{
-            position: 'fixed',
-            left: '36px',
-            right: '36px',
-            bottom: 'max(env(safe-area-inset-bottom, 0px), 24px)',
-            height: isArabic ? '60px' : '48px',
-            textAlign: 'center',
-            zIndex: 20,
-            pointerEvents: 'none',
-          }}
-        >
-          {isArabic ? (
-            <>
-              <p style={tickerItemStyle(0)}>
-                تتبَّع أموالك <span style={ACCENT}>دون عناء.</span>
-              </p>
-              <p style={tickerItemStyle(4.5)}>
-                كل عملية شراء <span style={ACCENT}>تُرصَد</span> لحظة حدوثها.
-              </p>
-              <p style={tickerItemStyle(9)}>
-                <span style={ACCENT}>خصوصيتك</span> مصونة بالتصميم، دائمًا.
-              </p>
-            </>
-          ) : (
-            <>
-              <p style={tickerItemStyle(0)}>
-                Track your money <span style={ACCENT}>without trying.</span>
-              </p>
-              <p style={tickerItemStyle(4.5)}>
-                Every expense, <span style={ACCENT}>caught</span> on its way.
-              </p>
-              <p style={tickerItemStyle(9)}>
-                <span style={ACCENT}>Private</span> by design, always.
-              </p>
-            </>
-          )}
-        </div>
+          {/* Marketing ticker: in the page flow under the footer, so it never overlaps the form */}
+          <div
+            className="lg-ticker mt-6 mx-5"
+            style={{
+              position: 'relative',
+              height: isArabic ? '60px' : '48px',
+              textAlign: 'center',
+              pointerEvents: 'none',
+            }}
+          >
+            {isArabic ? (
+              <>
+                <p style={tickerItemStyle(0)}>
+                  تتبَّع أموالك <span style={ACCENT}>دون عناء.</span>
+                </p>
+                <p style={tickerItemStyle(4.5)}>
+                  كل عملية شراء <span style={ACCENT}>تُرصَد</span> لحظة حدوثها.
+                </p>
+                <p style={tickerItemStyle(9)}>
+                  <span style={ACCENT}>خصوصيتك</span> مصونة بالتصميم، دائمًا.
+                </p>
+              </>
+            ) : (
+              <>
+                <p style={tickerItemStyle(0)}>
+                  Track your money <span style={ACCENT}>without trying.</span>
+                </p>
+                <p style={tickerItemStyle(4.5)}>
+                  Every expense, <span style={ACCENT}>caught</span> on its way.
+                </p>
+                <p style={tickerItemStyle(9)}>
+                  <span style={ACCENT}>Private</span> by design, always.
+                </p>
+              </>
+            )}
+          </div>
+        </main>
       </div>
     </>
   )
