@@ -32,6 +32,7 @@ import { CashOnHandMark, MoveMoneySheet, type MoveMode } from '@/components/feat
 import { useAccountsLtCopy } from '@/lib/i18n/accountsLtCopy'
 import { UnplacedSmsSheet } from '@/components/features/accounts/UnplacedSmsSheet'
 import { CardDetailSheet } from '@/components/features/accounts/CardDetailSheet'
+import { SetAsideListSheet } from '@/components/features/accounts/SetAsideListSheet'
 import { PaymentMethodSetupSheet } from '@/components/features/payments/PaymentMethodSetupSheet'
 import { ensureCashAccount } from '@/lib/accounts/actions'
 import { cardDetails } from '@/lib/accounts/cardDetails'
@@ -79,6 +80,8 @@ type Sheet =
   | { kind: 'short'; id: string }
   /** "Where did this money go?" before closing an account that holds set-aside money (§4.8). */
   | { kind: 'closeHeld'; id: string }
+  /** The hero's "X set aside": pockets and goals kept in accounts. */
+  | { kind: 'setAside' }
 
 /** The Wealth and Debts header row: title, count, and the page's add action at the end. */
 function SectionHeader({ title, count, onAdd, addLabel }: { title: string; count: number; onAdd?: () => void; addLabel?: string }) {
@@ -127,7 +130,8 @@ export default function AccountsPage() {
   const ltShort = useAccountsLtCopy().short
   const ledger = useLedgerInput()
   // One notice per account per shortfall episode, until it is covered (auto-clears) or kept for now (settled).
-  const asking = useMemo(() => shortfallEpisodes(ledger).filter((e) => !settings.promptState?.[e.key]), [ledger, settings.promptState])
+  const episodes = useMemo(() => shortfallEpisodes(ledger), [ledger])
+  const asking = useMemo(() => episodes.filter((e) => !settings.promptState?.[e.key]), [episodes, settings.promptState])
   const base = String(settings.baseCurrency)
 
   const owed = useMemo(
@@ -261,11 +265,17 @@ export default function AccountsPage() {
   ) : null
 
   const walletCount = groups.wallets.length + groups.cash.length
+  const firstShort = episodes[0]
+  const shortMethod = firstShort ? viewOf(firstShort.accountId)?.method : undefined
+  const heroShort = firstShort && shortMethod
+    ? { text: ltShort.title(accountDisplayName(shortMethod), moneyFlex(firstShort.short, firstShort.currency)), onPress: () => setSheet({ kind: 'short', id: firstShort.accountId }) }
+    : undefined
   const home = (
     <>
       <PageHero inset>
         <AccountsHero model={missingRates.length > 0 && !model.approx ? { ...model, approx: true } : model} currency={base} netWorth={nw.netWorth} creditOwed={owed}
-          segments={heroSegments} hidden={heroMasked} onToggleHidden={toggle} />
+          segments={heroSegments} hidden={heroMasked} onToggleHidden={toggle} onSetAside={() => setSheet({ kind: 'setAside' })}
+          short={heroShort} />
       </PageHero>
       <PageGrid stack primary={<div className="space-y-5 px-4 py-4 lg:px-0 lg:pt-0">
         {rateDismissed ? null : <RateAlert currencies={missingRates} onDismiss={() => setRateDismissed(true)} />}
@@ -308,7 +318,7 @@ export default function AccountsPage() {
         ) : null}
         {groups.otherCards.length > 0 ? (
           <section>
-            <SectionHeader title={t.standaloneCards} count={groups.otherCards.length} onAdd={() => setSheet({ kind: 'addCard' })} addLabel={t.addCardCta} />
+            <SectionHeader title={t.standaloneCards} count={groups.otherCards.length} />
             {cardList(groups.otherCards.map((f) => f.method))}
           </section>
         ) : null}
@@ -407,6 +417,7 @@ export default function AccountsPage() {
       ) : null}
       <PaymentMethodSetupSheet open={sheet?.kind === 'addCard'} editing={null} baseCurrency={settings.baseCurrency} extraChoices={['store']} excludeTypes={['wallet']} nested onClose={close} />
       <AddAccountSheet key={addKey} open={addOpen} prefill={accountPrefill ?? undefined} onClose={close} pushCardStep onOnlyCard={() => { clearAccountPrefill(); setSheet({ kind: 'addCard' }) }} />
+      <SetAsideListSheet open={sheet?.kind === 'setAside'} onClose={close} onShort={(id) => setSheet({ kind: 'short', id })} />
       <DetectedAccountsSheet open={foundSheetOpen} onClose={close} onManual={() => setSheet({ kind: 'add' })} />
       <UnplacedSmsSheet key={unplaced.length} open={sheet?.kind === 'unplaced'} onClose={close} items={unplaced} accounts={model.accounts} />
     </div>

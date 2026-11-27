@@ -25,6 +25,8 @@ export interface HeroBandProps {
   aside?: ReactNode
   /** The 34.5px number row: big figure left, side info right. */
   numbers: ReactNode
+  /** Under the number row, only while given (a tapped figure's exact amount). */
+  afterNumbers?: ReactNode
   /** The 38.75px progress block: 12px gap, 6px bar, 5px gap, 15.75px scale row. Omit for a band with no progress. */
   bar?: ReactNode
   /** Free text under the numbers (a hint, a warning); only drawn when given. */
@@ -55,7 +57,7 @@ function DirChip({ dir }: { dir: 'in' | 'out' }) {
 }
 
 /** Flow's band skeleton (190px fixed): Wealth and Debts fill the same slots so the three heroes are siblings. */
-export function HeroBand({ label, aside, numbers, bar, note, extra, cells, fitCells = false, contained = false, bareBar = false }: HeroBandProps) {
+export function HeroBand({ label, aside, numbers, afterNumbers, bar, note, extra, cells, fitCells = false, contained = false, bareBar = false }: HeroBandProps) {
   return (
     <section className={cn('text-[var(--flow-band-fg)]', contained ? 'overflow-hidden rounded-3xl' : 'border-b border-[var(--flow-band-line)]')} style={{ background: FLOW_BAND_BG }}>
       <PageContainer wide className="px-0 lg:px-0">
@@ -65,6 +67,7 @@ export function HeroBand({ label, aside, numbers, bar, note, extra, cells, fitCe
             {aside}
           </div>
           <div className="mt-1.5 flex h-[34.5px] items-end justify-between gap-3">{numbers}</div>
+          {afterNumbers}
           {bar ? <div className={bareBar ? 'pt-3' : 'h-[38.75px] pt-3'}>{bar}</div> : null}
           {note ? <div className={`mt-2 text-xs leading-relaxed ${BAND_FG2}`}>{note}</div> : null}
           {extra}

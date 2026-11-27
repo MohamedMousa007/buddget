@@ -1,6 +1,7 @@
 import type { PaymentMethod } from '@/lib/store/types'
 import type { Dictionary } from '@/lib/i18n/types'
 import { inkFor } from '@/lib/ui/contrast'
+import { formatCompact } from '@/lib/utils/formatters'
 import { accountDisplayName, accountTitle } from '@/lib/accounts/accountTitle'
 import { PAYMENT_TYPE_META, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 
@@ -69,6 +70,17 @@ export function moneyFlex(n: number, currency: string): string {
 export function smartSplit(n: number, currency: string): { int: string; dec: string } {
   const s = splitMoney(n, currency)
   return /^\.0+$/.test(s.dec) ? { int: s.int, dec: '' } : s
+}
+
+/**
+ * D1 hero rule: the full figure while it fits, no decimals from 7 digits, compact from 10M ("282.9M" / "282.9 مليون").
+ * `compact` tells the caller the exact figure is worth a tap.
+ */
+export function heroFigure(n: number, currency: string, locale: 'en' | 'ar'): { text: string; compact: boolean } {
+  const a = Math.abs(n)
+  if (a >= 1e7) return { text: formatCompact(n, locale), compact: true }
+  if (a >= 1e6) return { text: splitMoney(n, currency).int, compact: false }
+  return { text: moneyFlex(n, currency), compact: false }
 }
 
 export { accountDisplayName, accountTitle }
