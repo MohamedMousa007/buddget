@@ -748,6 +748,51 @@ export type Database = {
           },
         ]
       }
+      ai_turns: {
+        Row: {
+          chat_id: string | null
+          closed_at: string | null
+          created_at: string
+          rerun_open: boolean
+          rerun_seen: boolean
+          reruns: number
+          spark_cost_micro: number
+          state: string
+          turn_id: string
+          use_sparks: boolean
+          user_id: string
+          visible: boolean
+        }
+        Insert: {
+          chat_id?: string | null
+          closed_at?: string | null
+          created_at?: string
+          rerun_open?: boolean
+          rerun_seen?: boolean
+          reruns?: number
+          spark_cost_micro?: number
+          state?: string
+          turn_id: string
+          use_sparks?: boolean
+          user_id: string
+          visible?: boolean
+        }
+        Update: {
+          chat_id?: string | null
+          closed_at?: string | null
+          created_at?: string
+          rerun_open?: boolean
+          rerun_seen?: boolean
+          reruns?: number
+          spark_cost_micro?: number
+          state?: string
+          turn_id?: string
+          use_sparks?: boolean
+          user_id?: string
+          visible?: boolean
+        }
+        Relationships: []
+      }
       ai_usage_daily: {
         Row: {
           cached_tokens: number
@@ -854,51 +899,6 @@ export type Database = {
             referencedColumns: ["chat_id"]
           },
         ]
-      }
-      ai_turns: {
-        Row: {
-          chat_id: string | null
-          closed_at: string | null
-          created_at: string
-          rerun_open: boolean
-          rerun_seen: boolean
-          reruns: number
-          spark_cost_micro: number
-          state: string
-          turn_id: string
-          use_sparks: boolean
-          user_id: string
-          visible: boolean
-        }
-        Insert: {
-          chat_id?: string | null
-          closed_at?: string | null
-          created_at?: string
-          rerun_open?: boolean
-          rerun_seen?: boolean
-          reruns?: number
-          spark_cost_micro?: number
-          state?: string
-          turn_id: string
-          use_sparks?: boolean
-          user_id: string
-          visible?: boolean
-        }
-        Update: {
-          chat_id?: string | null
-          closed_at?: string | null
-          created_at?: string
-          rerun_open?: boolean
-          rerun_seen?: boolean
-          reruns?: number
-          spark_cost_micro?: number
-          state?: string
-          turn_id?: string
-          use_sparks?: boolean
-          user_id?: string
-          visible?: boolean
-        }
-        Relationships: []
       }
       api_rate_limits: {
         Row: {
@@ -1650,7 +1650,6 @@ export type Database = {
       }
       debts: {
         Row: {
-          default_payment_method_id: string | null
           amount: number
           cleared_at: string | null
           created_at: string
@@ -1658,6 +1657,7 @@ export type Database = {
           creditor: string | null
           currency: Database["public"]["Enums"]["currency_code"]
           debt_type: Database["public"]["Enums"]["debt_kind"]
+          default_payment_method_id: string | null
           deleted_at: string | null
           description: string | null
           direction: Database["public"]["Enums"]["debt_direction"]
@@ -1707,7 +1707,6 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          default_payment_method_id?: string | null
           amount: number
           cleared_at?: string | null
           created_at?: string
@@ -1715,6 +1714,7 @@ export type Database = {
           creditor?: string | null
           currency?: Database["public"]["Enums"]["currency_code"]
           debt_type?: Database["public"]["Enums"]["debt_kind"]
+          default_payment_method_id?: string | null
           deleted_at?: string | null
           description?: string | null
           direction?: Database["public"]["Enums"]["debt_direction"]
@@ -1764,7 +1764,6 @@ export type Database = {
           user_id: string
         }
         Update: {
-          default_payment_method_id?: string | null
           amount?: number
           cleared_at?: string | null
           created_at?: string
@@ -1772,6 +1771,7 @@ export type Database = {
           creditor?: string | null
           currency?: Database["public"]["Enums"]["currency_code"]
           debt_type?: Database["public"]["Enums"]["debt_kind"]
+          default_payment_method_id?: string | null
           deleted_at?: string | null
           description?: string | null
           direction?: Database["public"]["Enums"]["debt_direction"]
@@ -1821,6 +1821,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "debts_default_payment_method_id_fkey"
+            columns: ["default_payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "debts_linked_credit_card_debt_id_fkey"
             columns: ["linked_credit_card_debt_id"]
@@ -2594,8 +2601,8 @@ export type Database = {
           effective_end: string | null
           effective_start: string
           icon: string | null
-          is_irregular: boolean
           id: string
+          is_irregular: boolean
           is_recurring: boolean
           linked_debt_id: string | null
           linked_savings_account_id: string | null
@@ -2623,8 +2630,8 @@ export type Database = {
           effective_end?: string | null
           effective_start: string
           icon?: string | null
-          is_irregular?: boolean
           id?: string
+          is_irregular?: boolean
           is_recurring?: boolean
           linked_debt_id?: string | null
           linked_savings_account_id?: string | null
@@ -2652,8 +2659,8 @@ export type Database = {
           effective_end?: string | null
           effective_start?: string
           icon?: string | null
-          is_irregular?: boolean
           id?: string
+          is_irregular?: boolean
           is_recurring?: boolean
           linked_debt_id?: string | null
           linked_savings_account_id?: string | null
@@ -5714,10 +5721,10 @@ export type Database = {
           board_title: string | null
           category: string
           context: Json
+          created_at: string
           csat_at: string | null
           csat_comment: string | null
           csat_rating: number | null
-          created_at: string
           duplicate_of: string | null
           first_response_at: string | null
           id: string
@@ -5733,10 +5740,10 @@ export type Database = {
           requester_email: string | null
           resolved_at: string | null
           severity: string
-          staff_last_read_at: string | null
           sla_first_response_due: string | null
           sla_resolution_due: string | null
           source: string
+          staff_last_read_at: string | null
           status: string
           subject: string
           tags: string[]
@@ -5756,10 +5763,10 @@ export type Database = {
           board_title?: string | null
           category?: string
           context?: Json
+          created_at?: string
           csat_at?: string | null
           csat_comment?: string | null
           csat_rating?: number | null
-          created_at?: string
           duplicate_of?: string | null
           first_response_at?: string | null
           id?: string
@@ -5775,10 +5782,10 @@ export type Database = {
           requester_email?: string | null
           resolved_at?: string | null
           severity?: string
-          staff_last_read_at?: string | null
           sla_first_response_due?: string | null
           sla_resolution_due?: string | null
           source?: string
+          staff_last_read_at?: string | null
           status?: string
           subject: string
           tags?: string[]
@@ -5798,10 +5805,10 @@ export type Database = {
           board_title?: string | null
           category?: string
           context?: Json
+          created_at?: string
           csat_at?: string | null
           csat_comment?: string | null
           csat_rating?: number | null
-          created_at?: string
           duplicate_of?: string | null
           first_response_at?: string | null
           id?: string
@@ -5817,10 +5824,10 @@ export type Database = {
           requester_email?: string | null
           resolved_at?: string | null
           severity?: string
-          staff_last_read_at?: string | null
           sla_first_response_due?: string | null
           sla_resolution_due?: string | null
           source?: string
+          staff_last_read_at?: string | null
           status?: string
           subject?: string
           tags?: string[]
@@ -6488,6 +6495,7 @@ export type Database = {
       }
       admin_user_overview: { Args: { p_user: string }; Returns: Json }
       advisor_gate: { Args: { p_user: string }; Returns: Json }
+      ai_chat_error_check: { Args: never; Returns: number }
       ai_cost_usd_micro:
         | {
             Args: {
@@ -6509,7 +6517,6 @@ export type Database = {
             }
             Returns: number
           }
-      ai_chat_error_check: { Args: never; Returns: number }
       ai_credit_windows: {
         Args: { p_t: string; p_user: string }
         Returns: Json
@@ -6740,10 +6747,6 @@ export type Database = {
         }
         Returns: string
       }
-      devices_supersede: {
-        Args: { p_new: string; p_old: string; p_user: string }
-        Returns: boolean
-      }
       detect_zero_variance_templates: {
         Args: { p_min_matches?: number }
         Returns: {
@@ -6751,6 +6754,10 @@ export type Database = {
           distinct_bodies: number
           template_id: string
         }[]
+      }
+      devices_supersede: {
+        Args: { p_new: string; p_old: string; p_user: string }
+        Returns: boolean
       }
       entitlement_grants: {
         Args: {
@@ -6923,7 +6930,6 @@ export type Database = {
         Returns: string
       }
       loyalty_week_summary: { Args: never; Returns: Json }
-      notification_candidate_users: { Args: never; Returns: string[] }
       month_end_due_users: {
         Args: { p_after?: string; p_limit?: number; p_user?: string }
         Returns: Json
@@ -6932,6 +6938,7 @@ export type Database = {
         Args: { p_cycle_start: string; p_user: string }
         Returns: Json
       }
+      notification_candidate_users: { Args: never; Returns: string[] }
       notification_due_users: {
         Args: { p_after?: string; p_limit?: number; p_now?: string }
         Returns: {
@@ -7297,10 +7304,7 @@ export type Database = {
         Args: { p_email_key: string; p_legacy_key?: string; p_user: string }
         Returns: Json
       }
-      undo_month_end: {
-        Args: { p_id: string; p_user: string }
-        Returns: Json
-      }
+      undo_month_end: { Args: { p_id: string; p_user: string }; Returns: Json }
       update_subscription_and_re: {
         Args: {
           p_recurring_expense_updates: Json
