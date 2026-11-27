@@ -16,11 +16,11 @@ import { MONTH_CAP, YEAR_CAP } from '@/lib/referrals/rules'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { displayLink, earnedView, friendRow, friendToRemind, inviteReward } from './inviteCode'
 
-/** Hands text to the system share sheet; where there is none, copies it. Resolves how it went. */
-export async function shareOrCopy(text: string, url: string): Promise<'shared' | 'copied' | 'failed'> {
+/** Hands text to the system share sheet; where there is none, copies it. Resolves how it went. No `url` = the text alone. */
+export async function shareOrCopy(text: string, url = ''): Promise<'shared' | 'copied' | 'failed'> {
   try {
     if (typeof navigator.share === 'function') {
-      await navigator.share({ text, url })
+      await navigator.share(url ? { text, url } : { text })
       return 'shared'
     }
   } catch (e) {

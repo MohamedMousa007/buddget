@@ -3,7 +3,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { differenceInCalendarDays, parseISO } from 'date-fns'
-import { ArrowDownLeft, ArrowUpRight, Calendar, Check, ChevronUp, CircleCheck, MoreVertical, Pencil, Plus, ReceiptText, Trash2, Zap } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Calendar, Check, ChevronUp, CircleCheck, MoreVertical, Pencil, Plus, ReceiptText, Send, Trash2, Zap } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { SwipeToDelete, type SwipeSide } from '@/components/expenses/SwipeToDelete'
@@ -31,6 +31,8 @@ import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 import { useDebtsV9Copy } from '@/lib/i18n/debtsV9Copy'
 import { ProviderBadge } from './ProviderBadge'
+import { shareOrCopy } from '@/components/features/invite/InviteView'
+import { useActionToast } from '@/components/ui/ActionToast'
 
 const PILL = 'inline-flex min-h-7 items-center gap-1 rounded-full bg-[color-mix(in_oklab,var(--flow-band-fg)_14%,transparent)] px-3 text-[0.78125rem] font-semibold [&_svg]:size-3.5'
 
@@ -73,6 +75,7 @@ export function DebtDetailSheet({ debtId, onClose, onPay, onEdit, readOnly = fal
   const c = useDebtsV9Copy()
   const { locale } = useLocale()
   const confirm = useConfirm()
+  const showToast = useActionToast()
   const { removeDebtPayment } = useLinkedDelete()
   const covered = useSettingsStore((s) => s.activeModal === 'addDebt' || s.activeModal === 'editDebt')
   const { debts, payments, methods, expenses, rates } = useFinanceStore(
@@ -312,6 +315,13 @@ export function DebtDetailSheet({ debtId, onClose, onPay, onEdit, readOnly = fal
   )
 
   const title = debt.name || who
+  // Owed to you: hand a short reminder to the share sheet (copied where there is none). No reminder is scheduled.
+  const remind = owed && !install && !readOnly && left > 0
+    ? async () => {
+        const due = debt.goal ? formatLocalized(parseISO(debt.goal.targetDate.slice(0, 10)), 'MMM d', locale) : null
+        if ((await shareOrCopy(c.detail.remindText(who, `${formatWhole(left)} ${unit}`, due))) === 'copied') showToast(c.detail.remindCopied)
+      }
+    : undefined
   const ctaLabel = owed ? c.detail.addRepayment : install && per > 0 ? c.detail.pay(formatWhole(per)) : c.detail.addPayment
 
   return (
@@ -336,6 +346,14 @@ export function DebtDetailSheet({ debtId, onClose, onPay, onEdit, readOnly = fal
               {ctaLabel}
             </Button>
           )}
+          {remind ? (
+            <div className="mt-1 flex justify-center">
+              <Button variant="ghost" size="touch" onClick={() => void remind()} className="px-3 text-[0.875rem] font-semibold text-[var(--color-brand-primary-ink)]">
+                <Send aria-hidden className="size-4" />
+                {c.detail.remind(who)}
+              </Button>
+            </div>
+          ) : null}
           {nextCard}
           {scheduleBlock}
           {log}

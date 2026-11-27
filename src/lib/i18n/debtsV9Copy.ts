@@ -77,6 +77,10 @@ export interface DebtsV9Copy {
     eachMonth: string
     dueDate: string
     noneSet: string
+    /** Owed to you: the quiet link under the CTA and the message it hands to the share sheet. */
+    remind: (who: string) => string
+    remindText: (who: string, amount: string, date: string | null) => string
+    remindCopied: string
     started: string
     paidFrom: string
     receivedIn: string
@@ -118,6 +122,9 @@ export interface DebtsV9Copy {
     nameAria: string
     banks: string
     bank: string
+    iconAriaOther: string
+    iconSub: string
+    iconNote: string
   }
 }
 
@@ -193,6 +200,9 @@ export const DEBTS_V9_COPY: Record<Locale, DebtsV9Copy> = {
       eachMonth: 'Each month',
       dueDate: 'Due date',
       noneSet: 'None set',
+      remind: (who) => `Remind ${who}`,
+      remindText: (who, amount, date) => `Hi ${who}, a quick reminder about the ${amount} still to pay back${date ? ` by ${date}` : ''}. Thanks!`,
+      remindCopied: 'Reminder copied',
       started: 'Started',
       paidFrom: 'Paid from',
       receivedIn: 'Received in',
@@ -234,6 +244,9 @@ export const DEBTS_V9_COPY: Record<Locale, DebtsV9Copy> = {
       nameAria: 'Item name',
       banks: 'Banks',
       bank: 'Bank',
+      iconAriaOther: 'Item icon, tap to change',
+      iconSub: 'For an item of your own',
+      iconNote: 'The same icons used across buddget, so this item looks at home everywhere.',
     },
   },
   ar: {
@@ -307,6 +320,9 @@ export const DEBTS_V9_COPY: Record<Locale, DebtsV9Copy> = {
       eachMonth: 'كل شهر',
       dueDate: 'تاريخ الاستحقاق',
       noneSet: 'غير محدد',
+      remind: (who) => `ذكّر ${who}`,
+      remindText: (who, amount, date) => `مرحبًا ${who}، تذكير بسيط بمبلغ ${amount} المتبقي${date ? ` قبل ${date}` : ''}. شكرًا!`,
+      remindCopied: 'تم نسخ التذكير',
       started: 'البداية',
       paidFrom: 'دُفع من',
       receivedIn: 'وصل إلى',
@@ -348,6 +364,9 @@ export const DEBTS_V9_COPY: Record<Locale, DebtsV9Copy> = {
       nameAria: 'اسم المنتج',
       banks: 'البنوك',
       bank: 'بنك',
+      iconAriaOther: 'أيقونة المنتج، اضغط للتغيير',
+      iconSub: 'لمنتج خاص بك',
+      iconNote: 'الأيقونات نفسها المستخدمة في بادجت، ليبدو هذا المنتج مألوفًا في كل مكان.',
     },
   },
 }

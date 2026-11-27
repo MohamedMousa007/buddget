@@ -2,11 +2,13 @@
 
 import { useState } from 'react'
 import { parseISO } from 'date-fns'
-import { Car, Laptop, Package, Refrigerator, Repeat, Smartphone, Sofa, type LucideIcon } from 'lucide-react'
+import { Car, Laptop, Package, Pencil, Refrigerator, Repeat, Smartphone, Sofa, type LucideIcon } from 'lucide-react'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { useDebtsV9Copy } from '@/lib/i18n/debtsV9Copy'
 import type { AddDebtHook } from '@/hooks/useAddDebtSheet'
-import type { Currency } from '@/lib/store/types'
+import type { Currency, InstallmentItemType } from '@/lib/store/types'
+import { IconPickerSheet } from '@/components/features/goals/IconPickerSheet'
+import { GOAL_ICON_SET, isGoalIconKey } from '@/lib/goals/goalVisual'
 import { AmountHero } from '@/components/ui/AmountHero'
 import { DatePickerField } from '@/components/ui/DatePickerField'
 import { NumberPickerSheet } from '@/components/ui/NumberPickerSheet'
@@ -28,9 +30,8 @@ import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 
 type PlanMode = 'total' | 'per'
-type ItemKey = 'phone' | 'laptop' | 'appliance' | 'furniture' | 'car' | 'other'
-/** Item types for the tile (not stored: a debt has no icon column, so the tile follows the type picked here). */
-const ITEMS: { key: ItemKey; Icon: LucideIcon; tone: string }[] = [
+/** Item types for the tile, stored on the plan (`Debt.installmentItemType`); Other can carry its own icon. */
+const ITEMS: { key: InstallmentItemType; Icon: LucideIcon; tone: string }[] = [
   { key: 'phone', Icon: Smartphone, tone: 'shopping' },
   { key: 'laptop', Icon: Laptop, tone: 'education' },
   { key: 'appliance', Icon: Refrigerator, tone: 'utilities' },
@@ -49,12 +50,20 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
   const c = all.install
   const { locale } = useLocale()
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
-  const [sheet, setSheet] = useState<'provider' | 'count' | 'every' | null>(null)
+  const [sheet, setSheet] = useState<'provider' | 'count' | 'every' | 'icon' | null>(null)
   const [mode, setMode] = useState<PlanMode>('total')
   const [perStr, setPerStr] = useState('')
   const v9 = useDebtsV9Copy().install
-  const [item, setItem] = useState<ItemKey>(d.isEditFlow ? 'other' : 'phone')
+  // A legacy plan stored no item type: it shows as Other until one is picked.
+  const item: InstallmentItemType = d.installmentItemType ?? (d.isEditFlow ? 'other' : 'phone')
   const picked = ITEMS.find((x) => x.key === item)!
+  const ownIcon = item === 'other' && isGoalIconKey(d.installmentItemIcon) ? GOAL_ICON_SET[d.installmentItemIcon] : undefined
+  const TileIcon = ownIcon ?? picked.Icon
+  const tile = (
+    <span aria-hidden className="flex size-16 items-center justify-center rounded-[19px] [&_svg]:size-7" style={{ background: `var(--cat-${picked.tone}-bg)`, color: `var(--cat-${picked.tone}-fg)` }}>
+      <TileIcon />
+    </span>
+  )
 
   const frequency = d.installmentFrequency as PlanFrequency
   const count = Math.max(1, parseInt(d.installmentCount, 10) || 12)
@@ -89,19 +98,33 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
     <div className="flex flex-col gap-4 pt-1">
       {/* The Add goal C top (round 9): item type chips, then the item tile and its name above the amount. */}
       <div className="hide-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
-        {ITEMS.map(({ key, Icon }) => (
-          <OptionChip key={key} size="sm" surface="card" selected={item === key} onClick={() => setItem(key)} className="shrink-0">
-            <Icon aria-hidden />
+        {ITEMS.map(({ key, Icon }) => {
+          const ChipIcon = key === 'other' && ownIcon ? ownIcon : Icon
+          return (
+          <OptionChip key={key} size="sm" surface="card" selected={item === key} onClick={() => d.setInstallmentItemType(key)} className="shrink-0">
+            <ChipIcon aria-hidden />
             {v9.items[key]}
           </OptionChip>
-        ))}
+          )
+        })}
       </div>
       <AmountHero
         top={
           <div className="flex w-full flex-col items-center">
-            <span aria-hidden className="flex size-16 items-center justify-center rounded-[19px] [&_svg]:size-7" style={{ background: `var(--cat-${picked.tone}-bg)`, color: `var(--cat-${picked.tone}-fg)` }}>
-              <picked.Icon />
-            </span>
+            {/* The Add goal C tile: the icon can be changed only for Other. */}
+            {item === 'other' ? (
+              <button data-raw-button-ok="the editable icon tile of the Add goal C top"
+                type="button"
+                onClick={() => setSheet('icon')}
+                aria-label={v9.iconAriaOther}
+                className="relative flex size-16 items-center justify-center rounded-[19px]"
+              >
+                {tile}
+                <span aria-hidden className="absolute -bottom-1 -end-1 flex size-6 items-center justify-center rounded-full border-2 border-[var(--color-brand-card)] bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]">
+                  <Pencil className="size-3" />
+                </span>
+              </button>
+            ) : tile}
             <input
               value={d.installmentItemName}
               onChange={(e) => d.setInstallmentItemName(e.target.value)}
@@ -173,6 +196,14 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
         onCustom={(name) => { d.setInstallmentProvider('other'); d.setInstallmentProviderName(name); d.setInstallmentProviderSlug(undefined); d.setLinkedCreditCardDebtId('') }}
         onAddCreditCard={() => setActiveModal('addCreditCard')}
         onClose={() => setSheet(null)}
+      />
+      <IconPickerSheet
+        open={sheet === 'icon'}
+        value={isGoalIconKey(d.installmentItemIcon) ? d.installmentItemIcon : null}
+        onChange={d.setInstallmentItemIcon}
+        onClose={() => setSheet(null)}
+        subtitle={v9.iconSub}
+        note={v9.iconNote}
       />
       <NumberPickerSheet
         open={sheet === 'count'}

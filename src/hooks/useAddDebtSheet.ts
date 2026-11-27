@@ -32,6 +32,7 @@ import type {
   DebtReceivedVia,
   DebtRecurringFrequency,
   GoldKarat,
+  InstallmentItemType,
   InstallmentProvider,
 } from '@/lib/store/types'
 import { borrowScheduleStart, goalAmountPerPayment, goalDurationFromTarget, goalTargetDate, type GoalFrequency, type GoalUnit } from '@/lib/debts/borrowGoal'
@@ -142,6 +143,9 @@ export function useAddDebtSheet() {
   const [direction, setDirection] = useState<'i_owe' | 'they_owe'>('i_owe')
   const [creditor, setCreditor] = useState('')
   const [installmentItemName, setInstallmentItemName] = useState('')
+  /** The Add installment item chip; unset = the form's first chip (Phone) for a new plan, Other for a legacy one. */
+  const [installmentItemType, setInstallmentItemType] = useState<InstallmentItemType | undefined>(undefined)
+  const [installmentItemIcon, setInstallmentItemIcon] = useState<string | undefined>(undefined)
   const [installmentCount, setInstallmentCount] = useState('12')
   const [installmentFrequency, setInstallmentFrequency] = useState<
     'weekly' | 'monthly' | 'quarterly' | 'annually'
@@ -209,6 +213,8 @@ export function useAddDebtSheet() {
     setBorrowTime(clockOf(dd.principalAt, dd.startDate ?? dd.createdAt.slice(0, 10)))
     if (dd.debtType === 'installment') {
       setInstallmentItemName(dd.name ?? '')
+      setInstallmentItemType(dd.installmentItemType)
+      setInstallmentItemIcon(dd.installmentItemIcon)
       setInstallmentCount(String(dd.installmentCount ?? 12))
       if (dd.installmentFrequency) setInstallmentFrequency(dd.installmentFrequency)
       setInstallmentProvider(dd.installmentProvider ?? 'other')
@@ -434,6 +440,8 @@ export function useAddDebtSheet() {
     setDirection('i_owe')
     setCreditor('')
     setInstallmentItemName('')
+    setInstallmentItemType(undefined)
+    setInstallmentItemIcon(undefined)
     setInstallmentCount('12')
     setInstallmentFrequency('monthly')
     setInstallmentStartDate(localTodayISO())
@@ -598,6 +606,8 @@ export function useAddDebtSheet() {
       payload.startDate = installmentStartDate
       payload.installmentAmount = Math.round(per * 100) / 100
       payload.installmentProvider = installmentProvider
+      payload.installmentItemType = installmentItemType ?? (isEditFlow ? undefined : 'phone')
+      payload.installmentItemIcon = payload.installmentItemType === 'other' ? installmentItemIcon : undefined
       payload.installmentProviderName = installmentProviderName || findInstallmentProviderMeta(installmentProvider)?.name
       if (installmentProvider === 'credit_card' && linkedCreditCardDebtId) {
         payload.linkedCreditCardDebtId = linkedCreditCardDebtId
@@ -670,6 +680,8 @@ export function useAddDebtSheet() {
     installmentCount,
     installmentFrequency,
     installmentItemName,
+    installmentItemType,
+    installmentItemIcon,
     installmentProvider,
     installmentProviderName,
     installmentStartDate,
@@ -981,6 +993,10 @@ export function useAddDebtSheet() {
     setInstallmentPaidWith,
     installmentItemName,
     setInstallmentItemName,
+    installmentItemType,
+    setInstallmentItemType,
+    installmentItemIcon,
+    setInstallmentItemIcon,
     installmentCount,
     setInstallmentCount,
     installmentFrequency,
