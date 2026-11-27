@@ -57,6 +57,7 @@ export function profileToRow(
     monthly_rent: p.monthlyRent ?? null,
     rent_includes_utilities: p.rentIncludesUtilities ?? false,
     default_carry_pocket_id: p.defaultCarryPocketId ?? null,
+    // savings_split is server-written (POST /api/month-end): never sent, so a stale copy cannot overwrite it.
     // Left out of the write when this copy holds nothing: a phone that has not received the account's answers yet
     // must not overwrite them with an empty object (a chosen zakat basis came back as a question this way).
     ...(p.emergencyFundConfig ? { emergency_fund_config: p.emergencyFundConfig as unknown as ProfileInsert['emergency_fund_config'] } : {}),
@@ -91,6 +92,7 @@ export function profileFromRow(row: ProfileRow): ProfileFromRowResult {
     monthlyRent: row.monthly_rent,
     rentIncludesUtilities: row.rent_includes_utilities,
     defaultCarryPocketId: row.default_carry_pocket_id ?? null,
+    savingsSplit: Array.isArray(row.savings_split) ? (row.savings_split as unknown as UserProfile['savingsSplit']) : [],
     emergencyFundConfig: emptyToNull(row.emergency_fund_config) as UserProfile['emergencyFundConfig'],
     zakatConfig: emptyToNull(row.zakat_config) as UserProfile['zakatConfig'],
     financialProfile: emptyToNull(row.financial_profile) as UserProfile['financialProfile'],

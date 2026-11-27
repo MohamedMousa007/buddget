@@ -24,7 +24,7 @@ export function seedMonthlySavingsVault(): boolean {
     currency: s.settings.baseCurrency,
     openingBalance: 0,
     isEmergencyCover: false,
-    // S-7: held in the primary account, like the vault the month-carry cron creates (QA-108).
+    // S-7: held in the primary account, like the Monthly savings parts month-end creates (QA-108).
     heldInPaymentMethodId: primaryTrackedAccount(s.paymentMethods) ?? undefined,
   } as never)
   s.updateProfile({ defaultCarryPocketId: id })

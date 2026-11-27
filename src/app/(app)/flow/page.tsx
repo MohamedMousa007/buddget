@@ -33,7 +33,6 @@ import { OwnTransferPrompts } from '@/components/features/flow/OwnTransferPrompt
 import { SmsFlagPrompts } from '@/components/features/flow/SmsFlagPrompts'
 import { PrincipalDuplicatePrompts } from '@/components/features/flow/PrincipalDuplicatePrompts'
 import { MerchantCategoryPrompt } from '@/components/features/flow/MerchantCategoryPrompt'
-import { CarryStalePrompt } from '@/components/features/savings-v3/CarryStalePrompt'
 import { FlowPendingRow } from '@/components/features/flow/FlowPendingRow'
 import { methodLabel, useFlowLedger } from '@/components/features/flow/useFlowLedger'
 import { useFlowBand } from '@/components/features/flow/useFlowBand'
@@ -174,7 +173,6 @@ export default function FlowPage() {
       <SmsFlagPrompts />
       <PrincipalDuplicatePrompts />
       <MerchantCategoryPrompt />
-      <CarryStalePrompt />
 
       {/* One centred column on desktop too (the mockup is a single phone column). The blocks carry their own 16px
           gutter, so the shell adds 8px to land on the 24px desktop gutter every other page uses. */}

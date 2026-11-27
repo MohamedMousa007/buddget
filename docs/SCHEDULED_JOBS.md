@@ -34,7 +34,7 @@ Removed in database load phase A: `admin-metrics` (refreshed on admin view inste
 | `/api/cron/prices` | 03:00 | Refreshes gold, FX and market prices | Provider calls; one write per symbol |
 | `/api/cron/sms-harvest` | 04:10 | Harvests SMS knowledge into the corpus | Batched |
 | `/api/cron/data-retention` | 04:40 | Application-level retention | Low |
-| `/api/cron/month-carry` | 05:00 | Month-end carry and goal allocation, one user at a time (candidate for batching) | Medium, loops users |
+| `/api/cron/month-end` | 05:00 | Month-end card: auto-applies cards past 72 h (25 per run), proposes for users whose cycle ended (keyset, 25 per page, one `month_end_ledger` call each); writes only with `MONTH_END_WRITES=on` | Medium, bounded pages, 50 s budget |
 | `/api/cron/loyalty` | 05:20 | Loyalty week roll-up | Low |
 | `/api/cron/integrations` | not scheduled | Drains the integration outbox. Unscheduled on purpose since QA-57 (Linear escalation postponed); call it by hand if rows ever queue | None |
 | `/api/cron/sms-canary` | 06:50 | Daily SMS parsing canary | Low |

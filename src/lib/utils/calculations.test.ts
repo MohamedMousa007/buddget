@@ -449,7 +449,7 @@ describe('cashSavingsDepositsInBaseForMonth', () => {
   const tx = (o: Partial<SavingsTransaction>): SavingsTransaction =>
     ({ id: 'x', accountId: 'a', type: 'deposit', amount: 100, currency: 'AED', date: '2025-01-15', ...o }) as SavingsTransaction
   const gold = { pricePerGram: 0, available: false } as Parameters<typeof cashSavingsDepositsInBaseForMonth>[5]
-  it('skips the month-carry sweep so a closed month matches the server figures', () => {
+  it('skips legacy month-carry rows so a closed month matches the server figures', () => {
     const rows = [tx({ id: '1' }), tx({ id: '2', amount: 900, source: 'carry' })]
     expect(cashSavingsDepositsInBaseForMonth(rows, '2025-01', 1, 'AED', {}, gold)).toBe(100)
   })

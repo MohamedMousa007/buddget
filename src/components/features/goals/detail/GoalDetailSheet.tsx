@@ -30,7 +30,7 @@ import { fundingBasis } from '@/lib/goals/fundingBasis'
 import { checkpointInfo, coachView, finishesLate, goalMonthlyRate, replanPatch } from '@/lib/goals/goalDetail'
 import { defaultSharePct, periodMonths, sharesOverFull } from '@/lib/goals/goalPlan'
 import { debtMonthlyRate, goalLedger } from '@/lib/goals/debtGoal'
-import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
+import { isEligibleCarryPocket } from '@/lib/savings/eligiblePocket'
 import { pickGoalPocket } from '@/lib/goals/goalPocket'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { convertCurrency } from '@/lib/utils/currency'
@@ -94,7 +94,7 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
     // The goal's own pocket is always listed, even one kept inside an account (not a carry target), so the row names it.
     () => s.savingsAccounts
       .filter((a) => isEligibleCarryPocket(a) || a.id === goal.linkedSavingsAccountIds[0])
-      .map((account) => ({ account, coverAmount: 0, goalsAmount: 0, goalLabel: '', isAuto: false })),
+      .map((account) => ({ account, coverAmount: 0, goalsAmount: 0, goalLabel: '' })),
     [s.savingsAccounts, goal.linkedSavingsAccountIds],
   )
 

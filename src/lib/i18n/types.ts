@@ -410,7 +410,6 @@ export interface Dictionary {
   wealthPage: {
     deleteBlocked: (pocket: string, shortBy: string) => string
     ledgerMonthEnd: string
-    carryOutOfDate: string
     ledgerMoved: string
     ledgerSaved: string
     ledgerWithdrew: string
@@ -459,7 +458,6 @@ export interface Dictionary {
     menuWithdraw: string
     menuEdit: string
     menuDelete: string
-    menuMakeDefault: string
     deleteBodyBalance: (amount: string) => string
     deleteBodyStays: (amount: string, account: string) => string
     deleteDefaultTitle: string
@@ -3272,11 +3270,6 @@ export interface Dictionary {
     merchantCategoryBody: (n: number, total: string) => string
     merchantCategoryChoose: string
     merchantCategoryLater: string
-    carryStaleTitle: string
-    carryStaleBody: (month: string, posted: string, recomputed: string) => string
-    carryStaleUpdate: string
-    carryStaleLater: string
-    carryStaleUpdated: string
     passThroughApplied: (n: number) => string
     passThroughReviewTitle: (n: number) => string
     passThroughReviewBody: (total: string) => string

@@ -323,7 +323,7 @@ function emitList<T extends HasId, TN extends TableName>(
 }
 
 /**
- * W7: the server also moves pocket balances (month-carry, goal funding), so a pocket edit that does not
+ * W7: the server also moves pocket balances (month-end apply and undo), so a pocket edit that does not
  * change the balance (rename, colour, target) must not send the device's possibly stale absolute
  * `current_balance`. Those rows go in their own balance-less batch (never mixed with full rows).
  *

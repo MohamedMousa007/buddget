@@ -5,5 +5,4 @@ export interface PocketVM {
   coverAmount: number
   goalsAmount: number
   goalLabel: string
-  isAuto: boolean
 }

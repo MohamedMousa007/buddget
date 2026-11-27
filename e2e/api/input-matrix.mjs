@@ -12,7 +12,7 @@ const POSTS = [
   ['POST', '/api/biometric/register'], ['POST', '/api/biometric/signin'], ['POST', '/api/buddgy/turn'], ['POST', '/api/budget/ai'],
   ['POST', '/api/devices'], ['PATCH', '/api/devices'], ['PATCH', '/api/devices/00000000-0000-4000-8000-000000000000'],
   ['POST', '/api/feedback'], ['PATCH', '/api/notifications'], ['POST', '/api/push/register'], ['DELETE', '/api/push/register'],
-  ['POST', '/api/push/send'], ['POST', '/api/receipt/scan'], ['POST', '/api/savings/carry'], ['POST', '/api/site/event'], ['POST', '/api/site/lead'],
+  ['POST', '/api/push/send'], ['POST', '/api/receipt/scan'], ['POST', '/api/month-end'], ['POST', '/api/site/event'], ['POST', '/api/site/lead'],
   ['POST', '/api/sms/ack'], ['POST', '/api/sms/confirm'], ['POST', '/api/sms/dismiss'], ['POST', '/api/sms/flag-action'],
   ['POST', '/api/sms/own-transfer'], ['POST', '/api/sms/parse'], ['POST', '/api/sms/undo'], ['POST', '/api/support/board/1/vote'],
   ['POST', '/api/support/submit'], ['POST', '/api/support/tickets/1'], ['POST', '/api/voice/transcribe'],

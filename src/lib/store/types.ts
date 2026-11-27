@@ -992,6 +992,9 @@ export interface UserProfile {
   rentIncludesUtilities?: boolean
   /** Pocket that receives the automatic month-end carry. Synced via `profiles.default_carry_pocket_id`. */
   defaultCarryPocketId?: string | null
+  /** "Where your monthly savings go" (LOGIC_SPEC §1): % per goal or pocket, the rest to Monthly savings. Read from
+   *  `profiles.savings_split`; written only by POST /api/month-end (op 'split'), never by the profile sync. */
+  savingsSplit?: { target_id: string; pct: number }[]
   /** v3 emergency-fund settings. Synced via `profiles.emergency_fund_config`. */
   emergencyFundConfig?: EmergencyFundConfig | null
   /** v3 zakat settings. Synced via `profiles.zakat_config`. */

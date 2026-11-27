@@ -18,6 +18,7 @@ import { cycleKeyOf } from '@/lib/budget/activations'
 import { isLearning } from '@/lib/budget/learning'
 import type { PlanMode, PlanView } from '@/lib/budget/planView.types'
 import { fundingBasis } from '@/lib/goals/fundingBasis'
+import { withSplitShares } from '@/lib/monthEnd/fixedGoals'
 import { deriveSimpleMonth } from '@/lib/savings/simpleMonth'
 import { calculateDebtRemaining, getMonthRange, projectedIncomeForMonth } from '@/lib/utils/calculations'
 import { convertCurrency } from '@/lib/utils/currency'
@@ -115,7 +116,7 @@ export function usePlanView(mode: PlanMode, planId?: string): PlanView | null {
         remaining: (d, pays) => calculateDebtRemaining(d, pays, { expenses: s.expenses, exchangeRates: rates, allDebts: s.debts }),
         toBase: (amount, currency) => convertCurrency(amount, currency, base, rates),
       }, now),
-      goals: goalExtras(goalRows, fundingBasis(s, now).usualKeep, base, rates),
+      goals: goalExtras(goalRows.map((r) => ({ ...r, goal: withSplitShares([r.goal], s.profile.savingsSplit)[0] })), fundingBasis(s, now).usualKeep, base, rates),
       safety: {
         liquid: liquidSavings(s.savingsAccounts, base, rates, s.goldPricePerGram, s.goldPriceAvailable),
         essentialsMonthly: deriveSimpleMonth({

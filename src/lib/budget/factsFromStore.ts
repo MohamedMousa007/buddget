@@ -12,6 +12,7 @@ import {
 } from '@/lib/budget/liveLinks'
 import { fundingBasis } from '@/lib/goals/fundingBasis'
 import { buildGoalProgressContext } from '@/lib/goals/computeGoalProgress'
+import { withSplitShares } from '@/lib/monthEnd/fixedGoals'
 import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
 import { calculateCategorySpending, filterExpensesByMonth, projectedIncomeForMonth } from '@/lib/utils/calculations'
 import { convertCurrency } from '@/lib/utils/currency'
@@ -194,7 +195,7 @@ export function buildFactsFromStore(s: FactsSlice, now: Date, { remembered = tru
     debts: liveDebts(s.debts, debtCtx).map((d) => ({
       id: d.debt.id, name: d.debt.name || d.debt.personName || d.debt.person, minimum: d.minimum, balance: d.balance, kind: d.kind,
     })),
-    goals: liveGoals(s.goals, buildGoalProgressContext(s, monthKey), usualKeep).map((g) => ({
+    goals: liveGoals(withSplitShares(s.goals, s.profile.savingsSplit), buildGoalProgressContext(s, monthKey), usualKeep).map((g) => ({
       id: g.goal.id,
       name: g.goal.name,
       monthly: g.monthly,

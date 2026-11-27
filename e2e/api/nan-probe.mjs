@@ -17,6 +17,6 @@ const pt = await pull.text()
 console.log('sync_pull_v2             ', pull.status, pt.length, 'bytes', /NaN/.test(pt) ? 'contains NaN' : 'no NaN', redact(pt).slice(0, 160))
 let parsed = 'ok'; try { JSON.parse(pt) } catch (e) { parsed = `JSON.parse throws: ${e.message.slice(0, 60)}` }
 console.log('client JSON.parse        ', parsed)
-await call('GET /api/savings/carry (A)', { path: '/api/savings/carry', token: A })
+await call('POST /api/month-end propose (A)', { method: 'POST', path: '/api/month-end', token: A, body: { op: 'propose' } })
 const bv = await fetch(`${SB_URL}/rest/v1/rpc/balance_view`, { method: 'POST', headers: { apikey: SB_KEY, Authorization: `Bearer ${A}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_payment_method: id('84') }) })
 console.log('balance_view NaN pm      ', bv.status, redact(await bv.text()).slice(0, 200))

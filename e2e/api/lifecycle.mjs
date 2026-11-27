@@ -17,4 +17,4 @@ await call('deleted C POST /api/devices', { method: 'POST', path: '/api/devices'
 await call('deleted C GET /api/sms/setup-token', { path: '/api/sms/setup-token', token: C })
 await call('deleted C POST /api/entitlements/trial', { method: 'POST', path: '/api/entitlements/trial', token: C, body: {} })
 await call('deleted C GET /api/buddgy/usage', { path: '/api/buddgy/usage', token: C })
-await call('deleted C GET /api/savings/carry', { path: '/api/savings/carry', token: C })
+await call('deleted C POST /api/month-end', { method: 'POST', path: '/api/month-end', token: C, body: { op: 'propose' } })

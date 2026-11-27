@@ -20,7 +20,6 @@ import { useLocale, useT } from '@/lib/i18n'
 import { formatClock, formatLocalized, type AppLocale } from '@/lib/i18n/dateFormat'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { formatWhole } from '@/lib/utils/formatters'
-import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { accountTitle } from '@/lib/accounts/accountTitle'
 import { useWealthLtCopy } from '@/lib/i18n/wealthLtCopy'
@@ -36,7 +35,6 @@ export function ledgerClock(tx: Pick<SavingsTransaction, 'date' | 'occurredAt'>,
 const fmtSigned = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(Math.round(n)).toLocaleString('en-US')}`
 
 /** The month a carry row belongs to, read from its `… · YYYY-MM` note. */
-const carryMonth = (tx: SavingsTransaction) => (tx.source === 'carry' ? tx.notes?.match(/(\d{4}-\d{2})\s*$/)?.[1] : undefined)
 
 type TagKind = 'carry' | 'moved' | 'saved' | 'withdrew'
 
@@ -58,11 +56,9 @@ export interface ActivityLedgerProps {
   /** Only moves on accounts of this kind. */
   filter?: CatKey | null
   onSeeAll?: () => void
-  /** Months whose carry is out of date: their carry rows get an "Out of date" badge. */
-  staleMonthKeys?: string[]
 }
 
-export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeRates, limit, filter, onSeeAll, staleMonthKeys = [] }: ActivityLedgerProps) {
+export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeRates, limit, filter, onSeeAll }: ActivityLedgerProps) {
   const t = useT().wealthPage
   const tagLabel: Record<TagKind, string> = { carry: t.ledgerMonthEnd, moved: t.ledgerMoved, saved: t.ledgerSaved, withdrew: t.ledgerWithdrew }
   const lt = useWealthLtCopy()
@@ -173,7 +169,6 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
                   iconBg={tag.sign > 0 ? 'var(--color-brand-green-soft)' : a ? rgba(pocketColor(a), .14) : 'var(--color-brand-elevated)'}
                   iconFg={tag.sign > 0 ? 'var(--color-brand-green)' : a ? pocketColor(a) : undefined}
                   title={titleOf(tx, tag.kind, a?.name ?? 'Savings')}
-                  titleBadge={staleMonthKeys.includes(carryMonth(tx) ?? '') ? <Badge tone="warn" size="xs">{t.carryOutOfDate}</Badge> : undefined}
                   subtitle={`${day} · ${whereOf(tx)}`}
                   amount={<>{fmtSigned(tag.sign * amtBase)} <span className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{baseCurrency}</span></>}
                   amountColor={tag.sign > 0 ? 'var(--color-brand-green)' : undefined}

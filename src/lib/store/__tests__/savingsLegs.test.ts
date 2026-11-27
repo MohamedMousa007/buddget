@@ -4,7 +4,6 @@ import { computeBalances } from '@/lib/accounts/balance'
 import { primaryTrackedAccount, deterministicId, incomeEventIdForTx } from '@/lib/savings/accountLeg'
 import { pickPrimaryAccountId } from '@/lib/accounts/primary'
 import { dueDatesThrough, recurringTxId } from '@/lib/savings/recurringDue'
-import { resolveCarryDestination } from '@/lib/savings/monthCarry'
 import { actualIncomeForMonth } from '@/lib/utils/calculations'
 import { zakatAccountsFromLedger } from '@/lib/savings/zakatAccounts'
 import type { PaymentMethod, SavingsAccount } from '@/lib/store/types'
@@ -138,13 +137,6 @@ describe('W13 / W14', () => {
     const rates = {}
     expect(actualIncomeForMonth([tpl], [], 'EGP', rates, '2026-09')).toBeGreaterThan(0)
     expect(actualIncomeForMonth([tpl], [], 'EGP', rates, '2026-09', 1, true)).toBe(0)
-  })
-  it('vault fallback skips goal-owned vault pockets', () => {
-    const goalPocket = pocket('gp', { type: 'vault' as never, heldInPaymentMethodId: 'bank' })
-    const shared = pocket('shared', { type: 'vault' as never, heldInPaymentMethodId: 'bank' })
-    const done = { id: 'g', status: 'achieved', linkedSavingsAccountIds: ['gp'] } as never
-    expect(resolveCarryDestination(null, [goalPocket, shared], [done])).toEqual({ kind: 'pocket', pocketId: 'shared' })
-    expect(resolveCarryDestination(null, [goalPocket], [done])).toEqual({ kind: 'create-vault' })
   })
 })
 

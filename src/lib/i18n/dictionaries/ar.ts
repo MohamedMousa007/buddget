@@ -505,7 +505,6 @@ export const ar: Dictionary = {
   wealthPage: {
     // TODO(ar-review): all Arabic strings in this block are drafts
     ledgerMonthEnd: 'نهاية الشهر',
-    carryOutOfDate: 'قديم',
     ledgerMoved: 'تم النقل',
     ledgerSaved: 'تم الادخار',
     ledgerWithdrew: 'تم السحب',
@@ -557,7 +556,6 @@ export const ar: Dictionary = {
     menuWithdraw: 'سحب',
     menuEdit: 'تعديل',
     menuDelete: 'حذف',
-    menuMakeDefault: 'اجعله الافتراضي للمدخرات الشهرية',
     deleteBodyBalance: (amount) => `سيُحذف مع سجله. سيخرج ${amount} من صافي ثروتك. يمكنك التراجع لبضع ثوانٍ.`,
     deleteBodyStays: (amount, account) => `سيُحذف الجيب مع سجله. يبقى ${amount} في ${account} ويعود متاحًا. يمكنك التراجع لبضع ثوانٍ.`,
     deleteDefaultTitle: 'هذه خزنة مدخراتك الشهرية',
@@ -3558,11 +3556,6 @@ export const ar: Dictionary = {
     merchantCategoryBody: (n: number, total: string) => `عدد المشتريات غير المصنفة: ${n} (${total}). اختر فئة مرة واحدة فتُصنَّف كلها، وتتبعها المشتريات القادمة.`,
     merchantCategoryChoose: 'اختر الفئة',
     merchantCategoryLater: 'ليس الآن',
-    carryStaleTitle: 'تغيّر شهر مغلق',
-    carryStaleBody: (month: string, posted: string, recomputed: string) => `كان ترحيل مدخرات ${month} هو ${posted}، وسيصبح الآن ${recomputed}.`,
-    carryStaleUpdate: 'تحديث',
-    carryStaleLater: 'لاحقًا',
-    carryStaleUpdated: 'تم تحديث ترحيل المدخرات',
     passThroughApplied: (n: number) => `لم تعد تُحتسب في الدخل والمصروفات (عدد المرات: ${n})`,
     passThroughReviewTitle: (n: number) => (n === 1 ? 'زوج واحد خارج إجمالياتك' : `${n} أزواج خارج إجمالياتك`),
     passThroughReviewBody: (total: string) => `قلت إن الأموال التي تمر عبرك لا تُحتسب (${total}). تأكد أن كل زوج كان كذلك فعلًا.`,

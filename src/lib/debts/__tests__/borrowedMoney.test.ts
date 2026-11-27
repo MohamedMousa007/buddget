@@ -5,7 +5,8 @@ import { accountsBasisFor } from '@/lib/accounts/netWorthBasis'
 import { setOpeningBalance } from '@/lib/accounts/actions'
 import { computeNetWorth } from '@/lib/savings/netWorth'
 import { computeMonthlyStats } from '@/lib/utils/monthlyStats'
-import { cycleCarryFigures } from '@/lib/savings/cycleCarryFigures'
+import { leftover } from '@/lib/monthEnd/leftover'
+import { newestClosedCycle, nextCycle } from '@/lib/savings/carryDateLogic'
 import { monthlyIncomeHistory } from '@/lib/budget/factsFromStore'
 import { detectFundingScenario } from '@/lib/goals/fundingScenario'
 import { projectedIncomeForMonth } from '@/lib/utils/calculations'
@@ -47,10 +48,12 @@ const netWorth = () => {
     exchangeRates: st.exchangeRates, goldPricePerGram: 0, goldPriceAvailable: false, lookup: () => null, debtRemaining: stats().debtRemainingTotal,
   } as never).netWorth
 }
-const carry = () => cycleCarryFigures({
-  monthKey: monthKey(), monthStartDay: s().settings.monthStartDay, base: base() as Currency, rates: s().exchangeRates,
-  expenses: s().expenses, incomeEvents: s().incomeEvents, incomeSources: s().incomeSources, deposits: [],
-})!
+/** The month-end figures of the cycle running today (LOGIC_SPEC §4.3). */
+const carry = () => {
+  const d = s().settings.monthStartDay
+  const cycle = nextCycle(newestClosedCycle(localTodayISO(), d).end, d)
+  return leftover({ cycle, base: base(), convert: (a, f, t) => (f === t ? a : null), dayOf: (x) => localTodayISO(new Date(x)), summaries: [], ledger: ledger() })
+}
 
 describe('borrowed money is never income (council Q3) and a late bank row is asked about once (Q4)', () => {
   let cib = ''

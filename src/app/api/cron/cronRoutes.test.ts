@@ -7,7 +7,7 @@ vi.mock('@/lib/sms/harvest', () => ({ harvestLegacySms: h.harvest }))
 vi.mock('@/lib/supabase/service', () => ({ createServiceRoleClient: h.service }))
 
 import { GET as prices } from './prices/route'
-import { GET as monthCarry } from './month-carry/route'
+import { GET as monthEnd } from './month-end/route'
 import { GET as notifications, POST as notificationsPost } from './notifications/route'
 import { GET as integrations } from './integrations/route'
 import { GET as smsCanary } from './sms-canary/route'
@@ -18,7 +18,7 @@ const req = (auth?: string) => new Request('http://x/api/cron', { headers: auth 
 describe('cron auth: every money-moving or fan-out cron is closed to unauthenticated callers', () => {
   beforeEach(() => { h.refresh.mockReset(); h.harvest.mockReset(); h.service.mockReset(); process.env.CRON_SECRET = 's3cret' })
 
-  const routes = { prices, 'month-carry': monthCarry, notifications, integrations, 'sms-canary': smsCanary, loyalty }
+  const routes = { prices, 'month-end': monthEnd, notifications, integrations, 'sms-canary': smsCanary, loyalty }
   for (const [name, GET] of Object.entries(routes)) {
     it(`${name}: 401 with no header or a wrong secret, and never reaches the database`, async () => {
       expect((await GET(req())).status).toBe(401)

@@ -20,7 +20,7 @@ export function pocketColor(a: Pick<SavingsAccount, 'type' | 'color'>): string {
 export const SYSTEM_VAULT_NAME = 'Monthly Savings'
 
 /**
- * The primary key of a user's system vault: the user's id read backwards. Every client and the month-carry cron derive the same
+ * The primary key of a user's system vault: the user's id read backwards. Every client and the server derive the same
  * id, so N concurrent seeds are N upserts of one row, not N vaults. Still a valid uuid; the reversed digits keep it unique per user.
  */
 export function systemVaultId(userId: string): string {

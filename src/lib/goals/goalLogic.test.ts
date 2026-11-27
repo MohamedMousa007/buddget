@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { Goal } from '@/lib/store/types'
 import { computePace, replanOptions } from './goalPlan'
-import { allocateMonth } from './allocateMonth'
 import { getGoalStatus } from './goalStatus'
 import { detectFundingScenario, getUsualKeep } from './fundingScenario'
 
@@ -55,33 +54,6 @@ describe('replanOptions', () => {
     expect(r.keepDate.perPeriod).toBe(1000)
     expect(r.keepDate.sharePct).toBe(35)
     expect(r.moveDate?.targetDate).toBe('2027-10-01')
-  })
-})
-
-describe('allocateMonth', () => {
-  it('fills by priority and lets shares exceed 100%', () => {
-    const a = goal({ id: 'a', priority: 0, sharePct: 60 })
-    const b = goal({ id: 'b', priority: 1, sharePct: 75 })
-    const out = allocateMonth({ goals: [b, a], periodSavings: 1000, current: {} })
-    expect(out).toEqual([
-      { goalId: 'a', planned: 600, amount: 600 },
-      { goalId: 'b', planned: 750, amount: 400 },
-    ])
-  })
-  it('caps at target and skips manual/paused', () => {
-    const a = goal({ id: 'a', sharePct: 100, targetAmount: 1000 })
-    const m = goal({ id: 'm', fundingMode: 'manual' })
-    const p = goal({ id: 'p', status: 'paused' })
-    const out = allocateMonth({ goals: [a, m, p], periodSavings: 5000, current: { a: 900 } })
-    expect(out).toEqual([{ goalId: 'a', planned: 5000, amount: 100 }])
-  })
-  it('zero savings allocates nothing', () => {
-    const out = allocateMonth({ goals: [goal()], periodSavings: 0, current: {} })
-    expect(out[0].amount).toBe(0)
-  })
-  it('fixed mode uses monthlyContribution', () => {
-    const out = allocateMonth({ goals: [goal({ fundingMode: 'fixed', monthlyContribution: 300 })], periodSavings: 1000, current: {} })
-    expect(out[0].amount).toBe(300)
   })
 })
 

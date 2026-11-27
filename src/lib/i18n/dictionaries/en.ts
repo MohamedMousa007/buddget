@@ -499,7 +499,6 @@ export const en: Dictionary = {
 
   wealthPage: {
     ledgerMonthEnd: 'Month end',
-    carryOutOfDate: 'Out of date',
     ledgerMoved: 'Moved',
     ledgerSaved: 'Saved',
     ledgerWithdrew: 'Withdrew',
@@ -551,7 +550,6 @@ export const en: Dictionary = {
     menuWithdraw: 'Withdraw',
     menuEdit: 'Edit',
     menuDelete: 'Delete',
-    menuMakeDefault: 'Make default for monthly savings',
     deleteBodyBalance: (amount) => `This deletes it and its history. ${amount} will leave your net worth. You can undo for a few seconds.`,
     deleteBodyStays: (amount, account) => `This deletes the pocket and its history. The ${amount} stays in ${account} and becomes available again. You can undo for a few seconds.`,
     deleteDefaultTitle: 'This is your monthly savings pocket',
@@ -3543,11 +3541,6 @@ export const en: Dictionary = {
     merchantCategoryBody: (n: number, total: string) => `${n} purchases (${total}) are uncategorised. Pick a category once and they are all filed, and later ones follow.`,
     merchantCategoryChoose: 'Choose category',
     merchantCategoryLater: 'Not now',
-    carryStaleTitle: 'A closed month changed',
-    carryStaleBody: (month: string, posted: string, recomputed: string) => `${month} savings carry was ${posted}, it would now be ${recomputed}.`,
-    carryStaleUpdate: 'Update',
-    carryStaleLater: 'Later',
-    carryStaleUpdated: 'Savings carry updated',
     passThroughApplied: (n: number) => `${n === 1 ? '1 pair' : `${n} pairs`} left out of income and spending`,
     passThroughReviewTitle: (n: number) => `${n === 1 ? '1 pair' : `${n} pairs`} left out of your totals`,
     passThroughReviewBody: (total: string) => `You said money passing through you should not count (${total}). Check that each pair really was.`,

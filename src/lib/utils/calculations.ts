@@ -92,7 +92,7 @@ export function getMonthRange(monthStr: string, monthStartDay = 1): { start: Dat
 
   const year = date.getFullYear()
   const month = date.getMonth()
-  // Clamped to 28 like the month-carry cron, so a 29-31 start day cannot roll into the next month.
+  // Clamped to 28 like the month-end cycles (carryDateLogic), so a 29-31 start day cannot roll into the next month.
   const day = Math.min(28, monthStartDay)
   const start = new Date(year, month, day)
   const nextCycleStart = new Date(year, month + 1, day)
@@ -512,7 +512,7 @@ export function netSavingsLedgerInBaseForMonth(
  * IncomeEvent that `actualIncomeForMonth` counts, so a withdrawal already nets to zero.
  * Subtracting `deposits − withdrawals` would add withdrawals back a second time.
  *
- * The month-carry sweep (`source === 'carry'`) is excluded, as the server's carry figures do:
+ * Legacy month-carry rows (`source === 'carry'`) are excluded, as the server's month-end figures do:
  * it is dated the last day of the closed month but is that month's leftover moving, not spend.
  */
 export function cashSavingsDepositsInBaseForMonth(

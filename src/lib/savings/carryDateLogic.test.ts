@@ -1,79 +1,56 @@
 import { describe, it, expect } from 'vitest'
-import { closedCycleKeys, pendingCarryKeys, cycleRange } from './carryDateLogic'
+import { dueCycle, legacyCycle, localDay, newestClosedCycle, nextCycle, startOfDayIn } from './carryDateLogic'
 
-const at = (iso: string) => new Date(iso)
-
-describe('closedCycleKeys', () => {
-  it('start=1: the cycle closes the day after its boundary', () => {
-    expect(closedCycleKeys(at('2026-08-01T06:00:00Z'), 1, 1)).toEqual(['2026-06'])
-    expect(closedCycleKeys(at('2026-08-02T06:00:00Z'), 1, 1)).toEqual(['2026-07'])
+describe('nextCycle (T35)', () => {
+  it('a start-day change: Nov 1–Dec 1, then day 15 gives Dec 1–Dec 15 and Dec 15–Jan 15', () => {
+    const dec = nextCycle('2026-12-01', 15)
+    expect(dec).toEqual({ start: '2026-12-01', end: '2026-12-15' })
+    expect(nextCycle(dec.end, 15)).toEqual({ start: '2026-12-15', end: '2027-01-15' })
   })
-  it('is still the same cycle on later days (catch-up, not a single fire day)', () => {
-    expect(closedCycleKeys(at('2026-08-15T06:00:00Z'), 1, 1)).toEqual(['2026-07'])
+  it('same start day: one month long, across the year', () => {
+    expect(nextCycle('2026-12-01', 1)).toEqual({ start: '2026-12-01', end: '2027-01-01' })
   })
-  it('start=15', () => {
-    expect(closedCycleKeys(at('2026-08-16T06:00:00Z'), 15, 1)).toEqual(['2026-07'])
-    expect(closedCycleKeys(at('2026-08-15T06:00:00Z'), 15, 1)).toEqual(['2026-06'])
-  })
-  it('year rolls over and lists newest first', () => {
-    expect(closedCycleKeys(at('2026-01-02T06:00:00Z'), 1, 2)).toEqual(['2025-12', '2025-11'])
-  })
-  it('clamps out-of-range and 29-31 start days to 28', () => {
-    expect(closedCycleKeys(at('2026-08-02T06:00:00Z'), 0, 1)).toEqual(['2026-07'])
-    expect(closedCycleKeys(at('2026-08-30T06:00:00Z'), 31, 1)).toEqual(closedCycleKeys(at('2026-08-30T06:00:00Z'), 28, 1))
-  })
-  it('start=28 in a non-leap year: the Jan cycle is carried on 1 March', () => {
-    expect(closedCycleKeys(at('2026-03-01T06:00:00Z'), 28, 1)).toEqual(['2026-01'])
-  })
-  it('judges the boundary in the local date, not UTC', () => {
-    // 22:30 UTC on Aug 1 is already Aug 2 in Cairo (UTC+3 in summer).
-    expect(closedCycleKeys(at('2026-08-01T22:30:00Z'), 1, 1, 'Africa/Cairo')).toEqual(['2026-07'])
-    expect(closedCycleKeys(at('2026-08-01T22:30:00Z'), 1, 1, 'UTC')).toEqual(['2026-06'])
+  it('clamps 29-31 to 28', () => {
+    expect(nextCycle('2026-01-28', 31)).toEqual({ start: '2026-01-28', end: '2026-02-28' })
   })
 })
 
-describe('per-user zones', () => {
-  it('the same instant closes the cycle in Dubai but not in New York', () => {
-    const t = at('2026-08-02T01:00:00Z') // Aug 2 05:00 Dubai, Aug 1 21:00 New York
-    expect(closedCycleKeys(t, 1, 1, 'Asia/Dubai')).toEqual(['2026-07'])
-    expect(closedCycleKeys(t, 1, 1, 'America/New_York')).toEqual(['2026-06'])
+describe('newestClosedCycle / dueCycle', () => {
+  it('a cycle ends when its end date begins (T26: Nov proposed on Dec 1)', () => {
+    expect(newestClosedCycle('2026-12-01', 1)).toEqual({ start: '2026-11-01', end: '2026-12-01' })
+    expect(newestClosedCycle('2026-11-30', 1)).toEqual({ start: '2026-10-01', end: '2026-11-01' })
+    expect(newestClosedCycle('2026-08-14', 15)).toEqual({ start: '2026-06-15', end: '2026-07-15' })
   })
-  it('start=28 non-leap Feb still carries Jan on 1 March in a US zone', () => {
-    expect(closedCycleKeys(at('2026-03-01T12:00:00Z'), 28, 1, 'America/Chicago')).toEqual(['2026-01'])
+  it('no month-end row yet: the newest ended cycle only', () => {
+    expect(dueCycle(null, 1, '2026-12-03')).toEqual({ start: '2026-11-01', end: '2026-12-01' })
   })
-  it('defaults to Cairo', () => {
-    expect(closedCycleKeys(at('2026-08-01T22:30:00Z'), 1, 1)).toEqual(['2026-07'])
+  it('follows on from the last row; nothing until the next one ends', () => {
+    expect(dueCycle('2026-12-01', 1, '2026-12-20')).toBeNull()
+    expect(dueCycle('2026-12-01', 1, '2027-01-01')).toEqual({ start: '2026-12-01', end: '2027-01-01' })
+    expect(dueCycle('2026-12-01', 15, '2026-12-20')).toEqual({ start: '2026-12-01', end: '2026-12-15' })
   })
-})
-
-describe('pendingCarryKeys', () => {
-  const now = at('2026-08-10T06:00:00Z')
-  it('a user with no summary gets only the newest closed cycle', () => {
-    expect(pendingCarryKeys(now, 1, null)).toEqual(['2026-07'])
-  })
-  it('catches up cycles newer than the latest summary, oldest first', () => {
-    expect(pendingCarryKeys(now, 1, '2026-05')).toEqual(['2026-06', '2026-07'])
-  })
-  it('caps the catch-up at 3 cycles', () => {
-    expect(pendingCarryKeys(now, 1, '2025-01')).toEqual(['2026-05', '2026-06', '2026-07'])
-  })
-  it('nothing owed when up to date', () => {
-    expect(pendingCarryKeys(now, 1, '2026-07')).toEqual([])
+  it('a gap of several ended cycles proposes only the newest', () => {
+    expect(dueCycle('2026-09-01', 1, '2026-12-02')).toEqual({ start: '2026-11-01', end: '2026-12-01' })
   })
 })
 
-describe('cycleRange', () => {
-  it('spans start-day to next start-day', () => {
-    const { start, end } = cycleRange('2026-07', 1)
-    expect(start.toISOString().slice(0, 10)).toBe('2026-07-01')
-    expect(end.toISOString().slice(0, 10)).toBe('2026-08-01')
+describe('localDay', () => {
+  it('judges the date in the user zone, not UTC', () => {
+    expect(localDay(new Date('2026-11-30T22:30:00Z'), 'Africa/Cairo')).toBe('2026-12-01')
+    expect(localDay(new Date('2026-11-30T22:30:00Z'), 'America/New_York')).toBe('2026-11-30')
   })
-  it('mid-month cycle', () => {
-    const { start, end } = cycleRange('2026-07', 15)
-    expect(start.toISOString().slice(0, 10)).toBe('2026-07-15')
-    expect(end.toISOString().slice(0, 10)).toBe('2026-08-15')
+})
+
+describe('legacyCycle', () => {
+  it('a YYYY-MM carry row spans its start day to the next', () => {
+    expect(legacyCycle('2026-10', 1)).toEqual({ start: '2026-10-01', end: '2026-11-01' })
+    expect(legacyCycle('2026-12', 25)).toEqual({ start: '2026-12-25', end: '2027-01-25' })
   })
-  it('29-31 clamp to 28', () => {
-    expect(cycleRange('2026-01', 31).end.toISOString().slice(0, 10)).toBe('2026-02-28')
+})
+
+describe('startOfDayIn', () => {
+  it('is local midnight of the date in that zone', () => {
+    expect(new Date(startOfDayIn('2026-12-01', 'Africa/Cairo')).toISOString()).toBe('2026-11-30T22:00:00.000Z')
+    expect(new Date(startOfDayIn('2026-12-01', 'America/New_York')).toISOString()).toBe('2026-12-01T05:00:00.000Z')
   })
 })

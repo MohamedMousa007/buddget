@@ -46,8 +46,8 @@ export function keepAchieved(prev: Pick<Goal, 'status'>, updates: Partial<Goal>)
 
 /**
  * The one way back from achieved (§0): Undo of the month-end that completed these goals reverts that completion.
- * Seam for P6: not wired yet. The month-end undo calls it for the proposal's `achieved_by_proposal` ids, in the same
- * write as `undo_month_end` (which sets `buddget.month_end_undo` so the trigger lets it through). Nothing else may.
+ * undo_month_end (0362) does it on the server in the same transaction (setting `buddget.month_end_undo` so the 0357
+ * trigger lets it through); useMonthEnd applies it to the local copy with the ids that call returns. Nothing else may.
  */
 export function revertAchievedForMonthEndUndo(goals: Goal[], achievedByProposal: readonly string[]): Goal[] {
   const ids = new Set(achievedByProposal)

@@ -6,7 +6,7 @@ import type { MoneySource } from '@/components/features/savings-v3/MoneySourceFi
 import type { PocketVM } from '@/components/features/savings-v3/types'
 import { useAccounts } from '@/lib/accounts/useAccounts'
 import { primaryTrackedAccount } from '@/lib/savings/accountLeg'
-import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
+import { isEligibleCarryPocket } from '@/lib/savings/eligiblePocket'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 
 /**
@@ -22,7 +22,7 @@ export function useAssetPurchaseSources(source: MoneySource) {
     goldPricePerGram: s.goldPricePerGram, goldPriceAvailable: s.goldPriceAvailable,
   })))
   const pockets = useMemo<PocketVM[]>(
-    () => store.savingsAccounts.filter(isEligibleCarryPocket).map((account) => ({ account, coverAmount: 0, goalsAmount: 0, goalLabel: '', isAuto: false })),
+    () => store.savingsAccounts.filter(isEligibleCarryPocket).map((account) => ({ account, coverAmount: 0, goalsAmount: 0, goalLabel: '' })),
     [store.savingsAccounts],
   )
   const effective: MoneySource = source.kind === 'account'

@@ -214,11 +214,13 @@ test.describe('inputs: NaN, Infinity, boundary dates', () => {
     expect(code(inc)).toBe('23514')
   })
 
-  test('savings/carry month keys: NaN and out-of-range are 4xx', async ({ request }) => {
-    for (const monthKey of ['NaN-NaN', '2026-00', '2026-13', '0000-01', '9999-12', 'Infinity']) {
-      const r = await request.post('/api/savings/carry', { headers: auth(A), data: { monthKey } })
-      expect(r.status(), monthKey).toBeGreaterThanOrEqual(400)
-      expect(r.status(), monthKey).toBeLessThan(500)
+  test('month-end bad bodies are 4xx (bad op, bad id, bad version, split over 100)', async ({ request }) => {
+    const bodies = [{ op: 'nope' }, { op: 'apply', id: 'NaN', version: 1 }, { op: 'apply', id: crypto.randomUUID(), version: 0 },
+      { op: 'split', split: [{ target_id: crypto.randomUUID(), pct: 101 }] }]
+    for (const data of bodies) {
+      const r = await request.post('/api/month-end', { headers: auth(A), data })
+      expect(r.status(), JSON.stringify(data)).toBeGreaterThanOrEqual(400)
+      expect(r.status(), JSON.stringify(data)).toBeLessThan(500)
     }
   })
 })
@@ -232,13 +234,13 @@ test.describe('rate limits (a couple past each limit)', () => {
     expect(st.slice(10)).toEqual([429, 429])
   })
 
-  test('savings/carry: 20 per user per minute', async ({ request }) => {
+  test('month-end: 30 per user per minute', async ({ request }) => {
     const sec = new Date().getUTCSeconds()
     if (sec > 30) await new Promise((r) => setTimeout(r, (61 - sec) * 1000))
     const st: number[] = []
-    for (let i = 0; i < 22; i++) st.push((await request.post('/api/savings/carry', { headers: auth(B), data: { monthKey: '2026-13' } })).status())
+    for (let i = 0; i < 32; i++) st.push((await request.post('/api/month-end', { headers: auth(B), data: { op: 'undo', id: crypto.randomUUID() } })).status())
     expect(st.filter((s) => s === 429).length).toBeGreaterThanOrEqual(2)
-    expect(st.indexOf(429)).toBe(20)
+    expect(st.indexOf(429)).toBe(30)
   })
 })
 

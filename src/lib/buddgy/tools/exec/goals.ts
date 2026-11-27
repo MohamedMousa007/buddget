@@ -13,7 +13,7 @@ import { buildGoalProgressContext, computeGoalProgress } from '@/lib/goals/compu
 import { withDebtDerived } from '@/lib/goals/debtGoal'
 import { periodsUntil } from '@/lib/goals/goalPlan'
 import { getGoalStatus } from '@/lib/goals/goalStatus'
-import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
+import { isEligibleCarryPocket } from '@/lib/savings/eligiblePocket'
 import { availableIn, depositRefusal, explainDepositRefusal, ledgerOf, pocketHome } from '@/lib/savings/pocketHome'
 import { createGoalPocket, ELSEWHERE, goalHomeAccounts, savedHomeProblem } from '@/lib/goals/goalPocket'
 import { accountsNamedIn, userNamedHome } from '@/lib/goals/namedHome'

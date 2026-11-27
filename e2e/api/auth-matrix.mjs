@@ -16,7 +16,7 @@ const ROUTES = [
   ['PATCH', `/api/devices/${USERS.A.id}`], ['DELETE', `/api/devices/${USERS.A.id}`],
   ['GET', '/api/entitlements/me'], ['POST', '/api/entitlements/trial'], ['POST', '/api/feedback'], ['GET', '/api/flags'],
   ['GET', '/api/notifications'], ['PATCH', '/api/notifications'], ['POST', '/api/push/register'], ['DELETE', '/api/push/register'],
-  ['POST', '/api/push/send'], ['POST', '/api/receipt/scan'], ['GET', '/api/savings/carry'], ['POST', '/api/savings/carry'],
+  ['POST', '/api/push/send'], ['POST', '/api/receipt/scan'], ['POST', '/api/month-end'],
   ['POST', '/api/sms/ack'], ['POST', '/api/sms/confirm'], ['POST', '/api/sms/dismiss'], ['POST', '/api/sms/flag-action'],
   ['POST', '/api/sms/own-transfer'], ['POST', '/api/sms/parse'], ['POST', '/api/sms/revoke-token'], ['GET', '/api/sms/setup-token'],
   ['DELETE', '/api/sms/setup-token'], ['POST', '/api/sms/undo'], ['GET', '/api/support/board'], ['POST', '/api/support/board/1/vote'],
@@ -27,7 +27,7 @@ const ROUTES = [
   ['POST', '/api/auth/email-hook'], ['POST', '/api/billing/revenuecat'], ['POST', '/api/webhooks/linear'], ['POST', '/api/webhooks/resend'],
   ['POST', '/api/webhooks/sentry'], ['POST', '/api/biometric/signin'],
   ['GET', '/api/cron/data-retention'], ['GET', '/api/cron/integrations'], ['GET', '/api/cron/ios-crashes'], ['GET', '/api/cron/loyalty'],
-  ['GET', '/api/cron/month-carry'], ['GET', '/api/cron/notifications'], ['GET', '/api/cron/prices'], ['GET', '/api/cron/sms-canary'],
+  ['GET', '/api/cron/month-end'], ['GET', '/api/cron/notifications'], ['GET', '/api/cron/prices'], ['GET', '/api/cron/sms-canary'],
   ['GET', '/api/cron/sms-harvest'],
 ]
 

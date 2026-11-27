@@ -36,7 +36,7 @@ import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
 import { ELSEWHERE } from '@/lib/goals/goalPocket'
 import { monthsUntil, sharesOverFull } from '@/lib/goals/goalPlan'
 import { GOAL_ICON_SET, goalVisual } from '@/lib/goals/goalVisual'
-import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
+import { isEligibleCarryPocket } from '@/lib/savings/eligiblePocket'
 import { pocketDisplayName } from '@/lib/savings/pocketIdentity'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Currency, GoalCategory } from '@/lib/store/types'
@@ -66,7 +66,7 @@ function SavedBlock({ form }: { form: Form }) {
   const accounts = useFinanceStore((s) => s.savingsAccounts)
   const kind = form.savedKind
   const pockets: PocketVM[] = useMemo(
-    () => accounts.filter((a) => isEligibleCarryPocket(a) && a.currency === form.currency).map((account) => ({ account, coverAmount: 0, goalsAmount: 0, goalLabel: '', isAuto: false })),
+    () => accounts.filter((a) => isEligibleCarryPocket(a) && a.currency === form.currency).map((account) => ({ account, coverAmount: 0, goalsAmount: 0, goalLabel: '' })),
     [accounts, form.currency],
   )
   const accountId = form.savedHome && form.savedHome !== ELSEWHERE ? form.savedHome : form.homeAccounts[0]?.method.id

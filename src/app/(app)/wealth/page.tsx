@@ -4,7 +4,7 @@ import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
 import { selectActivePlan } from '@/lib/budget/activePlan'
 import { useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { ArrowDownLeft, ArrowUpRight, Pencil, Plus, RefreshCw, Star, Trash2, TriangleAlert } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Pencil, Plus, RefreshCw, Trash2, TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { SkeletonList } from '@/components/ui/SkeletonList'
@@ -15,11 +15,15 @@ import { deleteHoldingWithUndo, deletePocketWithUndo } from '@/lib/savings/pocke
 import { PageGrid } from '@/components/layout/PageGrid'
 import { PageHero } from '@/components/layout/PageHero'
 import { FlowStickyStrip } from '@/components/features/flow/FlowStickyStrip'
-import { useCarryStatus } from '@/hooks/useCarryStatus'
 import { ActivityLedger } from '@/components/features/savings-v3/ActivityLedger'
 import { AddHoldingSheet } from '@/components/features/savings-v3/AddHoldingSheet'
 import { AddSavingsSheetV3 } from '@/components/features/savings-v3/AddSavingsSheetV3'
 import { EmergencyFundSheet } from '@/components/features/savings-v3/EmergencyFundSheet'
+import { MonthEndSheet } from '@/components/features/savings-v3/MonthEndSheet'
+import { MonthlySavingRow, type MonthlySavingRowProps } from '@/components/features/savings-v3/MonthlySavingRow'
+import { useMonthEnd } from '@/hooks/useMonthEnd'
+import { useMonthEndCopy } from '@/lib/i18n/monthEndCopy'
+import { monthNames } from '@/lib/i18n/dateFormat'
 import { SavingsHero, type HeroSplitSegment } from '@/components/features/savings-v3/SavingsHero'
 import { WealthPlanRows } from '@/components/features/savings-v3/WealthPlanRows'
 import { WealthList } from '@/components/features/savings-v3/WealthList'
@@ -107,7 +111,6 @@ export default function WealthPage() {
     })),
   )
   const base = settings.baseCurrency
-  const staleCarryMonths = useCarryStatus().staleCycles.map((c) => c.monthKey)
   const goldOk = goldPriceAvailable !== false
 
   const [addOpen, setAddOpen] = useState(false)
@@ -118,6 +121,9 @@ export default function WealthPage() {
   const [menu, setMenu] = useState<{ row: WealthRowVM; anchor: DOMRect } | null>(null)
   const [emergencyOpen, setEmergencyOpen] = useState(false)
   const [zakatOpen, setZakatOpen] = useState(false)
+  const [monthEndOpen, setMonthEndOpen] = useState(false)
+  const monthEnd = useMonthEnd()
+  const mc = useMonthEndCopy()
   // Quick add > Savings lands here asking for the add-money sheet (auth was checked at the tile). The request stays in
   // the store until the sheet closes; it is never cleared in an unmount cleanup, which StrictMode runs on mount (Q3).
   const wealthAddRequested = useSettingsStore((s) => s.wealthAddRequested)
@@ -208,10 +214,9 @@ export default function WealthPage() {
         coverAmount: coverPocketIds.includes(account.id) ? account.currentBalance : 0,
         goalsAmount: Math.min(account.currentBalance, linked.reduce((s, g) => s + (g.targetAmount ?? 0), 0)),
         goalLabel: linked[0]?.name ?? '',
-        isAuto: profile.defaultCarryPocketId === account.id,
       }
     }),
-    [pockets, goals, coverPocketIds, profile.defaultCarryPocketId],
+    [pockets, goals, coverPocketIds],
   )
 
   const trendRaw = useNetWorthTrend(nw.netWorth, base, dataReady && !model.anyUnpriced && !nw.netWorthIncomplete, netWorthBasisOf(nw))
@@ -258,6 +263,23 @@ export default function WealthPage() {
   // Whole units, as the mockup ("103,907"); the sign stays for a negative net worth.
   const netWorthText = nw.netWorth < 0 ? `−${formatWhole(Math.abs(nw.netWorth))}` : formatWhole(nw.netWorth)
   const hasZakat = (zakatYear.state === 'estimate' || zakatYear.state === 'dueNow') && zakatYear.result.nisab > 0
+
+  /** The Monthly saving row (final-ui v9): this month's leftover, placed of leftover, or what was overspent. */
+  function monthlyRow(v: typeof monthEnd.view): MonthlySavingRowProps {
+    const open = () => guard(() => setMonthEndOpen(true))
+    if (!v || v.figures.reason || v.status === 'undone') return { title: mc.rowTitle, subtitle: mc.rowIdle, amount: null, onOpen: open }
+    const month = monthNames(locale)[Number(v.cycleStart.slice(5, 7)) - 1]
+    const d = (iso: string | null) => (iso ? formatLocalized(new Date(iso), 'd MMM', locale) : '')
+    const left = v.figures.leftover
+    if (v.status === 'empty') {
+      return { title: mc.rowTitle, subtitle: mc.rowOverspent(month, formatWhole(Math.abs(left))), amount: <span className="font-mono-numbers text-[0.8125rem] font-semibold text-[var(--color-brand-amber)]">−{formatWhole(Math.abs(left))}</span>, progress: 0, onOpen: open }
+    }
+    const placed = v.lines.reduce((s, l) => s + l.amountBase, 0)
+    const amount = <span className="font-mono-numbers text-[0.8125rem] font-semibold text-[var(--color-brand-text-primary)]">{formatWhole(placed)}<span className="text-[var(--color-brand-text-muted)]"> / {formatWhole(left)}</span></span>
+    const subtitle = v.status === 'applied' ? mc.rowApplied(month, d(v.appliedAt))
+      : v.figures.notPlaced > 0 ? mc.rowPendingShort(month, formatWhole(v.figures.notPlaced), d(v.autoApplyAt)) : mc.rowPending(month, d(v.autoApplyAt))
+    return { title: mc.rowTitle, subtitle, amount, progress: left > 0 ? (placed / left) * 100 : 0, onOpen: open }
+  }
 
   /** The warning follows what the delete does to net worth, not the kind of pocket. */
   const deleteBodyFor = (a: SavingsAccount) => {
@@ -332,6 +354,8 @@ export default function WealthPage() {
                 )}
               </div>
 
+              <MonthlySavingRow {...monthlyRow(monthEnd.view)} />
+
               <WealthList
                 rows={model.rows}
                 currency={base}
@@ -344,7 +368,7 @@ export default function WealthPage() {
           }
           secondary={
             <div className="mt-2 lg:mt-0">
-              <ActivityLedger transactions={savingsTransactions} accounts={savingsAccounts} baseCurrency={base} exchangeRates={exchangeRates} limit={3} staleMonthKeys={staleCarryMonths} />
+              <ActivityLedger transactions={savingsTransactions} accounts={savingsAccounts} baseCurrency={base} exchangeRates={exchangeRates} limit={3} />
               <div className="mt-4">
                 <WealthPlanRows
                   emergency={{ state: efState, months: emergency.monthsCovered.toFixed(1), target: targetMonths }}
@@ -374,9 +398,6 @@ export default function WealthPage() {
                 : []),
               ...(a ? [{ label: t.menuEdit, icon: <Pencil size={17} />, onSelect: () => setEditAcc(a) }] : []),
               ...(row.cat === 'gold' ? [{ label: wl.refreshGold, icon: <RefreshCw size={17} />, onSelect: () => void refreshPrices() }] : []),
-              ...(a && a.category === 'savings' && profile.defaultCarryPocketId !== a.id
-                ? [{ label: t.menuMakeDefault, icon: <Star size={17} />, onSelect: () => useFinanceStore.getState().updateProfile({ defaultCarryPocketId: a.id }) }]
-                : []),
               {
                 label: t.menuDelete, icon: <Trash2 size={17} />, destructive: true,
                 onSelect: () => void askDelete(row),
@@ -402,6 +423,7 @@ export default function WealthPage() {
           onAddMoney={() => { setEmergencyOpen(false); openAdd(null) }}
         />
       )}
+      {monthEndOpen && <MonthEndSheet open monthEnd={monthEnd} onClose={() => setMonthEndOpen(false)} focusSplit={!monthEnd.view} />}
       {zakatOpen && <ZakatSheet open onClose={() => setZakatOpen(false)} sources={zakatSources} year={zakatYear} hawlDate={hawlDate} />}
       {editAcc && <EditSavingsAccountSheet open account={editAcc} onClose={() => setEditAcc(null)} />}
     </div>

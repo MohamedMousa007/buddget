@@ -2018,6 +2018,7 @@ export const useFinanceStore = create<FinanceStore>()(
 
       movePart: (partId, toAccountId, amount, opts) => {
         let ok = false
+        let remap: { from: string; to: string } | null = null
         set((state) => {
           const p = state.savingsAccounts.find((a) => a.id === partId)
           const b = state.paymentMethods.find((m) => m.id === toAccountId)
@@ -2058,6 +2059,7 @@ export const useFinanceStore = create<FinanceStore>()(
           }
           const removed = withoutPocket(withNew, p.id)
           ok = true
+          remap = { from: p.id, to: moved.newPocket.id }
           // Every goal that listed the old row lists the new one in its place (not just dropped).
           const relinked = state.goals.map((g) => (g.linkedSavingsAccountIds.includes(p.id)
             ? { ...g, linkedSavingsAccountIds: g.linkedSavingsAccountIds.map((x) => (x === p.id ? moved.newPocket.id : x)) }
@@ -2068,6 +2070,8 @@ export const useFinanceStore = create<FinanceStore>()(
             ...(state.profile.defaultCarryPocketId === p.id ? { profile: { ...state.profile, defaultCarryPocketId: moved.newPocket.id } } : {}),
           }
         })
+        // The split names pockets by id: the moved pocket's share follows it to its new row.
+        if (remap) { const { from, to } = remap; void import('@/lib/monthEnd/remapSplit').then((m) => m.remapSplitAfterMove(from, to)) }
         return ok
       },
 

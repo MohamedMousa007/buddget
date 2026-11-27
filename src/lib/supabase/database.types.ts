@@ -3467,6 +3467,7 @@ export type Database = {
           name: string
           phone: string | null
           rent_includes_utilities: boolean
+          savings_split: Json
           secondary_currency:
             | Database["public"]["Enums"]["currency_code"]
             | null
@@ -3501,6 +3502,7 @@ export type Database = {
           name?: string
           phone?: string | null
           rent_includes_utilities?: boolean
+          savings_split?: Json
           secondary_currency?:
             | Database["public"]["Enums"]["currency_code"]
             | null
@@ -3535,6 +3537,7 @@ export type Database = {
           name?: string
           phone?: string | null
           rent_includes_utilities?: boolean
+          savings_split?: Json
           secondary_currency?:
             | Database["public"]["Enums"]["currency_code"]
             | null
@@ -4154,52 +4157,100 @@ export type Database = {
       }
       savings_month_summary: {
         Row: {
+          achieved_by_proposal: string[]
           allocated: number
+          applied_at: string | null
+          applied_by: string | null
+          applied_lines: Json | null
+          auto_apply_at: string | null
+          capped: Json | null
           carry: number
           carry_adjustment: number
           carry_settled_at: string | null
           closed_at: string
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
+          cycle_end: string | null
+          cycle_start: string | null
+          figures: Json | null
+          held_snapshot: Json | null
           id: string
+          lines: Json | null
           month_key: string
           pocket_id: string | null
+          rates: Json | null
+          rates_apply: Json | null
           saved: number
+          status: string
           target: number
+          undone_at: string | null
           updated_at: string
           user_id: string
+          version: number
         }
         Insert: {
+          achieved_by_proposal?: string[]
           allocated?: number
+          applied_at?: string | null
+          applied_by?: string | null
+          applied_lines?: Json | null
+          auto_apply_at?: string | null
+          capped?: Json | null
           carry?: number
           carry_adjustment?: number
           carry_settled_at?: string | null
           closed_at?: string
           created_at?: string
           currency: Database["public"]["Enums"]["currency_code"]
+          cycle_end?: string | null
+          cycle_start?: string | null
+          figures?: Json | null
+          held_snapshot?: Json | null
           id?: string
+          lines?: Json | null
           month_key: string
           pocket_id?: string | null
+          rates?: Json | null
+          rates_apply?: Json | null
           saved?: number
+          status?: string
           target?: number
+          undone_at?: string | null
           updated_at?: string
           user_id: string
+          version?: number
         }
         Update: {
+          achieved_by_proposal?: string[]
           allocated?: number
+          applied_at?: string | null
+          applied_by?: string | null
+          applied_lines?: Json | null
+          auto_apply_at?: string | null
+          capped?: Json | null
           carry?: number
           carry_adjustment?: number
           carry_settled_at?: string | null
           closed_at?: string
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
+          cycle_end?: string | null
+          cycle_start?: string | null
+          figures?: Json | null
+          held_snapshot?: Json | null
           id?: string
+          lines?: Json | null
           month_key?: string
           pocket_id?: string | null
+          rates?: Json | null
+          rates_apply?: Json | null
           saved?: number
+          status?: string
           target?: number
+          undone_at?: string | null
           updated_at?: string
           user_id?: string
+          version?: number
         }
         Relationships: [
           {
@@ -6542,6 +6593,19 @@ export type Database = {
         Args: { p_min: string; p_version: string }
         Returns: boolean
       }
+      apply_month_end: {
+        Args: {
+          p_by?: string
+          p_capped?: Json
+          p_held: Json
+          p_id: string
+          p_lines: Json
+          p_rates: Json
+          p_user: string
+          p_version: number
+        }
+        Returns: Json
+      }
       assert_debt_owned: {
         Args: { p_debt: string; p_user: string }
         Returns: undefined
@@ -6848,6 +6912,14 @@ export type Database = {
       }
       loyalty_week_summary: { Args: never; Returns: Json }
       notification_candidate_users: { Args: never; Returns: string[] }
+      month_end_due_users: {
+        Args: { p_after?: string; p_limit?: number; p_user?: string }
+        Returns: Json
+      }
+      month_end_ledger: {
+        Args: { p_cycle_start: string; p_user: string }
+        Returns: Json
+      }
       notification_due_users: {
         Args: { p_after?: string; p_limit?: number; p_now?: string }
         Returns: {
@@ -7211,6 +7283,10 @@ export type Database = {
       }
       trial_claim: {
         Args: { p_email_key: string; p_legacy_key?: string; p_user: string }
+        Returns: Json
+      }
+      undo_month_end: {
+        Args: { p_id: string; p_user: string }
         Returns: Json
       }
       update_subscription_and_re: {

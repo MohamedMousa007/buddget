@@ -22,7 +22,7 @@ import { useT } from '@/lib/i18n'
 import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
 import { goalAddHint } from '@/lib/goals/goalAddHint'
 import { depositIntoGoal } from '@/lib/goals/goalPocket'
-import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
+import { isEligibleCarryPocket } from '@/lib/savings/eligiblePocket'
 import { applyPocketDeposit } from '@/lib/savings/moneySourceDeposit'
 import { pocketDisplayName } from '@/lib/savings/pocketIdentity'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -78,7 +78,7 @@ function GoalMoney({ goal: initial, onClose, overSheet }: { goal: Goal; onClose:
   const effective: MoneySource = source.kind === 'account' ? { kind: 'account', id: source.id ?? leg.accountId ?? undefined } : source
 
   const pockets: PocketVM[] = useMemo(
-    () => savingsAccounts.filter(isEligibleCarryPocket).map((account) => ({ account, coverAmount: 0, goalsAmount: 0, goalLabel: '', isAuto: false })),
+    () => savingsAccounts.filter(isEligibleCarryPocket).map((account) => ({ account, coverAmount: 0, goalsAmount: 0, goalLabel: '' })),
     [savingsAccounts],
   )
   const fromPocket = effective.kind === 'pocket' ? savingsAccounts.find((a) => a.id === effective.id) : undefined

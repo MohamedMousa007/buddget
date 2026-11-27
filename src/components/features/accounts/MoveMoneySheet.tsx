@@ -71,7 +71,7 @@ export function MoveMoneySheet({ open, onClose, accounts, initialAccountId, init
   const sources = useMemo(() => accounts.filter((a) => a.balance), [accounts])
   const account = sources.find((a) => a.method.id === accountId) ?? sources[0]
   const pockets = useMemo<PocketVM[]>(
-    () => pocketsAll.filter((p) => p.category === 'savings').map((p) => ({ account: p, coverAmount: 0, goalsAmount: 0, goalLabel: '', isAuto: false })),
+    () => pocketsAll.filter((p) => p.category === 'savings').map((p) => ({ account: p, coverAmount: 0, goalsAmount: 0, goalLabel: '' })),
     [pocketsAll],
   )
   const pocketsHere = useMemo(() => pockets.map((p) => p.account), [pockets])
