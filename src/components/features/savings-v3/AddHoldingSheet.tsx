@@ -66,7 +66,7 @@ function AddHoldingBody({ onClose, initialTab, presetAssetType, pocketOnly, onPo
   const pickKind = (k: PocketKind) => { setKind(k); setMethod(null) }
   const pickMethod = (pm: PaymentMethod) => { setMethod(pm); setKind(null) }
   const proceed = () => {
-    if (method) setFormDef({ def: method.type === 'wallet' ? POCKET_KINDS.wallet : POCKET_KINDS.bank, method })
+    if (method) setFormDef({ def: method.type === 'wallet' ? POCKET_KINDS.wallet : method.type === 'cash' ? POCKET_KINDS.cash : POCKET_KINDS.bank, method })
     else if (kind) setFormDef({ def: POCKET_KINDS[kind], method: null })
   }
 

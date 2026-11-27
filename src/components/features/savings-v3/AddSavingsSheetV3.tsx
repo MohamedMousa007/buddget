@@ -29,7 +29,7 @@ import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
 import type { Currency } from '@/lib/store/types'
 import { WhereMoneySheet, type MoneyWhere } from '@/components/features/savings-v3/WhereMoneySheet'
 import { useSavingsV9Copy } from '@/lib/i18n/savingsV9Copy'
-import { ensureCashAccount } from '@/lib/accounts/actions'
+import { cashAccountId } from '@/lib/accounts/resolve'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { navigate } from '@/lib/navigation/navigate'
 
@@ -78,7 +78,9 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
   // Outside money is counted where it really is (final-ui v9): Cash is the Cash account; a new account is added first.
   const pickWhere = (w: MoneyWhere) => {
     setWhereOpen(false)
-    if (w === 'cash') return setSource({ kind: 'account', id: ensureCashAccount() })
+    // Cash the deposit can come from is picked as the account; an untracked Cash stays outside money, named as Cash.
+    const cash = w === 'cash' ? cashAccountId(useFinanceStore.getState().paymentMethods) : undefined
+    if (cash && leg.views.some((v) => v.method.id === cash)) return setSource({ kind: 'account', id: cash })
     if (w === 'new') {
       onClose()
       useSettingsStore.getState().openAddAccountWithPrefill({ provider: '', last4: '' })
@@ -169,8 +171,8 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
             pockets={pockets}
             excludePocketIds={selected ? [selected.account.id] : undefined}
             outsidePick={{
-              value: whereIs === 'gold'
-                ? <span dir="auto" className="truncate">{where.gold}</span>
+              value: whereIs === 'gold' || whereIs === 'cash'
+                ? <span dir="auto" className="truncate">{whereIs === 'gold' ? where.gold : where.cash}</span>
                 : <span className="text-[0.875rem] font-semibold text-[var(--color-brand-primary-ink)]">{where.row}</span>,
               onPress: () => setWhereOpen(true),
             }}

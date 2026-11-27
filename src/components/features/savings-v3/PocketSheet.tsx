@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ArrowDownToLine, ArrowUpRight, EllipsisVertical, House, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowDownLeft, ArrowDownToLine, ArrowUpRight, EllipsisVertical, House, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
@@ -12,7 +12,7 @@ import { PickerRow } from '@/components/ui/PickerRow'
 import { BAND_FG2, BAND_MIX, HeroBand } from '@/components/features/hero/HeroBand'
 import { AccountNameValue } from '@/components/features/accounts/AccountPicker'
 import { accountTitle } from '@/components/features/accounts/accountDisplay'
-import { ActivityLedger } from '@/components/features/savings-v3/ActivityLedger'
+import { TransactionRow } from '@/components/transactions/TransactionRow'
 import { PocketTile } from '@/components/features/savings-v3/MoneySheetParts'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { useLocale, useT } from '@/lib/i18n'
@@ -47,7 +47,7 @@ export function PocketSheet({ account, onClose, onAddMoney, onRelease, onWithdra
   const { locale } = useLocale()
   const hidden = useMask('hero')
   const s = useFinanceStore(useShallow((st) => ({
-    methods: st.paymentMethods, transactions: st.savingsTransactions, accounts: st.savingsAccounts, base: st.settings.baseCurrency, rates: st.exchangeRates,
+    methods: st.paymentMethods, transactions: st.savingsTransactions,
   })))
   const [menu, setMenu] = useState<DOMRect | null>(null)
   const home = pocketHome(account, s.methods)
@@ -55,7 +55,10 @@ export function PocketSheet({ account, onClose, onAddMoney, onRelease, onWithdra
   const system = isMonthlySavingsPart(account)
   const name = pocketDisplayName(account, sf.systemNames)
   const unit = account.currency === 'XAU' ? 'g' : account.currency
-  const moves = useMemo(() => s.transactions.filter((t) => t.accountId === account.id), [s.transactions, account.id])
+  const moves = useMemo(
+    () => s.transactions.filter((t) => t.accountId === account.id).sort((a, b) => (b.occurredAt ?? b.date).localeCompare(a.occurredAt ?? a.date)).slice(0, 5),
+    [s.transactions, account.id],
+  )
 
   const details: Array<[string, React.ReactNode]> = [
     [c.keptIn, holder ? <AccountNameValue method={holder} /> : <span>{v9.page.outside}</span>],
@@ -111,7 +114,23 @@ export function PocketSheet({ account, onClose, onAddMoney, onRelease, onWithdra
             {moves.length > 0 ? (
               <div>
                 <h3 className="mb-2 px-1 text-[0.8125rem] font-bold text-[var(--color-brand-text-primary)]">{c.recentMoves}</h3>
-                <ActivityLedger transactions={moves} accounts={s.accounts} baseCurrency={s.base} exchangeRates={s.rates} limit={5} />
+                <Card padding="none" divide className="overflow-hidden">
+                  {moves.map((tx) => {
+                    const into = tx.type === 'deposit'
+                    return (
+                      <TransactionRow
+                        key={tx.id}
+                        icon={into ? <ArrowDownLeft className="size-5" aria-hidden /> : <ArrowUpRight className="size-5" aria-hidden />}
+                        iconBg={into ? 'color-mix(in oklab, var(--color-brand-green) 16%, transparent)' : undefined}
+                        iconFg={into ? 'var(--color-brand-green)' : 'var(--color-brand-text-secondary)'}
+                        title={tx.notes || (into ? c.moveIn : c.moveOut)}
+                        subtitle={formatLocalized(new Date(tx.occurredAt ?? `${tx.date.slice(0, 10)}T12:00:00`), 'MMM d', locale)}
+                        amount={hidden ? MASK : <>{into ? '+' : '−'}{formatWhole(tx.amount)} <span className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{tx.currency === 'XAU' ? 'g' : tx.currency}</span></>}
+                        amountColor={into ? 'var(--color-brand-green)' : undefined}
+                      />
+                    )
+                  })}
+                </Card>
               </div>
             ) : null}
 

@@ -2,7 +2,7 @@
 
 import { intlTag } from '@/lib/i18n/dateFormat'
 import { useMemo, useState } from 'react'
-import { Check, EllipsisVertical, Gem, House, Pause, Pencil, Play, Repeat, Trash2, Trophy } from 'lucide-react'
+import { Check, ChevronRight, EllipsisVertical, Gem, House, Pause, Pencil, Play, Repeat, Trash2, Trophy } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { goalCategoryLabelKey } from '@/components/features/goals/goalCategoryLabel'
 import { GoalPriceNote } from '@/components/features/goals/GoalPriceNote'
@@ -21,6 +21,9 @@ import { BrandMark } from '@/components/features/accounts/BrandMark'
 import { accountColor, accountTitle } from '@/components/features/accounts/accountDisplay'
 import { bankLogoForName } from '@/lib/payment/bankLogos'
 import { useGoalHomes } from '@/components/features/goals/GoalHomesLine'
+import { ReleaseSheet } from '@/components/features/savings-v3/ReleaseSheet'
+import { WithdrawSheetV3 } from '@/components/features/savings-v3/WithdrawSheetV3'
+import type { SavingsAccount } from '@/lib/store/types'
 import { useSavingsV9Copy } from '@/lib/i18n/savingsV9Copy'
 import { useMask } from '@/lib/privacy/useMask'
 import { MASK } from '@/lib/privacy/mask'
@@ -77,6 +80,8 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
   const [fund, setFund] = useState<FundPlan | null>(null)
   const [edit, setEdit] = useState(false)
   const [del, setDel] = useState(false)
+  // A home's money: set aside in an account is released; outside the accounts is withdrawn.
+  const [homeMove, setHomeMove] = useState<{ part: SavingsAccount; release: boolean } | null>(null)
 
   const now = useMemo(() => new Date(), [])
   const today = localTodayISO(now)
@@ -286,7 +291,8 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
                       iconFg={h.kind === 'gold' ? 'var(--color-brand-gold)' : h.kind === 'outside' ? 'var(--color-brand-text-secondary)' : undefined}
                       title={<span dir="auto">{h.kind === 'account' && h.account ? accountTitle(h.account) : h.part.name}</span>}
                       subtitle={h.kind === 'account' && h.account ? v9.homeSetAside(accountTitle(h.account)) : v9.homeOutsideSub}
-                      amount={<bdi className="font-mono-numbers">{hidden ? MASK : h.kind === 'gold' ? v9.homeGold(h.amount) : h.amount}</bdi>}
+                      amount={<span className="inline-flex items-center gap-2"><bdi className="font-mono-numbers">{hidden ? MASK : h.kind === 'gold' ? v9.homeGold(h.amount) : h.amount}</bdi><ChevronRight aria-hidden className="size-4 text-[var(--color-brand-text-muted)] rtl:rotate-180" /></span>}
+                      onClick={() => setHomeMove({ part: h.part, release: h.kind === 'account' })}
                     />
                   ))}
                 </Card>
@@ -322,6 +328,15 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
       ) : null}
       {debtEditor ? <PlanEditorSheet goal={goal} onClose={() => setDebtEditor(false)} /> : null}
       {edit ? <GoalEditSheet goal={goal} onClose={() => setEdit(false)} /> : null}
+      {homeMove?.release ? <ReleaseSheet account={homeMove.part} onClose={() => setHomeMove(null)} /> : null}
+      {homeMove && !homeMove.release ? (
+        <WithdrawSheetV3
+          open
+          onClose={() => setHomeMove(null)}
+          pockets={[{ account: homeMove.part, coverAmount: 0, goalsAmount: 0, goalLabel: goal.name }]}
+          defaultAccountId={homeMove.part.id}
+        />
+      ) : null}
       {del ? <DeleteGoalSheet goal={goal} onClose={() => setDel(false)} onDeleted={() => { setDel(false); onClose() }} /> : null}
     </>
   )

@@ -21,7 +21,7 @@ import { LineTile } from '@/components/features/budget/LineTile'
 import { useBudgetSheetsCopy } from '@/components/features/budget/useSheetsCopy'
 import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
 import { cycleKeyOf } from '@/lib/budget/activations'
-import { lineEditDirty, lineEditPatch } from '@/lib/budget/lineEdit'
+import { lineAmountInBase, lineEditDirty, lineEditPatch } from '@/lib/budget/lineEdit'
 import { lineHistory } from '@/lib/budget/lineHistory'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useLocale } from '@/lib/i18n'
@@ -29,7 +29,6 @@ import { joinList, useBudgetLtCopy } from '@/lib/i18n/budgetLtCopy'
 import type { LineView, PlanView } from '@/lib/budget/planView.types'
 import type { BudgetPlanCategory } from '@/lib/store/types'
 import { formatFlex, formatWhole } from '@/lib/utils/formatters'
-import { tryConvertCurrency } from '@/lib/utils/currency'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 import { useLightTouchCopy } from '@/lib/i18n/lightTouchCopy'
 
@@ -91,9 +90,8 @@ function LineForm({
     [linked, line.name, categories, expenses, monthStartDay, view.base, rates],
   )
   const parsed = Number(amount)
-  const typed = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0
-  const converted = cur === view.base ? typed : tryConvertCurrency(typed, cur, view.base, rates)
-  const value = converted === null ? 0 : Math.round(converted * 100) / 100
+  const converted = lineAmountInBase(Number.isFinite(parsed) && parsed >= 0 ? parsed : 0, cur, view.base, rates)
+  const value = converted ?? 0
   const pct = view.income > 0 ? Math.round((value / view.income) * 100) : 0
   const liveDiffers = linked && lv.liveAmount !== null && Math.round(lv.liveAmount) !== Math.round(lv.amount)
   const catsChanged = categories.join('|') !== (line.expenseCategories ?? []).join('|')

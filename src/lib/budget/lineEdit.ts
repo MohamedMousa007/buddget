@@ -1,5 +1,5 @@
 import type { BudgetPlanCategory, Currency } from '@/lib/store/types'
-import { convertCurrency } from '@/lib/utils/currency'
+import { convertCurrency, tryConvertCurrency } from '@/lib/utils/currency'
 
 export interface LineEditInput {
   /** The amount the sheet showed, in base (a row in another currency is converted for display). */
@@ -71,4 +71,14 @@ export function lineEditDirty(from: LineEditState, now: LineEditState, linked: b
     now.dueDay !== from.dueDay ||
     now.categories.join('|') !== from.categories.join('|')
   )
+}
+
+/**
+ * The typed amount in base money (v9: the sheet's currency is the shared inline picker). Rounded to cents;
+ * null when there is no rate to measure it by, so nothing is written from a guess.
+ */
+export function lineAmountInBase(typed: number, currency: string, base: string, rates: Record<string, number>): number | null {
+  if (!(typed >= 0)) return 0
+  const v = currency === base ? typed : tryConvertCurrency(typed, currency, base, rates)
+  return v === null ? null : Math.round(v * 100) / 100
 }
