@@ -41,6 +41,8 @@ export interface PaydaysLtCopy {
     statusDue: (date: string) => string
     cadence: Record<'monthly' | 'biweekly' | 'weekly', string>
     cadenceNext: (cadence: string, date: string) => string
+    emptyTitle: string
+    emptyBody: string
   }
   source: {
     back: string
@@ -61,6 +63,8 @@ export interface PaydaysLtCopy {
   }
   /** The Assign sheet's one empty tile and Flow's swipe action. */
   assign: { title: string; body: string; bodyFrom: string; addSalary: string; addSalarySub: string; swipe: string }
+  /** Add income source (the Add goal C top, then how often, the day, the account). */
+  form: { arrivesOn: string; howOften: string; eachSalary: string; eachTime: string; nameAria: string }
   /** The money-in sheet (round 8 Assign card, round 9 short tip). */
   moneyIn: { assignedTo: string; notAssigned: string; tipTitle: string; tip: string; cta: string; save: string }
 }
@@ -103,6 +107,8 @@ export const PAYDAYS_LT_COPY: Record<Locale, PaydaysLtCopy> = {
       statusDue: (d) => `Due ${d}`,
       cadence: { monthly: 'Monthly', biweekly: 'Biweekly', weekly: 'Weekly' },
       cadenceNext: (c, d) => `${c} · next ${d}`,
+      emptyTitle: 'Tell buddget when you get paid',
+      emptyBody: 'Add your salary, rent or dividends. buddget expects each one, flags a late salary and matches bank SMS to them for you.',
     },
     source: {
       back: 'Income',
@@ -126,6 +132,7 @@ export const PAYDAYS_LT_COPY: Record<Locale, PaydaysLtCopy> = {
       body: '{amount} {currency} arrived on {date}. Assigning keeps that date and links it to a salary or income you get regularly.',
       bodyFrom: '{amount} {currency} from {from} arrived on {date}. Assigning keeps that date and links it to a salary or income you get regularly.',
       addSalary: 'Add salary', addSalarySub: 'Create a new salary and assign this to it', swipe: 'Assign' },
+    form: { arrivesOn: 'Arrives on', howOften: 'How often', eachSalary: 'Each salary', eachTime: 'Each time it arrives', nameAria: 'Name' },
     moneyIn: {
       assignedTo: 'Assigned to',
       notAssigned: 'Not assigned',
@@ -169,6 +176,8 @@ export const PAYDAYS_LT_COPY: Record<Locale, PaydaysLtCopy> = {
       statusDue: (d) => `مستحق ${d}`,
       cadence: { monthly: 'شهري', biweekly: 'كل أسبوعين', weekly: 'أسبوعي' },
       cadenceNext: (c, d) => `${c} · القادم ${d}`,
+      emptyTitle: 'أخبر بادجت متى تقبض',
+      emptyBody: 'أضف راتبك أو الإيجار أو الأرباح. يتوقع بادجت كل دخل وينبهك لتأخر الراتب ويطابق رسائل البنك معه.',
     },
     source: {
       back: 'الدخل',
@@ -192,6 +201,7 @@ export const PAYDAYS_LT_COPY: Record<Locale, PaydaysLtCopy> = {
       body: 'وصل {amount} {currency} في {date}. الربط يحتفظ بهذا التاريخ ويضمه إلى راتب أو دخل يصلك بانتظام.',
       bodyFrom: 'وصل {amount} {currency} من {from} في {date}. الربط يحتفظ بهذا التاريخ ويضمه إلى راتب أو دخل يصلك بانتظام.',
       addSalary: 'أضف راتبًا', addSalarySub: 'أنشئ راتبًا جديدًا واربط هذا المبلغ به', swipe: 'ربط' },
+    form: { arrivesOn: 'يصل يوم', howOften: 'التكرار', eachSalary: 'كل راتب', eachTime: 'كل مرة يصل', nameAria: 'الاسم' },
     moneyIn: {
       assignedTo: 'مرتبط بـ',
       notAssigned: 'غير مرتبط',

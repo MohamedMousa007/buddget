@@ -1,22 +1,22 @@
 'use client'
 
 import { useState } from 'react'
-import { Briefcase, Calendar } from 'lucide-react'
+import { Calendar } from 'lucide-react'
 import { AmountHero } from '@/components/ui/AmountHero'
 import { DayOfMonthSheet } from '@/components/ui/DayOfMonthSheet'
-import { OptionSheet } from '@/components/ui/OptionSheet'
 import { Pill } from '@/components/ui/PillButton'
 import { PickerRow } from '@/components/ui/PickerRow'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { MethodPickerRow } from '@/components/features/debts/lt/MethodPickerRow'
-import { SheetGroup, TextRow } from '@/components/features/debts/lt/SheetParts'
+import { SheetGroup } from '@/components/features/debts/lt/SheetParts'
 import { IncomePaydayGrid } from '@/components/features/income/IncomePaydayGrid'
+import { IncomeTypeChipSlider } from '@/components/features/income/IncomeTypeChipSlider'
 import { IncomeTypeIcon, incomeTypeColors } from '@/components/features/income/IncomeTypeIcon'
-import { MANUAL_INCOME_SOURCE_TYPES } from '@/lib/constants/incomeSourceTypes'
 import { useT } from '@/lib/i18n'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
-import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { useLightTouchCopy } from '@/lib/i18n/lightTouchCopy'
+import { usePaydaysLtCopy } from '@/lib/i18n/paydaysLtCopy'
+import { microClassName } from '@/lib/ui/microLabelStyle'
 import type { Currency, IncomeRecurringFrequency, IncomeSourceType, PaymentMethod } from '@/lib/store/types'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatWhole } from '@/lib/utils/formatters'
@@ -46,25 +46,29 @@ export interface PaydayFormBodyProps {
 }
 
 /**
- * New / edit payday (Light touch `s_payday`): the amount with its currency (changeable), how often, then Name · Type ·
- * Payday (a 1–31 grid; several days for bi-weekly and weekly) · Received in.
+ * Add income source (round 9): the Add goal C top (type chips with icons, the type's tile and the name, the amount), then how
+ * often, the day (Salary day for a salary, Arrives on otherwise; several days for bi-weekly and weekly) and the account it goes into.
  */
 export function PaydayFormBody(p: PaydayFormBodyProps) {
   const t = useT()
   const c = useDebtsSubsLtCopy().payday
+  const f = usePaydaysLtCopy().form
   const day = useLightTouchCopy().dayOfMonth
-  const [sheet, setSheet] = useState<'type' | 'day' | null>(null)
+  const [dayOpen, setDayOpen] = useState(false)
+  const salary = p.sourceType === 'salary'
   const amt = parseFloat(p.amount)
   const monthly = amt > 0 ? amt * paydaysPerMonth(p.frequency) : 0
   const line = !(amt > 0)
-    ? ''
+    ? (salary ? f.eachSalary : f.eachTime)
     : p.currency === p.base
       ? c.aboutMonth(formatWhole(monthly))
       : c.atRate(formatWhole(convertCurrency(monthly, p.currency, p.base, p.rates)), p.base)
-  const tone = 'var(--color-brand-green)'
+  const tone = incomeTypeColors(p.sourceType)
+  const dayLabel = salary ? c.payday : f.arrivesOn
 
   return (
     <div className="flex flex-col gap-4 pt-1">
+      {p.typeLocked ? null : <IncomeTypeChipSlider value={p.sourceType} onChange={p.onSourceType} labels={t.income} />}
       <AmountHero
         value={p.amount}
         onChange={p.onAmount}
@@ -73,34 +77,40 @@ export function PaydayFormBody(p: PaydayFormBodyProps) {
         base={p.base}
         aria-label={p.frequency !== 'monthly' ? t.addIncome.amountPerPaycheckLabel : t.addIncome.labelAmount}
         top={
-          <span aria-hidden className="flex size-[52px] items-center justify-center rounded-2xl [&_svg]:size-6" style={{ background: `color-mix(in oklab, ${tone} 14%, transparent)`, color: tone }}>
-            <Briefcase />
-          </span>
+          <div className="flex w-full flex-col items-center">
+            <span aria-hidden className="flex size-16 items-center justify-center rounded-[19px] [&_svg]:size-7" style={{ background: tone.bg, color: tone.fg }}>
+              <IncomeTypeIcon type={p.sourceType} />
+            </span>
+            <input
+              value={p.name}
+              onChange={(e) => p.onName(e.target.value)}
+              placeholder={c.namePh}
+              aria-label={f.nameAria}
+              dir="auto"
+              className="mt-3 h-11 w-full bg-transparent text-center text-[1.0625rem] font-semibold text-[var(--color-brand-text-primary)] outline-none placeholder:text-[var(--color-brand-text-muted)]"
+            />
+          </div>
         }
         line={line}
         className="px-0 pb-0"
       />
 
-      <SegmentedControl<IncomeRecurringFrequency>
-        ariaLabel={t.addIncome.howOftenLabel}
-        value={p.frequency}
-        onChange={p.onFrequency}
-        options={FREQS.map((f) => ({
-          value: f,
-          label: f === 'monthly' ? t.addIncome.freqMonthly : f === 'biweekly' ? t.addIncome.freqBiweekly : t.addIncome.freqWeekly,
-        }))}
-      />
+      <div>
+        <h3 className={`${microClassName} mb-2 px-1`}>{f.howOften}</h3>
+        <SegmentedControl<IncomeRecurringFrequency>
+          ariaLabel={f.howOften}
+          value={p.frequency}
+          onChange={p.onFrequency}
+          options={FREQS.map((fr) => ({
+            value: fr,
+            label: fr === 'monthly' ? t.addIncome.freqMonthly : fr === 'biweekly' ? t.addIncome.freqBiweekly : t.addIncome.freqWeekly,
+          }))}
+        />
+      </div>
 
       <SheetGroup>
-        <TextRow label={c.name} value={p.name} onChange={p.onName} placeholder={c.namePh} />
-        <PickerRow
-          label={c.type}
-          chevron={false}
-          onClick={p.typeLocked ? undefined : () => setSheet('type')}
-          value={<Pill>{incomeSourceTypeLabel(t.income, p.sourceType)}</Pill>}
-        />
         {p.frequency === 'monthly' ? (
-          <PickerRow label={c.payday} chevron={false} onClick={() => setSheet('day')} value={<Pill icon={<Calendar />}>{day.everyMonth(p.paydays[0] ?? 1)}</Pill>} />
+          <PickerRow label={dayLabel} chevron={false} onClick={() => setDayOpen(true)} value={<Pill icon={<Calendar />}>{day.everyMonth(p.paydays[0] ?? 1)}</Pill>} />
         ) : null}
         <MethodPickerRow label={c.receivedIn} value={p.paymentMethodId} onChange={p.onPaymentMethod} paymentMethods={p.paymentMethods} accountsOnly />
       </SheetGroup>
@@ -112,26 +122,12 @@ export function PaydayFormBody(p: PaydayFormBodyProps) {
         </div>
       ) : null}
 
-      <OptionSheet<IncomeSourceType>
-        open={sheet === 'type'}
-        onClose={() => setSheet(null)}
-        title={c.typeTitle}
-        value={p.sourceType}
-        onChange={p.onSourceType}
-        options={MANUAL_INCOME_SOURCE_TYPES.map((st) => ({
-          value: st,
-          title: incomeSourceTypeLabel(t.income, st),
-          icon: <IncomeTypeIcon type={st} />,
-          tone: incomeTypeColors(st).fg,
-        }))}
-        zIndexClassName="z-[110]"
-      />
       <DayOfMonthSheet
-        open={sheet === 'day'}
+        open={dayOpen}
         value={p.paydays[0] ?? null}
         onChange={(d) => p.onPaydays([d])}
-        onClose={() => setSheet(null)}
-        title={c.payday}
+        onClose={() => setDayOpen(false)}
+        title={dayLabel}
         zIndexClassName="z-[110]"
       />
     </div>

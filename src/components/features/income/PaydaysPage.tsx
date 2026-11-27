@@ -190,9 +190,9 @@ export function PaydaysPage() {
         <div className="lg:mx-auto lg:mt-6 lg:max-w-md">
           <EmptyState
             variant="card"
-            title={t.paydays.emptyTitle}
-            description={t.paydays.emptyBody}
-            action={<Button size="cta" onClick={() => add()}>{t.paydays.emptyCta}</Button>}
+            title={c.home.emptyTitle}
+            description={c.home.emptyBody}
+            action={<Button size="cta" onClick={() => add()}>{c.home.add}</Button>}
           />
         </div>
         <p className="mx-0.5 mb-2 mt-5 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)] lg:text-center">

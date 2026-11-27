@@ -156,26 +156,24 @@ test('R05 Reports: Biggest purchase skips debt payments; money in shows expected
 test('R06 paydays: add salary on the 25th, listed, server row has the day and amount', async ({ page, user }) => {
   await withQnb(page, 100)
   await goto(page, '/paydays')
-  // With a payday already set, Add sits behind the quiet "Paydays and pay cycle" row (light touch).
-  if (!(await page.getByRole('button', { name: 'Add a payday' }).isVisible())) await page.getByRole('button', { name: 'Paydays and pay cycle' }).click()
-  await page.getByRole('button', { name: /^Add a payday/ }).first().click()
-  const d = page.getByRole('dialog', { name: 'New payday' })
+  // Income (v9): "Add income" is the Sources link, or the empty state's CTA.
+  await page.getByRole('button', { name: 'Add income', exact: true }).first().click()
+  const d = page.getByRole('dialog', { name: 'Add income source' })
   await d.getByRole('textbox', { name: 'Amount' }).fill('7000')
   await d.getByRole('textbox', { name: 'Name' }).fill('QA R06 Payroll')
-  await d.getByRole('button', { name: /^Payday/ }).click()
-  const day = dialog(page, /^Payday$/)
+  await d.getByRole('button', { name: /^Salary day/ }).click()
+  const day = dialog(page, /^Salary day$/)
   await day.getByRole('radio', { name: '25', exact: true }).click()
   await day.getByRole('button', { name: 'Done' }).click()
   await expect(day).toBeHidden()
   await blur(page)
-  await d.getByRole('button', { name: 'Add payday' }).click()
+  await d.getByRole('button', { name: 'Add income source' }).click()
   await expect(d).toBeHidden()
-  // Light touch: the Paydays hero names the payday by its type and account ("Salary · Monthly → …") and its amount; the
-  // name lives on the server row and in the payday's own sheet.
-  await expect(page.locator('main')).toContainText(/7,000\s*EGP each month/)
+  // Income home: the source is a row with its name and amount.
+  await expect(page.locator('main')).toContainText(/QA R06 Payroll[\s\S]*7,000\s*EGP/)
   await serverRows('income_sources', user.id, 'name=eq.QA R06 Payroll&deleted_at=is.null', (r: any[]) => r.length === 1 && r[0].day_of_month === 25 && Number(r[0].amount) === 7000)
   await page.reload({ waitUntil: 'domcontentloaded' })
-  await expect(page.locator('main')).toContainText(/7,000\s*EGP each month/)
+  await expect(page.locator('main')).toContainText(/QA R06 Payroll[\s\S]*7,000\s*EGP/)
 })
 
 test('R07 budget: manual builder and budget history open for a new user without errors; Zakat prompt absent when it changes nothing', async ({ page, user }) => {
