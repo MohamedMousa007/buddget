@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { Calendar } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Calendar, Pencil } from 'lucide-react'
 import { AmountHero } from '@/components/ui/AmountHero'
 import { DayOfMonthSheet } from '@/components/ui/DayOfMonthSheet'
 import { Pill } from '@/components/ui/PillButton'
@@ -12,7 +12,13 @@ import { SheetGroup } from '@/components/features/debts/lt/SheetParts'
 import { IncomePaydayGrid } from '@/components/features/income/IncomePaydayGrid'
 import { IncomeTypeChipSlider } from '@/components/features/income/IncomeTypeChipSlider'
 import { IncomeTypeIcon, incomeTypeColors } from '@/components/features/income/IncomeTypeIcon'
-import { useT } from '@/lib/i18n'
+import { IconPickerSheet } from '@/components/features/goals/IconPickerSheet'
+import { Card } from '@/components/ui/card'
+import { useLocale, useT } from '@/lib/i18n'
+import { formatLocalized } from '@/lib/i18n/dateFormat'
+import { isGoalIconKey } from '@/lib/goals/goalVisual'
+import { nextPaydays } from '@/lib/income/nextPaydays'
+import { useWeekendFirstDay } from '@/hooks/useWeekStart'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
 import { useLightTouchCopy } from '@/lib/i18n/lightTouchCopy'
 import { usePaydaysLtCopy } from '@/lib/i18n/paydaysLtCopy'
@@ -22,7 +28,9 @@ import { convertCurrency } from '@/lib/utils/currency'
 import { formatWhole } from '@/lib/utils/formatters'
 import { paydaysPerMonth } from '@/lib/utils/paydaySchedule'
 
-const FREQS: IncomeRecurringFrequency[] = ['monthly', 'biweekly', 'weekly']
+/** How often, as the form offers it: the three schedules, or Irregular (no fixed day, stored as `IncomeSource.irregular`). */
+export type FormFrequency = IncomeRecurringFrequency | 'irregular'
+const FREQS: FormFrequency[] = ['monthly', 'biweekly', 'weekly', 'irregular']
 
 export interface PaydayFormBodyProps {
   amount: string
@@ -31,8 +39,8 @@ export interface PaydayFormBodyProps {
   onCurrency: (c: Currency) => void
   base: Currency
   rates: Record<string, number>
-  frequency: IncomeRecurringFrequency
-  onFrequency: (f: IncomeRecurringFrequency) => void
+  frequency: FormFrequency
+  onFrequency: (f: FormFrequency) => void
   paydays: number[]
   onPaydays: (days: number[]) => void
   name: string
@@ -40,6 +48,9 @@ export interface PaydayFormBodyProps {
   sourceType: IncomeSourceType
   onSourceType: (t: IncomeSourceType) => void
   typeLocked: boolean
+  /** The icon picked for an Other source; unset = the type's own. */
+  icon?: string
+  onIcon: (icon: string) => void
   paymentMethodId: string
   onPaymentMethod: (id: string) => void
   paymentMethods: PaymentMethod[]
@@ -54,33 +65,61 @@ export function PaydayFormBody(p: PaydayFormBodyProps) {
   const c = useDebtsSubsLtCopy().payday
   const f = usePaydaysLtCopy().form
   const day = useLightTouchCopy().dayOfMonth
+  const { locale } = useLocale()
+  const weekendFirst = useWeekendFirstDay()
   const [dayOpen, setDayOpen] = useState(false)
+  const [iconOpen, setIconOpen] = useState(false)
   const salary = p.sourceType === 'salary'
+  const other = p.sourceType === 'other'
+  const irregular = p.frequency === 'irregular'
+  const schedule: IncomeRecurringFrequency = p.frequency === 'irregular' ? 'monthly' : p.frequency
   const amt = parseFloat(p.amount)
-  const monthly = amt > 0 ? amt * paydaysPerMonth(p.frequency) : 0
-  const line = !(amt > 0)
+  const monthly = amt > 0 ? amt * paydaysPerMonth(schedule) : 0
+  const line = irregular
+    ? f.aboutMonth
+    : !(amt > 0)
     ? (salary ? f.eachSalary : f.eachTime)
     : p.currency === p.base
       ? c.aboutMonth(formatWhole(monthly))
       : c.atRate(formatWhole(convertCurrency(monthly, p.currency, p.base, p.rates)), p.base)
   const tone = incomeTypeColors(p.sourceType)
   const dayLabel = salary ? c.payday : f.arrivesOn
+  const upcoming = useMemo(
+    () => nextPaydays({ frequency: schedule, paydays: p.paydays, irregular }, new Date(), 3, weekendFirst),
+    [schedule, p.paydays, irregular, weekendFirst],
+  )
+  const tile = (
+    <span aria-hidden className="flex size-16 items-center justify-center rounded-[19px] [&_svg]:size-7" style={{ background: tone.bg, color: tone.fg }}>
+      <IncomeTypeIcon type={p.sourceType} icon={p.icon} />
+    </span>
+  )
 
   return (
     <div className="flex flex-col gap-4 pt-1">
-      {p.typeLocked ? null : <IncomeTypeChipSlider value={p.sourceType} onChange={p.onSourceType} labels={t.income} />}
+      {p.typeLocked ? null : <IncomeTypeChipSlider value={p.sourceType} onChange={p.onSourceType} labels={t.income} otherIcon={p.icon} />}
       <AmountHero
         value={p.amount}
         onChange={p.onAmount}
         currency={p.currency}
         onCurrencyChange={(code) => p.onCurrency(code as Currency)}
         base={p.base}
-        aria-label={p.frequency !== 'monthly' ? t.addIncome.amountPerPaycheckLabel : t.addIncome.labelAmount}
+        aria-label={schedule !== 'monthly' ? t.addIncome.amountPerPaycheckLabel : t.addIncome.labelAmount}
         top={
           <div className="flex w-full flex-col items-center">
-            <span aria-hidden className="flex size-16 items-center justify-center rounded-[19px] [&_svg]:size-7" style={{ background: tone.bg, color: tone.fg }}>
-              <IncomeTypeIcon type={p.sourceType} />
-            </span>
+            {/* The Add goal C tile: the icon can be changed only for Other. */}
+            {other ? (
+              <button data-raw-button-ok="the editable icon tile of the Add goal C top"
+                type="button"
+                onClick={() => setIconOpen(true)}
+                aria-label={f.iconAriaOther}
+                className="relative flex size-16 items-center justify-center rounded-[19px]"
+              >
+                {tile}
+                <span aria-hidden className="absolute -bottom-1 -end-1 flex size-6 items-center justify-center rounded-full border-2 border-[var(--color-brand-card)] bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]">
+                  <Pencil className="size-3" />
+                </span>
+              </button>
+            ) : tile}
             <input
               value={p.name}
               onChange={(e) => p.onName(e.target.value)}
@@ -97,13 +136,13 @@ export function PaydayFormBody(p: PaydayFormBodyProps) {
 
       <div>
         <h3 className={`${microClassName} mb-2 px-1`}>{f.howOften}</h3>
-        <SegmentedControl<IncomeRecurringFrequency>
+        <SegmentedControl<FormFrequency>
           ariaLabel={f.howOften}
           value={p.frequency}
           onChange={p.onFrequency}
           options={FREQS.map((fr) => ({
             value: fr,
-            label: fr === 'monthly' ? t.addIncome.freqMonthly : fr === 'biweekly' ? t.addIncome.freqBiweekly : t.addIncome.freqWeekly,
+            label: fr === 'monthly' ? t.addIncome.freqMonthly : fr === 'biweekly' ? t.addIncome.freqBiweekly : fr === 'weekly' ? t.addIncome.freqWeekly : f.irregular,
           }))}
         />
       </div>
@@ -115,13 +154,38 @@ export function PaydayFormBody(p: PaydayFormBodyProps) {
         <MethodPickerRow label={c.receivedIn} value={p.paymentMethodId} onChange={p.onPaymentMethod} paymentMethods={p.paymentMethods} accountsOnly />
       </SheetGroup>
 
-      {p.frequency !== 'monthly' ? (
+      {p.frequency === 'biweekly' || p.frequency === 'weekly' ? (
         <div>
           <p className="mb-2 px-1 text-xs text-[var(--color-brand-text-secondary)]">{t.addIncome.paydayHelper(p.frequency === 'biweekly' ? 2 : 4)}</p>
           <IncomePaydayGrid frequency={p.frequency} days={p.paydays} onChange={p.onPaydays} />
         </div>
       ) : null}
 
+      {/* Next dates (or, for irregular, how it works): what buddget will expect from this source. */}
+      <div>
+        <h3 className={`${microClassName} mb-2 px-1`}>{irregular ? f.howItWorks : salary ? f.nextSalaries : f.nextDates}</h3>
+        <Card className="p-4">
+          {irregular ? (
+            <p className="text-[0.8125rem] leading-relaxed text-[var(--color-brand-text-secondary)]">{f.irregularBody}</p>
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-2">
+                {upcoming.map((d) => <Pill key={d.toISOString()} icon={<Calendar />}>{formatLocalized(d, 'EEE, MMM d', locale)}</Pill>)}
+              </div>
+              <p className="mt-2.5 text-xs leading-relaxed text-[var(--color-brand-text-muted)]">{f.previewNote}</p>
+            </>
+          )}
+        </Card>
+      </div>
+
+      <IconPickerSheet
+        open={iconOpen}
+        value={isGoalIconKey(p.icon) ? p.icon : null}
+        onChange={p.onIcon}
+        onClose={() => setIconOpen(false)}
+        subtitle={f.iconSub}
+        note={f.iconNote}
+      />
       <DayOfMonthSheet
         open={dayOpen}
         value={p.paydays[0] ?? null}

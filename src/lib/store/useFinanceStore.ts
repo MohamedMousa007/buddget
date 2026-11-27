@@ -454,7 +454,8 @@ export const useFinanceStore = create<FinanceStore>()(
         )
       },
 
-      addIncomeSource: (source) =>
+      addIncomeSource: (source) => {
+        const id = generateId()
         set((state) => ({
           incomeSources: [
             ...state.incomeSources,
@@ -462,13 +463,15 @@ export const useFinanceStore = create<FinanceStore>()(
               ...source,
               sourceType: source.sourceType ?? 'other',
               effectiveStart: source.effectiveStart ?? localTodayISO(),
-              id: generateId(),
+              id,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             },
           ],
           settings: { ...state.settings, noIncomeDeclared: false },
-        })),
+        }))
+        return id
+      },
 
       upsertServerIncome: (source) =>
         set((state) => {

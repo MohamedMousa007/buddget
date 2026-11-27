@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, CalendarCheck, ChevronRight, Plus } from 'lucide-react'
+import { Check, CalendarCheck, ChevronRight, Link2, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { BAND_FG2, BAND_MIX, BandScale, HeroBand } from '@/components/features/hero/HeroBand'
 import { BandNoteLine, boldIn } from '@/components/features/hero/BandNoteLine'
@@ -19,6 +19,8 @@ export interface IncomeHomeRow {
   id: string
   name: string
   type: IncomeSourceType | undefined
+  /** The icon picked for an Other source. */
+  icon?: string
   amount: number
   currency: string
   /** The account it lands in, for the corner badge. */
@@ -29,11 +31,11 @@ export interface IncomeHomeRow {
 }
 
 /** The source mark (round 9 `srcMark`): the type's icon, with the account it lands in as a corner badge. */
-export function SourceMark({ type, method, size = 44 }: { type: IncomeSourceType | undefined; method?: PaymentMethod; size?: number }) {
+export function SourceMark({ type, icon, method, size = 44 }: { type: IncomeSourceType | undefined; icon?: string; method?: PaymentMethod; size?: number }) {
   return (
     <span className="relative inline-flex shrink-0">
       <span aria-hidden className="flex items-center justify-center rounded-[12px] bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]" style={{ width: size, height: size }}>
-        <IncomeTypeIcon type={type} className="size-5" />
+        <IncomeTypeIcon type={type} icon={icon} className="size-5" />
       </span>
       {method ? (
         <span aria-hidden className="absolute -bottom-1 -end-1 flex overflow-hidden rounded-full border-2 border-[var(--color-brand-card)]">
@@ -51,7 +53,7 @@ function Status({ tone, text }: IncomeHomeRow['status']) {
 }
 
 /** Income home (round 9, was Paydays): this month received against expected, then every source as a provider-style row. */
-export function IncomeHome({ month, base, expected, received, inCount, next, rows, onOpen, onAdd }: {
+export function IncomeHome({ month, base, expected, received, inCount, next, rows, onOpen, onAdd, assign, irregularNote = false }: {
   month: string
   base: string
   expected: number
@@ -61,6 +63,10 @@ export function IncomeHome({ month, base, expected, received, inCount, next, row
   rows: IncomeHomeRow[]
   onOpen: (id: string) => void
   onAdd: () => void
+  /** Money that arrived and no source claimed yet: the "Assign … from …" row under the hero. */
+  assign?: { amount: string; from: string | null; date: string; onOpen: () => void }
+  /** Some source is irregular: the note under the list says it is never marked late. */
+  irregularNote?: boolean
 }) {
   const all = usePaydaysLtCopy()
   const c = all.home
@@ -99,6 +105,21 @@ export function IncomeHome({ month, base, expected, received, inCount, next, row
         note={next ? <BandNoteLine parts={[boldIn(c.nextOn(next.name, next.date), next.name)]} /> : undefined}
       />
 
+      {assign ? (
+        <button data-raw-button-ok="the Assign row card under the Income hero (mockup asgRow)"
+          type="button"
+          onClick={assign.onOpen}
+          className="mt-3 flex min-h-[60px] w-full items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-3 text-start transition-transform duration-150 ease-out active:scale-[0.99]"
+        >
+          <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]"><Link2 className="size-[18px]" /></span>
+          <span className="min-w-0 flex-1">
+            <span dir="auto" className="block truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{c.assignRow(assign.amount, assign.from)}</span>
+            <span className="block truncate text-xs text-[var(--color-brand-text-secondary)]">{c.assignRowSub(assign.date)}</span>
+          </span>
+          <ChevronRight aria-hidden className="size-4 shrink-0 text-[var(--color-brand-text-secondary)] rtl:rotate-180" />
+        </button>
+      ) : null}
+
       <section className="mt-5">
         <div className="mb-2 flex min-h-11 items-center px-1">
           <h2 className="text-[0.8125rem] font-bold text-[var(--color-brand-text-primary)]">{c.head}</h2>
@@ -117,7 +138,7 @@ export function IncomeHome({ month, base, expected, received, inCount, next, row
               className="block w-full rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-3.5 text-start transition-transform duration-150 ease-out active:scale-[0.99]"
             >
               <span className="flex items-center gap-3">
-                <SourceMark type={r.type} method={r.method} />
+                <SourceMark type={r.type} icon={r.icon} method={r.method} />
                 <span className="min-w-0 flex-1 ps-0.5">
                   <span className="flex items-baseline justify-between gap-2">
                     <span dir="auto" className="truncate text-base font-bold text-[var(--color-brand-text-primary)]">{r.name}</span>
@@ -135,6 +156,7 @@ export function IncomeHome({ month, base, expected, received, inCount, next, row
             </button>
           ))}
         </div>
+        {irregularNote ? <p className="mt-2.5 px-1 text-xs leading-[1.45] text-[var(--color-brand-text-muted)]">{c.irregularNote}</p> : null}
       </section>
     </>
   )

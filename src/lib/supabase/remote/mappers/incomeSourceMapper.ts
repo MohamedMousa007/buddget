@@ -43,6 +43,8 @@ export function incomeSourceToRow(i: IncomeSource, userId: string): IncomeSource
     is_recurring: i.isRecurring,
     recurring_frequency:
       i.isRecurring && i.recurringFrequency ? (i.recurringFrequency as IncomeSourceInsert['recurring_frequency']) : null,
+    is_irregular: i.irregular ?? false,
+    icon: i.icon ?? null,
     day_of_month: i.dayOfMonth ?? null,
     payday_days: i.paydayDays ?? null,
     payday_drift_days: i.paydayDriftDays ?? null,
@@ -70,6 +72,8 @@ export function incomeSourceFromRow(row: IncomeSourceRow): IncomeSource {
     recurringFrequency: row.recurring_frequency
       ? (row.recurring_frequency as IncomeRecurringFrequency)
       : undefined,
+    ...(row.is_irregular ? { irregular: true } : {}),
+    ...(row.icon ? { icon: row.icon } : {}),
     dayOfMonth: row.day_of_month ?? undefined,
     paydayDays: row.payday_days ?? undefined,
     paydayDriftDays: row.payday_drift_days ?? undefined,

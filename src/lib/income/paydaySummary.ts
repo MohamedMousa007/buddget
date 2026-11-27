@@ -8,7 +8,7 @@ const DAY = 86_400_000
 /** Days an unpaid payday is overdue, or 0 when it is not yet past due. */
 export function overdueDays(occ: IncomeOccurrence, today: Date): number {
   const todayISO = toISODate(today)
-  if (occ.eventId || occ.dueDate >= todayISO) return 0
+  if (occ.eventId || occ.irregular || occ.dueDate >= todayISO) return 0
   return Math.round((parseISO(todayISO).getTime() - parseISO(occ.dueDate).getTime()) / DAY)
 }
 
@@ -37,7 +37,7 @@ export function recentPaydays(
  */
 export function focusPayday(occ: IncomeOccurrence[], today: Date): IncomeOccurrence | undefined {
   const todayISO = toISODate(today)
-  const openDue = occ.find((o) => !o.eventId && o.dueDate < todayISO)
+  const openDue = occ.find((o) => !o.eventId && !o.irregular && o.dueDate < todayISO)
   if (openDue) return openDue
   const settled = [...occ].reverse().find((o) => o.eventId)
   return settled ?? occ.find((o) => !o.eventId)

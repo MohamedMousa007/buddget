@@ -2,20 +2,24 @@
 
 import type { IncomeSourceType } from '@/lib/store/types'
 import { incomeTypeGridItem } from '@/lib/constants/categoryGrid'
+import { GOAL_ICON_SET, isGoalIconKey } from '@/lib/goals/goalVisual'
 import { cn } from '@/lib/utils'
 import { rgba } from '@/lib/utils/color'
 
-/** Unique Lucide glyph per income source type, from the canonical INCOME_TYPE_GRID. */
+/** Unique Lucide glyph per income source type, from the canonical INCOME_TYPE_GRID; an Other source shows the icon picked for it. */
 export function IncomeTypeIcon({
   type,
+  icon,
   className,
   style,
 }: {
   type: IncomeSourceType | undefined
+  /** The source's own icon (`IncomeSource.icon`), used only for type Other. */
+  icon?: string
   className?: string
   style?: React.CSSProperties
 }) {
-  const Icon = incomeTypeGridItem(type).icon
+  const Icon = type === 'other' && isGoalIconKey(icon) ? GOAL_ICON_SET[icon] : incomeTypeGridItem(type).icon
   return <Icon className={cn('shrink-0', className)} style={style} />
 }
 

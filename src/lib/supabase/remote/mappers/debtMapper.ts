@@ -6,11 +6,15 @@ import type {
   DebtKind,
   DebtReceivedVia,
   GoldKarat,
+  InstallmentItemType,
   InstallmentProvider,
 } from '@/lib/store/types'
 import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
 import { serverPaymentMethodId } from './serverPaymentMethodId'
 import type { DebtRow, DebtInsert } from '@/lib/supabase/remote/types'
+
+const ITEM_TYPES: ReadonlySet<string> = new Set<InstallmentItemType>(['phone', 'laptop', 'appliance', 'furniture', 'car', 'other'])
+const isInstallmentItemType = (v: string | null): v is InstallmentItemType => v !== null && ITEM_TYPES.has(v)
 
 function toDbDebtKind(k: DebtKind | undefined): DebtInsert['debt_type'] {
   if (!k) return 'personal'
@@ -76,6 +80,8 @@ export function debtToRow(d: Debt, userId: string): DebtInsert {
       ? (d.installmentProvider as DebtInsert['installment_provider'])
       : null,
     installment_provider_name: d.installmentProviderName ?? null,
+    installment_item_type: d.installmentItemType ?? null,
+    installment_item_icon: d.installmentItemIcon ?? null,
     linked_credit_card_debt_id: d.linkedCreditCardDebtId ?? null,
     linked_payment_method_id: serverPaymentMethodId(d.linkedPaymentMethodId),
     principal_payment_method_id: serverPaymentMethodId(d.principalPaymentMethodId),
@@ -146,6 +152,8 @@ export function debtFromRow(row: DebtRow): Debt {
       ? (row.installment_provider as InstallmentProvider)
       : undefined,
     installmentProviderName: row.installment_provider_name ?? undefined,
+    installmentItemType: isInstallmentItemType(row.installment_item_type) ? row.installment_item_type : undefined,
+    installmentItemIcon: row.installment_item_icon ?? undefined,
     linkedCreditCardDebtId: row.linked_credit_card_debt_id ?? undefined,
     updatedAt: row.edited_at,
   }

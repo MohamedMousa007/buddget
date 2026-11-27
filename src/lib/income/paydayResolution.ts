@@ -89,7 +89,7 @@ export function latePaydays(
 ): LatePayday[] {
   const todayISO = toISODate(today)
   return openPaydays(sources, events, monthStartDay, today, weekendFirst)
-    .filter(({ occ }) => occ.dueDate < todayISO)
+    .filter(({ occ }) => !occ.irregular && occ.dueDate < todayISO)
     .map((p) => ({ ...p, daysLate: daysBetween(todayISO, p.occ.dueDate) }))
     .filter((p) => p.daysLate > missedAfterDaysFor(p.source))
     .sort((a, b) => a.occ.dueDate.localeCompare(b.occ.dueDate))
@@ -113,7 +113,9 @@ export function paydayCandidates(
     .map((p) => {
       const inSource = convertCurrency(credit.amount, credit.currency, p.source.currency, rates)
       const diff = p.occ.amount > 0 ? Math.abs(inSource - p.occ.amount) / p.occ.amount : Infinity
-      const distanceDays = daysBetween(credit.receivedDate, p.occ.dueDate)
+      // An irregular month has no real day: money is that month's when it lands in the month's cycle.
+      const sameCycle = p.occ.irregular && cycleKeyFor(parseISO(p.occ.dueDate), monthStartDay) === cycleKeyFor(parseISO(credit.receivedDate), monthStartDay)
+      const distanceDays = sameCycle ? 0 : daysBetween(credit.receivedDate, p.occ.dueDate)
       return { ...p, diff, distanceDays, plausible: diff <= MATCH_TOLERANCE && distanceDays <= MATCH_WINDOW_DAYS }
     })
     .sort((a, b) =>

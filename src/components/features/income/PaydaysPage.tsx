@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { addMonths, differenceInCalendarDays, format, parseISO } from 'date-fns'
-import { ArrowUpDown, Briefcase, Building2, Calendar, CalendarCheck, CalendarCog, Check, ChevronLeft, ChevronRight, Contrast, GripVertical, MoreVertical, Pencil, Plus, Trash2, TrendingUp, X, type LucideIcon } from 'lucide-react'
+import { ArrowUpDown, Briefcase, Building2, Calendar, CalendarCheck, CalendarCog, Check, ChevronLeft, ChevronRight, Contrast, GripVertical, Minus, MoreVertical, Pencil, Plus, Trash2, TrendingUp, X, type LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
@@ -24,6 +24,8 @@ import { accountColor, accountTitle } from '@/components/features/accounts/accou
 import { IncomeTypeIcon } from '@/components/features/income/IncomeTypeIcon'
 import { PayCycleSheet } from '@/components/features/income/PayCycleSheet'
 import { PaydayActionsCard } from '@/components/features/income/PaydayActionsCard'
+import { useIncomeResolution } from '@/components/features/flow/IncomePrompts'
+import { creditSenderFromTitle } from '@/lib/income/creditSender'
 import { paydayBadge } from '@/components/features/income/paydayBadge'
 import { paydayMethodId, paydayMethodLabel } from '@/lib/income/paydayMethod'
 import { paydayHeroFacts } from '@/lib/income/paydayHero'
@@ -84,8 +86,9 @@ export function PaydaysPage() {
       updateIncomeSource: s.updateIncomeSource,
     })),
   )
-  const { monthFilter, openNewPayday, setActiveModal, setEditingIncomeId, openAmountReceived } = useSettingsStore(
+  const { monthFilter, openNewPayday, setActiveModal, setEditingIncomeId, openAmountReceived, openAssignIncome } = useSettingsStore(
     useShallow((s) => ({
+      openAssignIncome: s.openAssignIncome,
       monthFilter: s.monthFilter,
       openNewPayday: s.openNewPayday,
       setActiveModal: s.setActiveModal,
@@ -130,6 +133,8 @@ export function PaydaysPage() {
   const source = streams.find((s) => s.id === pickedId)
 
   const today = useMemo(() => new Date(), [])
+  // The newest credit that probably fills a payday and is not linked yet (the same one Flow badges Not assigned).
+  const stray = useIncomeResolution().matches[0]
 
   // This month across every source, each converted to the main currency (one with no rate is left out, never mixed in),
   // plus each source's row on the Income home: its cadence, next date and whether this month is in.
@@ -143,19 +148,22 @@ export function PaydaysPage() {
       const open = occ.find((o) => !isRealizedOccurrence(o))
       const allIn = occ.length > 0 && !open
       const runAhead = recentPaydays(s, incomeEvents, format(addMonths(today, 1), 'yyyy-MM'), monthStartDay, RUN_LEN, today, weekendFirst)
-      const upcoming = paydayHeroFacts(runAhead, today).next
+      const upcoming = s.irregular ? undefined : paydayHeroFacts(runAhead, today).next
       const freq = s.recurringFrequency ?? 'monthly'
       return { exp, rec, allIn, upcoming, row: {
         id: s.id,
         name: s.name,
         type: s.sourceType,
+        icon: s.icon,
         amount: s.amount,
         currency: s.currency,
         method: paymentMethods.find((m) => m.id === paydayMethodId(s, paymentMethods)),
-        line: allIn && upcoming ? c.home.cadenceNext(c.home.cadence[freq], shortDate(upcoming.dueDate)) : c.home.cadence[freq],
+        line: s.irregular ? c.home.irregularLine : allIn && upcoming ? c.home.cadenceNext(c.home.cadence[freq], shortDate(upcoming.dueDate)) : c.home.cadence[freq],
         status: allIn
           ? { tone: 'ok' as const, text: c.home.statusReceived }
-          : open
+          : s.irregular
+            ? { tone: 'soon' as const, text: '' }
+            : open
             ? { tone: open.dueDate <= todayISO ? ('due' as const) : ('soon' as const), text: c.home.statusDue(shortDate(open.dueDate)) }
             : { tone: 'soon' as const, text: upcoming ? c.home.statusDue(shortDate(upcoming.dueDate)) : '' },
       } }
@@ -265,7 +273,7 @@ export function PaydaysPage() {
               return (
                 <div key={s.id} className={cn('flex min-h-[60px] items-center gap-3 ps-4', dragId === s.id && 'bg-[var(--color-brand-elevated)]')}>
                   <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]">
-                    <IncomeTypeIcon type={s.sourceType} className="h-5 w-5" />
+                    <IncomeTypeIcon type={s.sourceType} icon={s.icon} className="h-5 w-5" />
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span dir="auto" className="truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{s.name}</span>
@@ -334,6 +342,13 @@ export function PaydaysPage() {
           rows={home.rows}
           onOpen={(id) => { setPickedId(id); setSelectedKey(null) }}
           onAdd={() => add()}
+          assign={stray ? {
+            amount: formatFlex(stray.event.amount),
+            from: creditSenderFromTitle(stray.event),
+            date: shortDate(stray.event.receivedDate),
+            onOpen: () => openAssignIncome({ eventId: stray.event.id }),
+          } : undefined}
+          irregularNote={streams.some((s) => s.irregular)}
         />
         {moreSheet}
       </div>
@@ -343,7 +358,8 @@ export function PaydaysPage() {
   const noun: IncomeNoun = source.sourceType === 'salary' ? 'salary' : 'income'
   const facts = paydayHeroFacts(run, today)
   const freq = source.recurringFrequency ?? 'monthly'
-  const freqLabel = freq === 'monthly' ? t.addIncome.freqMonthly : freq === 'weekly' ? t.addIncome.freqWeekly : t.addIncome.freqBiweekly
+  const irregular = Boolean(source.irregular)
+  const freqLabel = irregular ? c.home.cadence.irregular : freq === 'monthly' ? t.addIncome.freqMonthly : freq === 'weekly' ? t.addIncome.freqWeekly : t.addIncome.freqBiweekly
   const typeLabel = incomeSourceTypeLabel(t.income, source.sourceType)
   const account = paydayMethodLabel(source, paymentMethods)
   const landsIn = paymentMethods.find((m) => m.id === paydayMethodId(source, paymentMethods))
@@ -372,7 +388,8 @@ export function PaydaysPage() {
     }]),
   ]
   const todayISO = toISODate(today)
-  const history = run.filter((o) => o.eventId || o.dueDate <= todayISO).reverse()
+  // An irregular month with nothing in is not a missed payday: it stays out of the history.
+  const history = run.filter((o) => o.eventId || (!o.irregular && o.dueDate <= todayISO)).reverse()
   const rows: FlowLedgerRow[] = history.map((o) => {
     const ev = o.eventId ? incomeEvents.find((e) => e.id === o.eventId) : undefined
     const state = paydayState(o, today)
@@ -387,7 +404,7 @@ export function PaydaysPage() {
       key: o.key,
       selected: o.key === selectedKey,
       row: {
-        icon: pm ? <AccountLogo method={pm} /> : <IncomeTypeIcon type={source.sourceType} className="h-5 w-5" />,
+        icon: pm ? <AccountLogo method={pm} /> : <IncomeTypeIcon type={source.sourceType} icon={source.icon} className="h-5 w-5" />,
         iconBg: pm ? 'transparent' : 'var(--color-brand-green-soft)',
         iconFg: 'var(--color-brand-green)',
         onClick: () => setSelectedKey((k) => (k === o.key ? null : o.key)),
@@ -437,20 +454,20 @@ export function PaydaysPage() {
           <p className="flex min-w-0 items-center gap-3">
             {/* The icon the user chose for this source (its type), not the bank logo. */}
             <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-[var(--flow-band-fg)] text-[var(--flow-band-b)]">
-              <IncomeTypeIcon type={source.sourceType} className="size-5" />
+              <IncomeTypeIcon type={source.sourceType} icon={source.icon} className="size-5" />
             </span>
-            <span className="font-mono-numbers text-[32px] font-semibold leading-none tracking-[-0.03em]">{formatFlex(source.amount)}</span>
-            <span className="truncate text-[0.8125rem] text-[var(--flow-band-fg-2)]">{freq === 'monthly' ? c.eachMonth(source.currency) : c.eachPayday(source.currency)}</span>
+            <span className="font-mono-numbers text-[32px] font-semibold leading-none tracking-[-0.03em]">{irregular ? '≈ ' : ''}{formatFlex(source.amount)}</span>
+            <span className="truncate text-[0.8125rem] text-[var(--flow-band-fg-2)]">{irregular ? c.eachMonthAvg(source.currency) : freq === 'monthly' ? c.eachMonth(source.currency) : c.eachPayday(source.currency)}</span>
           </p>
         }
-        note={facts.last.length ? (
+        note={irregular ? <span>{c.irregularNote}</span> : facts.last.length ? (
           <span>{c.onTime} <b className="font-mono-numbers font-semibold text-[var(--flow-band-fg)]">{c.ofN(facts.onTime, facts.last.length)}</b></span>
         ) : undefined}
         extra={facts.last.length ? <MonthCircles occ={facts.last} today={today} locale={locale} selectedKey={selectedKey} onSelect={(k) => setSelectedKey((cur) => (cur === k ? null : k))} /> : undefined}
       />
       <CardActionMenu anchor={menu} items={menuItems} onClose={() => setMenu(null)} title={source.name} />
 
-      {toLog ? (
+      {irregular ? null : toLog ? (
         <Card className="mt-3 p-4">
           <div className="flex items-center gap-3">
             <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]"><CalendarCheck className="size-[18px]" /></span>
@@ -508,8 +525,9 @@ function MonthCircles({ occ, today, locale, selectedKey, onSelect }: {
       {occ.map((o) => {
         const k = paydayState(o, today).kind
         const got = k === 'received' || k === 'arrivedLate'
-        const Icon = got ? Check : k === 'partial' ? Contrast : X
-        const state = k === 'received' ? c.states.received : k === 'arrivedLate' || k === 'late' ? c.states.late : k === 'partial' ? c.states.partial : c.states.missed
+        const none = o.irregular && !o.eventId
+        const Icon = got ? Check : none ? Minus : k === 'partial' ? Contrast : X
+        const state = none ? c.states.none : k === 'received' ? c.states.received : k === 'arrivedLate' || k === 'late' ? c.states.late : k === 'partial' ? c.states.partial : c.states.missed
         const label = formatLocalized(parseISO(o.dueDate), 'MMM', locale)
         return (
           <li key={o.key}>

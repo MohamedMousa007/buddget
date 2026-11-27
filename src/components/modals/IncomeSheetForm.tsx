@@ -29,7 +29,9 @@ import { deriveDefaultPaydays } from '@/lib/utils/paydaySchedule'
 import { MODAL_BODY_SCROLL_CLASS, MODAL_CONTROL_CLASS, MODAL_LABEL_CLASS } from '@/lib/modals/modalFormClasses'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { defaultMethodId } from '@/lib/accounts/resolve'
-import { PaydayFormBody } from '@/components/features/income/PaydayFormBody'
+import { PaydayFormBody, type FormFrequency } from '@/components/features/income/PaydayFormBody'
+import { paydayCandidates } from '@/lib/income/paydayResolution'
+import { useWeekendFirstDay } from '@/hooks/useWeekStart'
 import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
 import { manualOccurredAt, mergeDayTime, nowClock } from '@/lib/time/occurredAt'
 import { formatClock } from '@/lib/i18n/dateFormat'
@@ -75,9 +77,10 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
   const isRecurring = mode === 'payday'
   const showToast = useActionToast()
   const confirm = useConfirm()
-  const { addIncomeSource, updateIncomeSource, deleteIncomeSource, addIncomeEvent, settings, paymentMethods, incomeSources, exchangeRates } = useFinanceStore(
+  const { addIncomeSource, updateIncomeSource, updateIncomeEvent, deleteIncomeSource, addIncomeEvent, settings, paymentMethods, incomeSources, exchangeRates } = useFinanceStore(
     useShallow((s) => ({
       addIncomeSource: s.addIncomeSource,
+      updateIncomeEvent: s.updateIncomeEvent,
       updateIncomeSource: s.updateIncomeSource,
       deleteIncomeSource: s.deleteIncomeSource,
       addIncomeEvent: s.addIncomeEvent,
@@ -103,6 +106,9 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
   const [currency, setCurrency] = useState<Currency>(source?.currency ?? settings.baseCurrency)
   const [sourceType, setSourceType] = useState<IncomeSourceType>(source?.sourceType ?? 'salary')
   const [frequency, setFrequency] = useState<IncomeRecurringFrequency>(source?.recurringFrequency ?? 'monthly')
+  const [irregular, setIrregular] = useState(Boolean(source?.irregular))
+  const [icon, setIcon] = useState<string | undefined>(source?.icon)
+  const weekendFirst = useWeekendFirstDay()
   const [paydays, setPaydays] = useState<number[]>(seedPaydays)
   const driftDays = source?.paydayDriftDays ?? null
   const [receivedDate, setReceivedDate] = useState(() => localTodayISO())
@@ -145,6 +151,8 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
     setCurrency(settings.baseCurrency)
     setSourceType('salary')
     setFrequency('monthly')
+    setIrregular(false)
+    setIcon(undefined)
     setPaydays([new Date().getDate()])
     setReceivedDate(localTodayISO())
     setClock('')
@@ -165,15 +173,20 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
   const handleSubmit = () => {
     if (!name.trim() || !amtValid || !submitOnce.claim()) return
     const cur = clampFiatToAllowed(settings, currency)
+    // Irregular keeps a monthly schedule underneath (`IncomeSource.irregular`), so every frequency reader stays as it is.
+    const schedule: IncomeRecurringFrequency = irregular ? 'monthly' : frequency
+    const ownIcon = sourceType === 'other' ? icon : undefined
     if (edit && source) {
       updateIncomeSource(source.id, {
         name: name.trim(),
         amount: amt,
         currency: cur,
         isRecurring: true,
-        recurringFrequency: frequency,
+        recurringFrequency: schedule,
+        irregular,
+        ...(typeLocked ? {} : { icon: ownIcon }),
         dayOfMonth: paydays[0] ?? 1,
-        paydayDays: frequency !== 'monthly' && paydays.length ? paydays : undefined,
+        paydayDays: schedule !== 'monthly' && paydays.length ? paydays : undefined,
         paydayDriftDays: driftDays ?? DEFAULT_DRIFT_PRESET,
         notes: notes.trim() || undefined,
         paymentMethodId: paymentMethodId || undefined,
@@ -183,19 +196,32 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
       return
     }
     if (isRecurring) {
-      addIncomeSource({
+      // "Add salary" from the Assign sheet: the money that started it belongs to the new salary from its own month on.
+      const credit = prefill?.assignEventId ? useFinanceStore.getState().incomeEvents.find((e) => e.id === prefill.assignEventId) : undefined
+      const today = localTodayISO()
+      const id = addIncomeSource({
         name: name.trim(),
         amount: amt,
         currency: cur,
         isRecurring: true,
-        recurringFrequency: frequency,
+        recurringFrequency: schedule,
+        ...(irregular ? { irregular: true } : {}),
+        ...(ownIcon ? { icon: ownIcon } : {}),
         dayOfMonth: paydays[0] ?? 1,
-        ...(frequency !== 'monthly' && paydays.length ? { paydayDays: paydays } : {}),
+        ...(schedule !== 'monthly' && paydays.length ? { paydayDays: paydays } : {}),
         paydayDriftDays: driftDays ?? DEFAULT_DRIFT_PRESET,
         sourceType,
         notes: notes.trim() || undefined,
         ...(paymentMethodId ? { paymentMethodId } : {}),
+        ...(credit && credit.receivedDate < today ? { effectiveStart: credit.receivedDate } : {}),
       })
+      if (credit && !credit.templateId) {
+        const st = useFinanceStore.getState()
+        const created = st.incomeSources.filter((x) => x.id === id)
+        const best = paydayCandidates(credit, created, st.incomeEvents, settings.monthStartDay, exchangeRates, new Date(), weekendFirst)[0]
+        // Same write as the Assign sheet: the payday goes on occurrenceDate, receivedDate stays the day it arrived.
+        updateIncomeEvent(credit.id, { templateId: id, occurrenceDate: best?.occ.dueDate ?? credit.receivedDate, status: 'confirmed' })
+      }
     } else {
       addIncomeEvent({
         name: name.trim(),
@@ -263,11 +289,15 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
               onCurrency={setCurrency}
               base={settings.baseCurrency}
               rates={exchangeRates}
-              frequency={frequency}
-              onFrequency={(f) => {
-                setFrequency(f)
-                setPaydays(deriveDefaultPaydays(paydays[0] ?? new Date().getDate(), f))
+              frequency={irregular ? 'irregular' : frequency}
+              onFrequency={(f: FormFrequency) => {
+                const next = f === 'irregular' ? 'monthly' : f
+                setIrregular(f === 'irregular')
+                setFrequency(next)
+                setPaydays(deriveDefaultPaydays(paydays[0] ?? new Date().getDate(), next))
               }}
+              icon={icon}
+              onIcon={setIcon}
               paydays={paydays}
               onPaydays={setPaydays}
               name={name}

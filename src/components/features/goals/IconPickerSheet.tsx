@@ -8,15 +8,18 @@ import { cn } from '@/lib/utils'
 const KEYS = Object.keys(GOAL_ICON_SET) as GoalIconKey[]
 
 /** Pick the icon of a goal of your own (Other), from the app's own lucide set. Closes on pick. */
-export function IconPickerSheet({ open, value, onChange, onClose }: {
+export function IconPickerSheet({ open, value, onChange, onClose, subtitle, note }: {
   open: boolean
   value: GoalIconKey | null
   onChange: (icon: GoalIconKey) => void
   onClose: () => void
+  /** Who the icon is for, when not a goal (an income source, an installment item). Defaults to the goal wording. */
+  subtitle?: string
+  note?: string
 }) {
   const c = useGoalsLtCopy().goals
   return (
-    <PickerSheet open={open} onClose={onClose} title={c.iconTitle} subtitle={c.iconSub} zIndexClassName="z-[120]">
+    <PickerSheet open={open} onClose={onClose} title={c.iconTitle} subtitle={subtitle ?? c.iconSub} zIndexClassName="z-[120]">
       <div role="radiogroup" aria-label={c.iconTitle} className="grid grid-cols-5 gap-2 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-3">
         {KEYS.map((k) => {
           const Icon = GOAL_ICON_SET[k]
@@ -42,7 +45,7 @@ export function IconPickerSheet({ open, value, onChange, onClose }: {
           )
         })}
       </div>
-      <p className="px-1 text-xs text-[var(--color-brand-text-muted)]">{c.iconNote}</p>
+      <p className="px-1 text-xs text-[var(--color-brand-text-muted)]">{note ?? c.iconNote}</p>
     </PickerSheet>
   )
 }

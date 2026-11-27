@@ -20,4 +20,12 @@ describe('debt mapper', () => {
     expect(debtToRow(base, 'u').default_payment_method_id).toBeNull()
     expect(debtFromRow({ ...debtToRow(base, 'u'), user_id: 'u' } as never).defaultPaymentMethodId).toBeUndefined()
   })
+
+  it('keeps an installment item type and its own icon across a round trip; an unknown type reads as unset', () => {
+    const base = { id: 'd', name: 'Sofa', person: 'valU', startingBalance: 12000, currency: 'EGP', createdAt: '2026-01-01T00:00:00.000Z', debtType: 'installment' } as unknown as Debt
+    const row = debtToRow({ ...base, installmentItemType: 'other', installmentItemIcon: 'gem' }, 'u')
+    expect(row).toMatchObject({ installment_item_type: 'other', installment_item_icon: 'gem' })
+    expect(debtFromRow({ ...row, user_id: 'u' } as never)).toMatchObject({ installmentItemType: 'other', installmentItemIcon: 'gem' })
+    expect(debtFromRow({ ...debtToRow(base, 'u'), installment_item_type: 'boat', user_id: 'u' } as never).installmentItemType).toBeUndefined()
+  })
 })

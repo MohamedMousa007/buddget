@@ -41,6 +41,8 @@ export interface IncomeOccurrence {
    * (plus every event-backed or auto-missed one) can be status-actioned.
    */
   actionable: boolean
+  /** An open month of an irregular source ({@link IncomeSource.irregular}): it has no real due day, so it is never late. */
+  irregular?: true
 }
 
 /**
@@ -200,10 +202,11 @@ export function buildOccurrences(
       key: `${source.id}@${iso}`,
       date: iso,
       dueDate: iso,
-      status: pendingStatus(iso, todayISO, missedAfterDaysFor(source)),
+      status: source.irregular ? 'awaiting' : pendingStatus(iso, todayISO, missedAfterDaysFor(source)),
       amount: expected,
       currency: source.currency,
       actionable: true, // sequence pass below demotes later pending paydays
+      ...(source.irregular ? { irregular: true as const } : {}),
     }
   })
 

@@ -48,6 +48,8 @@ export interface PaydayPrefill {
   sourceType?: IncomeSourceType
   dayOfMonth?: number
   paymentMethodId?: string
+  /** "Add salary" from the Assign sheet: this money is assigned to the new salary once it is saved. */
+  assignEventId?: string
 }
 
 /** Persisted resting position of the draggable Buddgy orb. */

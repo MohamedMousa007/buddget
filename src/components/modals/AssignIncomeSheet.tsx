@@ -103,7 +103,7 @@ export function AssignIncomeSheet({ open, onClose, credit, onAssign, initialTemp
             <SelectableCard key={o.occ.key} surface="elevated" selected={chosen === o.occ.key} onClick={() => setChosen(o.occ.key)}>
               <span className="flex w-full items-center gap-3 text-start">
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]">
-                  <IncomeTypeIcon type={o.source.sourceType} className="h-4 w-4" />
+                  <IncomeTypeIcon type={o.source.sourceType} icon={o.source.icon} className="h-4 w-4" />
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="text-[0.90625rem] font-bold text-[var(--color-brand-text-primary)]">{o.source.name}</span>
@@ -182,6 +182,7 @@ export function GlobalAssignIncomeSheet() {
         sourceType: 'salary',
         dayOfMonth: Number(event.receivedDate.slice(8, 10)) || 1,
         paymentMethodId: event.paymentMethodId,
+        assignEventId: event.id,
       })}
       // §8.0: the payday goes on occurrenceDate; receivedDate stays the day it arrived.
       onAssign={({ templateId, date }) => updateIncomeEvent(event.id, { templateId, occurrenceDate: date, status: 'confirmed' })}

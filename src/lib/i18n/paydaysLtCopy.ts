@@ -27,7 +27,10 @@ export interface PaydaysLtCopy {
   /** The quiet row at the end of the page that opens pay cycle and reorder. */
   more: string
   monthCircle: (month: string, state: string) => string
-  states: { received: string; late: string; partial: string; missed: string }
+  states: { received: string; late: string; partial: string; missed: string; none: string }
+  /** Irregular source page: the amount line and the note under the month circles. */
+  eachMonthAvg: (cur: string) => string
+  irregularNote: string
   home: {
     label: (month: string) => string
     received: (cur: string) => string
@@ -39,7 +42,12 @@ export interface PaydaysLtCopy {
     add: string
     statusReceived: string
     statusDue: (date: string) => string
-    cadence: Record<'monthly' | 'biweekly' | 'weekly', string>
+    cadence: Record<'monthly' | 'biweekly' | 'weekly' | 'irregular', string>
+    irregularLine: string
+    irregularNote: string
+    /** The row under the hero when money arrived that no source has claimed yet. */
+    assignRow: (amount: string, from: string | null) => string
+    assignRowSub: (date: string) => string
     cadenceNext: (cadence: string, date: string) => string
     emptyTitle: string
     emptyBody: string
@@ -64,7 +72,12 @@ export interface PaydaysLtCopy {
   /** The Assign sheet's one empty tile and Flow's swipe action. */
   assign: { title: string; body: string; bodyFrom: string; addSalary: string; addSalarySub: string; swipe: string; rowHint: string; rowBadge: string; cta: (name: string) => string }
   /** Add income source (the Add goal C top, then how often, the day, the account). */
-  form: { arrivesOn: string; howOften: string; eachSalary: string; eachTime: string; nameAria: string }
+  form: {
+    arrivesOn: string; howOften: string; eachSalary: string; eachTime: string; nameAria: string
+    irregular: string; aboutMonth: string; howItWorks: string; irregularBody: string
+    nextSalaries: string; nextDates: string; previewNote: string
+    iconAria: string; iconAriaOther: string; iconSub: string; iconNote: string
+  }
   /** The money-in sheet (round 8 Assign card, round 9 short tip). */
   moneyIn: { assignedTo: string; notAssigned: string; tipTitle: string; tip: string; cta: string; save: string }
 }
@@ -93,7 +106,9 @@ export const PAYDAYS_LT_COPY: Record<Locale, PaydaysLtCopy> = {
     payCycle: 'Pay cycle',
     more: 'Pay cycle and order',
     monthCircle: (m, s) => `${m}: ${s}`,
-    states: { received: 'on time', late: 'late', partial: 'partly paid', missed: 'missed' },
+    states: { received: 'on time', late: 'late', partial: 'partly paid', missed: 'missed', none: 'nothing in' },
+    eachMonthAvg: (cur) => `${cur} a month on average`,
+    irregularNote: 'A dash is a month with nothing in. Irregular income is never late.',
     home: {
       label: (m) => `Income · ${m}`,
       received: (cur) => `${cur} received`,
@@ -105,7 +120,11 @@ export const PAYDAYS_LT_COPY: Record<Locale, PaydaysLtCopy> = {
       add: 'Add income',
       statusReceived: 'Received',
       statusDue: (d) => `Due ${d}`,
-      cadence: { monthly: 'Monthly', biweekly: 'Biweekly', weekly: 'Weekly' },
+      cadence: { monthly: 'Monthly', biweekly: 'Biweekly', weekly: 'Weekly', irregular: 'Irregular' },
+      irregularLine: 'Irregular · no fixed day',
+      irregularNote: 'Irregular income has no fixed day, so it is never marked late.',
+      assignRow: (a, from) => (from ? `Assign ${a} from ${from}` : `Assign ${a}`),
+      assignRowSub: (d) => `Arrived ${d} · not assigned yet`,
       cadenceNext: (c, d) => `${c} · next ${d}`,
       emptyTitle: 'Tell buddget when you get paid',
       emptyBody: 'Add your salary, rent or dividends. buddget expects each one, flags a late salary and matches bank SMS to them for you.',
@@ -132,7 +151,14 @@ export const PAYDAYS_LT_COPY: Record<Locale, PaydaysLtCopy> = {
       body: '{amount} {currency} arrived on {date}. Assigning keeps that date and links it to a salary or income you get regularly.',
       bodyFrom: '{amount} {currency} from {from} arrived on {date}. Assigning keeps that date and links it to a salary or income you get regularly.',
       addSalary: 'Add salary', addSalarySub: 'Create a new salary and assign this to it', swipe: 'Assign', rowHint: 'swipe to assign', rowBadge: 'Not assigned', cta: (n) => `Assign to ${n}` },
-    form: { arrivesOn: 'Arrives on', howOften: 'How often', eachSalary: 'Each salary', eachTime: 'Each time it arrives', nameAria: 'Name' },
+    form: {
+      arrivesOn: 'Arrives on', howOften: 'How often', eachSalary: 'Each salary', eachTime: 'Each time it arrives', nameAria: 'Name',
+      irregular: 'Irregular', aboutMonth: 'About how much a month', howItWorks: 'How it works',
+      irregularBody: 'No fixed day. buddget counts it when it lands and never marks it late.',
+      nextSalaries: 'Next salaries', nextDates: 'Next dates', previewNote: 'buddget expects it on these days and tells you when it lands.',
+      iconAria: 'Income icon', iconAriaOther: 'Income icon, tap to change', iconSub: 'For an income of your own',
+      iconNote: 'The same icons used across buddget, so this income looks at home everywhere.',
+    },
     moneyIn: {
       assignedTo: 'Assigned to',
       notAssigned: 'Not assigned',
@@ -162,7 +188,9 @@ export const PAYDAYS_LT_COPY: Record<Locale, PaydaysLtCopy> = {
     payCycle: 'دورة الراتب',
     more: 'دورة الراتب والترتيب',
     monthCircle: (m, s) => `${m}: ${s}`,
-    states: { received: 'في موعده', late: 'متأخر', partial: 'مدفوع جزئيًا', missed: 'لم يصل' },
+    states: { received: 'في موعده', late: 'متأخر', partial: 'مدفوع جزئيًا', missed: 'لم يصل', none: 'لم يصل شيء' },
+    eachMonthAvg: (cur) => `${cur} في الشهر في المتوسط`,
+    irregularNote: 'الشرطة شهر لم يصل فيه شيء. الدخل غير المنتظم لا يتأخر أبدًا.',
     home: {
       label: (m) => `الدخل · ${m}`,
       received: (cur) => `${cur} وصلت`,
@@ -174,7 +202,11 @@ export const PAYDAYS_LT_COPY: Record<Locale, PaydaysLtCopy> = {
       add: 'أضف دخلًا',
       statusReceived: 'وصل',
       statusDue: (d) => `مستحق ${d}`,
-      cadence: { monthly: 'شهري', biweekly: 'كل أسبوعين', weekly: 'أسبوعي' },
+      cadence: { monthly: 'شهري', biweekly: 'كل أسبوعين', weekly: 'أسبوعي', irregular: 'غير منتظم' },
+      irregularLine: 'غير منتظم · بلا يوم ثابت',
+      irregularNote: 'الدخل غير المنتظم بلا يوم ثابت، لذلك لا يُعدّ متأخرًا أبدًا.',
+      assignRow: (a, from) => (from ? `اربط ${a} من ${from}` : `اربط ${a}`),
+      assignRowSub: (d) => `وصل ${d} · غير مرتبط بعد`,
       cadenceNext: (c, d) => `${c} · القادم ${d}`,
       emptyTitle: 'أخبر بادجت متى تقبض',
       emptyBody: 'أضف راتبك أو الإيجار أو الأرباح. يتوقع بادجت كل دخل وينبهك لتأخر الراتب ويطابق رسائل البنك معه.',
@@ -201,7 +233,14 @@ export const PAYDAYS_LT_COPY: Record<Locale, PaydaysLtCopy> = {
       body: 'وصل {amount} {currency} في {date}. الربط يحتفظ بهذا التاريخ ويضمه إلى راتب أو دخل يصلك بانتظام.',
       bodyFrom: 'وصل {amount} {currency} من {from} في {date}. الربط يحتفظ بهذا التاريخ ويضمه إلى راتب أو دخل يصلك بانتظام.',
       addSalary: 'أضف راتبًا', addSalarySub: 'أنشئ راتبًا جديدًا واربط هذا المبلغ به', swipe: 'ربط', rowHint: 'اسحب للربط', rowBadge: 'غير مرتبط', cta: (n) => `اربطه بـ${n}` },
-    form: { arrivesOn: 'يصل يوم', howOften: 'التكرار', eachSalary: 'كل راتب', eachTime: 'كل مرة يصل', nameAria: 'الاسم' },
+    form: {
+      arrivesOn: 'يصل يوم', howOften: 'التكرار', eachSalary: 'كل راتب', eachTime: 'كل مرة يصل', nameAria: 'الاسم',
+      irregular: 'غير منتظم', aboutMonth: 'كم تقريبًا في الشهر', howItWorks: 'كيف يعمل',
+      irregularBody: 'بلا يوم ثابت. يحسبه بادجت عندما يصل ولا يعدّه متأخرًا أبدًا.',
+      nextSalaries: 'الرواتب القادمة', nextDates: 'المواعيد القادمة', previewNote: 'يتوقعه بادجت في هذه الأيام ويخبرك عندما يصل.',
+      iconAria: 'أيقونة الدخل', iconAriaOther: 'أيقونة الدخل، اضغط للتغيير', iconSub: 'لدخل خاص بك',
+      iconNote: 'الأيقونات نفسها المستخدمة في بادجت، ليبدو هذا الدخل مألوفًا في كل مكان.',
+    },
     moneyIn: {
       assignedTo: 'مرتبط بـ',
       notAssigned: 'غير مرتبط',

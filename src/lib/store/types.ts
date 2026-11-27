@@ -120,6 +120,11 @@ export interface IncomeSource {
   isRecurring: boolean
   /** When recurring: monthly = per month, biweekly = per paycheck, weekly = per week. Defaults to monthly if omitted. */
   recurringFrequency?: IncomeRecurringFrequency
+  /**
+   * No fixed payday (How often → Irregular): `amount` is about how much a month, and an unpaid month is never late or
+   * missed. Stored apart from {@link recurringFrequency}, which stays `monthly`, so every frequency reader is unchanged.
+   */
+  irregular?: boolean
   dayOfMonth?: number
   /**
    * Sorted 1–31 days of month the paychecks land on: monthly 1, biweekly 2,
@@ -143,6 +148,8 @@ export interface IncomeSource {
   updatedAt: string
   /** Type/source of income. Defaults to `other` for legacy data. */
   sourceType?: IncomeSourceType
+  /** A key of the shared icon set (`GOAL_ICON_SET`) the user picked for an Other source; unset = the type's icon. */
+  icon?: string
   /** When `sourceType` is savings or investment, links to the savings account row. */
   linkedSavingsAccountId?: string
   /** When `sourceType` is debt, links to the auto-created debt row. */
@@ -841,6 +848,8 @@ export interface DebtGoal {
   calculatedAmount: number
 }
 
+export type InstallmentItemType = 'phone' | 'laptop' | 'appliance' | 'furniture' | 'car' | 'other'
+
 export interface Debt {
   id: string
   name: string
@@ -887,6 +896,10 @@ export interface Debt {
   installmentProvider?: InstallmentProvider
   /** Free-text provider brand slug from the catalogue (valU, Sympl, Souhoola…); shown in UI. */
   installmentProviderName?: string
+  /** What was bought on an installment plan (the Add installment item chips); unset on legacy rows. */
+  installmentItemType?: InstallmentItemType
+  /** A key of the shared icon set (`GOAL_ICON_SET`) for item type `other`; unset = the type's icon. */
+  installmentItemIcon?: string
   /** When provider is `credit_card`, links to the card debt row. */
   linkedCreditCardDebtId?: string
   /** The card or account this plan is usually paid with; preselected when a payment is recorded (installments). */
@@ -1225,7 +1238,7 @@ export interface FinanceStore {
     source: Omit<IncomeSource, 'id' | 'createdAt' | 'updatedAt' | 'effectiveStart'> & {
       effectiveStart?: string
     }
-  ) => void
+  ) => string
   /** Server-row counterpart of {@link upsertServerExpense} for income. */
   upsertServerIncome: (source: IncomeSource) => void
   /**

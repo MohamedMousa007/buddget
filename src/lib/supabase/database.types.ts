@@ -1673,7 +1673,9 @@ export type Database = {
           installment_frequency:
             | Database["public"]["Enums"]["recurring_frequency"]
             | null
+          installment_item_icon: string | null
           installment_item_name: string | null
+          installment_item_type: string | null
           installment_provider:
             | Database["public"]["Enums"]["installment_provider"]
             | null
@@ -1728,7 +1730,9 @@ export type Database = {
           installment_frequency?:
             | Database["public"]["Enums"]["recurring_frequency"]
             | null
+          installment_item_icon?: string | null
           installment_item_name?: string | null
+          installment_item_type?: string | null
           installment_provider?:
             | Database["public"]["Enums"]["installment_provider"]
             | null
@@ -1783,7 +1787,9 @@ export type Database = {
           installment_frequency?:
             | Database["public"]["Enums"]["recurring_frequency"]
             | null
+          installment_item_icon?: string | null
           installment_item_name?: string | null
+          installment_item_type?: string | null
           installment_provider?:
             | Database["public"]["Enums"]["installment_provider"]
             | null
@@ -2587,6 +2593,8 @@ export type Database = {
           edited_at: string
           effective_end: string | null
           effective_start: string
+          icon: string | null
+          is_irregular: boolean
           id: string
           is_recurring: boolean
           linked_debt_id: string | null
@@ -2614,6 +2622,8 @@ export type Database = {
           edited_at?: string
           effective_end?: string | null
           effective_start: string
+          icon?: string | null
+          is_irregular?: boolean
           id?: string
           is_recurring?: boolean
           linked_debt_id?: string | null
@@ -2641,6 +2651,8 @@ export type Database = {
           edited_at?: string
           effective_end?: string | null
           effective_start?: string
+          icon?: string | null
+          is_irregular?: boolean
           id?: string
           is_recurring?: boolean
           linked_debt_id?: string | null

@@ -16,13 +16,15 @@ interface Props {
   labels: Dictionary['income']
   /** The surface the row sits on; the end fade blends into it. Default: a sheet (card). */
   fadeColor?: string
+  /** The icon picked for Other (`IncomeSource.icon`); the Other chip shows it. */
+  otherIcon?: string
 }
 
 /**
  * Single-row horizontal chip slider for income `sourceType` (handoff §6). All 7
  * manual types; the active chip fills with its accent tint. Shown in both tabs.
  */
-export function IncomeTypeChipSlider({ value, onChange, labels, fadeColor = 'var(--color-brand-card)' }: Props) {
+export function IncomeTypeChipSlider({ value, onChange, labels, fadeColor = 'var(--color-brand-card)', otherIcon }: Props) {
   return (
     <div className="relative">
       {/* py-1 -my-1: room for the selected chip's border, which overflow-x would otherwise clip. */}
@@ -37,7 +39,7 @@ export function IncomeTypeChipSlider({ value, onChange, labels, fadeColor = 'var
             onClick={() => onChange(st)}
             style={active ? { background: colors.bg, borderColor: colors.fg, color: readable(colors.fg) } : undefined}
           >
-            <IncomeTypeIcon type={st} className="h-4 w-4" />
+            <IncomeTypeIcon type={st} icon={otherIcon} className="h-4 w-4" />
             {incomeSourceTypeLabel(labels, st)}
           </OptionChip>
         )
