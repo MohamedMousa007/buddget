@@ -350,12 +350,12 @@ export function PaymentMethodSetupSheet({
             <V3SheetHeader.Title>{editing ? t.paymentMethods.editTitle : (titleOverride ?? (type === 'credit_card' ? lt.creditTitle : lt.title))}</V3SheetHeader.Title>
           </V3SheetHeader>
 
-          {/* The preview sits in the sheet's own column, outside the scroll, so it stays in view while the keyboard is up. */}
-          {embedded ? null : <div className="shrink-0 px-4"><CardPreview {...previewProps} /></div>}
+          {/* The preview sits in the sheet's own column, outside the scroll, so it stays in view while the keyboard is up
+              and while the look is picked further down (embedded too: BUD-113). */}
+          <div className="shrink-0 px-4"><CardPreview {...previewProps} /></div>
           <div className="native-scroll min-h-0 flex-1 overflow-y-auto px-4 pb-4">
             <div className="flex flex-col gap-3">
               {summary}
-              {embedded ? <CardPreview {...previewProps} /> : null}
 
               {typeLock ? (
                 <div

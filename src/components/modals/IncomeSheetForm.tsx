@@ -458,6 +458,7 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
           open
           value={receivedDate}
           onConfirm={setReceivedDate}
+          max={localTodayISO()}
           time={{ value: shownClock, label: flowLt.expense.time }}
           onConfirmDateTime={(iso, hm) => {
             setReceivedDate(iso)

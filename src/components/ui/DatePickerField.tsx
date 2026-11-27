@@ -32,6 +32,8 @@ export interface DatePickerFieldProps {
   time?: { value: string; onChange: (time: string) => void; label: string; defaultNow?: boolean }
   /** A `day` label that also names the year (a date that is not about this week, such as a zakat year start). Default: off. */
   withYear?: boolean
+  /** Latest selectable day (ISO), e.g. today for money that already arrived. Default: none. */
+  max?: string
 }
 
 /**
@@ -49,6 +51,7 @@ export function DatePickerField({
   look = 'field',
   time,
   withYear = false,
+  max,
 }: DatePickerFieldProps) {
   const t = useT()
   const { locale } = useLocale()
@@ -88,6 +91,7 @@ export function DatePickerField({
         value={mode === 'month' && value ? `${value}-01` : value}
         onConfirm={(iso) => onChange(mode === 'month' ? iso.slice(0, 7) : iso)}
         monthOnly={mode === 'month'}
+        max={max}
         {...(time && mode === 'day' ? {
           time: { value: clock, label: time.label },
           onConfirmDateTime: (iso: string, hm: string) => {

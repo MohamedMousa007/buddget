@@ -248,6 +248,7 @@ export function AddIncomeForm({ onClose }: { onClose: () => void }) {
           open
           value={receivedDate}
           onConfirm={setReceivedDate}
+          max={localTodayISO()}
           time={{ value: shownClock, label: lt.expense.time }}
           onConfirmDateTime={(iso, hm) => {
             setReceivedDate(iso)

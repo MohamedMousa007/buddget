@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import { toLatinDigits } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 import { useOtpAutofill } from '@/hooks/useOtpAutofill'
-import { EMAIL_OTP_LENGTH } from '@/lib/auth/otp'
+import { EMAIL_OTP_LENGTH, placeOtpDigit } from '@/lib/auth/otp'
 import { inputFocus, inputStyle } from '@/components/features/auth-modal/authModalTokens'
 
 export interface AuthOtpRowProps {
@@ -28,19 +28,9 @@ export function AuthOtpRow({ value, onChange, disabled }: AuthOtpRowProps) {
   useOtpAutofill((code) => onChange(code), digitsOnly.length < EMAIL_OTP_LENGTH)
 
   const setDigit = (i: number, raw: string) => {
-    const cleaned = toLatinDigits(raw).replace(/\D/g, '')
-    // Autofill / QuickType inserts the whole code into one box — distribute it.
-    if (cleaned.length > 1) {
-      const code = cleaned.slice(0, EMAIL_OTP_LENGTH)
-      onChange(code)
-      refs.current[Math.min(code.length, EMAIL_OTP_LENGTH - 1)]?.focus()
-      return
-    }
-    const padded = (digitsOnly + ' '.repeat(EMAIL_OTP_LENGTH)).slice(0, EMAIL_OTP_LENGTH).split('')
-    padded[i] = cleaned || ' '
-    const next = padded.join('').replace(/ /g, '')
-    onChange(next)
-    if (cleaned && i < EMAIL_OTP_LENGTH - 1) refs.current[i + 1]?.focus()
+    const { code, focus } = placeOtpDigit(digitsOnly, i, toLatinDigits(raw))
+    onChange(code)
+    if (focus !== i) refs.current[focus]?.focus()
   }
 
   const handleKeyDown = (i: number, e: KeyboardEvent<HTMLInputElement>) => {
@@ -71,6 +61,7 @@ export function AuthOtpRow({ value, onChange, disabled }: AuthOtpRowProps) {
             refs.current[i] = el
           }}
           inputMode="numeric"
+          pattern="[0-9]*"
           autoComplete="one-time-code"
           aria-label={a.otpDigit(i + 1, EMAIL_OTP_LENGTH)}
           disabled={disabled}

@@ -188,7 +188,7 @@ export function DetectedAccountsSheet({ open, onClose, onManual }: { open: boole
           onChange={setChoice}
           placeholder={all.settings.linkToExisting}
           aria-label={all.settings.linkToExisting}
-          items={paymentMethods.filter((pm) => !pm.provisional).map((pm) => ({ value: pm.id, label: pm.name }))}
+          items={paymentMethods.filter((pm) => !pm.provisional && !pm.closedAt).map((pm) => ({ value: pm.id, label: pm.name }))}
         />
       )
     }

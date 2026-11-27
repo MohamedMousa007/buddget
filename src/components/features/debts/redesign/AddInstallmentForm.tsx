@@ -188,7 +188,7 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
         creditCards={d.creditCardDebts
           .map((cd) => {
             const pm = d.paymentMethods.find((m) => m.id === cd.linkedPaymentMethodId)
-            return pm ? { debtId: cd.id, pm } : null
+            return pm && (!pm.closedAt || cd.id === d.linkedCreditCardDebtId) ? { debtId: cd.id, pm } : null
           })
           .filter((x): x is { debtId: string; pm: (typeof d.paymentMethods)[number] } => x !== null)}
         onPickBrand={(slug, name) => { d.setInstallmentProvider(coarseProvider(slug)); d.setInstallmentProviderName(name); d.setInstallmentProviderSlug(slug); d.setLinkedCreditCardDebtId('') }}

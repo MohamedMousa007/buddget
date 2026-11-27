@@ -184,7 +184,7 @@ export function AmountReceivedSheet() {
   return (
     <ModalShell open={isOpen} onBackdropClick={close} scrollChild>
       <div className="flex min-h-0 flex-1 flex-col">
-        <V3SheetHeader onClose={close} leading={<DatePickerField look="pill" className={HEADER_PILL} value={receivedDate} onChange={setReceivedDate} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: !isEdit }} />}>
+        <V3SheetHeader onClose={close} leading={<DatePickerField look="pill" className={HEADER_PILL} value={receivedDate} onChange={setReceivedDate} max={todayISO()} time={{ value: clock, onChange: setClock, label: timeLabel, defaultNow: !isEdit }} />}>
           <span className="sr-only"><V3SheetHeader.Title>{t.income.amountReceivedTitle}</V3SheetHeader.Title></span>
         </V3SheetHeader>
         <div className="native-scroll flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-4">

@@ -10,6 +10,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { useLocale, useT } from '@/lib/i18n'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { formatClock, intlTag } from '@/lib/i18n/dateFormat'
 import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
 import { clockOf, editedOccurredAt, mergeDayTime } from '@/lib/time/occurredAt'
@@ -450,6 +451,7 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
         open
         value={receivedDate}
         onConfirm={setReceivedDate}
+        max={localTodayISO()}
         time={{ value: clock, label: lt.expense.time }}
         onConfirmDateTime={(iso, hm) => {
           setReceivedDate(iso)
