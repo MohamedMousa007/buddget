@@ -38,7 +38,10 @@ export interface DebtPortfolioHeroProps {
   clearedCount: number
 }
 
-/** Debts band: Flow's band skeleton (fixed height in every state); the bar shows how much is already cleared. */
+/**
+ * Debts band: Flow's band skeleton (fixed height in every state); the bar shows how much is already cleared. The bar
+ * keeps the full bar block (no bareBar), so the card is as tall as the other heroes and the note gets air under the bar.
+ */
 export function DebtPortfolioHero({
   owed,
   base,
@@ -110,7 +113,6 @@ export function DebtPortfolioHero({
         </div>
       }
       note={note}
-      bareBar
       contained
     />
   )

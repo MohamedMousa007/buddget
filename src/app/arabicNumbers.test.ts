@@ -21,7 +21,7 @@ describe('Arabic number and unit ordering (QA-27)', () => {
   })
   it('the Debts band (Light touch) is a rounded card whose facts ride one auto-direction line under the bar', () => {
     const debts = read('components/features/debts/redesign/DebtPortfolioHero.tsx')
-    expect(debts).toMatch(/note=\{note\}\s+bareBar\s+contained/)
+    expect(debts).toMatch(/note=\{note\}\s+contained/)
     expect(debts).toContain('lt.month(compact(month.paid), compact(month.total))')
     expect(debts).toMatch(/const note = [^\n]*<BandNoteLine parts=\{parts\} \/>/)
     expect(read('components/features/hero/BandNoteLine.tsx')).toMatch(/<span dir="auto" className="flex flex-wrap gap-x-3 gap-y-1">/)
