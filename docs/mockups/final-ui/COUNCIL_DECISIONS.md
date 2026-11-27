@@ -94,3 +94,47 @@ Story tests (7): salaried one-bank user, cash + gold user and month end with a c
 8. **Open calls decided:** (a) "Salary" (راتب) only for salary sources, "Income" (دخل) for the rest, copy only (routes and code names unchanged); (b) **Release** with "Stays in CIB, back to Free to spend" (Arabic "رجّعه للمتاح"); "Withdraw" only for gold, cash and other outside holdings; (c) installments on a credit card live under the card only: the card owes billed balance + remaining plan principal once, instalments are settlements not new spending, only the billed instalment is held back; a bank is a provider only for loans not on a card; valU/BNPL stay installment debts.
 9. **Month-end card:** applies itself after 3 days, recomputed against free money at that moment (says what it capped), with Undo.
 10. **Cut for now (internal testers):** the "+1,200 from rate changes" label (a small "includes rate changes" note instead); a multi-home editor (homes are listed read-only, added through Add money); the "Is this money in the new bank?" prompt; new work on the emergency fund target and Zakat (keep what exists).
+
+## Deep logic check (2026-11-27, Opus: Accountant, Critic, Skeptic): supersedes earlier rules where they differ
+
+Method: invariants written as equations, then a 3-month ledger simulated with real numbers (CIB EGP, Deel USD, a CIB card with an instalment plan, cash, 21k gold; salary, USD freelance, card spend, bill, own transfer, a goal in CIB + Deel, Monthly savings, an SMS correction, a refund, an account closed), each invariant checked after every event against the model and today's code.
+
+**Invariants (the rules every screen and job must keep)**
+1. Every tracked open account shows the bank's balance (an SMS balance wins).
+2. Set aside in an account = the sum of the parts held there, each in that account's currency.
+3. Free(A) = balance − set aside − card money A must cover. It can go below 0. Short(A) = set aside − balance, only when positive; card money never counts as a shortfall.
+4. Setting aside, releasing, "I spent it" and month-end never change any account balance (labels only).
+5. Net worth = open tracked accounts + outside holdings + investments − debts. Set-aside money counts zero extra times; money in a closed account counts zero times; a card plan is owed once, inside the card.
+6. Goal progress = covered parts at live value.
+7. Month-end placed ≤ min(leftover, free money), and ≤ each account's free money. Leftover = income − spending − money already added to savings in the month.
+8. Own transfers, card bills and instalments are neither income nor spending.
+9. Each month is applied exactly once.
+10. A past cross-currency row keeps the rate it was booked at.
+
+**Model fixes adopted (3/3 unless noted)**
+1. Leftover subtracts money already added to savings during the month (otherwise it is set aside twice).
+2. Card money held back = everything owed on the card except the unbilled plan principal (statement balance + purchases since the statement + this cycle's instalment if not yet billed). Holding back only the statement left later purchases free and caused a false shortfall at the next bill (Skeptic).
+3. Release and "I spent it" are labels (not cash flow): they never move a balance (today's withdrawal path would move it twice).
+4. One "live account" rule (tracked, open, not deleted) used by the app, the server and net worth. An account holding set-aside money cannot close until "Where did this money go?" is answered; afterwards it holds 0.
+5. An unexplained SMS balance drop counts in the month's leftover as outflow, so a month never claims money that is gone.
+6. Month-end is one server action with one key: a proposal row (proposed / applied / undone), applied by the user's confirm or on day 3 by the server, compare-and-set, never twice; the server computes free money from the ledger; each account is capped at min(free at month end, free now) so new salary is never taken as last month's leftover; Undo keeps the row.
+7. Closed months are never reopened. A late SMS or refund counts in the month it arrives; the carry-adjustment machinery is retired. Each month stores its own dates and rates.
+8. One allocator: "Where your monthly savings go". Goal fixed/share settings become pre-filled lines. Fill order: each item's existing parts first, then the account with the most free money (compared at apply-time rates).
+9. Goal progress counts covered money; "Achieved" is stamped from covered money; if money or rates later drop it, it stays Achieved with "now X below target".
+10. When an account is short, parts go uncovered in this order: Monthly savings, then the lowest-priority goal.
+11. A plan on a card: the full price is spending at purchase; instalments are settlements; principal is owed once inside the card.
+12. Monthly savings has one part per account (id derived from user + account).
+13. Shortfall ignores card money and pure rate moves; negative free shows as "Free to spend −X".
+
+**Live code problems found (server month-end job, next run Dec 1)**
+- No cap at free money: the leftover goes entirely into the main account's vault even when that account can't hold it (phantom shortfall).
+- A gold or other unpriced deposit in the month records the month as empty, so it is never carried.
+- An unchecked read in goal funding can set the same money aside twice.
+- A claim written before the deposit and released only in code: a timeout leaves months marked done with nothing booked.
+- Changing the cycle start day re-windows closed months (days never carried or counted twice).
+- Late corrections re-price a closed month at today's rates (FX leaks into savings).
+- Money in a closed account counts as outside money (net worth too high).
+- Cross-currency transfers are re-converted at today's rate on every read, so balances drift from the bank (build item).
+- SMS corrections stored as deltas: a late SMS dated before a correction lowers the balance twice (build item).
+- Bank-plan instalments counted as spending (double counting with the purchase).
+Recommendation (3/3): pause the month-end job's writes until the rebuilt month-end card and single server action ship.
