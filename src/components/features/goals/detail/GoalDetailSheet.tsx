@@ -2,7 +2,7 @@
 
 import { intlTag } from '@/lib/i18n/dateFormat'
 import { useMemo, useState } from 'react'
-import { Check, MoreHorizontal, Pause, Pencil, Play, Repeat, Trash2, Trophy } from 'lucide-react'
+import { Check, EllipsisVertical, Gem, House, Pause, Pencil, Play, Repeat, Trash2, Trophy } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { goalCategoryLabelKey } from '@/components/features/goals/goalCategoryLabel'
 import { GoalPriceNote } from '@/components/features/goals/GoalPriceNote'
@@ -13,10 +13,17 @@ import { DeleteGoalSheet } from '@/components/features/goals/detail/DeleteGoalSh
 import { GoalEditSheet } from '@/components/features/goals/detail/GoalEditSheet'
 import { PlanCard, type PlanRow } from '@/components/features/goals/detail/PlanCard'
 import { PlanEditorSheet } from '@/components/features/goals/detail/PlanEditorSheet'
-import { PocketPickerField } from '@/components/features/savings-v3/MoneySheetParts'
-import type { PocketVM } from '@/components/features/savings-v3/types'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/IconButton'
+import { TransactionRow } from '@/components/transactions/TransactionRow'
+import { BrandMark } from '@/components/features/accounts/BrandMark'
+import { accountColor, accountTitle } from '@/components/features/accounts/accountDisplay'
+import { bankLogoForName } from '@/lib/payment/bankLogos'
+import { useGoalHomes } from '@/components/features/goals/GoalHomesLine'
+import { useSavingsV9Copy } from '@/lib/i18n/savingsV9Copy'
+import { useMask } from '@/lib/privacy/useMask'
+import { MASK } from '@/lib/privacy/mask'
 import { Card } from '@/components/ui/card'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { DatePickerField } from '@/components/ui/DatePickerField'
@@ -30,8 +37,6 @@ import { fundingBasis } from '@/lib/goals/fundingBasis'
 import { checkpointInfo, coachView, finishesLate, goalMonthlyRate, replanPatch } from '@/lib/goals/goalDetail'
 import { defaultSharePct, periodMonths, sharesOverFull } from '@/lib/goals/goalPlan'
 import { debtMonthlyRate, goalLedger } from '@/lib/goals/debtGoal'
-import { isEligibleCarryPocket } from '@/lib/savings/eligiblePocket'
-import { pickGoalPocket } from '@/lib/goals/goalPocket'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatWhole } from '@/lib/utils/formatters'
@@ -90,13 +95,9 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
     () => coachView({ goal, current, runs, usualKeep: keep, periodSavings: keep === null ? null : keep * periodMonths(goal.frequency), now }),
     [goal, current, runs, keep, now],
   )
-  const pockets: PocketVM[] = useMemo(
-    // The goal's own pocket is always listed, even one kept inside an account (not a carry target), so the row names it.
-    () => s.savingsAccounts
-      .filter((a) => isEligibleCarryPocket(a) || a.id === goal.linkedSavingsAccountIds[0])
-      .map((account) => ({ account, coverAmount: 0, goalsAmount: 0, goalLabel: '' })),
-    [s.savingsAccounts, goal.linkedSavingsAccountIds],
-  )
+  const v9 = useSavingsV9Copy().goals
+  const homes = useGoalHomes(goal)
+  const hidden = useMask('lists')
 
   const money = (n: number) => formatWhole(Math.round(n))
   const short = (iso: string | null) =>
@@ -118,7 +119,6 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
   const basisAmount = isLimit ? goal.monthlySpendingLimit : goal.targetAmount
   const kindLabel = goal.category === 'debt_freedom' ? d.kindDebt : isLimit ? d.kindLimit : d.kindSave
 
-  const pocket = s.savingsAccounts.find((a) => a.id === goal.linkedSavingsAccountIds[0])
   const debtRows: PlanRow[] = [
     {
       key: 'debts',
@@ -151,6 +151,7 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
     if (patch) s.updateGoal(goal.id, patch)
   }
 
+  // ⋮ (final-ui v9): Edit, the extras, then Delete in red; no bin and no pen in the header.
   const menuItems = [
     { label: d.menuEdit, icon: <Pencil className="size-4" />, onSelect: () => setEdit(true) },
     // Achieved is final (I-12): no pause or resume on it.
@@ -158,6 +159,7 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
       ? { label: d.menuResume, icon: <Play className="size-4" />, onSelect: () => s.updateGoal(goal.id, { status: 'active' }) }
       : { label: d.menuPause, icon: <Pause className="size-4" />, onSelect: () => s.updateGoal(goal.id, { status: 'paused' }) }]),
     ...(goal.status === 'achieved' ? [] : [{ label: d.menuAchieve, icon: <Trophy className="size-4" />, onSelect: () => { s.achieveGoal(goal.id); onClose() } }]),
+    { label: lt.goals.deleteGoal, icon: <Trash2 className="size-4" />, destructive: true, onSelect: () => setDel(true) },
   ]
   const reachedCount = info.nodes.filter((n) => n.reached).length
 
@@ -173,7 +175,15 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
           <V3SheetHeader
             onClose={onClose}
             actions={
-              <V3SheetHeader.Action icon={<Trash2 className="size-4" />} label={lt.goals.deleteGoal} tone="danger" onClick={() => setDel(true)} />
+              <IconButton
+                variant="sheetAction"
+                aria-label={v9.more}
+                aria-haspopup="menu"
+                aria-expanded={menu !== null}
+                onClick={(e) => setMenu(e.currentTarget.getBoundingClientRect())}
+              >
+                <EllipsisVertical className="size-4" />
+              </IconButton>
             }
           >
             <V3SheetHeader.Title size="compact">{goal.name}</V3SheetHeader.Title>
@@ -258,30 +268,31 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
                     chevron={false}
                     value={<Pill icon={<Repeat />}>{fundSummary(plan, (n) => formatWhole(n))}</Pill>}
                   />
-                  <PocketPickerField
-                    look="row"
-                    label={lt.goals.pocket}
-                    pockets={pockets}
-                    value={pocket?.id ?? null}
-                    onChange={(id) => pickGoalPocket(useFinanceStore.getState(), goal, id)}
-                  />
                 </Card>
-                <p className="mt-2 px-1 text-xs text-[var(--color-brand-text-secondary)]">{lt.goals.pocketNote}</p>
               </div>
             ) : null}
 
-            {/* Light touch: the header carries only the bin (`lt-v5.js` s_goal); edit, pause and achieve stay one tap away here. */}
-            <Button
-              variant="ghost"
-              size="touch"
-              aria-haspopup="menu"
-              aria-expanded={menu !== null}
-              onClick={(e) => setMenu(e.currentTarget.getBoundingClientRect())}
-              className="-mt-2 self-start gap-1.5 px-1 text-[0.8125rem] font-semibold text-[var(--color-brand-text-secondary)]"
-            >
-              <MoreHorizontal className="size-4" aria-hidden />
-              {d.more}
-            </Button>
+            {!isLimit && !isDebt && homes.length > 0 ? (
+              <div>
+                <h3 className="mb-2 px-1 text-[0.8125rem] font-bold text-[var(--color-brand-text-primary)]">{v9.whereKept}</h3>
+                <Card padding="none" divide className="overflow-hidden">
+                  {homes.map((h) => (
+                    <TransactionRow
+                      key={h.part.id}
+                      icon={h.kind === 'account' && h.account
+                        ? <BrandMark name={accountTitle(h.account)} color={accountColor(h.account)} size={40} logo={bankLogoForName(accountTitle(h.account))} />
+                        : h.kind === 'gold' ? <Gem className="size-5" aria-hidden /> : <House className="size-5" aria-hidden />}
+                      iconBg={h.kind === 'account' ? undefined : `color-mix(in oklab, ${h.kind === 'gold' ? 'var(--color-brand-gold)' : 'var(--color-brand-text-secondary)'} 16%, transparent)`}
+                      iconFg={h.kind === 'gold' ? 'var(--color-brand-gold)' : h.kind === 'outside' ? 'var(--color-brand-text-secondary)' : undefined}
+                      title={<span dir="auto">{h.kind === 'account' && h.account ? accountTitle(h.account) : h.part.name}</span>}
+                      subtitle={h.kind === 'account' && h.account ? v9.homeSetAside(accountTitle(h.account)) : v9.homeOutsideSub}
+                      amount={<bdi className="font-mono-numbers">{hidden ? MASK : h.kind === 'gold' ? v9.homeGold(h.amount) : h.amount}</bdi>}
+                    />
+                  ))}
+                </Card>
+                <p className="mt-2 px-1 text-xs text-[var(--color-brand-text-secondary)]">{v9.whereKeptNote}</p>
+              </div>
+            ) : null}
           </div>
 
           <div className="sheet-cta flex shrink-0 flex-col gap-2.5 border-t border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-5 pb-6 pt-3 md:px-6">

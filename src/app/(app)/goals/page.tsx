@@ -1,8 +1,8 @@
 'use client'
 
 import { partitionGoals } from '@/lib/goals/partitionGoals'
-import { useMemo, useState } from 'react'
-import { AlertTriangle, Flag, PauseCircle, Plus } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { AlertTriangle, ChevronLeft, Flag, PauseCircle, Plus } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { AchievedView } from '@/components/features/goals/AchievedView'
 import { GoalAddMoneySheet } from '@/components/features/goals/GoalAddMoneySheet'
@@ -29,6 +29,8 @@ import { microClassName } from '@/lib/ui/microLabelStyle'
 import { GoalsHero } from '@/components/features/goals/GoalsHero'
 import { useGoalsLtCopy } from '@/lib/i18n/goalsLtCopy'
 import { useGoalsEmptyCopy } from '@/lib/i18n/goalsEmptyCopy'
+import { useSavingsV9Copy } from '@/lib/i18n/savingsV9Copy'
+import { registerBackGuard } from '@/lib/navigation/backGuard'
 
 type View = 'all' | 'active' | 'paused' | 'achieved'
 const VIEW_KEY = 'goals-view'
@@ -46,6 +48,7 @@ export default function GoalsPage() {
   const t = useT().goals
   const lt = useGoalsLtCopy()
   const emptyCopy = useGoalsEmptyCopy()
+  const v9 = useSavingsV9Copy().goals
   const { dataReady, baseCurrency, rates, updateGoal } = useFinanceStore(
     useShallow((s) => ({ dataReady: s.dataReady, baseCurrency: s.settings.baseCurrency, rates: s.exchangeRates, updateGoal: s.updateGoal })),
   )
@@ -69,6 +72,13 @@ export default function GoalsPage() {
     const parts = partitionGoals(rows)
     return { ...parts, achieved: parts.achieved.map((r) => r.goal).sort((a, b) => (b.achievedAt ?? '').localeCompare(a.achievedAt ?? '')) }
   }, [rows])
+
+  // Achieved goals are their own page (final-ui v9): hardware back and the iOS edge swipe step back to Goals first.
+  const onAchieved = view === 'achieved'
+  useEffect(() => {
+    if (!onAchieved) return
+    return registerBackGuard(() => { setView('all'); return true })
+  }, [onAchieved])
 
   const detailRow = rows.find((r) => r.goal.id === detailId) ?? null
 
@@ -115,11 +125,17 @@ export default function GoalsPage() {
               <GoalsEmpty onStart={openAdd} />
             ) : (
               <>
-                {view === 'achieved' ? null : <GoalsHero rows={rows} />}
+                {view === 'achieved' ? (
+                  <Button variant="ghost" size="touch" onClick={() => { setView('all'); window.scrollTo(0, 0) }}
+                    className="-mb-2 -ms-2 self-start gap-1 px-2 font-semibold text-[var(--color-brand-text-primary)] [&_svg:not([class*='size-'])]:size-5">
+                    <ChevronLeft aria-hidden className="rtl:rotate-180" strokeWidth={2} />{v9.back}
+                  </Button>
+                ) : <GoalsHero rows={rows} />}
+                {view === 'achieved' ? null : (
                 <div className="flex items-center gap-2">
                   <SegmentedControl<'all' | 'active' | 'paused'>
                     ariaLabel={t.home.viewLabel}
-                    value={view === 'achieved' ? ('' as 'all') : view}
+                    value={view as 'all' | 'active' | 'paused'}
                     onChange={setView}
                     options={[
                       { value: 'all', label: t.home.viewAll },
@@ -128,8 +144,9 @@ export default function GoalsPage() {
                     ]}
                     className="flex-1"
                   />
-                  <TrophyChip count={achieved.length} pressed={view === 'achieved'} onClick={() => setView(view === 'achieved' ? 'all' : 'achieved')} />
+                  <TrophyChip count={achieved.length} pressed={false} onClick={() => { setView('achieved'); window.scrollTo(0, 0) }} />
                 </div>
+                )}
 
                 {view !== 'achieved' && worstBehind && bannerOff !== worstBehind.goal.id ? (
                   <PromptBanner
@@ -161,7 +178,10 @@ export default function GoalsPage() {
                 ) : null}
 
                 {view === 'achieved' ? (
-                  <AchievedView goals={achieved} base={baseCurrency} rates={rates} next={nextToFinish} onOpen={openDetail} onNewGoal={() => openAdd()} />
+                  <>
+                    <AchievedView goals={achieved} base={baseCurrency} rates={rates} next={nextToFinish} onOpen={openDetail} onNewGoal={() => openAdd()} />
+                    <p className="px-1 text-xs leading-relaxed text-[var(--color-brand-text-muted)]">{v9.achievedNote}</p>
+                  </>
                 ) : visible.length === 0 ? (
                   <EmptyState
                     variant="card"
