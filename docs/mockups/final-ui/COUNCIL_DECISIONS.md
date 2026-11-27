@@ -138,3 +138,7 @@ Method: invariants written as equations, then a 3-month ledger simulated with re
 - SMS corrections stored as deltas: a late SMS dated before a correction lowers the balance twice (build item).
 - Bank-plan instalments counted as spending (double counting with the purchase).
 Recommendation (3/3): pause the month-end job's writes until the rebuilt month-end card and single server action ship.
+
+## Owner rules (2026-11-27, later)
+- **An achieved goal is completed for good.** It never goes back to active: not when its money is spent later, not when a rate drops. (Replaces "stays Achieved with now X below target" and "Achieved · X no longer set aside".) Its money can still be released or spent normally; the goal just stays in the trophy list.
+- **Month-end job writes paused** until the month-end card and its single capped server action ship (`MONTH_CARRY_WRITES=on` turns writes back on; paused runs evaluate and report `paused: true`).

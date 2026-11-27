@@ -66,6 +66,7 @@ function fake(table: string) {
 }
 
 import { GET as cron } from './month-carry/route'
+process.env.MONTH_CARRY_WRITES = 'on'
 import { GET as carryGet, POST as carryPost } from '@/app/api/savings/carry/route'
 
 const cronReq = (qs = '') => new Request(`http://x/api/cron/month-carry${qs}`, { headers: { authorization: 'Bearer s3cret' } })

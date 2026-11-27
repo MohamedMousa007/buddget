@@ -220,7 +220,10 @@ export async function GET(request: Request) {
 
   const now = new Date()
   const service = createServiceRoleClient()
-  const dry: DryRun | undefined = new URL(request.url).searchParams.get('dryRun') === '1'
+  // Paused 2026-11-27 (council deep logic check): writes only with MONTH_CARRY_WRITES=on, until the month-end card and
+  // its single capped server action replace this path. Paused runs evaluate like a dry run and write nothing.
+  const paused = process.env.MONTH_CARRY_WRITES !== 'on'
+  const dry: DryRun | undefined = paused || new URL(request.url).searchParams.get('dryRun') === '1'
     ? { users: 0, cycles: 0, withCarry: 0, empty: 0, skippedFirstPartial: 0, noFxPath: 0, carryByCurrency: {} }
     : undefined
   let carried = 0
@@ -265,7 +268,7 @@ export async function GET(request: Request) {
   if (partial) console.error('[cron/month-carry] time budget reached; resume with ?after=<last scanned user>', { scanned })
 
   // A dry run evaluates cycles but carries nothing: `carried` stays 0 and the evaluated count is `cycles`.
-  return NextResponse.json({ ok: failed === 0 && !partial, ...(dry ? { dryRun: true, ...dry } : {}), ...(partial ? { partial: true, nextCursor: lastScanned } : {}), scanned, carried: dry ? 0 : carried, failed })
+  return NextResponse.json({ ok: failed === 0 && !partial, ...(paused ? { paused: true } : {}), ...(dry ? { dryRun: true, ...dry } : {}), ...(partial ? { partial: true, nextCursor: lastScanned } : {}), scanned, carried: dry ? 0 : carried, failed })
 }
 
 // pg_cron + pg_net calls with POST; Vercel crons call GET. Same handler, same auth.

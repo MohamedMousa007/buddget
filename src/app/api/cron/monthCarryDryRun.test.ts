@@ -50,6 +50,7 @@ function fake(table: string) {
 }
 
 import { GET } from './month-carry/route'
+process.env.MONTH_CARRY_WRITES = 'on'
 
 const req = (qs = '') => new Request(`http://x/api/cron/month-carry${qs}`, { headers: { authorization: 'Bearer s3cret' } })
 const writesTo = (table: string, op?: string) => h.writes.filter((w) => w.table === table && (!op || w.op === op))
@@ -149,6 +150,18 @@ describe('month-carry live run', () => {
     await GET(req())
     expect(writesTo('savings_accounts', 'insert')).toEqual([])
     expect(writesTo('goals', 'update')).toEqual([])
+  })
+
+  it('paused by default: with the write switch off a run writes nothing and says so', async () => {
+    process.env.MONTH_CARRY_WRITES = ''
+    try {
+      const body = await (await GET(req())).json()
+      expect(body.paused).toBe(true)
+      expect(h.deposits).toEqual([])
+      expect(h.writes).toEqual([])
+    } finally {
+      process.env.MONTH_CARRY_WRITES = 'on'
+    }
   })
 
   it('a pocket whose account is gone is outside money: the leftover is set aside elsewhere, never in it, and never moved', async () => {
