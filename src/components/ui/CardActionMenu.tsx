@@ -50,6 +50,7 @@ function menuKeyTarget(menu: HTMLElement | null, key: string): HTMLElement | nul
 
 const WIDTH = 216
 const ROW = 44
+const ROW_HINT = 58
 
 export function CardActionMenu({ anchor, items, onClose, title, zClassName = 'z-[60]' }: CardActionMenuProps) {
   useDismissable(anchor !== null, onClose)
@@ -65,9 +66,17 @@ export function CardActionMenu({ anchor, items, onClose, title, zClassName = 'z-
   // beyond confirming document exists for the portal target.
   if (!anchor || typeof document === 'undefined') return null
 
-  // Position under the trigger, right-aligned to it, clamped to the viewport.
-  const left = Math.max(8, Math.min(anchor.right - WIDTH, window.innerWidth - WIDTH - 8))
-  const top = Math.min(anchor.bottom + 6, window.innerHeight - 8 - items.length * ROW - (title ? 40 : 0))
+  // Under the trigger, aligned to its end edge (mirrored in RTL), clamped to the viewport; flips above the trigger
+  // when there is no room below, and never sits under the bottom safe area.
+  const rtl = document.documentElement.dir === 'rtl'
+  const left = rtl
+    ? Math.max(8, Math.min(anchor.left, window.innerWidth - WIDTH - 8))
+    : Math.max(8, Math.min(anchor.right - WIDTH, window.innerWidth - WIDTH - 8))
+  const height = items.reduce((h, it) => h + (it.hint ? ROW_HINT : ROW), 0) + (title ? 40 : 0)
+  const flip = anchor.bottom + 6 + height > window.innerHeight - 8 && anchor.top - 6 - height >= 8
+  const top = flip
+    ? anchor.top - 6 - height
+    : `min(${anchor.bottom + 6}px, calc(100dvh - env(safe-area-inset-bottom, 0px) - ${height + 8}px))`
 
   return createPortal(
     <div className={`fixed inset-0 ${zClassName}`} onClick={onClose} role="presentation">
