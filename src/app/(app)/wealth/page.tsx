@@ -122,6 +122,8 @@ export default function WealthPage() {
   const [emergencyOpen, setEmergencyOpen] = useState(false)
   const [zakatOpen, setZakatOpen] = useState(false)
   const [monthEndOpen, setMonthEndOpen] = useState(false)
+  /** Opened from the Monthly savings pocket's split row: the split is in view even when a leftover waits. */
+  const [monthEndSplit, setMonthEndSplit] = useState(false)
   const [pocketOpen, setPocketOpen] = useState<string | null>(null)
   const [releaseOf, setReleaseOf] = useState<SavingsAccount | null>(null)
   const v9 = useSavingsV9Copy().page
@@ -415,7 +417,7 @@ export default function WealthPage() {
           onAddMoney={() => { setEmergencyOpen(false); openAdd(null) }}
         />
       )}
-      {monthEndOpen && <MonthEndSheet open monthEnd={monthEnd} onClose={() => setMonthEndOpen(false)} focusSplit={!monthEnd.view} />}
+      {monthEndOpen && <MonthEndSheet open monthEnd={monthEnd} onClose={() => { setMonthEndOpen(false); setMonthEndSplit(false) }} focusSplit={monthEndSplit || !monthEnd.view} />}
       {zakatOpen && <ZakatSheet open onClose={() => setZakatOpen(false)} sources={zakatSources} year={zakatYear} hawlDate={hawlDate} />}
       {pocketOpen && (() => {
         const a = savingsAccounts.find((x) => x.id === pocketOpen)
@@ -429,6 +431,7 @@ export default function WealthPage() {
             onRelease={(p) => { close(); setReleaseOf(p) }}
             onWithdraw={(p) => { close(); openWithdraw(p.id) }}
             onEdit={(p) => { close(); setEditAcc(p) }}
+            onSplit={() => { close(); setMonthEndSplit(true); setMonthEndOpen(true) }}
             onDelete={(p) => {
               const row = model.rows.find((r) => r.id === p.id)
               if (row) { close(); void askDelete(row) }

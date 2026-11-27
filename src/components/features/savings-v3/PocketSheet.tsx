@@ -1,12 +1,17 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ArrowDownLeft, ArrowDownToLine, ArrowUpRight, EllipsisVertical, House, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowDownLeft, ArrowDownToLine, ArrowLeftRight, ArrowUpRight, ChevronRight, EllipsisVertical, House, Pencil, Plus, Split, Trash2 } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { BrandMark } from '@/components/features/accounts/BrandMark'
+import { accountColor } from '@/components/features/accounts/accountDisplay'
+import { bankLogoForName } from '@/lib/payment/bankLogos'
+import { useMonthEndCopy } from '@/lib/i18n/monthEndCopy'
 import { IconButton } from '@/components/ui/IconButton'
 import { PickerRow } from '@/components/ui/PickerRow'
 import { BAND_FG2, BAND_MIX, HeroBand } from '@/components/features/hero/HeroBand'
@@ -37,11 +42,14 @@ export interface PocketSheetProps {
   onWithdraw: (account: SavingsAccount) => void
   onEdit: (account: SavingsAccount) => void
   onDelete: (account: SavingsAccount) => void
+  /** Monthly savings only: opens "Where your monthly savings go". */
+  onSplit?: () => void
 }
 
 /** One pocket (final-ui v9, a single item, so a sheet): its amount, Add money with Release or Withdraw, its moves and details; ⋮ Edit, Delete. */
-export function PocketSheet({ account, onClose, onAddMoney, onRelease, onWithdraw, onEdit, onDelete }: PocketSheetProps) {
+export function PocketSheet({ account, onClose, onAddMoney, onRelease, onWithdraw, onEdit, onDelete, onSplit }: PocketSheetProps) {
   const v9 = useSavingsV9Copy()
+  const me = useMonthEndCopy()
   const c = v9.pocket
   const sf = useT().savingsForms
   const { locale } = useLocale()
@@ -111,9 +119,40 @@ export function PocketSheet({ account, onClose, onAddMoney, onRelease, onWithdra
               {holder ? <p className="mt-2 px-1 text-xs text-[var(--color-brand-text-muted)]">{c.releaseHint(accountTitle(holder))}</p> : null}
             </div>
 
-            {moves.length > 0 ? (
+            {/* Monthly savings: the account that holds this part, and the split that fills it. */}
+            {system && holder ? (
               <div>
-                <h3 className="mb-2 px-1 text-[0.8125rem] font-bold text-[var(--color-brand-text-primary)]">{c.recentMoves}</h3>
+                <h3 className="mb-2 px-1 text-[0.8125rem] font-bold text-[var(--color-brand-text-primary)]">{c.whereKept}</h3>
+                <Card padding="none" divide className="overflow-hidden">
+                  <div className="flex min-h-[60px] items-center gap-3 px-4 py-2.5">
+                    <BrandMark name={accountTitle(holder)} color={accountColor(holder)} size={40} logo={bankLogoForName(accountTitle(holder))} />
+                    <span className="min-w-0 flex-1">
+                      <span dir="auto" className="block truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{accountTitle(holder)}</span>
+                      <span className="mt-0.5 block text-xs text-[var(--color-brand-text-muted)]">{c.keptPart}</span>
+                    </span>
+                    <span className="font-mono-numbers text-[0.9375rem] font-medium text-[var(--color-brand-text-primary)]">{hidden ? MASK : formatWhole(account.currentBalance)}</span>
+                  </div>
+                  {onSplit ? (
+                    <button data-raw-button-ok="the split row of the Where it's kept card (mockup sv8pocket)"
+                      type="button"
+                      onClick={onSplit}
+                      className="flex min-h-[60px] w-full items-center gap-3 px-4 py-2.5 text-start hover:bg-[var(--color-brand-elevated)]"
+                    >
+                      <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]"><Split className="size-[18px]" /></span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{me.splitTitle}</span>
+                        <span className="mt-0.5 block truncate text-xs text-[var(--color-brand-text-muted)]">{c.splitSub}</span>
+                      </span>
+                      <ChevronRight aria-hidden className="size-4 shrink-0 text-[var(--color-brand-text-muted)] rtl:rotate-180" />
+                    </button>
+                  ) : null}
+                </Card>
+              </div>
+            ) : null}
+
+            <div>
+              <h3 className="mb-2 px-1 text-[0.8125rem] font-bold text-[var(--color-brand-text-primary)]">{c.recentMoves}</h3>
+              {moves.length > 0 ? (
                 <Card padding="none" divide className="overflow-hidden">
                   {moves.map((tx) => {
                     const into = tx.type === 'deposit'
@@ -131,8 +170,17 @@ export function PocketSheet({ account, onClose, onAddMoney, onRelease, onWithdra
                     )
                   })}
                 </Card>
-              </div>
-            ) : null}
+              ) : (
+                <EmptyState
+                  variant="card"
+                  size="section"
+                  icon={<ArrowLeftRight strokeWidth={1.8} />}
+                  iconTone="neutral"
+                  title={c.noMoves}
+                  description={c.noMovesBody}
+                />
+              )}
+            </div>
 
             <div>
               <h3 className="mb-2 px-1 text-[0.8125rem] font-bold text-[var(--color-brand-text-primary)]">{c.details}</h3>
