@@ -15,7 +15,14 @@ import { SelectableCard } from '@/components/ui/SelectableCard'
 import { Input } from '@/components/ui/input'
 import { useT } from '@/lib/i18n'
 import { useDebtsSubsLtCopy } from '@/lib/i18n/debtsSubsLtCopy'
+import { useDebtsV9Copy } from '@/lib/i18n/debtsV9Copy'
+import { PAYMENT_BRANDS } from '@/lib/payment/paymentMethodDefaults'
+import { bankLogoForName } from '@/lib/payment/bankLogos'
+import { microClassName } from '@/lib/ui/microLabelStyle'
+import { BrandMark } from '@/components/features/accounts/BrandMark'
 import { readable, soft } from './heroCardShared'
+
+const BANKS = Object.values(PAYMENT_BRANDS).filter((b) => b.type === 'bank_account' && !b.retired)
 
 export interface CreditCardOption {
   debtId: string
@@ -51,6 +58,7 @@ export function InstallmentProviderPickerSheet({
 }: InstallmentProviderPickerSheetProps) {
   const t = useT().debts
   const kind = useDebtsSubsLtCopy().install.providerKind
+  const v9 = useDebtsV9Copy().install
   const [view, setView] = useState<'grid' | 'card' | 'custom'>('grid')
   const [query, setQuery] = useState('')
   const [customName, setCustomName] = useState('')
@@ -62,6 +70,10 @@ export function InstallmentProviderPickerSheet({
     return INSTALLMENT_PROVIDER_CATALOGUE.filter((b) => TILE_SLUGS.includes(b.slug)).sort(
       (a, b) => TILE_SLUGS.indexOf(a.slug) - TILE_SLUGS.indexOf(b.slug),
     )
+  }, [query])
+  const banks = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return q ? BANKS.filter((b) => [b.name, b.full ?? '', ...(b.aliases ?? [])].some((n) => n.toLowerCase().includes(q))) : BANKS
   }, [query])
 
   const close = () => {
@@ -140,6 +152,23 @@ export function InstallmentProviderPickerSheet({
                   <span className="block truncate text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">{t.customLabel}</span>
                 </SelectableCard>
               </div>
+              {/* Banks run installment plans too (round 9): a bank is kept by name, like a custom provider. */}
+              {banks.length ? (
+                <>
+                  <h3 className={`${microClassName} mb-2 mt-4 px-1`}>{v9.banks}</h3>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {banks.map((b) => (
+                      <SelectableCard key={b.id} onClick={() => { onCustom(b.name); close() }} className="gap-3 p-3.5">
+                        <BrandMark name={b.name} color={b.colors[0]} size={40} logo={bankLogoForName(b.name)} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">{b.name}</span>
+                          <span className="block text-[0.6875rem] font-medium text-[var(--color-brand-text-muted)]">{v9.bank}</span>
+                        </span>
+                      </SelectableCard>
+                    ))}
+                  </div>
+                </>
+              ) : null}
             </div>
           </>
         ) : null}

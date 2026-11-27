@@ -116,6 +116,8 @@ export interface DebtsV9Copy {
     items: Record<'phone' | 'laptop' | 'appliance' | 'furniture' | 'car' | 'other', string>
     namePh: string
     nameAria: string
+    banks: string
+    bank: string
   }
 }
 
@@ -230,6 +232,8 @@ export const DEBTS_V9_COPY: Record<Locale, DebtsV9Copy> = {
       items: { phone: 'Phone', laptop: 'Laptop', appliance: 'Home appliance', furniture: 'Furniture', car: 'Car', other: 'Other' },
       namePh: 'What did you buy?',
       nameAria: 'Item name',
+      banks: 'Banks',
+      bank: 'Bank',
     },
   },
   ar: {
@@ -342,6 +346,8 @@ export const DEBTS_V9_COPY: Record<Locale, DebtsV9Copy> = {
       items: { phone: 'موبايل', laptop: 'لابتوب', appliance: 'جهاز منزلي', furniture: 'أثاث', car: 'سيارة', other: 'أخرى' },
       namePh: 'ماذا اشتريت؟',
       nameAria: 'اسم المنتج',
+      banks: 'البنوك',
+      bank: 'بنك',
     },
   },
 }
