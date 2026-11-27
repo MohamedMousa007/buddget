@@ -9,7 +9,7 @@ def sub(a, b):
     s = s.replace(a, b, 1)
 js = ''.join(p.read_text() + '\n' for p in sorted(V8.glob('lt-v8-*.js')))
 sub('/* ---------- page controls ---------- */', js + '\n/* ---------- page controls ---------- */')
-pages = [('accounts', 'Accounts'), ('wealth', 'Savings'), ('debts', 'Debts'), ('paydays', 'Income'), ('flow', 'Flow')]
+pages = [('accounts', 'Accounts'), ('wealth', 'Savings'), ('goals', 'Goals'), ('debts', 'Debts'), ('paydays', 'Income'), ('flow', 'Flow')]
 s = re.sub(r'(<div class="pz-seg" role="group" aria-label="Page" id="pz-page"[^>]*>).*?(</div>)', lambda m: m.group(1) + ''.join(f'<button type="button" data-page="{k}" aria-pressed="{str(k == "accounts").lower()}">{l}</button>' for k, l in pages) + '<button type="button" data-page="insights" hidden></button>' + m.group(2), s, count=1, flags=re.S)
 s = re.sub(r'<header class="pz-head">.*?</header>', '''<header class="pz-head">
     <span class="pz-label">buddget · Final UI adjustments · round 8</span>
@@ -27,7 +27,7 @@ sub("setPage('flow')\n})()", "setPage('accounts')\n})()")
 cov = (D / 'build/coverage.html').read_text()
 cov8 = V8 / 'coverage8.html'
 sub(cov, cov8.read_text() if cov8.exists() else '')
-s = s.replace('</style>', '#pz-page [data-page=goals]{display:none} .pz-bar:has(#pz-states){display:none}\n</style>', 1)
+s = s.replace('</style>', '#pz-page [data-page=insights] + [data-page=goals]{display:none} .pz-bar:has(#pz-states){display:none}\n</style>', 1)
 s = s.replace('<title>Light Touch Comparison</title>', '<title>Final UI Round 8</title>', 1)
 (D / 'lt8-src.html').write_text(s)
 print('lt8-src ok')

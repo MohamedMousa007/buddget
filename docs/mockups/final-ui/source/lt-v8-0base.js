@@ -16,3 +16,9 @@ function fit8(n) {
   const [d, u] = a >= 1e9 ? [1e9, 'B'] : [1e6, 'M']
   return `${(n / d).toFixed(1).replace(/\.0$/, '')}${u}`
 }
+
+/* ---------- round 9: what changed this round ----------
+   NEW9.push('pageKey' | 'sheetKey') marks a bar button with a New badge (badges from earlier rounds are cleared).
+   new9(html) puts a small New badge right after a changed part inside the final phone (shown while "Show what's new" is on). */
+const NEW9 = []
+const new9 = (html = '') => `${html}<span data-new9 class="ms-1.5 inline-flex h-[18px] shrink-0 items-center rounded-full bg-[var(--color-brand-primary)] px-1.5 align-middle text-[0.625rem] font-bold uppercase tracking-[0.04em] text-white">New</span>`
