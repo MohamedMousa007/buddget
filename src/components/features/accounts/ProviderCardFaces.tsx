@@ -83,7 +83,6 @@ export function ProviderCardFaces({ faces, label, parentOf, onFace, onAddCard, e
       digitsW = Math.max(digitsW, f.querySelector<HTMLElement>('[data-slot=digits]')?.offsetWidth ?? 0)
     })
     const measured = kindW || digitsW ? stackOffset({ kindW, digitsW }) : stackOffset()
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- measures the drawn faces before paint
     setPeek(Math.max(0, Math.min(measured, Math.floor((room - SPREAD_STEP - FACE_W) / (n - 1)))))
   }, [stacked, n, room, kinds])
 
