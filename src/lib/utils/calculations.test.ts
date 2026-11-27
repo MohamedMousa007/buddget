@@ -454,3 +454,61 @@ describe('cashSavingsDepositsInBaseForMonth', () => {
     expect(cashSavingsDepositsInBaseForMonth(rows, '2025-01', 1, 'AED', {}, gold)).toBe(100)
   })
 })
+
+describe('irregular income is one-time income when it arrives', () => {
+  const jan = '2025-01'
+  const gig = src({ id: 'g1', name: 'Gigs', amount: 4000, currency: 'AED', effectiveStart: '2024-01-01', irregular: true })
+  const salary = src({ id: 's1', name: 'Salary', amount: 5000, currency: 'AED', effectiveStart: '2024-01-01' })
+  const evt = (p: Partial<IncomeEvent> & Pick<IncomeEvent, 'id' | 'amount'>): IncomeEvent => ({
+    name: 'E',
+    currency: 'AED',
+    templateId: 'g1',
+    receivedDate: '2025-01-20',
+    status: 'confirmed',
+    createdAt: '2025-01-20T00:00:00.000Z',
+    updatedAt: '2025-01-20T00:00:00.000Z',
+    ...p,
+  })
+
+  it('expects nothing from an irregular source', () => {
+    expect(projectedIncomeForMonth([gig, salary], 'AED', {}, jan, 1)).toBe(5000)
+    expect(calculateMonthlyIncome([gig, salary], 'AED', {})).toBe(5000)
+    expect(calculateMonthlyIncome([gig, salary], 'AED', {}, jan, 1)).toBe(5000)
+    expect(expectedRecurringForMonth(gig, jan, 1)).toBe(0)
+    expect(calculateRecurringIncomeForCalendarMonth([gig, salary], 'AED', {}, jan2025)).toBe(5000)
+    expect(isIncomeOccurrencePending(gig, [], jan, new Date('2025-01-28T12:00:00'), 1)).toBe(false)
+  })
+
+  it('actual income never falls back to the estimate', () => {
+    expect(actualIncomeForMonth([gig], [], 'AED', {}, jan, 1)).toBe(0)
+    expect(actualIncomeForMonth([gig, salary], [], 'AED', {}, jan, 1)).toBe(5000)
+    expect(actualIncomeForMonth([gig], [evt({ id: 'p1', amount: 4000, status: 'projected' })], 'AED', {}, jan, 1)).toBe(0)
+  })
+
+  it('counts only the money that arrived', () => {
+    expect(actualIncomeForMonth([gig], [evt({ id: 'e1', amount: 1500 })], 'AED', {}, jan, 1)).toBe(1500)
+    const two = [evt({ id: 'e1', amount: 1500, receivedDate: '2025-01-05' }), evt({ id: 'e2', amount: 700, receivedDate: '2025-01-25' })]
+    expect(actualIncomeForMonth([gig], two, 'AED', {}, jan, 1)).toBe(2200)
+  })
+})
+
+describe('payments assigned to the same placeholder day', () => {
+  const jan = '2025-01'
+  const ev = (id: string, templateId: string, amount: number, updatedAt: string): IncomeEvent => ({
+    id, templateId, amount, name: 'E', currency: 'AED', occurrenceDate: '2025-01-01', receivedDate: '2025-01-10',
+    status: 'confirmed', createdAt: updatedAt, updatedAt,
+  })
+
+  it('counts every payment of an irregular source', () => {
+    const gig = src({ id: 'g1', name: 'Gigs', amount: 4000, currency: 'AED', effectiveStart: '2024-01-01', irregular: true })
+    const events = [ev('a', 'g1', 3000, '2025-01-10T00:00:00.000Z'), ev('b', 'g1', 2000, '2025-01-20T00:00:00.000Z')]
+    expect(actualIncomeForMonth([gig], events, 'AED', {}, jan, 1)).toBe(5000)
+    expect(actualIncomeForMonth([gig], events, 'AED', {}, jan, 1, true)).toBe(5000)
+  })
+
+  it('still keeps only the latest edit for a regular salary', () => {
+    const salary = src({ id: 's1', name: 'Salary', amount: 5000, currency: 'AED', effectiveStart: '2024-01-01' })
+    const events = [ev('a', 's1', 3000, '2025-01-10T00:00:00.000Z'), ev('b', 's1', 2000, '2025-01-20T00:00:00.000Z')]
+    expect(actualIncomeForMonth([salary], events, 'AED', {}, jan, 1)).toBe(2000)
+  })
+})

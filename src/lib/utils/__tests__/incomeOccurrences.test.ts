@@ -254,3 +254,26 @@ describe('buildOccurrences', () => {
     expect(occ).toHaveLength(0)
   })
 })
+
+describe('buildOccurrences: payments sharing a placeholder day', () => {
+  const base: IncomeSource = {
+    id: 'g1', name: 'Gigs', amount: 4000, currency: 'EGP', isRecurring: true, recurringFrequency: 'monthly', dayOfMonth: 1,
+    effectiveStart: '2025-01-01', createdAt: '2025-01-01T00:00:00.000Z', updatedAt: '2025-01-01T00:00:00.000Z',
+  }
+  const ev = (id: string, templateId: string, amount: number, updatedAt: string): IncomeEvent => ({
+    id, templateId, amount, name: 'E', currency: 'EGP', occurrenceDate: '2025-03-03', receivedDate: '2025-03-10',
+    status: 'confirmed', createdAt: updatedAt, updatedAt,
+  })
+  const events = (id: string) => [ev('a', id, 3000, '2025-03-10T00:00:00.000Z'), ev('b', id, 2000, '2025-03-20T00:00:00.000Z')]
+  const received = (occ: ReturnType<typeof buildOccurrences>) => occ.filter((o) => o.eventId).map((o) => o.amount).sort()
+
+  it('keeps every payment of an irregular source as its own entry', () => {
+    const occ = buildOccurrences({ ...base, irregular: true }, events('g1'), '2025-03', 1, new Date('2025-03-25T12:00:00'))
+    expect(received(occ)).toEqual([2000, 3000])
+  })
+
+  it('keeps only the latest edit for a regular salary', () => {
+    const occ = buildOccurrences(base, events('g1'), '2025-03', 1, new Date('2025-03-25T12:00:00'))
+    expect(received(occ)).toEqual([2000])
+  })
+})

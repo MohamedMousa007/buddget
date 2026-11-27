@@ -414,3 +414,27 @@ describe('audit fixes', () => {
     expect(state().incomeSources.find((i) => i.id === SALARY)).toMatchObject({ name: 'Mine', amount: 20000 })
   })
 })
+
+describe('irregular income', () => {
+  const GIG = 'd4d4d4d4-0000-0000-0000-000000000004'
+  beforeEach(() => {
+    useFinanceStore.setState({ incomeSources: [source(GIG, { name: 'Gigs', amount: 8000, sourceType: 'side_hustle', irregular: true })] })
+  })
+
+  it('lists it as irregular with no day, no paydays and no expected amount', () => {
+    const gig = read('list_income').sources.find((s: Row) => s.ref === refOf(GIG))!
+    expect(gig).toMatchObject({ name: 'Gigs', freq: 'irregular', received: [] })
+    expect(gig).not.toHaveProperty('amount')
+    expect(gig).not.toHaveProperty('days')
+    expect(gig).not.toHaveProperty('paydays')
+  })
+
+  it('asks for the amount and never marks a receipt partial against the estimate', () => {
+    expect(write('mark_payday_received').propose({ ref: refOf(GIG) }, ctx).ok).toBe(false)
+    const p = write('mark_payday_received').propose({ ref: refOf(GIG), amount: 2000 }, ctx)
+    if (!p.ok) throw new Error('propose failed')
+    write('mark_payday_received').apply(p.proposal, ctx)
+    expect(state().incomeEvents[0]).toMatchObject({ amount: 2000, status: 'confirmed' })
+    expect(read('list_income').sources[0].received).toEqual([{ date: '2026-10-15', amount: 2000 }])
+  })
+})

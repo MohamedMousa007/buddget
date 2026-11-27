@@ -22,7 +22,7 @@ const EN = {
   derivedDays: 'The other paydays were filled in from the first one.',
   received: 'Received in full',
   partial: (short: string) => `Partial, ${short} short`,
-  frequencies: { monthly: 'Monthly', biweekly: 'Twice a month', weekly: 'Weekly', one_time: 'One time' },
+  frequencies: { monthly: 'Monthly', biweekly: 'Twice a month', weekly: 'Weekly', one_time: 'One time', irregular: 'Irregular' },
   types: {
     salary: 'Salary',
     bonus: 'Bonus',
@@ -60,7 +60,7 @@ const AR: Labels = {
   derivedDays: 'تم تحديد باقي أيام الدفع تلقائيًا انطلاقًا من اليوم الأول.',
   received: 'استُلم بالكامل',
   partial: (short) => `جزئي، ينقص ${short}`,
-  frequencies: { monthly: 'شهريًا', biweekly: 'مرتين في الشهر', weekly: 'أسبوعيًا', one_time: 'مرة واحدة' },
+  frequencies: { monthly: 'شهريًا', biweekly: 'مرتين في الشهر', weekly: 'أسبوعيًا', one_time: 'مرة واحدة', irregular: 'غير منتظم' },
   types: {
     salary: 'راتب',
     bonus: 'مكافأة',

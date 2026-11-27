@@ -143,7 +143,8 @@ export function PaydaysPage() {
     const per = streams.map((s) => {
       const occ = buildOccurrences(s, incomeEvents, monthFilter, monthStartDay)
       const e = tryConvertCurrency(s.amount, s.currency, base, rates)
-      const exp = e == null ? 0 : e * occ.length
+      // Irregular income expects nothing: it counts only once it arrives.
+      const exp = e == null || s.irregular ? 0 : e * occ.length
       const rec = e == null ? 0 : occ.filter(isRealizedOccurrence).reduce((sum, o) => sum + (tryConvertCurrency(o.amount, o.currency, base, rates) ?? 0), 0)
       const open = occ.find((o) => !isRealizedOccurrence(o))
       const allIn = occ.length > 0 && !open

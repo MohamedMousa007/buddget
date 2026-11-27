@@ -7,7 +7,7 @@ export const incomeSpecs: ToolSpec[] = [
     name: 'list_income',
     domain: 'income',
     kind: 'read',
-    description: 'Income sources with refs and this cycle\'s paydays (received, awaiting, late, missed) plus one-time income.',
+    description: 'Income sources with refs and this cycle\'s paydays (received, awaiting, late, missed) plus one-time income. An irregular source has no fixed day or amount; it lists only money received.',
     params: obj({ month: str('YYYY-MM; default is the month on screen') }),
   },
   {

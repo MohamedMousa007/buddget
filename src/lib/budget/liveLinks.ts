@@ -264,10 +264,10 @@ export function goalExtras(rows: GoalRowLike[], usualKeep: number | null, base: 
 
 /* Income and savings */
 
-/** Salary day of month: first payday of the largest recurring source still running. */
+/** Salary day of month: first payday of the largest recurring source still running (irregular sources have no real day). */
 export function paydayDayOf(sources: IncomeSource[], today: Date): number | null {
   const todayIso = format(today, 'yyyy-MM-dd')
-  const running = sources.filter((s) => s.isRecurring && (!s.effectiveEnd || s.effectiveEnd >= todayIso))
+  const running = sources.filter((s) => s.isRecurring && !s.irregular && (!s.effectiveEnd || s.effectiveEnd >= todayIso))
   const main = [...running].sort((a, b) => b.amount - a.amount)[0]
   if (!main) return null
   return sourcePaydayDays(main)?.[0] ?? main.dayOfMonth ?? null

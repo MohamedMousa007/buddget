@@ -77,6 +77,7 @@ export function isExpenseUnconverted(
  * exactly 100% of it.
  */
 export function expectedRecurringForMonth(source: IncomeSource, monthStr: string, monthStartDay = 1): number {
+  if (source.irregular) return 0
   const { start, end } = getMonthRange(monthStr, monthStartDay)
   return paydayDatesForWindow(source, start, end).length * source.amount
 }
@@ -142,7 +143,7 @@ export function calculateMonthlyIncome(
   let total = 0
   for (const source of sources) {
     if (source.isRecurring) {
-      if (window && !recurringActiveForWindow(source, window.start, window.end)) continue
+      if (source.irregular || (window && !recurringActiveForWindow(source, window.start, window.end))) continue
       const monthlyEq = source.amount * monthlyPaydayCount(source)
       total += convertCurrency(monthlyEq, source.currency, baseCurrency, rates)
     } else if (window && !isBorrowedMoney(source)) {
@@ -176,7 +177,8 @@ export function recurringActiveForWindow(
  * templates at their monthly-equivalent, plus one-time sources received inside the
  * month window. Respects `monthStartDay` (custom budget cycle). This is the number
  * budgets and projected-savings scale on — it does not depend on whether a paycheck
- * has actually landed yet.
+ * has actually landed yet. An irregular source expects nothing: its money counts only
+ * in {@link actualIncomeForMonth}, once it arrives.
  */
 export function projectedIncomeForMonth(
   sources: IncomeSource[],
@@ -189,7 +191,7 @@ export function projectedIncomeForMonth(
   let total = 0
   for (const source of sources) {
     if (source.isRecurring) {
-      if (!recurringActiveForWindow(source, start, end)) continue
+      if (source.irregular || !recurringActiveForWindow(source, start, end)) continue
       const expected = paydayDatesForWindow(source, start, end).length * source.amount
       total += convertCurrency(expected, source.currency, baseCurrency, rates)
     } else if (!isBorrowedMoney(source) && isWithinInterval(parseISO(source.createdAt), { start, end })) {
@@ -257,19 +259,22 @@ export function actualIncomeForMonth(
   for (const t of templates) {
     if (t.isRecurring) {
       if (!recurringActiveForWindow(t, start, end)) continue
+      // An irregular source has no estimate to fall back on: only money that arrived counts.
+      const onlyRealized = realizedOnly || t.irregular === true
       const perOccurrence = convertCurrency(t.amount, t.currency, baseCurrency, rates)
       const paydayCount = paydayDatesForWindow(t, start, end).length
       // Window-test by the fulfilled payday when stamped, else by received date.
       const evForT = events.filter((e) => e.templateId === t.id && !e.exclusion && !isBorrowedMoney(e) && inWindow(e.occurrenceDate ?? e.receivedDate))
       if (evForT.length === 0) {
-        if (!realizedOnly) total += perOccurrence * paydayCount // == projected; behavior preserved when no events exist
+        if (!onlyRealized) total += perOccurrence * paydayCount // == projected; behavior preserved when no events exist
       } else {
         // Dedupe by fulfilled payday (latest edit wins) so re-marking an occurrence
         // can never double-count; legacy events without occurrence_date count as-is.
         const byOcc = new Map<string, IncomeEvent>()
         const counted: IncomeEvent[] = []
         for (const e of evForT) {
-          if (!e.occurrenceDate) counted.push(e)
+          // An irregular source's day is a placeholder: every payment assigned to it is its own money.
+          if (!e.occurrenceDate || t.irregular) counted.push(e)
           else {
             const prev = byOcc.get(e.occurrenceDate)
             if (!prev || e.updatedAt.localeCompare(prev.updatedAt) > 0) byOcc.set(e.occurrenceDate, e)
@@ -281,9 +286,9 @@ export function actualIncomeForMonth(
         let sub = 0
         for (const e of counted) {
           if (REALIZED_EVENT_STATUSES.has(e.status)) sub += convertCurrency(e.amount, e.currency, baseCurrency, rates)
-          else if (e.status === 'projected' && !realizedOnly) sub += perOccurrence
+          else if (e.status === 'projected' && !onlyRealized) sub += perOccurrence
         }
-        total += sub + (realizedOnly ? 0 : Math.max(0, paydayCount - counted.length) * perOccurrence)
+        total += sub + (onlyRealized ? 0 : Math.max(0, paydayCount - counted.length) * perOccurrence)
       }
     } else if (!coveredSourceIds.has(t.id) && !isBorrowedMoney(t) && inWindow(t.createdAt)) {
       // One-time source with no event yet (added before Phase 6 wired event creation).
@@ -306,7 +311,7 @@ export function isIncomeOccurrencePending(
   today: Date,
   monthStartDay = 1
 ): boolean {
-  if (!template.isRecurring) return false
+  if (!template.isRecurring || template.irregular) return false
   const { start, end } = getMonthRange(monthStr, monthStartDay)
   if (!recurringActiveForWindow(template, start, end)) return false
   const hasEvent = events.some(
@@ -356,7 +361,7 @@ export function calculateRecurringIncomeForCalendarMonth(
   const monthStart = startOfMonth(monthDate)
   const monthEnd = endOfMonth(monthDate)
   return sources.reduce((total, source) => {
-    if (!source.isRecurring) return total
+    if (!source.isRecurring || source.irregular) return total
     if (!recurringActiveForWindow(source, monthStart, monthEnd)) return total
     const monthlyEq = source.amount * monthlyPaydayCount(source)
     return total + convertCurrency(monthlyEq, source.currency, baseCurrency, rates)

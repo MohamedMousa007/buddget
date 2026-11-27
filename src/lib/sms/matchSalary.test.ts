@@ -260,3 +260,13 @@ describe('createSmsExpense — adopting a hand-marked payday (QA-49)', () => {
     expect(updates[0].filters).toEqual(expect.arrayContaining([['id', 'ev-hand'], ['user_id', 'u1'], ['is:sms_log_id', null]]))
   })
 })
+
+describe('matchSalary — irregular income', () => {
+  it('never matches a deposit to an irregular source\'s placeholder day', async () => {
+    await expect(call([{ ...MONTHLY_30, is_irregular: true }], '2026-07-30')).resolves.toEqual({ outcome: 'create' })
+  })
+
+  it('still matches the regular salary beside an irregular one', async () => {
+    await expect(call([{ ...BIWEEKLY, id: 'src-gig', is_irregular: true }, BIWEEKLY], '2026-07-20')).resolves.toMatchObject({ outcome: 'matched', sourceId: 'src-bi' })
+  })
+})

@@ -13,7 +13,7 @@ import type { Currency, FinanceStore, IncomeEvent, IncomeRecurringFrequency, Inc
 import { getMonthRange } from '@/lib/utils/calculations'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import { weekendFirstDayFor } from '@/lib/time/weekStart'
-import { buildOccurrences, expectedPerPayday, type IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
+import { buildOccurrences, expectedPerPayday, isRealizedOccurrence, type IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { deriveDefaultPaydays, sourcePaydayDays, toISODate } from '@/lib/utils/paydaySchedule'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -65,6 +65,21 @@ const sourceDays = (i: IncomeSource): number[] | null => (i.isRecurring ? source
 
 const isActive = (i: IncomeSource, todayISO: string): boolean => !i.effectiveEnd || i.effectiveEnd >= todayISO
 
+/** Irregular income has no fixed day or amount: Buddgy sees it as irregular, with only the money that arrived. */
+function irregularRow(s: FinanceStore, i: IncomeSource, month: string, now: Date) {
+  return {
+    ref: refOf(i.id),
+    name: i.name,
+    cur: i.currency,
+    freq: 'irregular' as const,
+    type: i.sourceType ?? 'other',
+    active: isActive(i, localTodayISO(now)),
+    received: occurrencesFor(s, i, month, now)
+      .filter(isRealizedOccurrence)
+      .map((o) => ({ date: o.date, amount: r2(o.amount) })),
+  }
+}
+
 const list_income: ReadImpl = (args, ctx) => {
   const s = fin()
   const month = typeof args.month === 'string' && MONTH_RE.test(args.month) ? args.month : ui().monthFilter
@@ -72,7 +87,7 @@ const list_income: ReadImpl = (args, ctx) => {
   const { start, end } = getMonthRange(month, s.settings.monthStartDay)
   const from = toISODate(start)
   const to = toISODate(end)
-  const rows = s.incomeSources.slice(0, LIST_CAP).map((i) => ({
+  const rows = s.incomeSources.slice(0, LIST_CAP).map((i) => i.irregular ? irregularRow(s, i, month, ctx.now) : ({
     ref: refOf(i.id),
     name: i.name,
     amount: r2(i.amount),
@@ -426,7 +441,7 @@ const delete_income: WriteImpl = {
           title: `${L.deleteIncome}: ${i.name}`,
           rows: [
             { label: L.amount, value: money(i.amount, i.currency) },
-            { label: L.frequency, value: L.frequencies[i.isRecurring ? freqOf(i) : 'one_time'] },
+            { label: L.frequency, value: L.frequencies[i.irregular ? 'irregular' : i.isRecurring ? freqOf(i) : 'one_time'] },
             { label: L.type, value: L.types[i.sourceType ?? 'other'] },
           ],
           ...(s.incomeSources.length === 1 ? { effect: L.lastSource } : {}),
@@ -507,7 +522,9 @@ function planPayday(args: Record<string, unknown>, ctx: ToolContext): PaydayPlan
   const existing = s.incomeEvents.find((e) => e.id === current.eventId) ?? s.incomeEvents.find((e) => e.templateId === source.id && e.occurrenceDate === current.dueDate)
   if (!existing && !current.actionable) return { ok: false, res: fail('An earlier payday is still waiting.', 'Mark that payday first.') }
 
-  const expected = expectedPerPayday(source)
+  // Irregular income has no expected amount: it needs the real one and is never short.
+  if (source.irregular && args.amount === undefined) return { ok: false, res: fail('How much came in?', 'Ask the user for the amount received.') }
+  const expected = source.irregular ? 0 : expectedPerPayday(source)
   const amount = args.amount === undefined ? expected : num(args.amount)
   if (amount === undefined || amount <= 0) return { ok: false, res: fail('The amount must be above zero.') }
   const receivedDate = args.date === undefined ? (existing?.receivedDate ?? localTodayISO(ctx.now)) : parseIsoDate(args.date)

@@ -239,7 +239,9 @@ function buildEntityContext(
   const incomeList = incomeSources
     .map(
       (i) =>
-        `${q(i.name)} (${i.currency} ${i.amount}${i.isRecurring ? '/mo equiv' : ' one-time'})`
+        i.irregular
+          ? `${q(i.name)} (irregular, no fixed day or amount)`
+          : `${q(i.name)} (${i.currency} ${i.amount}${i.isRecurring ? '/mo equiv' : ' one-time'})`
     )
     .join(', ')
   const savingsAccountList = savingsAccounts

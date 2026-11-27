@@ -44,7 +44,7 @@ export function buildMemoryBlock(store: FinanceStore, notes: string[]): string {
     .map(([m, cat]) => `${m} → ${cat}`)
 
   const paydays = store.incomeSources
-    .filter((s) => s.isRecurring && s.dayOfMonth)
+    .filter((s) => s.isRecurring && !s.irregular && s.dayOfMonth)
     .map((s) => `${s.name} on day ${s.dayOfMonth}`)
 
   return [

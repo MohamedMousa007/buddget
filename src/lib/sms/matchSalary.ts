@@ -51,10 +51,11 @@ interface SalaryRow {
   payday_drift_days: number | null
   effective_start: string | null
   effective_end: string | null
+  is_irregular: boolean | null
 }
 
 const SALARY_COLUMNS =
-  'id, amount, currency, recurring_frequency, day_of_month, payday_days, payday_drift_days, effective_start, effective_end'
+  'id, amount, currency, recurring_frequency, day_of_month, payday_days, payday_drift_days, effective_start, effective_end, is_irregular'
 
 /**
  * DB row → the shape `paydaySchedule` reads. Only the scheduling fields are real; the rest
@@ -161,7 +162,8 @@ export async function matchSalary(
   let best: Candidate | null = null
 
   for (const row of salaries) {
-    if (!row.amount || !activeOn(row, params.day)) continue
+    // An irregular source's day is a placeholder: a deposit is never matched to it, it lands as one-time income.
+    if (row.is_irregular || !row.amount || !activeOn(row, params.day)) continue
 
     // Cross-currency is allowed but never trusted outright — see the `matched` gate below.
     const sameCurrency = row.currency === params.currency

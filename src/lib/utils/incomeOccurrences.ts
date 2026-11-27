@@ -175,12 +175,17 @@ export function buildOccurrences(
   // a late paycheck logged next month still fills this month's payday.
   const byOcc = new Map<string, IncomeEvent>()
   const legacy: IncomeEvent[] = []
+  /** Irregular only: further payments assigned to the same placeholder day, each kept as its own entry. */
+  const sharedDay: IncomeEvent[] = []
   for (const e of events) {
     if (e.templateId !== source.id || EVENT_STATUS[e.status] === null) continue
     if (!isWithinInterval(parseISO(e.occurrenceDate ?? e.receivedDate), { start, end })) continue
     if (e.occurrenceDate) {
       const prev = byOcc.get(e.occurrenceDate)
-      if (!prev || e.updatedAt.localeCompare(prev.updatedAt) > 0) byOcc.set(e.occurrenceDate, e)
+      if (!prev || e.updatedAt.localeCompare(prev.updatedAt) > 0) {
+        byOcc.set(e.occurrenceDate, e)
+        if (prev && source.irregular) sharedDay.push(prev)
+      } else if (source.irregular) sharedDay.push(e)
     } else {
       legacy.push(e)
     }
@@ -237,6 +242,9 @@ export function buildOccurrences(
   for (const e of byOcc.values()) {
     if (pairedIds.has(e.id)) continue
     occ.push({ key: e.id, date: e.occurrenceDate!, dueDate: e.occurrenceDate!, status: EVENT_STATUS[e.status] as IncomeOccurrenceStatus, amount: e.amount, currency: e.currency, eventId: e.id, daysLate: eventDaysLate(e) ?? undefined, actionable: true })
+  }
+  for (const e of sharedDay) {
+    occ.push({ key: e.id, date: e.occurrenceDate!, dueDate: e.occurrenceDate!, status: EVENT_STATUS[e.status] as IncomeOccurrenceStatus, amount: e.amount, currency: e.currency, eventId: e.id, actionable: true })
   }
   for (; li < legacyMerged.length; li++) {
     const ev = legacyMerged[li]
