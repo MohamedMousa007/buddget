@@ -198,6 +198,9 @@ export async function payDebt(page: Page, o: { debt: string; amount: number; met
   await blur(page)
   await d.getByRole('button', { name: /^(Record payment|Pay [\d,]+ EGP)$/ }).click()
   await expect(d).toBeHidden()
+  // The debt's own sheet stays under the payment (v9); close it so the page is back in reach.
+  const detail = dialog(page, o.debt)
+  if (await detail.isVisible()) await detail.getByRole('button', { name: 'Close' }).first().click()
 }
 
 /** Touch layouts hide sheet CTAs while the on-screen keyboard would be up; drop focus first, as a user closing the keyboard would. */

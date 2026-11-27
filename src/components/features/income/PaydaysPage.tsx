@@ -13,6 +13,7 @@ import { CardActionMenu, type CardMenuItem } from '@/components/ui/CardActionMen
 import { IconButton } from '@/components/ui/IconButton'
 import { PickerRow } from '@/components/ui/PickerRow'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
+import { useActionToast } from '@/components/ui/ActionToast'
 import { IncomeHome } from '@/components/features/income/IncomeHome'
 import { SelectableCard } from '@/components/ui/SelectableCard'
 import { SkeletonList } from '@/components/ui/SkeletonList'
@@ -99,6 +100,7 @@ export function PaydaysPage() {
   }, [])
   const [menu, setMenu] = useState<DOMRect | null>(null)
   const confirm = useConfirm()
+  const showToast = useActionToast()
   const deleteIncomeSource = useFinanceStore((s) => s.deleteIncomeSource)
   const [cycleOpen, setCycleOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
@@ -140,7 +142,7 @@ export function PaydaysPage() {
       const rec = e == null ? 0 : occ.filter(isRealizedOccurrence).reduce((sum, o) => sum + (tryConvertCurrency(o.amount, o.currency, base, rates) ?? 0), 0)
       const open = occ.find((o) => !isRealizedOccurrence(o))
       const allIn = occ.length > 0 && !open
-      const runAhead = recentPaydays(s, incomeEvents, format(addMonths(today, 1), 'yyyy-MM'), monthStartDay, 3, today, weekendFirst)
+      const runAhead = recentPaydays(s, incomeEvents, format(addMonths(today, 1), 'yyyy-MM'), monthStartDay, RUN_LEN, today, weekendFirst)
       const upcoming = paydayHeroFacts(runAhead, today).next
       const freq = s.recurringFrequency ?? 'monthly'
       return { exp, rec, allIn, upcoming, row: {
@@ -355,13 +357,19 @@ export function PaydaysPage() {
   const menuItems: CardMenuItem[] = [
     { label: c.source.edit(noun), icon: <Pencil className="size-4 shrink-0" />, onSelect: editPayday },
     ...(toLog ? [{ label: c.source.logPast(noun), icon: <Plus className="size-4 shrink-0" />, onSelect: () => logOne(toLog) }] : []),
-    {
+    // Same guard and path as the edit sheet's delete: a shared plan's source is not deleted here; Undo brings it back.
+    ...(source.sharedPlanId ? [] : [{
       label: c.source.delete(noun),
       destructive: true,
       icon: <Trash2 className="size-4 shrink-0" />,
       onSelect: () => void confirm({ title: c.source.deleteTitle(noun), body: c.source.deleteBody, confirmLabel: t.common.delete, destructive: true })
-        .then((ok) => { if (ok) { deleteIncomeSource(source.id); setPickedId(null) } }),
-    },
+        .then((ok) => {
+          if (!ok) return
+          deleteIncomeSource(source.id)
+          setPickedId(null)
+          showToast(t.moneyFlows.incomeDeleted, { undo: () => useFinanceStore.getState().restoreIncomeSource(source), undoLabel: t.common.undo })
+        }),
+    }]),
   ]
   const todayISO = toISODate(today)
   const history = run.filter((o) => o.eventId || o.dueDate <= todayISO).reverse()

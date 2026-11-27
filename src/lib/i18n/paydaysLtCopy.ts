@@ -62,7 +62,7 @@ export interface PaydaysLtCopy {
     deleteBody: string
   }
   /** The Assign sheet's one empty tile and Flow's swipe action. */
-  assign: { title: string; body: string; bodyFrom: string; addSalary: string; addSalarySub: string; swipe: string }
+  assign: { title: string; body: string; bodyFrom: string; addSalary: string; addSalarySub: string; swipe: string; rowHint: string; rowBadge: string; cta: (name: string) => string }
   /** Add income source (the Add goal C top, then how often, the day, the account). */
   form: { arrivesOn: string; howOften: string; eachSalary: string; eachTime: string; nameAria: string }
   /** The money-in sheet (round 8 Assign card, round 9 short tip). */
@@ -131,7 +131,7 @@ export const PAYDAYS_LT_COPY: Record<Locale, PaydaysLtCopy> = {
       title: 'Which income is this?',
       body: '{amount} {currency} arrived on {date}. Assigning keeps that date and links it to a salary or income you get regularly.',
       bodyFrom: '{amount} {currency} from {from} arrived on {date}. Assigning keeps that date and links it to a salary or income you get regularly.',
-      addSalary: 'Add salary', addSalarySub: 'Create a new salary and assign this to it', swipe: 'Assign' },
+      addSalary: 'Add salary', addSalarySub: 'Create a new salary and assign this to it', swipe: 'Assign', rowHint: 'swipe to assign', rowBadge: 'Not assigned', cta: (n) => `Assign to ${n}` },
     form: { arrivesOn: 'Arrives on', howOften: 'How often', eachSalary: 'Each salary', eachTime: 'Each time it arrives', nameAria: 'Name' },
     moneyIn: {
       assignedTo: 'Assigned to',
@@ -200,7 +200,7 @@ export const PAYDAYS_LT_COPY: Record<Locale, PaydaysLtCopy> = {
       title: 'أي دخل هذا؟',
       body: 'وصل {amount} {currency} في {date}. الربط يحتفظ بهذا التاريخ ويضمه إلى راتب أو دخل يصلك بانتظام.',
       bodyFrom: 'وصل {amount} {currency} من {from} في {date}. الربط يحتفظ بهذا التاريخ ويضمه إلى راتب أو دخل يصلك بانتظام.',
-      addSalary: 'أضف راتبًا', addSalarySub: 'أنشئ راتبًا جديدًا واربط هذا المبلغ به', swipe: 'ربط' },
+      addSalary: 'أضف راتبًا', addSalarySub: 'أنشئ راتبًا جديدًا واربط هذا المبلغ به', swipe: 'ربط', rowHint: 'اسحب للربط', rowBadge: 'غير مرتبط', cta: (n) => `اربطه بـ${n}` },
     form: { arrivesOn: 'يصل يوم', howOften: 'التكرار', eachSalary: 'كل راتب', eachTime: 'كل مرة يصل', nameAria: 'الاسم' },
     moneyIn: {
       assignedTo: 'مرتبط بـ',

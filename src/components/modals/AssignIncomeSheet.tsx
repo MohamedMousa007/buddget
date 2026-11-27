@@ -14,7 +14,6 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { paydayCandidates } from '@/lib/income/paydayResolution'
 import { useWeekendFirstDay } from '@/hooks/useWeekStart'
-import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { formatFixed2, formatFlex } from '@/lib/utils/formatters'
 import { useShortDate } from '@/hooks/useShortDate'
 import { fillSlots } from '@/lib/ui/fillSlots'
@@ -148,7 +147,7 @@ export function AssignIncomeSheet({ open, onClose, credit, onAssign, initialTemp
         ) : null}
         <Button size="cta-block" onClick={confirm}>
           {pick
-            ? t.income.linkCta(shortDate(pick.occ.dueDate), incomeSourceTypeLabel(t.income, pick.source.sourceType).toLowerCase())
+            ? c.cta(pick.source.name)
             : t.prompts.keepSeparate}
         </Button>
       </div>

@@ -12,7 +12,7 @@ import { bankLogoForName } from '@/lib/payment/bankLogos'
 import { usePaydaysLtCopy } from '@/lib/i18n/paydaysLtCopy'
 import { MASK } from '@/lib/privacy/mask'
 import { useMask } from '@/lib/privacy/useMask'
-import { formatFlex, formatWhole } from '@/lib/utils/formatters'
+import { formatFlex } from '@/lib/utils/formatters'
 import type { IncomeSourceType, PaymentMethod } from '@/lib/store/types'
 
 export interface IncomeHomeRow {
@@ -65,7 +65,7 @@ export function IncomeHome({ month, base, expected, received, inCount, next, row
   const all = usePaydaysLtCopy()
   const c = all.home
   const hidden = useMask('hero')
-  const shown = hidden ? MASK : formatWhole(received)
+  const shown = hidden ? MASK : formatFlex(received)
   const pct = expected > 0 ? Math.min(100, (received / expected) * 100) : 0
 
   return (
@@ -80,7 +80,7 @@ export function IncomeHome({ month, base, expected, received, inCount, next, row
               <span className={`min-w-0 truncate text-[0.8125rem] ${BAND_FG2}`}>{c.received(base)}</span>
             </p>
             <p className={`shrink-0 text-end text-[0.71875rem] leading-[1.3] ${BAND_FG2}`}>
-              <b className="block font-mono-numbers text-[0.9375rem] text-[var(--flow-band-fg)]">{hidden ? MASK : formatWhole(expected)}</b>
+              <b className="block font-mono-numbers text-[0.9375rem] text-[var(--flow-band-fg)]">{hidden ? MASK : formatFlex(expected)}</b>
               {all.expected}
             </p>
           </>
@@ -92,7 +92,7 @@ export function IncomeHome({ month, base, expected, received, inCount, next, row
             </div>
             <BandScale>
               <span>{c.sourcesIn(inCount, rows.length)}</span>
-              <span>{received < expected ? c.toCome(hidden ? MASK : formatWhole(expected - received)) : c.allIn}</span>
+              <span>{received < expected ? c.toCome(hidden ? MASK : formatFlex(expected - received)) : c.allIn}</span>
             </BandScale>
           </>
         }

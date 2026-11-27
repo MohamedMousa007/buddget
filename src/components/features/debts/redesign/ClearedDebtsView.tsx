@@ -10,7 +10,7 @@ import { useDebtsV9Copy } from '@/lib/i18n/debtsV9Copy'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import { MASK } from '@/lib/privacy/mask'
 import { useMask } from '@/lib/privacy/useMask'
-import { formatWhole } from '@/lib/utils/formatters'
+import { formatFlex, formatWhole } from '@/lib/utils/formatters'
 
 const LEAD: Record<DebtFamily, { Icon: typeof HandCoins; tone: string }> = {
   borrow: { Icon: HandCoins, tone: 'var(--color-brand-amber)' },
@@ -56,7 +56,7 @@ export function ClearedDebtsView({ cleared, base, next, onBack, onOpen }: {
           <>
             <span className="font-mono-numbers text-[32px] font-semibold leading-none tracking-[-0.03em]">{cleared.length}</span>
             <p className={`shrink-0 text-end text-[0.71875rem] leading-[1.3] ${BAND_FG2}`}>
-              <b className="block font-mono-numbers text-[1.0625rem] text-[var(--flow-band-fg)]">{hidden ? MASK : formatWhole(total)}</b>
+              <b className="block font-mono-numbers text-[1.0625rem] text-[var(--flow-band-fg)]">{hidden ? MASK : formatFlex(total)}</b>
               {c.paidOff(base)}
             </p>
           </>

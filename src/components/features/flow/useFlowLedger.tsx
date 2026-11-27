@@ -87,7 +87,7 @@ export function useFlowLedger() {
   const shortDate = useShortDate()
   const t = useT()
   const lt = useFlowLtCopy()
-  const assignLabel = usePaydaysLtCopy().assign.swipe
+  const ac = usePaydaysLtCopy().assign
   const { locale } = useLocale()
   const toast = useActionToast()
   const { removeExpense } = useLinkedDelete()
@@ -392,7 +392,7 @@ export function useFlowLedger() {
             ) : recurring ? (
               <Badge variant="brand" size="xs" className="shrink-0">{t.income.recurringLabel}</Badge>
             ) : notLinked ? (
-              <Badge variant="muted" size="xs" className="shrink-0">{t.income.notLinked}</Badge>
+              <Badge variant="muted" size="xs" className="shrink-0">{ac.rowBadge}</Badge>
             ) : (
               // One-time money names the type picked for it (Side hustle, Gift); "One-time" only when it has none.
               <Badge variant="muted" size="xs" className="shrink-0">
@@ -405,7 +405,7 @@ export function useFlowLedger() {
               ) : notLinked ? (
                 <span className="truncate">
                   {fromSms ? `${t.income.fromSms} · ` : ''}
-                  {ink(t.income.linkToPayday)}
+                  {ink(ac.rowHint)}
                 </span>
               ) : (
                 dest
@@ -430,7 +430,7 @@ export function useFlowLedger() {
                 undoLabel: t.common.undo,
               })
             },
-            rightAction: link ? { label: assignLabel, icon: <Link2 className="h-5 w-5" />, onAction: link } : undefined,
+            rightAction: link ? { label: ac.swipe, icon: <Link2 className="h-5 w-5" />, onAction: link } : undefined,
           },
         },
       })
@@ -514,7 +514,7 @@ export function useFlowLedger() {
     }
     return items
   }, [
-    expenses, incomeEvents, incomeSources, debts, debtPayments, paymentMethods, previews, matches, resolved, base, secondary, rates, t, assignLabel, possiblePassThrough,
+    expenses, incomeEvents, incomeSources, debts, debtPayments, paymentMethods, previews, matches, resolved, base, secondary, rates, t, ac, possiblePassThrough,
     setActiveModal, setEditingExpenseId, setEditingIncomeEventId, setEditingIncomeId, openAssignIncome,
     removeExpense, deleteIncomeEvent, deleteIncomeSource, restoreIncomeEvent, restoreIncomeSource, toast, shortDate,
   ])

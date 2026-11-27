@@ -66,7 +66,7 @@ export function WeekCheckSheet() {
           <div className="rounded-[20px] bg-[image:var(--member-aurora)] p-4 text-[var(--member-fg)]">
             <p dir="ltr" className="font-mono-numbers text-[2.75rem] font-semibold leading-none">{streak}</p>
             <p dir="auto" className="mt-1 text-sm text-[var(--member-fg-2)]">{c.streak(streak)}</p>
-            <div className="mt-3"><SegmentStrip segments={streakSegments(streak, summary.keptWeeksTotal)} label={c.streak(streak)} onSurface look="week" /></div>
+            <div className="mt-3"><SegmentStrip segments={streakSegments(streak, summary.lastWeekOpen ? 0 : summary.keptWeeksTotal)} label={c.streak(streak)} onSurface look="week" /></div>
             <div className="mt-2.5 flex flex-wrap gap-x-3.5 gap-y-1.5">
               {LEGEND.map((s) => (
                 <span key={s} className="inline-flex items-center gap-1.5 text-[0.71875rem] text-[var(--member-fg-2)]">

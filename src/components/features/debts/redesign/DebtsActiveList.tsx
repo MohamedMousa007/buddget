@@ -1,11 +1,12 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { parseISO } from 'date-fns'
 import { CalendarClock, ChevronRight, CreditCard, HandCoins, Plus } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { OptionSheet } from '@/components/ui/OptionSheet'
 import { BrandMark } from '@/components/features/accounts/BrandMark'
 import type { BorrowVM, CreditCardVM, InstallmentVM } from '@/hooks/useDebtTabData'
 import type { DebtFamily } from '@/lib/debts/debtFamily'
@@ -24,6 +25,8 @@ interface RowModel {
   /** The provider beside an installment's item name. */
   badge?: string
   amount: number
+  /** What is left in the main currency, for the section total. */
+  baseAmount: number
   currency: string
   owed?: boolean
   line2: string
@@ -110,6 +113,7 @@ export function DebtsActiveList({ family, borrow, installments, cards, onAdd, on
   onOpen: (id: string) => void
 }) {
   const lt = useDebtsSubsLtCopy().debts
+  const [plansOf, setPlansOf] = useState<string | null>(null)
   const c = useDebtsV9Copy().list
   const { locale } = useLocale()
 
@@ -122,6 +126,7 @@ export function DebtsActiveList({ family, borrow, installments, cards, onAdd, on
       lead: <Tile tone={owed ? 'var(--color-brand-green)' : 'var(--color-brand-amber)'}><HandCoins /></Tile>,
       title: vm.name,
       amount: vm.remaining,
+      baseAmount: vm.remainingBase,
       currency: unit,
       owed,
       line2: vm.goal ? `${lt.perMonth(formatWhole(vm.goal.per))} · ${due}` : due,
@@ -136,6 +141,7 @@ export function DebtsActiveList({ family, borrow, installments, cards, onAdd, on
     title: vm.item || vm.providerName,
     badge: vm.item ? vm.providerName : undefined,
     amount: vm.remaining,
+    baseAmount: vm.remainingBase,
     currency: vm.currency,
     line2: [lt.perMonth(formatWhole(vm.per)), vm.overdueDays > 0 ? lt.late(vm.overdueDays) : vm.next ? c.due(vm.next) : ''].filter(Boolean).join(' · '),
     line3: c.leftOfN(Math.max(0, vm.count - vm.paid), vm.count),
@@ -149,6 +155,7 @@ export function DebtsActiveList({ family, borrow, installments, cards, onAdd, on
       lead: vm.bank ? <BrandMark name={vm.bank} color={vm.color} size={40} logo={bankLogoForName(vm.bank)} /> : <Tile tone={vm.color}><CreditCard /></Tile>,
       title: vm.last4 ? `${vm.bank} ••${vm.last4}` : vm.bank,
       amount: vm.outstanding,
+      baseAmount: vm.remainingBase,
       currency: vm.currency,
       line2: vm.due ? lt.statementDue(formatLocalized(parseISO(vm.due), 'MMM d', locale)) : '',
       line3: vm.limit ? c.pctOfLimit(pct, formatWhole(vm.limit)) : '',
@@ -164,7 +171,7 @@ export function DebtsActiveList({ family, borrow, installments, cards, onAdd, on
       {lt.add}
     </Button>
   )
-  const total = (rows: RowModel[]) => <span className="font-mono-numbers text-[0.8125rem] font-semibold text-[var(--color-brand-text-secondary)]">{formatWhole(rows.reduce((s, r) => s + r.amount, 0))}</span>
+  const total = (rows: RowModel[]) => <span className="font-mono-numbers text-[0.8125rem] font-semibold text-[var(--color-brand-text-secondary)]">{formatWhole(rows.reduce((s, r) => s + r.baseAmount, 0))}</span>
 
   if (family === 'borrow') {
     const owe = borrow.filter((b) => b.dir === 'owe').map(borrowRow)
@@ -180,7 +187,7 @@ export function DebtsActiveList({ family, borrow, installments, cards, onAdd, on
             <SectionHead
               title={c.owedToYou}
               count={owed.length}
-              right={<span className="font-mono-numbers text-[0.8125rem] font-semibold text-[var(--color-brand-green)]">+{formatWhole(owed.reduce((s, r) => s + r.amount, 0))}</span>}
+              right={<span className="font-mono-numbers text-[0.8125rem] font-semibold text-[var(--color-brand-green)]">+{formatWhole(owed.reduce((s, r) => s + r.baseAmount, 0))}</span>}
             />
             <Rows rows={owed} onOpen={onOpen} />
             <Note>{c.owedNote}</Note>
@@ -193,15 +200,16 @@ export function DebtsActiveList({ family, borrow, installments, cards, onAdd, on
   if (family === 'installment') {
     const rows = installments.filter((p) => !p.onCardId).map(planRow)
     const onCards = cards.filter((k) => k.plans)
+    const plansCard = cards.find((k) => k.id === plansOf)
     return (
       <section>
         <SectionHead title={c.plans} count={rows.length} right={<>{total(rows)}{add}</>} />
         <Rows rows={rows} onOpen={onOpen} />
         {onCards.map((k) => (
-          <button data-raw-button-ok="the dashed card-plans pointer row from the mockup, opens the card sheet"
+          <button data-raw-button-ok="the dashed card-plans pointer row from the mockup, opens that card’s plans"
             key={k.id}
             type="button"
-            onClick={() => onOpen(k.id)}
+            onClick={() => setPlansOf(k.id)}
             className="mt-3 flex min-h-16 w-full items-center gap-3 rounded-2xl border border-dashed border-[var(--color-brand-border-strong)] px-4 py-3 text-start"
           >
             {k.bank ? <BrandMark name={k.bank} color={k.color} size={40} logo={bankLogoForName(k.bank)} /> : <Tile tone={k.color}><CreditCard /></Tile>}
@@ -213,6 +221,20 @@ export function DebtsActiveList({ family, borrow, installments, cards, onAdd, on
           </button>
         ))}
         {onCards.length ? <Note>{c.plansNote}</Note> : null}
+        {/* The card's plans, each opening its own sheet (pay, edit, pay off early): still one debt, listed under its card. */}
+        <OptionSheet<string>
+          open={plansOf !== null}
+          onClose={() => setPlansOf(null)}
+          title={plansCard ? c.plansOnCard(plansCard.plans?.n ?? 0, plansCard.bank) : ''}
+          value={null}
+          onChange={(id) => { setPlansOf(null); onOpen(id) }}
+          options={installments.filter((p) => p.onCardId === plansOf).map((p) => ({
+            value: p.id,
+            title: p.item || p.providerName,
+            subtitle: `${c.leftOfN(Math.max(0, p.count - p.paid), p.count)} · ${formatWhole(p.remaining)} ${p.currency}`,
+            icon: <CalendarClock />,
+          }))}
+        />
       </section>
     )
   }
