@@ -2,6 +2,7 @@ import type { AccountView } from '@/lib/accounts/useAccounts'
 import { MASK } from '@/lib/privacy/mask'
 import { useT } from '@/lib/i18n'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useAccountsLtCopy } from '@/lib/i18n/accountsLtCopy'
 import { BrandMark } from './BrandMark'
 import { bankLogoForName } from '@/lib/payment/bankLogos'
 import { CardStrip } from './CardStrip'
@@ -21,11 +22,13 @@ interface AccountRowProps {
   baseEquivalent?: string
   onOpen: () => void
   onFix?: () => void
+  /** The account holds less than what is set aside in it: the row reads "Short X" and opens the shortfall sheet. */
+  onShort?: () => void
   onAddCard: () => void
 }
 
 /** One account: mark, name, balance and its cards. Only exceptions get colour. */
-export function AccountRow({ account, masked, gap, shared = false, baseEquivalent, onOpen, onFix, onAddCard }: AccountRowProps) {
+export function AccountRow({ account, masked, gap, shared = false, baseEquivalent, onOpen, onFix, onShort, onAddCard }: AccountRowProps) {
   const dict = useT()
   const t = dict.accountsPage
   const base = useFinanceStore((s) => String(s.settings.baseCurrency))
@@ -33,6 +36,9 @@ export function AccountRow({ account, masked, gap, shared = false, baseEquivalen
   const cur = String(method.currency)
   const money = balance ? smartSplit(balance.balance, cur) : null
   const hasGap = gap != null && gap !== 0
+  // LOGIC_SPEC I-3: set aside − balance; card hold-back never counts toward it.
+  const short = balance ? Math.max(0, balance.held - balance.balance) : 0
+  const lt = useAccountsLtCopy().short
   const isCash = method.type === 'cash'
   const isPrepaid = method.type === 'prepaid_card'
   // The user's Name leads; the line under it then carries the digits, never the Name a second time.
@@ -50,7 +56,7 @@ export function AccountRow({ account, masked, gap, shared = false, baseEquivalen
       : t.addBalanceToInclude
   return (
     <div>
-      <button type="button" onClick={hasGap && onFix ? onFix : onOpen} data-raw-button-ok="a whole-row tap target, sized by its content"
+      <button type="button" onClick={hasGap && onFix ? onFix : short > 0 && onShort ? onShort : onOpen} data-raw-button-ok="a whole-row tap target, sized by its content"
         className="flex min-h-[72px] w-full items-center gap-3.5 px-4 py-3 text-start" aria-label={title}>
         <BrandMark name={accountTitle(method)} color={accountColor(method)} alert={hasGap} logo={isCash ? null : bankLogoForName(accountTitle(method))}
           icon={isCash ? createElement(paymentTypeIcon('cash'), { className: 'size-5', 'aria-hidden': true }) : undefined} />
@@ -68,7 +74,9 @@ export function AccountRow({ account, masked, gap, shared = false, baseEquivalen
               <span className="block font-mono-numbers text-base font-medium tracking-[-0.02em] text-[var(--color-brand-text-primary)]">
                 {masked ? MASK : money.int + money.dec}
               </span>
-              {!masked && balance && (balance.held > 0 || balance.cardHold > 0) ? (
+              {!masked && short > 0 ? (
+                <span dir="auto" className="mt-0.5 block whitespace-nowrap font-mono-numbers text-[0.71875rem] font-semibold text-[var(--color-brand-amber)]">{lt.row(moneyFlex(short, cur))}</span>
+              ) : !masked && balance && (balance.held > 0 || balance.cardHold > 0) ? (
                 <span dir="auto" className="mt-0.5 block font-mono-numbers text-[0.71875rem] font-semibold text-[var(--color-brand-primary-ink)]">{t.freeLabel(moneyFlex(balance.free, cur))}</span>
               ) : null}
               {!masked && baseEquivalent ? (

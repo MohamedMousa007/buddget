@@ -15,12 +15,13 @@ function changed<T extends { id: string }>(before: readonly T[], after: readonly
  * Runs a card delete or an account close and returns an Undo that puts back every row it changed: the method, cards it
  * detached, the default it moved, and a deleted card's own debt rows. Restored rows get a fresh edit time (the server
  * clears a tombstone only for a newer action) and are watched in case the undo still loses to a delete elsewhere.
+ * Null when refused: money is still set aside in it (I-14), so nothing changed.
  */
-export function removeMethodWithUndo(id: string, mode: 'delete' | 'close'): () => void {
+export function removeMethodWithUndo(id: string, mode: 'delete' | 'close'): (() => void) | null {
   const before: Slice = useFinanceStore.getState()
   const goalsBefore = new Map(useFinanceStore.getState().goals.map((g) => [g.id, g.linkedDebtIds]))
-  if (mode === 'close') closeAccount(id)
-  else useFinanceStore.getState().deletePaymentMethod(id)
+  const done = mode === 'close' ? closeAccount(id) : useFinanceStore.getState().deletePaymentMethod(id)
+  if (!done) return null
   const after: Slice = useFinanceStore.getState()
   const lost = {
     paymentMethods: changed(before.paymentMethods, after.paymentMethods),

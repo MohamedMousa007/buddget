@@ -13,7 +13,7 @@ import { Switch } from '@/components/ui/switch'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { removeMethodWithUndo } from '@/lib/accounts/methodUndo'
-import { cardsToFollow, changeAccountCurrency, ensureCashAccount, followsAccountCurrency, updateBalance } from '@/lib/accounts/actions'
+import { cardsToFollow, changeAccountCurrency, ensureCashAccount, followsAccountCurrency, heldIn, updateBalance } from '@/lib/accounts/actions'
 import { computeBalances } from '@/lib/accounts/balance'
 import { allowsNegativeBalance, editedBalance } from '@/lib/accounts/balanceEdit'
 import { sheetActivity } from '@/lib/accounts/cardDetails'
@@ -60,6 +60,10 @@ interface AccountDetailSheetProps {
   onBalanceSaved?: () => void
   /** A card sheet or the card form is stacked over this one. */
   behind?: boolean
+  /** Close account while money is set aside in it: "Where did this money go?" comes first (I-14). */
+  onCloseHeld?: () => void
+  /** Short of what is set aside in it (LOGIC_SPEC §4.2): the amber line opens the shortfall sheet, kept for now or not. */
+  onShort?: () => void
 }
 
 /** Lives inside ModalShell's guard context: Escape, back or swipe-down while "Change N cards too?" is open keeps editing. */
@@ -76,12 +80,13 @@ const SECTION = 'text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[va
  * One account, top to bottom (Light touch): the balance with its currency, Cash out · Set aside · Add card, the SMS
  * check, the cards row, the month, the default switch, Recent. Tapping the figure or the currency corrects it.
  */
-export function AccountDetailSheet({ open, onClose, account, masked, onMove, onAddCard, onEdit, onOpenCard, onSeeAllCards, gap, onFix, onBalanceSaved, behind }: AccountDetailSheetProps) {
+export function AccountDetailSheet({ open, onClose, account, masked, onMove, onAddCard, onEdit, onOpenCard, onSeeAllCards, gap, onFix, onBalanceSaved, behind, onCloseHeld, onShort }: AccountDetailSheetProps) {
   const tAll = useT()
   const { locale } = useLocale()
   const t = tAll.accountsPage
   const lt = useAccountsLtCopy().account
   const removedCopy = useAccountsLtCopy().removed
+  const shortCopy = useAccountsLtCopy().short
   const toast = useActionToast()
   const confirm = useConfirm()
   const cashCopy = useCashCurrencyCopy()
@@ -144,8 +149,10 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onA
     ...(isCash ? [] : [{
       label: t.closeAccount, icon: <Trash2 size={17} />, destructive: true,
       onSelect: async () => {
+        if (onCloseHeld && heldIn(method.id) > 0) return onCloseHeld()
         if (!(await confirm({ title: t.closeAccount, body: t.closeAccountBody(cards.length), confirmLabel: t.closeAccount, cancelLabel: t.keepOpen, destructive: true }))) return
         const undo = removeMethodWithUndo(method.id, 'close')
+        if (!undo) return onCloseHeld?.()
         onClose()
         toast(removedCopy.accountClosed(method.label?.trim() || accountTitle(method)), { undo, undoLabel: tAll.common.undo })
       },
@@ -209,6 +216,16 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onA
             ))}
           </div>
 
+          {balance && balance.held > balance.balance && onShort ? (
+            <div className="mx-4 flex items-center gap-3 rounded-2xl border border-[color-mix(in_oklab,var(--color-brand-amber)_35%,transparent)] bg-[var(--color-brand-elevated)] py-2.5 pe-2 ps-3.5">
+              <span aria-hidden className="size-2 shrink-0 rounded-full bg-[var(--color-brand-amber)]" />
+              <span className="min-w-0 flex-1">
+                <span dir="auto" className="block text-sm font-semibold text-[var(--color-brand-text-primary)]">{shortCopy.title(title, fmt(balance.held - balance.balance))}</span>
+                <span className="block text-xs text-[var(--color-brand-text-muted)]">{shortCopy.bannerBody}</span>
+              </span>
+              <Button variant="secondary" size="touch" onClick={onShort}>{shortCopy.bannerCta}</Button>
+            </div>
+          ) : null}
           {!isCash && gap ? (
             <div className="mx-4 flex items-center gap-3 rounded-2xl border border-[color-mix(in_oklab,var(--color-brand-amber)_35%,transparent)] bg-[var(--color-brand-elevated)] py-2.5 pe-2 ps-3.5">
               <span aria-hidden className="size-2 shrink-0 rounded-full bg-[var(--color-brand-amber)]" />

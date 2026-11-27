@@ -31,6 +31,7 @@ describe('a card used as a plan default', () => {
   it('counts as a reference, so removing the card closes it instead of deleting it (the plan never points at a missing row)', () => {
     expect(isPaymentMethodReferenced(refs, 'nbe')).toBe(true)
     const out = removePaymentMethod({ ...refs, paymentMethods: [pm('cib'), pm('nbe')] }, 'nbe')
+    if (out === 'needs_answer') throw new Error('nothing is set aside here')
     expect(out?.closed).toBe(true)
     expect(out?.paymentMethods.find((m) => m.id === 'nbe')?.closedAt).toBeTruthy()
   })

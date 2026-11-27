@@ -1246,7 +1246,8 @@ export interface FinanceStore {
   upsertServerIncomeEvent: (event: IncomeEvent) => void
   addPaymentMethod: (method: Omit<PaymentMethod, 'id'>) => string
   updatePaymentMethod: (id: string, updates: Partial<PaymentMethod>) => void
-  deletePaymentMethod: (id: string) => void
+  /** False when money is still set aside in it (I-14): "Where did this money go?" comes first. */
+  deletePaymentMethod: (id: string) => boolean
   addDebt: (debt: Omit<Debt, 'id' | 'createdAt'>) => string
   /**
    * Creates or updates a credit card debt and links a `card_credit` payment method (or reuses an existing match).
@@ -1413,8 +1414,9 @@ export interface FinanceStore {
   /**
    * It's in another account: a goal or Monthly savings part moves `amount` (part currency) into the owner's part in
    * `toAccountId` (created when missing); a pocket moves whole (`amount` ignored). Capped at what that account has free.
+   * `amountInB`: the same money in that account's currency at a booked rate (§4.7); absent = the live rate.
    */
-  movePart: (partId: string, toAccountId: string, amount?: number, opts?: LabelWriteOpts) => boolean
+  movePart: (partId: string, toAccountId: string, amount?: number, opts?: LabelWriteOpts & { amountInB?: number }) => boolean
   /** False when refused: a reserved pocket cannot be raised above what its account has available. */
   correctSavingsBalance: (accountId: string, newBalance: number, notes?: string) => boolean
   /** Delete a savings ledger row and reverse its balance effect (both legs for a transfer). */

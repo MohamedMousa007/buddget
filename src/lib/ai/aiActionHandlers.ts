@@ -1,4 +1,5 @@
 import type { AIAction } from '@/lib/ai/gemini'
+import { holdsSetAside } from '@/lib/accounts/removePaymentMethod'
 import { settlesWithoutExpense } from '@/lib/debts/debtDirection'
 import { defaultMethodId, storedMethodId } from '@/lib/accounts/resolve'
 import { localTodayISO } from '@/lib/utils/localDate'
@@ -48,6 +49,9 @@ import type {
   SavingsAccountCategory,
   UserProfile,
 } from '@/lib/store/types'
+
+/** I-14: an account holding set-aside money is never closed or deleted around "Where did this money go?". */
+const SET_ASIDE_REFUSAL = 'Money is still set aside in that account. Answer "Where did this money go?" in Accounts first.'
 
 function generateActionId(): string {
   return `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
@@ -549,6 +553,8 @@ export function validateActionItem(
   }
   if (action === 'delete_payment_method') {
     if (!String(getField(d, 'name') || '').trim()) return 'delete_payment_method needs data.name.'
+    const pm = resolved<PaymentMethod>(ctx, action, d)
+    if (pm && holdsSetAside(ctx.savingsAccounts, pm.id)) return SET_ASIDE_REFUSAL
     return targetProblem(ctx, action, d)
   }
   if (action === 'update_goal') {
@@ -823,7 +829,7 @@ export function executeActionItem(
   }
   if (action === 'delete_payment_method') {
     const pm = resolved<PaymentMethod>(ctx, action, d)
-    if (pm) ctx.deletePaymentMethod(pm.id)
+    if (pm && !ctx.deletePaymentMethod(pm.id)) throw new Error(SET_ASIDE_REFUSAL)
     return
   }
   if (action === 'add_savings_holding') {

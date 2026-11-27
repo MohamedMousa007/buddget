@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Archive, Landmark, MoreVertical, Plus, Star } from 'lucide-react'
+import { Archive, Landmark, MoreVertical, Plus, Star, TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
@@ -16,13 +16,17 @@ import { CardRow } from '@/components/features/accounts/CardRow'
 import { ProviderCard } from '@/components/features/accounts/ProviderCard'
 import { ProviderHero } from '@/components/features/accounts/ProviderHero'
 import { RateAlert } from '@/components/features/accounts/RateAlert'
-import { accountTitle, sharesProvider, splitMoney } from '@/components/features/accounts/accountDisplay'
+import { accountDisplayName, accountTitle, moneyFlex, sharesProvider, splitMoney } from '@/components/features/accounts/accountDisplay'
 import { AccountDetailSheet } from '@/components/features/accounts/AccountDetailSheet'
 import { AddAccountSheet } from '@/components/features/accounts/AddAccountSheet'
 import { CashCurrencySheet } from '@/components/features/accounts/CashCurrencySheet'
 import { FixGapSheet } from '@/components/features/accounts/FixGapSheet'
 import { DetectedAccountsSheet } from '@/components/features/accounts/DetectedAccountsSheet'
 import { PendingRow } from '@/components/ui/PendingRow'
+import { PromptBanner } from '@/components/ui/PromptBanner'
+import { CloseAccountMoneySheet, ShortfallSheet } from '@/components/features/accounts/SetAsideAnswerSheet'
+import { shortfallEpisodes } from '@/lib/savings/shortfall'
+import { settlePrompt } from '@/lib/prompts/settle'
 import { useDetectedAccounts } from '@/hooks/useDetectedAccounts'
 import { CashOnHandMark, MoveMoneySheet, type MoveMode } from '@/components/features/accounts/MoveMoneySheet'
 import { useAccountsLtCopy } from '@/lib/i18n/accountsLtCopy'
@@ -34,7 +38,7 @@ import { cardDetails } from '@/lib/accounts/cardDetails'
 import { holdsBalance } from '@/lib/accounts/kinds'
 import { groupByProvider, providerKeyOf, type ProviderFace, type ProviderGroup } from '@/lib/accounts/providerGroups'
 import { snoozeGap, useAccountGaps } from '@/lib/accounts/useAccountGaps'
-import { useAccounts, type AccountView } from '@/lib/accounts/useAccounts'
+import { useAccounts, useLedgerInput, type AccountView } from '@/lib/accounts/useAccounts'
 import { cashAccountId } from '@/lib/accounts/resolve'
 import { hasLiveRate } from '@/lib/market/rateFreshness'
 import { useRates } from '@/hooks/useRates'
@@ -71,6 +75,10 @@ type Sheet =
   | { kind: 'add' }
   | { kind: 'found' }
   | { kind: 'unplaced' }
+  /** "CIB is short X" (LOGIC_SPEC §4.2). */
+  | { kind: 'short'; id: string }
+  /** "Where did this money go?" before closing an account that holds set-aside money (§4.8). */
+  | { kind: 'closeHeld'; id: string }
 
 /** The Wealth and Debts header row: title, count, and the page's add action at the end. */
 function SectionHeader({ title, count, onAdd, addLabel }: { title: string; count: number; onAdd?: () => void; addLabel?: string }) {
@@ -116,6 +124,10 @@ export default function AccountsPage() {
   const clearAccountPrefill = useSettingsStore((s) => s.clearAccountPrefill)
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
   const ltCash = useAccountsLtCopy().cash
+  const ltShort = useAccountsLtCopy().short
+  const ledger = useLedgerInput()
+  // One notice per account per shortfall episode, until it is covered (auto-clears) or kept for now (settled).
+  const asking = useMemo(() => shortfallEpisodes(ledger).filter((e) => !settings.promptState?.[e.key]), [ledger, settings.promptState])
   const base = String(settings.baseCurrency)
 
   const owed = useMemo(
@@ -199,6 +211,7 @@ export default function AccountsPage() {
       baseEquivalent={baseEquivalent(a)}
       onOpen={() => openAccount(a)}
       onFix={() => setSheet({ kind: 'fix', id: a.method.id })}
+      onShort={asking.some((e) => e.accountId === a.method.id) ? () => setSheet({ kind: 'short', id: a.method.id }) : undefined}
       onAddCard={() => setSheet({ kind: 'card', id: a.method.id })} />
   )
   const renderProviderCard = (g: ProviderGroup) => (
@@ -256,6 +269,14 @@ export default function AccountsPage() {
       </PageHero>
       <PageGrid stack primary={<div className="space-y-5 px-4 py-4 lg:px-0 lg:pt-0">
         {rateDismissed ? null : <RateAlert currencies={missingRates} onDismiss={() => setRateDismissed(true)} />}
+        {asking.map((e) => {
+          const m = viewOf(e.accountId)?.method
+          return m ? (
+            <PromptBanner key={e.key} tone="warning" icon={<TriangleAlert aria-hidden />} title={ltShort.title(accountDisplayName(m), moneyFlex(e.short, e.currency))}
+              description={ltShort.bannerBody} confirmLabel={ltShort.bannerCta} onConfirm={() => setSheet({ kind: 'short', id: e.accountId })}
+              dismissLabel={ltShort.keep} onDismiss={() => settlePrompt(e.key)} />
+          ) : null
+        })}
         {detected.length > 0 ? (
           <PendingRow tone="teal" icon={Landmark} title={all.notifications.accountsLabel(detected.length)} subtitle={all.notifications.accountsHint} onPress={() => setSheet({ kind: 'found' })} />
         ) : null}
@@ -351,7 +372,11 @@ export default function AccountsPage() {
             onAddCard={() => setOver({ kind: 'addCard' })}
             onSeeAllCards={() => { const key = providerKeyOf(open.method); close(); openProvider(key) }}
             onEdit={() => setSheet({ kind: open.method.type === 'cash' ? 'cashCurrency' : 'edit', id: open.method.id })}
-            onOpenCard={(c) => setOver({ kind: 'card', cardId: c.id })} />
+            onOpenCard={(c) => setOver({ kind: 'card', cardId: c.id })}
+            onCloseHeld={() => setSheet({ kind: 'closeHeld', id: open.method.id })}
+            onShort={() => setSheet({ kind: 'short', id: open.method.id })} />
+          {sheet?.kind === 'short' ? <ShortfallSheet key={`s-${open.method.id}`} account={open.method} onClose={close} /> : null}
+          {sheet?.kind === 'closeHeld' ? <CloseAccountMoneySheet key={`h-${open.method.id}`} account={open.method} onClose={close} onClosed={close} /> : null}
           <MoveMoneySheet key={`m-${open.method.id}-${sheet?.kind === 'move' ? sheet.mode : ''}`} open={sheet?.kind === 'move'} onClose={close}
             accounts={model.accounts} initialAccountId={open.method.id} initialMode={sheet?.kind === 'move' ? sheet.mode : 'cash'} initialAmount={sheet?.kind === 'move' ? sheet.amount : undefined}
             onDone={() => { const g = gaps[open.method.id]; if (g && sheet?.kind === 'move' && sheet.fromGap) { snoozeGap(open.method.id, g.reportedAt); refresh() } }} />

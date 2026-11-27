@@ -1,5 +1,6 @@
 'use client'
 
+import { holdsSetAside } from '@/lib/accounts/removePaymentMethod'
 import { PaymentMethodSetupSheet } from '@/components/features/payments/PaymentMethodSetupSheet'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { useT } from '@/lib/i18n'
@@ -39,6 +40,8 @@ export function AddCreditCardSheet() {
   const removeCard = async () => {
     if (!editingDebt || !editingPm) return
     if (!(await confirm({ title: t.deleteCardLabel, body: t.deleteCardBody, destructive: true }))) return
+    // A refused delete (money still set aside in the card, I-14) must not leave the card without its debt.
+    if (holdsSetAside(useFinanceStore.getState().savingsAccounts, editingPm.id)) return
     deleteDebt(editingDebt.id)
     deletePaymentMethod(editingPm.id)
     close()

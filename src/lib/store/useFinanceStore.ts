@@ -758,10 +758,12 @@ export const useFinanceStore = create<FinanceStore>()(
             : { paymentMethods, expenses: applyMethodExclusion(state.expenses, paymentMethods, now) }
         }),
 
-      deletePaymentMethod: (id) =>
+      deletePaymentMethod: (id) => {
+        let refused = false
         set((state) => {
           const removal = removePaymentMethod(state, id)
-          if (!removal) return {}
+          if (removal === 'needs_answer') refused = true
+          if (!removal || removal === 'needs_answer') return {}
           if (removal.closed) return { paymentMethods: removal.paymentMethods }
           const dropped = new Set(state.debts.filter((d) => d.linkedPaymentMethodId === id).map((d) => d.id))
           const nextState: FinanceStore = {
@@ -779,7 +781,9 @@ export const useFinanceStore = create<FinanceStore>()(
             recurringDebtPayments: nextState.recurringDebtPayments,
             goals: reconcileGoalsForState(nextState),
           }
-        }),
+        })
+        return !refused
+      },
 
       addDebt: (debt) => {
         const id = generateId()
@@ -2009,7 +2013,7 @@ export const useFinanceStore = create<FinanceStore>()(
           if (!p || !b || !canHoldParts(b) || p.heldInPaymentMethodId === b.id) return state
           const bCur = b.currency as Currency
           const amt = p.goalId || p.isMonthlySavings ? Math.max(0, Number(amount) || 0) : p.currentBalance
-          const amtB = p.currency === bCur ? amt : tryConvertWithGold(amt, p.currency, bCur, state.exchangeRates, state.settings.baseCurrency, goldQuoteOf(state))
+          const amtB = opts?.amountInB ?? (p.currency === bCur ? amt : tryConvertWithGold(amt, p.currency, bCur, state.exchangeRates, state.settings.baseCurrency, goldQuoteOf(state)))
           if (amtB === null || !(amtB > 0)) return state
           const rounded = Math.round(amtB * 100) / 100
           if (rounded > availableIn(b.id, ledgerOf(state)) + balanceEpsilon(bCur)) return state

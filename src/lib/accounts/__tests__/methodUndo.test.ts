@@ -21,7 +21,7 @@ describe('Undo after deleting a card or closing an account (W2)', () => {
     const undo = removeMethodWithUndo(bank, 'close')
     expect(s().paymentMethods.find((m) => m.id === bank)?.closedAt).toBeTruthy()
     expect(s().paymentMethods.find((m) => m.id === card)?.parentId).toBeUndefined()
-    undo()
+    undo!()
     const back = s().paymentMethods.find((m) => m.id === bank)!
     expect(back.closedAt).toBeUndefined()
     expect(back.isDefault).toBe(true)
@@ -33,7 +33,7 @@ describe('Undo after deleting a card or closing an account (W2)', () => {
     const before = s().paymentMethods.find((m) => m.id === card)!
     const undo = removeMethodWithUndo(card, 'delete')
     expect(s().paymentMethods.some((m) => m.id === card)).toBe(false)
-    undo()
+    undo!()
     const back = s().paymentMethods.find((m) => m.id === card)!
     expect(back).toMatchObject({ parentId: bank, last4: '4410' })
     expect(back.updatedAt && before.updatedAt ? back.updatedAt >= before.updatedAt : true).toBe(true)
@@ -44,7 +44,7 @@ describe('Undo after deleting a card or closing an account (W2)', () => {
     const cc = s().debts.find((d) => d.id === debtId)!.linkedPaymentMethodId!
     const undo = removeMethodWithUndo(cc, 'delete')
     expect(s().debts.some((d) => d.id === debtId)).toBe(false)
-    undo()
+    undo!()
     expect(s().debts.some((d) => d.id === debtId)).toBe(true)
     expect(s().paymentMethods.some((m) => m.id === cc)).toBe(true)
   })

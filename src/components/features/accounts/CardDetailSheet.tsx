@@ -82,6 +82,7 @@ export function CardDetailSheet({ open, onClose, card, parent, masked, onEdit, o
       onSelect: async () => {
         if (!(await confirm({ title: t.deleteCard, body: all.paymentMethods.deleteCardBody, confirmLabel: t.deleteCard, cancelLabel: t.keepCard, destructive: true }))) return
         const undo = removeMethodWithUndo(card.id, 'delete')
+        if (!undo) return
         onClose()
         toast(lt.removed.cardDeleted(name), { undo, undoLabel: all.common.undo })
       },

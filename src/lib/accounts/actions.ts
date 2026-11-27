@@ -9,6 +9,7 @@ import { removePaymentMethod } from './removePaymentMethod'
 import { cashAccountId } from './resolve'
 import { ownerPartIn } from '@/lib/savings/labels'
 import { partId } from '@/lib/savings/partId'
+import { inAccount, planMove, planSpent, shortOf } from '@/lib/savings/shortfall'
 
 const store = () => useFinanceStore.getState()
 
@@ -131,12 +132,55 @@ export function ensureGoalPart(goalId: string, accountId: string): string | null
   return id
 }
 
-/** Closed accounts keep their history; their cards become standalone cards. */
-export function closeAccount(accountId: string): void {
+/**
+ * Closed accounts keep their history; their cards become standalone cards. False while money is still set aside in it:
+ * the caller opens "Where did this money go?" ({@link answerSetAsideMoney} with `need` = everything held), then closes.
+ */
+export function closeAccount(accountId: string): boolean {
+  let refused = false
   useFinanceStore.setState((s) => {
     const removal = removePaymentMethod(s, accountId, 'close')
-    return removal ? { paymentMethods: removal.paymentMethods } : {}
+    if (removal === 'needs_answer') refused = true
+    return removal && removal !== 'needs_answer' ? { paymentMethods: removal.paymentMethods } : {}
   })
+  return !refused
+}
+
+/** What is set aside in an account and not covered by its balance: the shortfall still to answer. */
+export const shortIn = (accountId: string): number => shortOf(ledgerOf(store()), accountId)
+
+/** Everything set aside in an account, in its currency (what closing it must answer for). */
+export function heldIn(accountId: string): number {
+  const s = store()
+  const cur = String(s.paymentMethods.find((m) => m.id === accountId)?.currency ?? '')
+  const input = ledgerOf(s)
+  return s.savingsAccounts.filter((p) => p.heldInPaymentMethodId === accountId).reduce((n, p) => n + Math.max(0, inAccount(input, p, cur) ?? 0), 0)
+}
+
+export type SetAsideAnswer = { kind: 'move'; toId: string } | { kind: 'spent' }
+
+/**
+ * Answers "What happened?" / "Where did this money go?" for `need` of what is set aside in `accountId` (the shortfall,
+ * or everything when closing): moves to another account (whole pockets, goal and Monthly savings parts as far as that
+ * account has free, at the booked rate of the transfer that took the money there), or I spent it. Labels only (I-4).
+ * Returns what is still unanswered, so the sheet can loop on the rest.
+ */
+export function answerSetAsideMoney(accountId: string, answer: SetAsideAnswer, need: number): number {
+  const s = store()
+  const day = { date: localTodayISO(), occurredAt: new Date().toISOString() }
+  if (answer.kind === 'spent') {
+    let left = need
+    for (const step of planSpent(ledgerOf(s), s.goals, accountId, need)) {
+      if (store().markSpent(step.partId, step.amount, day)) left -= step.amountInAccount
+    }
+    return Math.max(0, left)
+  }
+  const plan = planMove(ledgerOf(s), s.goals, accountId, answer.toId, need)
+  let left = need
+  for (const step of plan.steps) {
+    if (store().movePart(step.partId, answer.toId, step.amount, { ...day, amountInB: step.amountInB })) left -= step.amountInAccount
+  }
+  return Math.max(0, left)
 }
 
 const ledgerOf = (s: FinanceStore): LedgerInput => ({

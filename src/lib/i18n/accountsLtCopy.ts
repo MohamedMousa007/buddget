@@ -85,6 +85,42 @@ export interface AccountsLtCopy {
     cardDeleted: (name: string) => string
     accountClosed: (name: string) => string
   }
+  /** Shortfall (LOGIC_SPEC §4.2) and "Where did this money go?" before closing (§4.8). */
+  short: {
+    row: (amount: string) => string
+    title: (account: string, amount: string) => string
+    line: (amount: string, account: string) => string
+    inAccount: (account: string) => string
+    setAsideThere: string
+    whatHappened: string
+    inAnother: string
+    inAnotherSub: (amount: string) => string
+    spent: string
+    spentSub: (first: string, then?: string) => string
+    keep: string
+    keepSub: (amount: string) => string
+    whereNow: string
+    transferHint: (amount: string, account: string, day: string) => string
+    footnote: string
+    moveCta: (account: string) => string
+    spentCta: (amount: string) => string
+    stillShort: (amount: string, account: string) => string
+    noOther: string
+    moved: string
+    markedSpent: string
+    kept: string
+    bannerBody: string
+    bannerCta: string
+    closeTitle: string
+    closeSub: (account: string, amount: string) => string
+    beforeCloses: (account: string) => string
+    closeMoveSub: string
+    closeSpentSub: string
+    closeFootnote: string
+    closeCta: (account: string) => string
+    closeLeft: (amount: string, account: string) => string
+    closeRefused: (account: string) => string
+  }
 }
 
 export const ACCOUNTS_LT_COPY: Record<Locale, AccountsLtCopy> = {
@@ -170,6 +206,41 @@ export const ACCOUNTS_LT_COPY: Record<Locale, AccountsLtCopy> = {
       cardDeleted: (n) => `${n} deleted`,
       accountClosed: (n) => `${n} closed`,
     },
+    short: {
+      row: (a) => `Short ${a}`,
+      title: (acc, a) => `${acc} is short ${a}`,
+      line: (a, acc) => `${a} of what you set aside isn't in ${acc} anymore`,
+      inAccount: (acc) => `In ${acc}`,
+      setAsideThere: 'Set aside there',
+      whatHappened: 'What happened?',
+      inAnother: 'It’s in another account',
+      inAnotherSub: (a) => `The ${a} stays set aside, now where the money is`,
+      spent: 'I spent it',
+      spentSub: (first, then) => (then ? `Comes out of ${first} first, then ${then}` : `Comes out of ${first}`),
+      keep: 'Keep for now',
+      keepSub: (a) => `The rows keep showing Short ${a} until it’s covered`,
+      whereNow: 'Where is it now?',
+      transferHint: (a, acc, day) => `Transfer of ${a} left ${acc} on ${day}`,
+      footnote: 'Your balances don’t change. Only what’s set aside moves or is let go.',
+      moveCta: (acc) => `Move to ${acc}`,
+      spentCta: (a) => `Mark ${a} as spent`,
+      stillShort: (a, acc) => `${a} still short: ${acc} doesn’t have that much free. Pick another account, or I spent it.`,
+      noOther: 'No other account can hold it right now.',
+      moved: 'Set-aside money moved',
+      markedSpent: 'Marked as spent',
+      kept: 'Kept for now',
+      bannerBody: 'Tell us where the money went.',
+      bannerCta: 'Tell us',
+      closeTitle: 'Where did this money go?',
+      closeSub: (acc, a) => `${acc} holds ${a} set aside`,
+      beforeCloses: (acc) => `Before ${acc} closes`,
+      closeMoveSub: 'Everything set aside moves with it',
+      closeSpentSub: 'Nothing stays set aside; goals lose this money',
+      closeFootnote: 'Its history stays in Flow. A closed account counts 0 in your net worth.',
+      closeCta: (acc) => `Close ${acc}`,
+      closeLeft: (a, acc) => `${a} is still set aside: ${acc} doesn’t have that much free. Pick another account, or I spent it.`,
+      closeRefused: (acc) => `${acc} couldn’t be closed. Check what is still set aside in it and try again.`,
+    },
   },
   ar: {
     account: {
@@ -252,6 +323,41 @@ export const ACCOUNTS_LT_COPY: Record<Locale, AccountsLtCopy> = {
     removed: {
       cardDeleted: (n) => `تم حذف ${n}`,
       accountClosed: (n) => `تم إغلاق ${n}`,
+    },
+    short: {
+      row: (a) => `ناقص ${a}`,
+      title: (acc, a) => `${acc} ناقص ${a}`,
+      line: (a, acc) => `${a} مما خصّصته لم يعد في ${acc}`,
+      inAccount: (acc) => `في ${acc}`,
+      setAsideThere: 'المُخصَّص فيه',
+      whatHappened: 'ماذا حدث؟',
+      inAnother: 'في حساب آخر',
+      inAnotherSub: (a) => `يبقى مبلغ ${a} مُخصَّصًا، في الحساب الذي فيه المال الآن`,
+      spent: 'صرفته',
+      spentSub: (first, then) => (then ? `يُخصم من ${first} أولًا، ثم من ${then}` : `يُخصم من ${first}`),
+      keep: 'أبقِه الآن',
+      keepSub: (a) => `تظل الصفوف تعرض ناقص ${a} حتى يُغطّى`,
+      whereNow: 'أين هو الآن؟',
+      transferHint: (a, acc, day) => `خرج تحويل ${a} من ${acc} في ${day}`,
+      footnote: 'لن تتغير أرصدتك. ما يُنقل أو يُترك هو المُخصَّص فقط.',
+      moveCta: (acc) => `انقله إلى ${acc}`,
+      spentCta: (a) => `سجّل ${a} كمصروف`,
+      stillShort: (a, acc) => `لا يزال ناقصًا ${a}: لا يتوفر في ${acc} مبلغ متاح كافٍ. اختر حسابًا آخر، أو صرفته.`,
+      noOther: 'لا يوجد حساب آخر يمكنه حمله الآن.',
+      moved: 'نُقل المبلغ المُخصَّص',
+      markedSpent: 'سُجّل كمصروف',
+      kept: 'أُبقي الآن',
+      bannerBody: 'أخبرنا أين ذهب المال.',
+      bannerCta: 'أخبرنا',
+      closeTitle: 'أين ذهب هذا المال؟',
+      closeSub: (acc, a) => `في ${acc} مبلغ ${a} مُخصَّص`,
+      beforeCloses: (acc) => `قبل إغلاق ${acc}`,
+      closeMoveSub: 'ينتقل معه كل المُخصَّص',
+      closeSpentSub: 'لن يبقى شيء مُخصَّصًا، وستخسر الأهداف هذا المبلغ',
+      closeFootnote: 'يبقى سجله في المعاملات. الحساب المغلق يُحسب صفرًا في صافي ثروتك.',
+      closeCta: (acc) => `إغلاق ${acc}`,
+      closeLeft: (a, acc) => `لا يزال ${a} مُخصَّصًا: لا يتوفر في ${acc} مبلغ متاح كافٍ. اختر حسابًا آخر، أو صرفته.`,
+      closeRefused: (acc) => `تعذّر إغلاق ${acc}. راجع ما بقي مُخصَّصًا فيه وحاول مرة أخرى.`,
     },
   },
 }

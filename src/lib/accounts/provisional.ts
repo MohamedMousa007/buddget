@@ -1,5 +1,6 @@
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import type { Expense, IncomeEvent, PaymentMethod } from '@/lib/store/types'
+import { holdsSetAside } from './removePaymentMethod'
+import type { Expense, IncomeEvent, PaymentMethod, SavingsAccount } from '@/lib/store/types'
 import { PAYMENT_BRANDS, composePaymentMethodName, decomposePaymentMethodName, resolvePaymentBrandKey } from '@/lib/payment/paymentMethodDefaults'
 import { withAlias } from '@/lib/accounts/identity/accountRef'
 import type { DetectedAccount } from '@/hooks/usePaymentMethodDetector'
@@ -13,7 +14,7 @@ import type { DetectedAccount } from '@/hooks/usePaymentMethodDetector'
 /** Provider part of a bank-less provisional account's name. Same value as BANKLESS_PROVIDER in src/lib/sms/accountPlacement.ts (a server module this client file must not import). */
 const BANKLESS_PROVIDER = 'Account'
 
-type Ledger = { expenses: readonly Expense[]; incomeEvents: readonly IncomeEvent[] }
+type Ledger = { expenses: readonly Expense[]; incomeEvents: readonly IncomeEvent[]; savingsAccounts?: readonly SavingsAccount[] }
 
 const PREFIX = 'prov:'
 export const provisionalKey = (id: string): string => `${PREFIX}${id}`
@@ -60,6 +61,8 @@ export function planMerge(methods: readonly PaymentMethod[], ledger: Ledger, id:
   const removed = methods.find((m) => m.id === id)
   const target = methods.find((m) => m.id === targetId)
   if (!removed?.provisional || !target || target.id === id || target.provisional) return null
+  // Its delete would be refused (I-14) after the rows had moved: never half-merge.
+  if (holdsSetAside(ledger.savingsAccounts ?? [], id)) return null
   return {
     rows: rowsOn(ledger, id),
     targetPatch: removed.last4 ? withAlias(target, removed.last4) : {},

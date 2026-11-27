@@ -273,7 +273,7 @@ const delete_payment_method: WriteImpl = {
     if ('error' in hit) return { ok: false, error: 'That payment method no longer exists.' }
     const id = hit.method.id
     const was = cascadeSlices(fin())
-    fin().deletePaymentMethod(id)
+    if (!fin().deletePaymentMethod(id)) return { ok: false, error: 'Money is still set aside in that account. Answer "Where did this money go?" in Accounts first.' }
     const now = cascadeSlices(fin())
     const keptDebtIds = new Set(now.debts.map((d) => d.id))
     const removedDebtIds = new Set(was.debts.filter((d) => !keptDebtIds.has(d.id)).map((d) => d.id))
