@@ -2,7 +2,8 @@
 
 import { useLayoutEffect, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { Calendar, Lock, MessageSquare, StickyNote, Trash2, Unlink } from 'lucide-react'
+import { Calendar, Link2, Lock, MessageSquare, Repeat, StickyNote, Trash2, Unlink } from 'lucide-react'
+import { usePaydaysLtCopy } from '@/lib/i18n/paydaysLtCopy'
 import { ModalShell, useDismissGuard } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -106,6 +107,7 @@ const STATUS_CHOICES: IncomeEventStatus[] = ['confirmed', 'late', 'partial', 'mi
 function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: () => void }) {
   const t = useT()
   const lt = useFlowLtCopy()
+  const mi = usePaydaysLtCopy().moneyIn
   const { locale } = useLocale()
   const shortDate = useShortDate()
   const { updateIncomeEvent, settings, paymentMethods, incomeSources } = useFinanceStore(
@@ -305,13 +307,13 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
             value={method ? <MethodValue method={method} /> : <span className="font-semibold text-[var(--color-brand-primary-ink)]">{t.income.setAccount}</span>}
           />
           <PickerRow
-            label={lt.income.payday}
+            label={mi.assignedTo}
             onClick={typeLocked ? undefined : openPayday}
             value={
               recurring ? (
                 <span className="truncate">{[incomeSourceTypeLabel(t.income, event.sourceType ?? source?.sourceType), shortDate(payday)].join(' · ')}</span>
               ) : (
-                <span className="text-[var(--color-brand-text-muted)]">{lt.income.notLinked}</span>
+                <span className="text-[var(--color-brand-text-muted)]">{mi.notAssigned}</span>
               )
             }
           />
@@ -329,6 +331,23 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
             }
           />
         </Card>
+
+        {/* Round 8 Assign card with the round 9 short tip: one-time money can be linked to a salary or regular income. */}
+        {!recurring && !typeLocked ? (
+          <Card className="mx-4 mt-3 p-4">
+            <div className="flex gap-3">
+              <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]"><Repeat className="size-[18px]" /></span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{mi.tipTitle}</p>
+                <p className="mt-0.5 text-[0.8125rem] leading-relaxed text-[var(--color-brand-text-secondary)]">{mi.tip}</p>
+              </div>
+            </div>
+            <Button variant="secondary" size="cta-block" onClick={openPayday} className="mt-3">
+              <Link2 aria-hidden />
+              {mi.cta}
+            </Button>
+          </Card>
+        ) : null}
 
         <label className="mx-4 mt-3 flex min-h-12 items-start gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-3">
           <StickyNote className="mt-[3px] size-[18px] shrink-0 text-[var(--color-brand-text-muted)]" aria-hidden />
@@ -395,7 +414,7 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
 
       <div className="sheet-cta shrink-0 border-t border-[var(--color-brand-border)] px-4 pb-6 pt-3">
         <Button type="button" onClick={handleSave} disabled={!valid} size="cta-block" className="font-semibold">
-          {t.editIncome.buttonSave}
+          {mi.save}
         </Button>
       </div>
     </div>

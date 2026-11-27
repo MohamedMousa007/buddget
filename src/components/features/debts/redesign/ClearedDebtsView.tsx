@@ -72,7 +72,7 @@ export function ClearedDebtsView({ cleared, base, next, onBack, onOpen }: {
         {cleared.map((x) => {
           const { Icon, tone } = LEAD[x.family]
           return (
-            <button key={x.id} type="button" onClick={() => onOpen(x.id)} className="flex min-h-16 w-full items-center gap-3 px-4 py-3 text-start hover:bg-[var(--color-brand-elevated)]">
+            <button data-raw-button-ok="a cleared debt row inside a divided Card" key={x.id} type="button" onClick={() => onOpen(x.id)} className="flex min-h-16 w-full items-center gap-3 px-4 py-3 text-start hover:bg-[var(--color-brand-elevated)]">
               <span className="relative shrink-0">
                 <span aria-hidden className="flex size-10 items-center justify-center rounded-[11px] [&_svg]:size-5" style={{ background: `color-mix(in oklab, ${tone} 14%, transparent)`, color: tone }}><Icon /></span>
                 <span aria-hidden className="absolute -bottom-1 -end-1 flex size-5 items-center justify-center rounded-full border-2 border-[var(--color-brand-card)] bg-[var(--color-brand-green)] text-[var(--color-brand-on-primary)]"><Check className="size-3" /></span>
@@ -89,7 +89,7 @@ export function ClearedDebtsView({ cleared, base, next, onBack, onOpen }: {
         })}
       </Card>
       {next ? (
-        <button type="button" onClick={() => onOpen(next.id)} className="flex w-full items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4 text-start">
+        <button data-raw-button-ok="the next-to-clear nudge card, as Goals AchievedView" type="button" onClick={() => onOpen(next.id)} className="flex w-full items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4 text-start">
           <span className="min-w-0 flex-1">
             <span className="block text-xs font-semibold text-[var(--color-brand-primary-ink)]">{c.nextToClear}</span>
             <span dir="auto" className="block truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{c.paymentsLeft(next.name, next.paymentsLeft)}</span>

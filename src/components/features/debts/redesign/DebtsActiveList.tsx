@@ -49,7 +49,7 @@ const clampPct = (n: number) => Math.round(Math.min(100, Math.max(0, n)))
 /** One active debt (round 9 `rowA`): logo, name, what is left, one meta line, then the bar. */
 function DebtListRow({ row, onOpen }: { row: RowModel; onOpen: () => void }) {
   return (
-    <button type="button" onClick={onOpen} className="flex min-h-[84px] w-full items-center gap-3 px-4 py-3 text-start transition-colors hover:bg-[var(--color-brand-elevated)]">
+    <button data-raw-button-ok="a debt list row inside a divided Card, as the old row" type="button" onClick={onOpen} className="flex min-h-[84px] w-full items-center gap-3 px-4 py-3 text-start transition-colors hover:bg-[var(--color-brand-elevated)]">
       {row.lead}
       <span className="min-w-0 flex-1">
         <span className="flex items-baseline gap-2">
@@ -198,7 +198,7 @@ export function DebtsActiveList({ family, borrow, installments, cards, onAdd, on
         <SectionHead title={c.plans} count={rows.length} right={<>{total(rows)}{add}</>} />
         <Rows rows={rows} onOpen={onOpen} />
         {onCards.map((k) => (
-          <button
+          <button data-raw-button-ok="the dashed card-plans pointer row from the mockup, opens the card sheet"
             key={k.id}
             type="button"
             onClick={() => onOpen(k.id)}

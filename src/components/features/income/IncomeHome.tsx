@@ -110,7 +110,7 @@ export function IncomeHome({ month, base, expected, received, inCount, next, row
         </div>
         <div className="flex flex-col gap-2.5">
           {rows.map((r) => (
-            <button
+            <button data-raw-button-ok="an income source row card (mockup srcRow)"
               key={r.id}
               type="button"
               onClick={() => onOpen(r.id)}

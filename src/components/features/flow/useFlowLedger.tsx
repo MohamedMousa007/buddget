@@ -33,6 +33,7 @@ import { useIncomeResolution } from '@/components/features/flow/IncomePrompts'
 import { compareFlowItems, instantOf } from '@/components/features/flow/flowOrder'
 import { useLocale, useT } from '@/lib/i18n'
 import { useFlowLtCopy } from '@/lib/i18n/flowLtCopy'
+import { usePaydaysLtCopy } from '@/lib/i18n/paydaysLtCopy'
 import { monthHeads } from '@/lib/flow/ledgerMonths'
 import { useWeekStart } from '@/hooks/useWeekStart'
 import { smsAccountLabelKind } from '@/lib/accounts/unplacedSms'
@@ -86,6 +87,7 @@ export function useFlowLedger() {
   const shortDate = useShortDate()
   const t = useT()
   const lt = useFlowLtCopy()
+  const assignLabel = usePaydaysLtCopy().assign.swipe
   const { locale } = useLocale()
   const toast = useActionToast()
   const { removeExpense } = useLinkedDelete()
@@ -428,7 +430,7 @@ export function useFlowLedger() {
                 undoLabel: t.common.undo,
               })
             },
-            rightAction: link ? { label: t.addIncome.assignBtn, icon: <Link2 className="h-5 w-5" />, onAction: link } : undefined,
+            rightAction: link ? { label: assignLabel, icon: <Link2 className="h-5 w-5" />, onAction: link } : undefined,
           },
         },
       })
@@ -512,7 +514,7 @@ export function useFlowLedger() {
     }
     return items
   }, [
-    expenses, incomeEvents, incomeSources, debts, debtPayments, paymentMethods, previews, matches, resolved, base, secondary, rates, t, possiblePassThrough,
+    expenses, incomeEvents, incomeSources, debts, debtPayments, paymentMethods, previews, matches, resolved, base, secondary, rates, t, assignLabel, possiblePassThrough,
     setActiveModal, setEditingExpenseId, setEditingIncomeEventId, setEditingIncomeId, openAssignIncome,
     removeExpense, deleteIncomeEvent, deleteIncomeSource, restoreIncomeEvent, restoreIncomeSource, toast, shortDate,
   ])

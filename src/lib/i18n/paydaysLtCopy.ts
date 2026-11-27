@@ -59,6 +59,10 @@ export interface PaydaysLtCopy {
     deleteTitle: (noun: IncomeNoun) => string
     deleteBody: string
   }
+  /** The Assign sheet's one empty tile and Flow's swipe action. */
+  assign: { title: string; body: string; bodyFrom: string; addSalary: string; addSalarySub: string; swipe: string }
+  /** The money-in sheet (round 8 Assign card, round 9 short tip). */
+  moneyIn: { assignedTo: string; notAssigned: string; tipTitle: string; tip: string; cta: string; save: string }
 }
 
 const EN_NOUN: Record<IncomeNoun, string> = { salary: 'salary', income: 'income' }
@@ -117,6 +121,19 @@ export const PAYDAYS_LT_COPY: Record<Locale, PaydaysLtCopy> = {
       deleteTitle: (n) => `Delete this ${EN_NOUN[n]}?`,
       deleteBody: 'What already arrived stays in Flow as one-time income.',
     },
+    assign: {
+      title: 'Which income is this?',
+      body: '{amount} {currency} arrived on {date}. Assigning keeps that date and links it to a salary or income you get regularly.',
+      bodyFrom: '{amount} {currency} from {from} arrived on {date}. Assigning keeps that date and links it to a salary or income you get regularly.',
+      addSalary: 'Add salary', addSalarySub: 'Create a new salary and assign this to it', swipe: 'Assign' },
+    moneyIn: {
+      assignedTo: 'Assigned to',
+      notAssigned: 'Not assigned',
+      tipTitle: 'One-time, or part of a salary?',
+      tip: 'Assign links this money to a salary or income you get regularly.',
+      cta: 'Assign to a salary',
+      save: 'Save changes',
+    },
   },
   ar: {
     eachMonth: (cur) => `${cur} كل شهر`,
@@ -169,6 +186,19 @@ export const PAYDAYS_LT_COPY: Record<Locale, PaydaysLtCopy> = {
       delete: (n) => `حذف ${AR_NOUN[n]}`,
       deleteTitle: (n) => `حذف ${n === 'salary' ? 'هذا الراتب' : 'هذا الدخل'}؟`,
       deleteBody: 'ما وصل بالفعل يبقى في التدفق كدخل لمرة واحدة.',
+    },
+    assign: {
+      title: 'أي دخل هذا؟',
+      body: 'وصل {amount} {currency} في {date}. الربط يحتفظ بهذا التاريخ ويضمه إلى راتب أو دخل يصلك بانتظام.',
+      bodyFrom: 'وصل {amount} {currency} من {from} في {date}. الربط يحتفظ بهذا التاريخ ويضمه إلى راتب أو دخل يصلك بانتظام.',
+      addSalary: 'أضف راتبًا', addSalarySub: 'أنشئ راتبًا جديدًا واربط هذا المبلغ به', swipe: 'ربط' },
+    moneyIn: {
+      assignedTo: 'مرتبط بـ',
+      notAssigned: 'غير مرتبط',
+      tipTitle: 'لمرة واحدة، أم جزء من راتب؟',
+      tip: 'الربط يضم هذا المبلغ إلى راتب أو دخل يصلك بانتظام.',
+      cta: 'اربطه براتب',
+      save: 'حفظ التغييرات',
     },
   },
 }

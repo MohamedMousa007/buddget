@@ -19,6 +19,8 @@ import { formatFixed2, formatFlex } from '@/lib/utils/formatters'
 import { useShortDate } from '@/hooks/useShortDate'
 import { fillSlots } from '@/lib/ui/fillSlots'
 import { useT } from '@/lib/i18n'
+import { usePaydaysLtCopy } from '@/lib/i18n/paydaysLtCopy'
+import { Plus } from 'lucide-react'
 import type { IncomeEvent } from '@/lib/store/types'
 
 /** How many open paydays to offer; the best match is always first. */
@@ -38,6 +40,8 @@ interface Props {
   zIndexClassName?: string
   /** Who sent it, when the credit's own title says so: "… from AL RAJHI arrived on …". */
   from?: string | null
+  /** The one empty tile (round 9): start a new salary from this money. Omitted = no tile. */
+  onAddSalary?: () => void
 }
 
 /**
@@ -46,9 +50,10 @@ interface Props {
  * never shown. Linking writes the payday as `occurrenceDate` and never touches the credit's
  * `receivedDate` (§8.0), so a late payday still reads as late.
  */
-export function AssignIncomeSheet({ open, onClose, credit, onAssign, initialTemplateId, zIndexClassName, from }: Props) {
+export function AssignIncomeSheet({ open, onClose, credit, onAssign, initialTemplateId, zIndexClassName, from, onAddSalary }: Props) {
   const shortDate = useShortDate()
   const t = useT()
+  const c = usePaydaysLtCopy().assign
   const { incomeSources, incomeEvents, monthStartDay, rates } = useFinanceStore(
     useShallow((s) => ({
       incomeSources: s.incomeSources,
@@ -83,7 +88,7 @@ export function AssignIncomeSheet({ open, onClose, credit, onAssign, initialTemp
     onClose()
   }
 
-  const body = fillSlots(from ? t.income.linkSheetBodyFrom : t.income.linkSheetBody, {
+  const body = fillSlots(from ? c.bodyFrom : c.body, {
     from: from ?? '',
     amount: <b className="font-mono-numbers text-[var(--color-brand-text-primary)]">{formatFixed2(credit.amount)}</b>,
     currency: credit.currency,
@@ -93,8 +98,8 @@ export function AssignIncomeSheet({ open, onClose, credit, onAssign, initialTemp
   return (
     <ModalShell open={open} onBackdropClick={onClose} zIndexClassName={zIndexClassName ?? 'z-[110]'}>
       <div className="flex flex-col gap-3 px-4 pb-[max(env(safe-area-inset-bottom,0px),20px)]">
-        <V3SheetHeader title={t.income.linkSheetTitle} subtitle={body} onClose={onClose} />
-        <div role="radiogroup" aria-label={t.income.linkSheetTitle} className="flex flex-col gap-3">
+        <V3SheetHeader title={c.title} subtitle={body} onClose={onClose} />
+        <div role="radiogroup" aria-label={c.title} className="flex flex-col gap-3">
           {options.map((o) => (
             <SelectableCard key={o.occ.key} surface="elevated" selected={chosen === o.occ.key} onClick={() => setChosen(o.occ.key)}>
               <span className="flex w-full items-center gap-3 text-start">
@@ -128,13 +133,23 @@ export function AssignIncomeSheet({ open, onClose, credit, onAssign, initialTemp
             </span>
           </SelectableCard>
         </div>
+        {onAddSalary ? (
+          <button data-raw-button-ok="the dashed Add salary tile from the round 8 Assign sheet"
+            type="button"
+            onClick={() => { onClose(); onAddSalary() }}
+            className="flex min-h-[60px] w-full items-center gap-3 rounded-2xl border-[1.5px] border-dashed border-[var(--color-brand-border-strong)] p-3.5 text-start hover:bg-[var(--color-brand-elevated)]"
+          >
+            <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-brand-elevated)] text-[var(--color-brand-primary-ink)]"><Plus className="size-[18px]" /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[0.90625rem] font-bold text-[var(--color-brand-text-primary)]">{c.addSalary}</span>
+              <span className="block text-[0.78125rem] text-[var(--color-brand-text-secondary)]">{c.addSalarySub}</span>
+            </span>
+          </button>
+        ) : null}
         <Button size="cta-block" onClick={confirm}>
           {pick
             ? t.income.linkCta(shortDate(pick.occ.dueDate), incomeSourceTypeLabel(t.income, pick.source.sourceType).toLowerCase())
             : t.prompts.keepSeparate}
-        </Button>
-        <Button variant="outline" size="cta-block" onClick={onClose}>
-          {t.common.cancel}
         </Button>
       </div>
     </ModalShell>
@@ -149,8 +164,8 @@ export function GlobalAssignIncomeSheet() {
   const { incomeEvents, updateIncomeEvent } = useFinanceStore(
     useShallow((s) => ({ incomeEvents: s.incomeEvents, updateIncomeEvent: s.updateIncomeEvent })),
   )
-  const { activeModal, setActiveModal, assignTarget } = useSettingsStore(
-    useShallow((s) => ({ activeModal: s.activeModal, setActiveModal: s.setActiveModal, assignTarget: s.assignTarget })),
+  const { activeModal, setActiveModal, assignTarget, openNewPayday } = useSettingsStore(
+    useShallow((s) => ({ activeModal: s.activeModal, setActiveModal: s.setActiveModal, assignTarget: s.assignTarget, openNewPayday: s.openNewPayday })),
   )
   const event = assignTarget?.eventId ? incomeEvents.find((e) => e.id === assignTarget.eventId) : undefined
   const from = creditSenderFromTitle(event)
@@ -161,6 +176,14 @@ export function GlobalAssignIncomeSheet() {
       onClose={() => setActiveModal(null)}
       credit={event}
       from={from}
+      onAddSalary={() => openNewPayday({
+        name: from ?? event.name,
+        amount: event.amount,
+        currency: event.currency,
+        sourceType: 'salary',
+        dayOfMonth: Number(event.receivedDate.slice(8, 10)) || 1,
+        paymentMethodId: event.paymentMethodId,
+      })}
       // §8.0: the payday goes on occurrenceDate; receivedDate stays the day it arrived.
       onAssign={({ templateId, date }) => updateIncomeEvent(event.id, { templateId, occurrenceDate: date, status: 'confirmed' })}
     />
