@@ -17,3 +17,13 @@ Voices: Architect, Skeptic, Pragmatist, Critic. Brief: `COUNCIL_BRIEF.md`. Statu
 - Net worth disagrees: Accounts 339,959.50 vs Wealth 397,740 in the captures. Investigate; net worth lives only on Accounts, Savings shows "Saved and invested".
 - One card has two names (sheet vs Flow). Use the display name everywhere.
 - Rewards shop "card finish" renamed "tier card finish"; bank card faces stay free.
+
+## Round 2 (2026-11-27): goals and pockets, monthly savings
+
+Voices: Architect, Skeptic, Pragmatist, Critic.
+
+- **Savings goals = one pocket each (4/4).** A savings goal is a target (amount, date) on exactly one pocket; the pocket balance is the goal's progress. No pocket counts toward two goals. Spending-limit and debt pay-off goals stay pocketless targets (Skeptic: move them to Budget and Debts later).
+- **Monthly savings split (3/4).** One split, on pockets, in percentages that cannot total more than 100% (no priority rule). Goal pockets are pockets, so goals are covered. Pragmatist dissent: keep the existing goal shares engine instead of a new pocket split.
+- **Monthly savings pocket (3/4, against the owner's delete rule).** Stays as the remainder: whatever is not split goes there. It can be renamed and hides when empty, but is not deletable, because with splits under 100% the rest needs a home.
+- **Bugs found in today's model:** a pocket linked to two goals counts in full for both (`computeGoalProgress.ts` 68-72); goal shares compute amounts but never move money (`allocateMonth.ts`), and the month-carry cron is not scheduled; deleting a goal's only pocket drops the goal to 0 with no warning (`canDeletePocket.ts`).
+- **Migration:** row counts first; goals with several pockets keep the largest (or merge), shares convert to pocket percentages.
