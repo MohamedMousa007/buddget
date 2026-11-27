@@ -6,7 +6,7 @@ import { useLocale, useT } from '@/lib/i18n'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { useShallow } from 'zustand/react/shallow'
 import { currentCycle } from '@/lib/settings/payCycle'
-import { parseISO, isWithinInterval } from 'date-fns'
+import { differenceInCalendarMonths, parseISO, isWithinInterval } from 'date-fns'
 import { borrowGoalSchedule, borrowScheduleStart } from '@/lib/debts/borrowGoal'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
@@ -76,6 +76,8 @@ export interface CreditCardVM {
   after: number
   due?: string
   daysLeft?: number
+  /** Installment plans paid on this card: owed once, inside the card (LOGIC_SPEC card plan). */
+  plans?: { n: number; monthly: number; left: number }
 }
 
 export interface InstallmentVM {
@@ -94,6 +96,8 @@ export interface InstallmentVM {
   overdueDays: number
   method?: string
   onCardLast4?: string
+  /** The card debt this plan is paid on; such a plan shows under its card, not in the Installments list. */
+  onCardId?: string
 }
 
 export type ScheduledPaymentVM = ScheduledDebtPayment
@@ -115,6 +119,8 @@ export interface ClearedVM {
   original: number
   currency: string
   clearedMonth: string
+  /** Whole months from the start (or creation) to the day it was cleared. */
+  months: number
   history: { date: string; method?: string; amount: number; currency: string }[]
 }
 
@@ -294,8 +300,13 @@ export function useDebtTabData() {
           overdueDays: installmentOverdueDays(d, paid),
           method,
           onCardLast4: cardLast4 ?? undefined,
+          onCardId: d.linkedCreditCardDebtId || undefined,
         }
       })
+    for (const card of cards) {
+      const mine = installments.filter((p) => p.onCardId === card.id)
+      if (mine.length) card.plans = { n: mine.length, monthly: mine.reduce((s, p) => s + p.per, 0), left: mine.reduce((s, p) => s + p.remaining, 0) }
+    }
 
     // --- payments feed (newest first) ---
     const payments: PaymentVM[] = [...debtPayments]
@@ -323,6 +334,7 @@ export function useDebtTabData() {
         original: d.startingBalance,
         currency: d.currency,
         clearedMonth: d.clearedAt ? formatLocalized(parseISO(d.clearedAt), 'MMM yyyy', locale) : '—',
+        months: d.clearedAt ? Math.max(1, differenceInCalendarMonths(parseISO(d.clearedAt), parseISO((d.startDate || d.createdAt).slice(0, 10)))) : 0,
         history: paymentsFor(d.id)
           .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
           .map((p) => ({

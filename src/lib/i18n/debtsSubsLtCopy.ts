@@ -225,7 +225,7 @@ const AR_DEBT = { one: 'دين', two: 'دينين', few: 'ديون', many: 'دي
 export const DEBTS_SUBS_LT_COPY: Record<Locale, DebtsSubsLtCopy> = {
   en: {
     debts: {
-      tabs: { borrow: 'Borrowed', installment: 'Installments', credit_card: 'Cards' },
+      tabs: { borrow: 'Borrow', installment: 'Installments', credit_card: 'Cards' },
       active: 'Active',
       add: 'Add',
       addTitle: 'Add a debt',
