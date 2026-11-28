@@ -70,11 +70,13 @@ async function seed(uid) {
   const pm = async (b) => (await ins('payment_methods', { user_id: uid, currency: 'EGP', opening_at: opening + 'T00:00:00Z', ...b }))[0].id
   const bank = await pm({ name: 'CIB', type: 'bank_account', last4: '4821', opening_balance: 30000, is_default: true, color: '#1f6feb' })
   const card = await pm({ name: 'CIB Visa', type: 'debit_card', last4: '7302', parent_id: bank, color: '#0e7490' })
-  const wallet = await pm({ name: 'Vodafone Cash', type: 'wallet', opening_balance: 650, color: '#dc2626' })
-  const cash = await pm({ name: 'Cash', type: 'cash', opening_balance: 1200, color: '#16a34a' })
+  const wallet = await pm({ name: 'Vodafone Cash', type: 'wallet', opening_balance: 2400, color: '#dc2626' })
+  const cash = await pm({ name: 'Cash', type: 'cash', opening_balance: 3200, color: '#16a34a' })
   const pmOf = { bank, card, wallet, cash }
 
   const salarySrc = (await ins('income_sources', { user_id: uid, name: 'Salary', amount: 32000, currency: 'EGP', source_type: 'salary', is_recurring: true, recurring_frequency: 'monthly', day_of_month: 1, effective_start: monthsAgo(6, 1), payment_method_id: bank }))[0].id
+  // Salary already received in the earlier months, so no payday reads as late (dated before the accounts' opening anchor).
+  for (let k = 5; k >= 1; k--) await ins('income_events', { user_id: uid, name: 'Salary', amount: 32000, currency: 'EGP', received_date: monthsAgo(k, 1), occurrence_date: monthsAgo(k, 1), occurred_at: monthsAgo(k, 1) + 'T08:00:00Z', source_type: 'salary', status: 'confirmed', payment_method_id: bank, template_id: salarySrc })
   const smsLog = async (o) => (await ins('sms_parse_log', { user_id: uid, source: 'sms', sender: 'CIB', bank_name: 'CIB', currency: 'EGP', parsed_ok: true, awaiting_confirmation: false, confirmed_at: o.received_at, parse_method: 'curated_db', status: 'confirmed', payment_method_id: o.payment_method_id, ...o }))[0].id
   const income = [
     { name: 'Salary', amount: 32000, n: 1, hh: 10, source_type: 'salary' },
@@ -130,11 +132,11 @@ async function seed(uid) {
 
 // ---- devices ----
 const DEVICES = {
-  'iphone-6.9': { viewport: { width: 440, height: 956 }, dsf: 3, shots: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], touch: true },
+  'iphone-6.9': { viewport: { width: 440, height: 956 }, dsf: 3, shots: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17], touch: true },
   'ipad-13': { viewport: { width: 1032, height: 1376 }, dsf: 2, shots: [1, 3, 4, 5, 6, 8, 9, 10], touch: true },
-  'play-phone': { viewport: { width: 412, height: 824 }, dsf: 3, shots: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], touch: true },
-  'play-7in': { viewport: { width: 600, height: 960 }, dsf: 2, shots: [1, 4, 8, 9], touch: true },
-  'play-10in': { viewport: { width: 800, height: 1280 }, dsf: 2, shots: [1, 4, 8, 9], touch: true },
+  'play-phone': { viewport: { width: 414, height: 736 }, dsf: 3, shots: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17], touch: true },
+  'play-7in': { viewport: { width: 600, height: 960 }, dsf: 2, shots: [1, 3, 4, 8, 9], touch: true },
+  'play-10in': { viewport: { width: 800, height: 1280 }, dsf: 2, shots: [1, 3, 4, 8, 9], touch: true },
 }
 const SHOT = {
   1: { name: 'today', route: '/', loc: 'en' },
@@ -147,8 +149,13 @@ const SHOT = {
   8: { name: 'accounts', route: '/accounts', loc: 'en' },
   9: { name: 'savings', route: '/savings', loc: 'en' },
   10: { name: 'goals', route: '/goals', loc: 'en' },
-  11: { name: 'income', route: '/income', loc: 'en' },
+  11: { name: 'income', route: '/paydays', loc: 'en' },
   12: { name: 'accounts-arabic', route: '/accounts', loc: 'ar' },
+  13: { name: 'installments-arabic', route: '/debts', loc: 'ar', prepAs: 4 },
+  14: { name: 'flow-sms-arabic', route: '/flow', loc: 'ar', prepAs: 3 },
+  15: { name: 'goals-arabic', route: '/goals', loc: 'ar' },
+  16: { name: 'savings-arabic', route: '/savings', loc: 'ar' },
+  17: { name: 'income-arabic', route: '/paydays', loc: 'ar' },
 }
 const pickDevices = (env.DEVICES || Object.keys(DEVICES).join(',')).split(',')
 const pickShots = env.SHOTS ? env.SHOTS.split(',').map(Number) : null
@@ -185,9 +192,9 @@ try {
     await ctx.addInitScript((css) => { const add = () => { if (!document.getElementById('qa-hide')) { const s = document.createElement('style'); s.id = 'qa-hide'; s.textContent = css; document.head.appendChild(s) } }; document.addEventListener('DOMContentLoaded', add) }, HIDE)
     const p = await ctx.newPage(); p.setDefaultTimeout(45000)
     await ctx.addCookies([{ name: 'bdg-lang', value: 'en', url: BASE }])
-    await p.goto(`${BASE}/flow`, { waitUntil: 'domcontentloaded' })
+    await p.goto(`${BASE}/flow`, { waitUntil: 'domcontentloaded', timeout: 180000 })
     // The dev server sometimes answers one request with a 500 while it recompiles: reload until the sign-in form is there.
-    for (let k = 0; k < 4 && !(await p.getByRole('textbox', { name: 'Email' }).isVisible({ timeout: 20000 }).catch(() => false)); k++) { await p.waitForTimeout(5000); await p.goto(`${BASE}/flow`, { waitUntil: 'domcontentloaded' }).catch(() => undefined) }
+    for (let k = 0; k < 4 && !(await p.getByRole('textbox', { name: 'Email' }).isVisible({ timeout: 20000 }).catch(() => false)); k++) { await p.waitForTimeout(5000); await p.goto(`${BASE}/flow`, { waitUntil: 'domcontentloaded', timeout: 180000 }).catch(() => undefined) }
     await p.getByRole('textbox', { name: 'Email' }).fill(email, { timeout: 60000 })
     await p.getByRole('button', { name: 'Continue', exact: true }).click()
     await p.getByRole('textbox', { name: 'Password' }).fill(PW)
@@ -200,7 +207,7 @@ try {
         const u = JSON.parse(localStorage.getItem('buddget-ui-settings') || '{"state":{},"version":0}'); u.state = { ...(u.state || {}), buddgyOrb: { side: 'left', top: innerHeight - 150 } }; localStorage.setItem('buddget-ui-settings', JSON.stringify(u)) }, l)
     }
     // Warm-up load so the persisted UI settings (orb position) are the ones the app hydrates from on every shot.
-    await setLang('en'); await p.goto(`${BASE}/flow`, { waitUntil: 'domcontentloaded' }); await p.waitForTimeout(3000); await setLang('en')
+    await setLang('en'); await p.goto(`${BASE}/flow`, { waitUntil: 'domcontentloaded', timeout: 180000 }); await p.waitForTimeout(3000); await setLang('en')
     for (const n of shots) {
       const s = SHOT[n]
       const file = `${OUT}/${dev}/${String(n).padStart(2, '0')}-${s.name}.png`
@@ -213,7 +220,7 @@ try {
         await p.waitForTimeout(2500)
         if (await dismissNotices(p)) { await p.goto(BASE + s.route, { waitUntil: 'domcontentloaded', timeout: 90000 }); await p.waitForFunction(() => (document.querySelector('main')?.innerText.trim().length ?? 0) > 20, null, { timeout: 60000 }).catch(() => undefined); await p.waitForTimeout(2500) }
         if (s.chat) chatNote = await chat(p)
-        else await prep(n, p)
+        else await prep(s.prepAs ?? n, p)
         await p.evaluate(() => document.activeElement?.blur?.())
         await p.waitForTimeout(800)
         fs.mkdirSync(`${OUT}/${dev}`, { recursive: true })
@@ -293,9 +300,10 @@ function prep(n, p) {
   2: (p) => scrollToFrac(p, p.locator('main').getByText('SMS tracking', { exact: true }).first(), 0.28),
   3: (p) => scrollToFrac(p, p.locator('main').getByText('Instapay from Studio Nile', { exact: true }).first(), 0.45),
   4: async (p) => {
-    const notNow = p.locator('main').getByRole('button', { name: 'Not now', exact: true })
+    const notNow = p.locator('main').getByRole('button', { name: /^(Not now|ليس الآن)$/ })
     for (let k = 0; k < 4 && (await notNow.isVisible().catch(() => false)); k++) { await notNow.click(); await p.waitForTimeout(900) } // one "track as a goal?" card per debt
-    await p.locator('main').getByRole('button', { name: /^Installments/ }).or(p.locator('main').getByRole('tab', { name: /^Installments/ })).first().click()
+    // v9 Debts: Borrow / Installments / Cards segmented control (radio or plain button, label alone).
+    await p.locator('main').getByText(/^(Installments|أقساط|تقسيط)$/).first().click({ timeout: 8000 }).catch(() => undefined)
     await p.waitForTimeout(1200)
   },
   }
