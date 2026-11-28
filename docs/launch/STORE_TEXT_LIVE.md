@@ -9,12 +9,12 @@ The text sections below show the state before this update. The table here is the
 | | English (App Store U.S./U.K., Play) | Arabic (App Store) | Arabic (Play) |
 |---|---|---|---|
 | Name | buddget: AI Budget Tracker | بادجت: مصاريف وميزانية | بادجت: مصاريف وميزانية وأقساط |
-| Subtitle (App Store) | Expenses, Installments & Debts | أقساط وديون من رسائل البنك | n/a |
+| Subtitle (App Store) | Your all in one money app! | مصروفاتك وميزانيتك بمكان واحد | n/a |
 
 - **Keywords:**
-  - U.S.: `spending,money,bills,savings,goals,income,salary,wallet,receipt,cash,gold,planner,sms,bnpl,finance`
-  - U.K.: `egp,sms,bnpl,salary,savings,spending,goal,gold,bill,money,receipt,cash,aed,sar,kwd,qar,instalment`
-  - Arabic: `مصروفات,ادخار,تقسيط,راتب,محفظة,إيصالات,أهداف,مدخرات,فواتير,نقود,تتبع,استثمار,أموال,ذكاء,اصطناعي` (ASCII commas)
+  - U.S.: `spending,bills,savings,goals,income,salary,wallet,cash,gold,sms,bnpl,expense,installment,debt`
+  - U.K.: `egp,sms,bnpl,salary,savings,spending,goal,gold,bill,debt,cash,aed,sar,kwd,qar,instalment,expense`
+  - Arabic: `ديون,أقساط,ادخار,تقسيط,راتب,محفظة,إيصالات,أهداف,مدخرات,فواتير,نقود,تتبع,استثمار,أموال,ذكاء,اصطناعي` (ASCII commas)
   - Nothing repeats a name or subtitle word.
 - **U.K. text:** the promotional text and description are now identical to the U.S. version (opening question, privacy line).
 - **Arabic Pro subscriptions:** "أضعاف" fixed (monthly and annual).
