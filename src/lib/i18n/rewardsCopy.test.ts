@@ -24,7 +24,7 @@ describe('rewards copy', () => {
   })
   it('Arabic writes Pro, Sparks and buddget in Arabic letters', () => {
     const ar = flat(rewardsCopy.ar)
-    for (const word of ['برو', 'شرارات', 'بادجت']) expect(ar).toContain(word)
+    for (const word of ['برو', 'سبارك', 'بادجت']) expect(ar).toContain(word)
     expect(ar).not.toMatch(/\b(buddget|Buddgy|Pro|Sparks?)\b/)
   })
 })
