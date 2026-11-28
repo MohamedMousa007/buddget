@@ -68,7 +68,7 @@ async function seed(uid) {
   await upsert('user_settings', { user_id: uid, language: 'en', theme: 'light', sms_tracking_enabled: false, timezone: 'Africa/Cairo', month_start_day: 1 })
   const opening = monthsAgo(1, 28)
   const pm = async (b) => (await ins('payment_methods', { user_id: uid, currency: 'EGP', opening_at: opening + 'T00:00:00Z', ...b }))[0].id
-  const bank = await pm({ name: 'CIB', type: 'bank_account', last4: '4821', opening_balance: 9800, is_default: true, color: '#1f6feb' })
+  const bank = await pm({ name: 'CIB', type: 'bank_account', last4: '4821', opening_balance: 30000, is_default: true, color: '#1f6feb' })
   const card = await pm({ name: 'CIB Visa', type: 'debit_card', last4: '7302', parent_id: bank, color: '#0e7490' })
   const wallet = await pm({ name: 'Vodafone Cash', type: 'wallet', opening_balance: 650, color: '#dc2626' })
   const cash = await pm({ name: 'Cash', type: 'cash', opening_balance: 1200, color: '#16a34a' })
@@ -107,7 +107,15 @@ async function seed(uid) {
   for (const [name, block, amount, ec, essential] of cats) await ins('budget_categories', { user_id: uid, plan_id: plan, name, block, amount, expense_categories: ec, essential, currency: 'EGP', sort_order: s++ })
   await patch('profiles', `id=eq.${uid}`, { active_budget_plan_id: plan })
 
-  await ins('goals', { user_id: uid, name: 'Emergency fund', emoji: '🛟', category: 'emergency', currency: 'EGP', target_amount: 60000, manual_current_amount: 18500, monthly_contribution: 3000, funding_mode: 'manual', target_date: `${Y + 1}-09-30`, status: 'active', priority: 1 })
+  // v9 money model: goals and pockets are money set aside inside accounts (parts with a home), never moved out of the bank.
+  const goal = async (g) => (await ins('goals', { user_id: uid, category: 'emergency', currency: 'EGP', manual_current_amount: 0, funding_mode: 'manual', status: 'active', ...g }))[0].id
+  const part = (b) => ins('savings_accounts', { user_id: uid, category: 'savings', type: 'bank', currency: 'EGP', opening_balance: b.current_balance, ...b })
+  const efund = await goal({ name: 'Emergency fund', emoji: '🛟', target_amount: 60000, monthly_contribution: 3000, target_date: `${Y + 1}-09-30`, priority: 1 })
+  await part({ name: 'Emergency fund', icon: '🛟', goal_id: efund, held_in_payment_method_id: bank, current_balance: 12000 })
+  await part({ name: 'Emergency fund', icon: '🛟', goal_id: efund, held_in_payment_method_id: wallet, current_balance: 500 })
+  const laptop = await goal({ name: 'New laptop', emoji: '💻', category: 'quality_of_life', target_amount: 45000, monthly_contribution: 2500, target_date: `${Y + 1}-04-30`, priority: 2 })
+  await part({ name: 'New laptop', icon: '💻', goal_id: laptop, held_in_payment_method_id: bank, current_balance: 6500 })
+  await part({ name: 'Summer trip', icon: '🏖️', held_in_payment_method_id: bank, current_balance: 4000 })
 
   // BNPL: a phone on 12 interest-free monthly installments, due on the 28th, 5 already paid.
   const start = monthsAgo(5, 28)
@@ -122,11 +130,11 @@ async function seed(uid) {
 
 // ---- devices ----
 const DEVICES = {
-  'iphone-6.9': { viewport: { width: 440, height: 956 }, dsf: 3, shots: [1, 2, 3, 4, 5, 6, 7], touch: true },
-  'ipad-13': { viewport: { width: 1032, height: 1376 }, dsf: 2, shots: [1, 3, 4, 5, 7], touch: true },
-  'play-phone': { viewport: { width: 360, height: 640 }, dsf: 3, shots: [1, 2, 3, 4, 5, 6, 7], touch: true },
-  'play-7in': { viewport: { width: 600, height: 960 }, dsf: 2, shots: [1, 3, 4, 7], touch: true },
-  'play-10in': { viewport: { width: 800, height: 1280 }, dsf: 2, shots: [1, 3, 4, 7], touch: true },
+  'iphone-6.9': { viewport: { width: 440, height: 956 }, dsf: 3, shots: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], touch: true },
+  'ipad-13': { viewport: { width: 1032, height: 1376 }, dsf: 2, shots: [1, 3, 4, 5, 6, 8, 9, 10], touch: true },
+  'play-phone': { viewport: { width: 412, height: 824 }, dsf: 3, shots: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], touch: true },
+  'play-7in': { viewport: { width: 600, height: 960 }, dsf: 2, shots: [1, 4, 8, 9], touch: true },
+  'play-10in': { viewport: { width: 800, height: 1280 }, dsf: 2, shots: [1, 4, 8, 9], touch: true },
 }
 const SHOT = {
   1: { name: 'today', route: '/', loc: 'en' },
@@ -136,6 +144,11 @@ const SHOT = {
   5: { name: 'home-arabic', route: '/', loc: 'ar' },
   6: { name: 'buddgy-chat', route: '/', loc: 'en', chat: true },
   7: { name: 'pro-trial', route: '/settings/pro', loc: 'en' },
+  8: { name: 'accounts', route: '/accounts', loc: 'en' },
+  9: { name: 'savings', route: '/savings', loc: 'en' },
+  10: { name: 'goals', route: '/goals', loc: 'en' },
+  11: { name: 'income', route: '/income', loc: 'en' },
+  12: { name: 'accounts-arabic', route: '/accounts', loc: 'ar' },
 }
 const pickDevices = (env.DEVICES || Object.keys(DEVICES).join(',')).split(',')
 const pickShots = env.SHOTS ? env.SHOTS.split(',').map(Number) : null
