@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { isNative } from '@/lib/native/isNative'
+import { navigate } from '@/lib/navigation/navigate'
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
 import {
   SupabaseFinanceSync,
@@ -460,6 +461,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // while mode is still 'authenticated', dropping every page to skeletons.
     setUser(null)
     setSession(null)
+    // The next account on this device must not inherit this route.
+    navigate('/', { replace: true })
     // Re-arm the one-shot splash for the next sign-in.
     setSplashDoneFor(null)
     setMinElapsedFor(null)

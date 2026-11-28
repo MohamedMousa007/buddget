@@ -70,6 +70,9 @@ export function AuthOtpRow({ value, onChange, disabled }: AuthOtpRowProps) {
           onKeyDown={(e) => handleKeyDown(i, e)}
           className={cn(
             'w-12 h-14 sm:w-12 rounded-md border text-center text-2xl outline-none transition-colors disabled:opacity-50',
+            // Set on the input itself: inside the auth screen's `.dark` scope the inherited ink is still the light theme's.
+            'text-[var(--color-brand-text-primary)] caret-[var(--color-brand-text-primary)] [-webkit-text-fill-color:var(--color-brand-text-primary)]',
+            'autofill:shadow-[inset_0_0_0_100px_var(--color-brand-elevated)]',
             inputFocus
           )}
           style={{
