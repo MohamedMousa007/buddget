@@ -879,6 +879,10 @@ export async function restoreRetractedSibling(service: ServiceClient, sibling: P
       await service.from('sms_parse_log').update({ status: 'confirmed', income_id: sibling.siblingIncomeId }).eq('id', sibling.siblingId)
     }
   }
+  if (sibling.heldTopUp) {
+    // The transfer did not post: the credit goes back to waiting for its source, never silently lost.
+    await service.from('sms_parse_log').update({ status: 'logged', awaiting_confirmation: true, failure_code: TOP_UP_SOURCE_HOLD }).eq('id', sibling.siblingId)
+  }
   await unpairLegs(service, retractedByLogId, sibling.siblingId)
 }
 

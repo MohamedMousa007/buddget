@@ -1,4 +1,4 @@
-# Owner round 2026-11-28: plan (awaiting owner confirmation)
+# Owner round 2026-11-28: plan (approved 2026-11-28)
 
 ## Root causes (read-only investigations)
 1. OTP digits invisible: `AuthOtpRow.tsx` never sets a text colour; in light theme the digits inherit near-black text on the dark auth card; no autofill colour rules. Same row in admin `EmailCodeInput`.
@@ -28,3 +28,19 @@
 - WS3 Build after approval, parallel worktrees by area: empty states (Sonnet); add-card UI (Opus); budget plans (Sonnet); hero height (Haiku); desktop phase 1 (Opus).
 - WS4 Cloud QA persona matrix (Sonnet runner): new user, full data, bank with no accounts, Meeza-only, credit-card-only, HSBC-style account SMS, Arabic, phone/tablet/desktop, light/dark; every page, sheet and picker; report then fix round.
 - Then native build of both apps.
+
+## Status
+- WS1 money (this branch, tests written and passed, migration 0370 applied live):
+  - deleting an account whose only history is on its debit card closes it and keeps the card linked;
+  - an untracked payer is skipped, so a credit-card hold never vanishes (LOGIC_SPEC §4.1 updated);
+  - a bank-issued prepaid card is never name-matched (last4 only);
+  - a wallet/prepaid card's own credit with no funding leg is held (`failure_code = 'top_up_source'`), not booked as income: a later bank leg claims it and posts one transfer, confirming books it as income, and a failed post puts the hold back;
+  - `tailClash` (same last 4 warning) and `mergeCandidateFor` (one-tap merge prompt) are pure helpers waiting for their UI.
+- WS1 auth: own session (`ws1-auth`), not started yet.
+- WS3 add-card must wire: the `tailClash` warning in `PaymentMethodSetupSheet`, the merge prompt on a provisional account, and the top-up answers on a `top_up_source` hold:
+  - My account X: an own transfer X -> card (Top up category);
+  - Cash: the same from the system Cash;
+  - Somewhere else: an `account_adjustments` `manual_update` on the card (net worth up, not income);
+  - It was income: the existing confirm (userConfirmed).
+  Until then the held review list shows it as a credit to check, and confirming books income.
+- Known edge: if both legs arrive within the same second, the bank leg can miss the still-processing wallet credit and book a single transfer while the credit is still held. The answer sheet should hide "My account" when such a transfer already exists.
