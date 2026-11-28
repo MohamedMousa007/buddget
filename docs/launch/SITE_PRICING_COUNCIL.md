@@ -39,5 +39,18 @@ The owner asked: no Founder spots counter (keep "limited seats" honest: only 100
   - Only the "code older than the account, under 7 days" rule is replaced, and only in waitlist mode: the account must be under 14 days old and the invitee's waitlist row must prove the link.
   - An in-app code on the row wins over a waitlist referrer.
 - **Strongest dissent (Skeptic):** email matching misses people who sign up with a different email or Apple's hidden address. The pass says "same email in the app" on its back and in its terms, and a miss costs a reward, never money.
-- **Old captures:** quick add, subscriptions and reports have no v9 capture, so their pages show no phone. Arabic pages show no phone for the English Buddgy chat. Recapture through `e2e/ui/store-shots.mjs` on the cloud QA runner is a follow-up.
+- **Old captures:** quick add, subscriptions and reports have no v9 capture, so their pages show no phone. Arabic pages show no phone for the English Buddgy chat. Recaptured the same day: `e2e/ui/store-shots.mjs` shots 18-24 (quick add, subscriptions, insights, Arabic Buddgy, plus Arabic variants), run against the branch's Vercel preview (council part 3).
 - **Founder Club:** no counter. The copy says "Only 100 seats. Ever.", that numbers are never reissued, and that the club closes when the 100 are taken.
+
+# Part 3: capture from the preview, not a local dev server (council, 2026-11-28)
+
+The owner asked whether capturing from the already-built preview beats a local dev server. Architect, Skeptic and Pragmatist said preview: it is faster with nothing to compile, it shows the production build that ships, and it keeps the no-dev-server rule. The Critic said local: the preview sign-in was untested, and a half-working session could give plausible but wrong screenshots.
+
+**Verdict:** use the preview, with the Critic's risks turned into required guardrails:
+1. The deployment SHA equals the pushed HEAD.
+2. The preview uses the seeded Supabase project.
+3. The session comes from the auth API, with cookies written by `@supabase/ssr`; no password is typed into the page.
+4. The run stops unless seeded data is visible.
+5. Synthetic users are cleaned up, and 0 are left.
+
+The owner made this the rule for all future runs (CLAUDE.md, "Tests run only when the owner asks").

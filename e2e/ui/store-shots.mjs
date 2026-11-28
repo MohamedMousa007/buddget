@@ -9,7 +9,9 @@ import { chromium } from '@playwright/test'
 
 const env = { ...process.env }
 for (const f of ['.env.local', process.env.QA_ENV_FILE].filter(Boolean)) if (fs.existsSync(f)) for (const l of fs.readFileSync(f, 'utf8').split(/\r?\n/)) { const m = /^([A-Z_][A-Z0-9_]*)=(.*)$/.exec(l); if (m && !env[m[1]]) env[m[1]] = m[2] }
-const URL_ = env.NEXT_PUBLIC_SUPABASE_URL, KEY = env.SUPABASE_SECRET_KEY, BASE = 'http://localhost:3100'
+// BASE=<deployed preview URL> captures from an already-built deployment instead of a local dev server; the session is then
+// set as the app's auth cookie (from the auth API), so no password is typed into the page.
+const URL_ = env.NEXT_PUBLIC_SUPABASE_URL, KEY = env.SUPABASE_SECRET_KEY, BASE = (env.BASE || 'http://localhost:3100').replace(/\/$/, '')
 if (!URL_ || !KEY) throw new Error('NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY are required')
 const OUT = env.OUT || 'docs/launch/store-shots'
 const PW = 'Qa-Shots-' + crypto.randomBytes(6).toString('hex') + '!x'
@@ -125,6 +127,11 @@ async function seed(uid) {
   for (let k = 5; k >= 1; k--) await ins('debt_payments', { user_id: uid, debt_id: bnpl, amount: 1250, currency: 'EGP', payment_date: monthsAgo(k, 28), payment_method_id: bank })
   await ins('debts', { user_id: uid, name: 'Borrowed from Omar', debt_type: 'personal', direction: 'i_owe', currency: 'EGP', amount: 4000, person: 'Omar', relationship: 'friend', due_date: `${M === 12 ? Y + 1 : Y}-${String(M === 12 ? 1 : M + 1).padStart(2, '0')}-15`, started_at: monthsAgo(1, 10), received_via: 'cash', status: 'active' })
 
+  // Subscriptions (invented names) so the Subscriptions screen has a real month to show.
+  for (const [name, amount, billing_day, cat] of [['StreamBox', 149, 12, 'Enjoyment'], ['CloudVault 200 GB', 75, 5, 'Utilities'], ['Lotus Gym', 900, 1, 'Health']]) {
+    await ins('subscriptions', { user_id: uid, name, amount, currency: 'EGP', billing_cycle: 'monthly', billing_day, start_date: monthsAgo(4, billing_day), expense_category: cat, status: 'active' })
+  }
+
   // Pro trial, day 8 of 30.
   await upsert('user_entitlements', { user_id: uid, plan_key: 'plus_trial', status: 'trialing', source: 'default', trial_ends_at: new Date(Date.now() + 22.5 * 864e5).toISOString(), current_period_end: null, note: 'qa store shots' })
   return { sms, expenses: EXPENSES.length }
@@ -133,7 +140,7 @@ async function seed(uid) {
 // ---- devices ----
 const DEVICES = {
   // App area only: the composer draws the status bar and device frame. Heights = screen minus status bar.
-  'ios-phone': { viewport: { width: 402, height: 820 }, dsf: 3, shots: [1, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17], touch: true }, // iPhone Pro 6.3": 402x874, 54pt status bar
+  'ios-phone': { viewport: { width: 402, height: 820 }, dsf: 3, shots: [1, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24], touch: true }, // iPhone Pro 6.3": 402x874, 54pt status bar
   'android-phone': { viewport: { width: 360, height: 756 }, dsf: 3, shots: [1, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17], touch: true }, // Galaxy S 6.2": 360x780, 24dp status bar
   'ipad-13': { viewport: { width: 1032, height: 1352 }, dsf: 2, shots: [1, 3, 4, 5, 6, 8, 9, 10], touch: true }, // 1032x1376, 24pt status bar
   'play-7in': { viewport: { width: 600, height: 936 }, dsf: 2, shots: [1, 3, 4, 8, 9], touch: true },
@@ -157,10 +164,19 @@ const SHOT = {
   15: { name: 'goals-arabic', route: '/goals', loc: 'ar' },
   16: { name: 'savings-arabic', route: '/savings', loc: 'ar' },
   17: { name: 'income-arabic', route: '/paydays', loc: 'ar' },
+  // Website feature pages (site screens): quick add, subscriptions, reports, and Buddgy in Arabic.
+  18: { name: 'quickadd', route: '/flow', loc: 'en' },
+  19: { name: 'subscriptions', route: '/subscriptions', loc: 'en' },
+  20: { name: 'reports', route: '/reports', loc: 'en' },
+  21: { name: 'buddgy-chat-arabic', route: '/', loc: 'ar', chat: true },
+  22: { name: 'quickadd-arabic', route: '/flow', loc: 'ar', prepAs: 18 },
+  23: { name: 'subscriptions-arabic', route: '/subscriptions', loc: 'ar' },
+  24: { name: 'reports-arabic', route: '/reports', loc: 'ar' },
 }
 const pickDevices = (env.DEVICES || Object.keys(DEVICES).join(',')).split(',')
 const pickShots = env.SHOTS ? env.SHOTS.split(',').map(Number) : null
 const CHAT_Q = 'How much can I still spend on eating out this month?'
+const CHAT_Q_AR = 'كم يمكنني أن أنفق بعد على الأكل خارج البيت هذا الشهر؟'
 const HIDE = 'nextjs-portal,[data-toast-region],#__next-build-watcher,[data-nextjs-toast]{display:none!important} *{caret-color:transparent!important}'
 
 async function countQa() {
@@ -193,14 +209,12 @@ try {
     await ctx.addInitScript((css) => { const add = () => { if (!document.getElementById('qa-hide')) { const s = document.createElement('style'); s.id = 'qa-hide'; s.textContent = css; document.head.appendChild(s) } }; document.addEventListener('DOMContentLoaded', add) }, HIDE)
     const p = await ctx.newPage(); p.setDefaultTimeout(45000)
     await ctx.addCookies([{ name: 'bdg-lang', value: 'en', url: BASE }])
+    if (env.BASE) await ctx.addCookies(await sessionCookies())
+    else await uiSignIn(p)
     await p.goto(`${BASE}/flow`, { waitUntil: 'domcontentloaded', timeout: 180000 })
-    // The dev server sometimes answers one request with a 500 while it recompiles: reload until the sign-in form is there.
-    for (let k = 0; k < 4 && !(await p.getByRole('textbox', { name: 'Email' }).isVisible({ timeout: 20000 }).catch(() => false)); k++) { await p.waitForTimeout(5000); await p.goto(`${BASE}/flow`, { waitUntil: 'domcontentloaded', timeout: 180000 }).catch(() => undefined) }
-    await p.getByRole('textbox', { name: 'Email' }).fill(email, { timeout: 60000 })
-    await p.getByRole('button', { name: 'Continue', exact: true }).click()
-    await p.getByRole('textbox', { name: 'Password' }).fill(PW)
-    await p.getByRole('button', { name: 'Sign me in' }).click()
     await p.waitForFunction(() => { try { return !!JSON.parse(localStorage.getItem('buddget-storage') || 'null')?.state?.profile?.id } catch { return false } }, null, { timeout: 90000 })
+    // A signed-in shell with no data would give plausible but wrong shots: the seeded month must be on screen.
+    await p.getByText('Nour Grocers').first().waitFor({ timeout: 60000 }).catch(() => { throw new Error('seeded data not visible after sign-in: stopping before any capture') })
     await p.waitForTimeout(4000)
     const setLang = async (l) => {
       await p.evaluate((lang) => { const k = 'buddget-storage'; const j = JSON.parse(localStorage.getItem(k) || '{"state":{}}'); j.state = j.state || {}; j.state.settings = { ...(j.state.settings || {}), theme: 'light', language: lang }; localStorage.setItem(k, JSON.stringify(j)); document.cookie = 'bdg-lang=' + lang + '; path=/'
@@ -220,7 +234,7 @@ try {
         await p.evaluate(() => document.fonts.ready)
         await p.waitForTimeout(2500)
         if (await dismissNotices(p)) { await p.goto(BASE + s.route, { waitUntil: 'domcontentloaded', timeout: 90000 }); await p.waitForFunction(() => (document.querySelector('main')?.innerText.trim().length ?? 0) > 20, null, { timeout: 60000 }).catch(() => undefined); await p.waitForTimeout(2500) }
-        if (s.chat) chatNote = await chat(p)
+        if (s.chat) chatNote = await chat(p, s.loc === 'ar' ? CHAT_Q_AR : CHAT_Q)
         else await prep(s.prepAs ?? n, p)
         await p.evaluate(() => document.activeElement?.blur?.())
         await p.waitForTimeout(800)
@@ -246,20 +260,20 @@ console.log('shots', report.filter((r) => !r.error).length, 'errors', report.fil
 for (const r of report.filter((x) => x.error)) console.log('ERR', r.dev, r.n, r.error)
 
 // Opens Buddgy, types one question and waits for a real answer. Never fakes one: on no answer it leaves the typed question in the composer.
-async function chat(p) {
-  const opener = p.getByRole('button', { name: /buddgy/i }).first()
+async function chat(p, q) {
+  const opener = p.getByRole('button', { name: /buddgy|بادجي/i }).first()
   await opener.click({ timeout: 15000 })
   const box = p.locator('[role=dialog] textarea, [role=dialog] input[type=text]').first()
   await box.waitFor({ timeout: 20000 })
-  await box.fill(CHAT_Q)
+  await box.fill(q)
   if (env.NO_AI) return 'question typed, not sent (NO_AI)'
-  await p.locator('[role=dialog]').getByRole('button', { name: /send/i }).click()
+  await p.locator('[role=dialog]').getByRole('button', { name: /send|إرسال|ابعت|أرسل/i }).click()
   const answered = await p.waitForFunction((q) => {
     const d = document.querySelector('[role=dialog]'); if (!d) return false
     const t = d.innerText; const i = t.indexOf(q); if (i < 0) return false
     const after = t.slice(i + q.length).trim()
     return after.length > 60 && !d.querySelector('[aria-busy=true], .animate-pulse')
-  }, CHAT_Q, { timeout: 90000 }).then(() => true, () => false)
+  }, q, { timeout: 90000 }).then(() => true, () => false)
   if (!answered) {
     await p.waitForTimeout(500)
     return 'no answer within 90 s'
@@ -300,6 +314,10 @@ function prep(n, p) {
   const PREP = {
   2: (p) => scrollToFrac(p, p.locator('main').getByText('SMS tracking', { exact: true }).first(), 0.28),
   3: (p) => scrollToFrac(p, p.locator('main').getByText('Instapay from Studio Nile', { exact: true }).first(), 0.45),
+  18: async (p) => {
+    await p.getByRole('button', { name: /^(Quick add|إضافة سريعة)$/ }).first().click({ timeout: 15000 })
+    await p.waitForTimeout(1200)
+  },
   4: async (p) => {
     const notNow = p.locator('main').getByRole('button', { name: /^(Not now|ليس الآن)$/ })
     for (let k = 0; k < 4 && (await notNow.isVisible().catch(() => false)); k++) { await notNow.click(); await p.waitForTimeout(900) } // one "track as a goal?" card per debt
@@ -309,4 +327,29 @@ function prep(n, p) {
   },
   }
   return PREP[n]?.(p)
+}
+
+// Local dev server: sign in through the form like a person.
+async function uiSignIn(p) {
+  await p.goto(`${BASE}/flow`, { waitUntil: 'domcontentloaded', timeout: 180000 })
+  // The dev server sometimes answers one request with a 500 while it recompiles: reload until the sign-in form is there.
+  for (let k = 0; k < 4 && !(await p.getByRole('textbox', { name: 'Email' }).isVisible({ timeout: 20000 }).catch(() => false)); k++) { await p.waitForTimeout(5000); await p.goto(`${BASE}/flow`, { waitUntil: 'domcontentloaded', timeout: 180000 }).catch(() => undefined) }
+  await p.getByRole('textbox', { name: 'Email' }).fill(email, { timeout: 60000 })
+  await p.getByRole('button', { name: 'Continue', exact: true }).click()
+  await p.getByRole('textbox', { name: 'Password' }).fill(PW)
+  await p.getByRole('button', { name: 'Sign me in' }).click()
+}
+
+// Deployed preview: sign the synthetic user in through the auth API and let @supabase/ssr itself write its auth cookies
+// (name, encoding and chunking exactly as the app reads them), so no password is typed into the page.
+async function sessionCookies() {
+  const { createServerClient } = await import('@supabase/ssr')
+  const jar = []
+  const sb = createServerClient(URL_, env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
+    cookies: { getAll: () => [], setAll: (list) => { for (const c of list) jar.push(c) } },
+  })
+  const { error } = await sb.auth.signInWithPassword({ email, password: PW })
+  if (error) throw new Error('session: ' + error.message)
+  if (!jar.length) throw new Error('session: @supabase/ssr wrote no cookies')
+  return jar.filter((c) => c.value).map((c) => ({ name: c.name, value: c.value, url: BASE, sameSite: 'Lax', secure: BASE.startsWith('https') }))
 }

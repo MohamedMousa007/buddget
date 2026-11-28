@@ -82,7 +82,7 @@ export function FeaturePage({ locale, slug }: P & { slug: string }) {
       </PageHero>
       <Section pad="lg">
         <Container>
-          <Split visual={hasScreen(it.screen, locale) ? <PhoneShot screen={it.screen} locale={locale} /> : null}>
+          <Split visual={hasScreen(it.screen) ? <PhoneShot screen={it.screen} locale={locale} /> : null}>
             <H2 className="sm:text-4xl">{it.heading}</H2>
             <Lede>{it.body}</Lede>
             <Ticks items={it.bullets} />
@@ -116,7 +116,7 @@ export function HowPage({ locale }: P) {
       <Section pad="lg">
         <Container className="flex flex-col gap-24">
           {c.how.steps.map((s, i) => (
-            <Split key={s.n} reverse={i % 2 === 1} visual={hasScreen(s.screen, locale) ? <PhoneShot screen={s.screen} locale={locale} size="sm" /> : null}>
+            <Split key={s.n} reverse={i % 2 === 1} visual={hasScreen(s.screen) ? <PhoneShot screen={s.screen} locale={locale} size="sm" /> : null}>
               <span className="font-mono text-sm tracking-widest text-brand-primary-ink">{s.n}</span>
               <H2 className="sm:text-4xl">{s.h}</H2>
               <Lede>{s.p}</Lede>

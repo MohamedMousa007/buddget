@@ -170,14 +170,14 @@ export const en: SiteContent = {
       {
         slug: 'voice-expenses', name: 'Voice expenses', short: 'Hold the plus and say "200 taxi".',
         h1: 'Add an expense by saying it', lede: 'Hold the plus button and speak. "Coffee 45" becomes an entry with a category.',
-        heading: 'Faster than typing, in either language', body: 'Your voice is sent for transcription and then discarded. Only the text and the resulting entry are kept.',
+        screen: 'quickadd', heading: 'Faster than typing', body: 'Your voice is sent for transcription and then discarded. Only the text and the resulting entry are kept.',
         bullets: ['Hold the plus to record', 'Say it the way you talk', 'Review before it saves'],
         faq: [{ q: 'Is my voice recording kept?', a: 'No. The audio is transcribed and discarded. Only the text and the entry are kept.' }],
       },
       {
         slug: 'receipt-scanning', name: 'Receipt scanning', short: 'Photograph a receipt and confirm the details.',
         h1: 'Snap a receipt, skip the typing', lede: 'Photograph a receipt. buddget reads the merchant, total and date, and you confirm before it saves.',
-        heading: 'You stay in control', body: 'Photos are analysed to extract the expense and are not kept permanently once the details are saved.',
+        screen: 'quickadd', heading: 'You stay in control', body: 'Photos are analysed to extract the expense and are not kept permanently once the details are saved.',
         bullets: ['Merchant, total and date read for you', 'You confirm before saving', 'Photos are not kept after extraction'],
         faq: [{ q: 'Are my receipt photos stored?', a: 'Not permanently. They are used to extract the expense and then discarded.' }],
       },
@@ -219,14 +219,14 @@ export const en: SiteContent = {
       {
         slug: 'subscriptions', name: 'Subscriptions', short: 'Caught before they renew.',
         h1: 'Catch subscriptions before they renew', lede: 'See every subscription with its next billing date, and get a reminder before it renews.',
-        heading: 'Find the ones you forgot', body: 'buddget can spot subscriptions from your bank texts and shows the total you pay each month.',
+        screen: 'subscriptions', heading: 'Find the ones you forgot', body: 'buddget can spot subscriptions from your bank texts and shows the total you pay each month.',
         bullets: ['Next billing date for each one', 'Reminders before renewal', 'A monthly total'],
         faq: [{ q: 'Does it cancel subscriptions for me?', a: 'No. buddget shows and reminds you. You cancel with the provider.' }],
       },
       {
         slug: 'reports', name: 'Spending reports', short: 'Where your money goes, by category.',
         h1: 'Find where your money goes', lede: 'See spending by category, by week and by month, and compare with last month.',
-        heading: 'See the pattern in a week', body: 'Reports show your biggest categories, the places you pay most often and how this month compares with the last.',
+        screen: 'reports', heading: 'See the pattern in a week', body: 'Reports show your biggest categories, the places you pay most often and how this month compares with the last.',
         bullets: ['Category totals and trends', 'Biggest purchases', 'This month against last month'],
         faq: [{ q: 'Can I export my data?', a: 'Settings has an Export Data option for your expenses as a CSV file. For a full copy of everything, contact us and we will send it.' }],
       },
@@ -237,7 +237,7 @@ export const en: SiteContent = {
     steps: [
       { n: '01', h: 'Set your payday and accounts', p: 'Tell buddget when your salary arrives and add your accounts and cards. Two minutes, and you can skip anything.', screen: 'income' },
       { n: '02', h: 'Let bank texts do the typing', p: 'Turn on bank text tracking. Each transaction text becomes an entry with the amount, merchant and card. You confirm only the odd one.', screen: 'flow-sms' },
-      { n: '03', h: 'Add the rest in a few words', p: 'Say "coffee 45", photograph a receipt or tap the plus. It lands in the right category.' },
+      { n: '03', h: 'Add the rest in a few words', p: 'Say "coffee 45", photograph a receipt or tap the plus. It lands in the right category.', screen: 'quickadd' },
       { n: '04', h: 'Read your day in one number', p: 'Flow shows what is left until payday and what is free to spend today. It updates with every payment.', screen: 'today' },
       { n: '05', h: 'Ask Buddgy when you wonder', p: 'Where did the money go? Can I afford this? Buddgy answers from your own data.', screen: 'buddgy' },
       { n: '06', h: 'Watch your goals move', p: 'Every payday your budget funds your goals first. You see the percentage, the monthly amount and the date.', screen: 'goals' },
