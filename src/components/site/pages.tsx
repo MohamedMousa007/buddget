@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { STORE_LINKS, SUPPORT_EMAIL, type SiteLocale } from '@/lib/site/config'
 import { pathFor, siteContent } from '@/lib/site/routes'
 import { legalPath } from '@/lib/legal/paths'
-import type { ScreenKey } from '@/lib/site/screens'
+import { hasScreen, type ScreenKey } from '@/lib/site/screens'
 import { DailyNumberCalculator } from './DailyNumberCalculator'
 import { EmergencyCalculator } from './EmergencyCalculator'
 import { LeadForm } from './LeadForm'
@@ -18,6 +18,7 @@ import { HomeStory } from './home/HomeStory'
 import { HomeClose, HomeCompare, HomeFaq, HomePricing, HomeProof } from './home/HomeSections'
 import { BottomCta, FaqList, PageHero, PlanCards, Reviews, Split, StoreBadges } from './sections'
 import { WaitlistForm } from './WaitlistForm'
+import { InviteHero } from './WaitlistPass'
 import { ButtonLink, Card, Container, Eyebrow, H2, H3, Lede, Section, SectionHead, TextLink, Ticks } from './ui'
 
 type P = { locale: SiteLocale }
@@ -81,7 +82,7 @@ export function FeaturePage({ locale, slug }: P & { slug: string }) {
       </PageHero>
       <Section pad="lg">
         <Container>
-          <Split visual={<PhoneShot screen={it.screen} locale={locale} />}>
+          <Split visual={hasScreen(it.screen, locale) ? <PhoneShot screen={it.screen} locale={locale} /> : null}>
             <H2 className="sm:text-4xl">{it.heading}</H2>
             <Lede>{it.body}</Lede>
             <Ticks items={it.bullets} />
@@ -115,7 +116,7 @@ export function HowPage({ locale }: P) {
       <Section pad="lg">
         <Container className="flex flex-col gap-24">
           {c.how.steps.map((s, i) => (
-            <Split key={s.n} reverse={i % 2 === 1} visual={<PhoneShot screen={s.screen} locale={locale} size="sm" />}>
+            <Split key={s.n} reverse={i % 2 === 1} visual={hasScreen(s.screen, locale) ? <PhoneShot screen={s.screen} locale={locale} size="sm" /> : null}>
               <span className="font-mono text-sm tracking-widest text-brand-primary-ink">{s.n}</span>
               <H2 className="sm:text-4xl">{s.h}</H2>
               <Lede>{s.p}</Lede>
@@ -271,6 +272,43 @@ export function WaitlistPage({ locale }: P) {
         </Container>
       </Section>
       <Section pad="md" tone="card">
+        <Container narrow><div className="mb-6"><H2>{c.home.faq.h2}</H2></div><FaqList items={w.faq} /></Container>
+      </Section>
+    </>
+  )
+}
+
+/* ───────── Waitlist invite landing ───────── */
+export function WaitlistInvitePage({ locale }: P) {
+  const c = siteContent[locale]
+  const w = c.waitlist
+  return (
+    <>
+      <Section pad="md">
+        <Container>
+          <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)] lg:gap-16">
+            <InviteHero locale={locale} />
+            <Card className="sm:p-8">
+              <H3 className="mb-5 text-2xl">{w.invite.formTitle}</H3>
+              <WaitlistForm locale={locale} />
+            </Card>
+          </div>
+        </Container>
+      </Section>
+      <Section pad="md" tone="card">
+        <Container>
+          <ul className="grid gap-4 md:grid-cols-3">
+            {w.perks.map((k) => (
+              <li key={k.h} className="rounded-2xl border border-brand-border bg-brand-bg p-5">
+                <p className="font-semibold">{k.h}</p>
+                <p className="mt-1 text-brand-text-secondary">{k.p}</p>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-8"><StoreBadges locale={locale} /></div>
+        </Container>
+      </Section>
+      <Section pad="md">
         <Container narrow><div className="mb-6"><H2>{c.home.faq.h2}</H2></div><FaqList items={w.faq} /></Container>
       </Section>
     </>

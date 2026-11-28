@@ -9,7 +9,8 @@ export type Feature = {
   short: string
   h1: string
   lede: string
-  screen: ScreenKey
+  /** A v9 capture; omitted where none exists yet (the page then shows no phone). */
+  screen?: ScreenKey
   heading: string
   body: string
   bullets: string[]
@@ -95,7 +96,7 @@ export type SiteContent = {
     faq: { h2: string; items: Faq[] }
   }
   features: { intro: PageIntro; core: string; items: Feature[]; hubCta: string }
-  how: { intro: PageIntro; steps: { n: string; h: string; p: string; screen: ScreenKey }[]; ctaH: string; ctaP: string }
+  how: { intro: PageIntro; steps: { n: string; h: string; p: string; screen?: ScreenKey }[]; ctaH: string; ctaP: string }
   pricing: {
     intro: PageIntro
     free: { name: string; tag: string; price: string; items: string[] }
@@ -121,7 +122,17 @@ export type SiteContent = {
       heardFrom: string; heardOptions: Record<string, string>
       choose: string; submit: string; fine: string; error: string; disposable: string; busy: string
     }
-    done: { h: string; p: string; shareH: string; shareP: string; copy: string; copied: string; share: string; joined: string; shareText: string }
+    done: { h: string; p: string; shareH: string; shareP: string; copy: string; copied: string; share: string; shareText: string }
+    /** The member's own guest pass after joining (same card as the app's invite pass). {name} and {code} are filled in. */
+    pass: {
+      flip: string; tap: string; mark: string; title: string; from: string; sub: string; code: string; friendGets: string; friendValue: string
+      youGet: string; youWeek: string; backMark: string; benefits: [string, string, string]; codeLine: string; sameEmail: string; terms: string
+    }
+    /** The invite landing a shared link opens (/waitlist/invite?ref=…). */
+    invite: {
+      intro: PageIntro; title: string; titleNoName: string; sub: string; flip: string; tap: string; youGet: string; inviterGets: string; inviterGetsNoName: string
+      backMark: string; benefits: [string, string, string]; terms: string; formTitle: string; noCode: string
+    }
     founder: { eyebrow: string; h2: string; p: string; points: string[] }
     invites: { eyebrow: string; h2: string; p: string; points: string[]; note: string }
     faq: Faq[]

@@ -6187,6 +6187,8 @@ export type Database = {
           locale: string
           name: string | null
           platform: string | null
+          referral_checked_at: string | null
+          referral_status: string | null
           referred_by: string | null
           share_code: string
           tracking_now: string | null
@@ -6207,6 +6209,8 @@ export type Database = {
           locale: string
           name?: string | null
           platform?: string | null
+          referral_checked_at?: string | null
+          referral_status?: string | null
           referred_by?: string | null
           share_code: string
           tracking_now?: string | null
@@ -6227,6 +6231,8 @@ export type Database = {
           locale?: string
           name?: string | null
           platform?: string | null
+          referral_checked_at?: string | null
+          referral_status?: string | null
           referred_by?: string | null
           share_code?: string
           tracking_now?: string | null
@@ -7094,6 +7100,7 @@ export type Database = {
           p_legacy_key?: string
           p_mailbox_key?: string
           p_user: string
+          p_waitlist?: boolean
         }
         Returns: Json
       }
@@ -7418,6 +7425,16 @@ export type Database = {
           is_new: boolean
           referrals: number
           share_code: string
+        }[]
+      }
+      waitlist_referral_candidates: {
+        Args: { p_limit?: number }
+        Returns: {
+          invitee_email: string
+          invitee_id: string
+          inviter_code: string
+          inviter_id: string
+          waitlist_id: string
         }[]
       }
       waitlist_share_code: { Args: never; Returns: string }

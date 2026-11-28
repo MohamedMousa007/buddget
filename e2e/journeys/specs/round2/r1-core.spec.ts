@@ -239,27 +239,27 @@ test('R10 Pro, Rewards, Invite, Founders with selling off: no dead loading state
   test.info().annotations.push({ type: 'evidence', description: seen.join(' | ') })
 })
 
-test('R11 invite link /i/<code> shows the guest pass, saves the code in the 30-day cookie, shows no expiry; a bad code just opens the app', async ({ page }) => {
+test('R11 invite link /i/<code> shows the guest pass, saves the code in the 30-day cookie, shows no expiry, and before launch sends a newcomer to the waitlist invite landing with the code; a bad code just opens the app', async ({ page }) => {
   await page.goto('/i/layla-7k2')
   await expect(page.getByText('Code saved for sign-up')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Your guest pass. Tap to flip' })).toBeVisible()
   await expect(page.getByText('Tap the pass to see what you get')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Create your account' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Join the waitlist' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'I already have buddget' })).toBeVisible()
   expect(await page.locator('body').innerText()).not.toMatch(/expir|valid until/i)
   const cookie = (await page.context().cookies()).find((c) => c.name === 'buddget_invite')
   expect(cookie?.value).toBe('LAYLA-7K2')
   expect(cookie?.sameSite).toBe('Lax')
   expect((cookie?.expires ?? 0) * 1000 - Date.now()).toBeGreaterThan(29 * 86_400_000)
-  await page.getByRole('button', { name: 'Create your account' }).click()
-  await expect(page).toHaveURL(/\/flow/)
+  await page.getByRole('button', { name: 'Join the waitlist' }).click()
+  await expect(page).toHaveURL(/\/en\/waitlist\/invite\?ref=LAYLA-7K2/)
   await page.context().clearCookies()
   await page.goto('/i/!!')
   await expect.poll(() => new URL(page.url()).pathname).toBe('/')
   expect((await page.context().cookies()).some((c) => c.name === 'buddget_invite')).toBe(false)
 })
 
-test('R11b invite link: "Create your account" tapped before the page hydrates still goes on to sign-up, and the code is kept', async ({ page, context }) => {
+test('R11b invite link: "Join the waitlist" tapped before the page hydrates still leaves for the waitlist invite landing, and the code is kept', async ({ page, context }) => {
   // Hold the app's script back, as a slow phone or a cold server does, so the tap lands on the server-rendered page.
   let hold = true
   await context.route(/\/_next\/static\/chunks\/.*\.js/, async (r) => {
@@ -270,9 +270,9 @@ test('R11b invite link: "Create your account" tapped before the page hydrates st
   const cookie = (await context.cookies()).find((c) => c.name === 'buddget_invite')
   expect(cookie?.value, 'the proxy keeps the code before any script runs').toBe('LAYLA-7K2')
   expect((cookie?.expires ?? 0) * 1000 - Date.now()).toBeGreaterThan(29 * 86_400_000)
-  await page.getByRole('button', { name: 'Create your account' }).click()
+  await page.getByRole('button', { name: 'Join the waitlist' }).click()
   hold = false
-  await expect(page).toHaveURL(/\/flow/)
+  await expect(page).toHaveURL(/\/waitlist\/invite\?ref=LAYLA-7K2/)
   await context.unroute(/\/_next\/static\/chunks\/.*\.js/)
 })
 

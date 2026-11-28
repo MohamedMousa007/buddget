@@ -90,7 +90,9 @@ export function StoreBadges({ locale }: { locale: SiteLocale; dark?: boolean }) 
   )
 }
 
-export function Split({ children, visual, reverse, className }: { children: ReactNode; visual: ReactNode; reverse?: boolean; className?: string }) {
+/** Text beside a visual. With no visual (a screen without a current capture) the text stands alone at reading width. */
+export function Split({ children, visual, reverse, className }: { children: ReactNode; visual?: ReactNode; reverse?: boolean; className?: string }) {
+  if (!visual) return <div className={cn('flex max-w-3xl flex-col gap-5', className)}>{children}</div>
   return (
     <div className={cn('flex flex-col items-center gap-12 lg:gap-20', reverse ? 'lg:flex-row-reverse' : 'lg:flex-row', className)}>
       <div className="flex min-w-0 flex-col gap-5 lg:flex-1 lg:basis-[440px]">{children}</div>

@@ -5,7 +5,7 @@ import { articleLd, breadcrumbLd, faqLd, glossaryLd, graph, homeLd, howToLd, too
 import {
   AboutPage, AiPage, ComparePage, ContactPage, CookiesPage, DailyToolPage, DeleteAccountPage, DownloadPage,
   EmergencyToolPage, FeaturePage, FeaturesHub, GlossaryPage, GuidePage, GuidesIndex, HomePage, HowPage,
-  PressPage, PricingPage, SecurityPage, SupportPage, ToolsHub, WaitlistPage,
+  PressPage, PricingPage, SecurityPage, SupportPage, ToolsHub, WaitlistInvitePage, WaitlistPage,
 } from './pages'
 
 export type Rendered = { node: ReactNode; ld: object }
@@ -24,6 +24,7 @@ function breadcrumbLabels(locale: SiteLocale, slug: string): string[] {
     section === 'features' ? c.features.items.find((x) => x.slug === child)?.name
     : section === 'guides' ? c.guides.items.find((x) => x.slug === child)?.title
     : section === 'tools' ? c.tools.items.find((x) => x.slug === child)?.name
+    : section === 'waitlist' ? c.waitlist.invite.intro.eyebrow
     : undefined
   return child ? [sectionLabel[section] ?? section, childLabel ?? child] : [sectionLabel[section] ?? section]
 }
@@ -47,7 +48,9 @@ export function renderRoute(locale: SiteLocale, slug: string): Rendered | null {
     case 'pricing':
       return { node: <PricingPage locale={locale} />, ld: graph([crumbs, faqLd(c.pricing.faq)]) }
     case 'waitlist':
-      return { node: <WaitlistPage locale={locale} />, ld: graph([crumbs, faqLd(c.waitlist.faq)]) }
+      return child
+        ? { node: <WaitlistInvitePage locale={locale} />, ld: graph([crumbs]) }
+        : { node: <WaitlistPage locale={locale} />, ld: graph([crumbs, faqLd(c.waitlist.faq)]) }
     case 'download':
       return { node: <DownloadPage locale={locale} />, ld: graph([crumbs]) }
     case 'security':

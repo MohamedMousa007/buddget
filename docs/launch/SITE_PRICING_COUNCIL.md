@@ -18,3 +18,26 @@ Question: before the store listings are approved, should the website show the ac
 - **Rewards stay in Pro days, never in money.** The Founder Club and invite copy never quotes a price or a discount.
 - No crossed-out price, no "founding price" (same rule as the paywall).
 - **Strongest dissent:** the Critic's point that a published number becomes a promise. That is the reason for the label and the date, and why the site reads the app's own anchors (`PRO_ANCHORS` in `src/components/features/billing/planBilling.ts`) instead of a second copy of the prices. Update it the day the listings go live.
+
+# Part 2: invites before launch, and old captures (council, 2026-11-28)
+
+The owner asked: no Founder spots counter (keep "limited seats" honest: only 100, ever); the waitlist invite must look and work like the app's (guest pass, its own landing); decide `/i/<code>` and the old-design captures by council.
+
+| Voice | `/i/<code>` before launch | Waitlist rewards | Old captures |
+|---|---|---|---|
+| Architect | Keep the guest pass and cookie; main button becomes "Join the waitlist" with the code | Server bridge into the app's own referral rules | Recapture if redesigned |
+| Skeptic | Same; never send newcomers to `/flow` | Promise nothing; email matching is fragile | Drop until recaptured; never English on Arabic pages |
+| Pragmatist | Same; flip to stores with one flag | Small bridge; pending until the inviter has an account | Check v9 first; fix the Arabic chat first |
+| Critic | Same; update the tests deliberately | Dedicated bridge, caps and native activation still apply, one referrer per invitee | Swap or drop now; recapture later |
+
+## Verdict (applied)
+
+- **`/i/<code>`:** the app's guest pass stays (code cookie, inviter name). While `STORE_LIVE` is all false, "Join the waitlist" leads to `/<lang>/waitlist/invite?ref=<code>` and "I already have buddget" still signs existing users in. Unit test and e2e R11, R11b and J5 were updated to this contract.
+- **Waitlist guest pass:** after joining, each member gets the app's guest pass card ("37 Days of Pro", signed with their first name, their code), with share and copy. The shared link opens a dedicated invite landing, "<Name> sent you a guest pass", with the pass and the join form. That page is kept out of search.
+- **Rewards are real (bridge, migration 0369):** a daily cron (`/api/cron/waitlist-referrals`) records the in-app referral through `referral_redeem` once the invitee has a confirmed account under the same email.
+  - Every existing invite rule still applies: one per person and mailbox, no self or same-device invites, the inviter is paid only after the friend activates on a phone, caps of 4 a month and 12 a year, and the friend's trial gets +7 days.
+  - Only the "code older than the account, under 7 days" rule is replaced, and only in waitlist mode: the account must be under 14 days old and the invitee's waitlist row must prove the link.
+  - An in-app code on the row wins over a waitlist referrer.
+- **Strongest dissent (Skeptic):** email matching misses people who sign up with a different email or Apple's hidden address. The pass says "same email in the app" on its back and in its terms, and a miss costs a reward, never money.
+- **Old captures:** quick add, subscriptions and reports have no v9 capture, so their pages show no phone. Arabic pages show no phone for the English Buddgy chat. Recapture through `e2e/ui/store-shots.mjs` on the cloud QA runner is a follow-up.
+- **Founder Club:** no counter. The copy says "Only 100 seats. Ever.", that numbers are never reissued, and that the club closes when the 100 are taken.

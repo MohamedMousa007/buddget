@@ -16,6 +16,7 @@ export function buildMetadata(locale: SiteLocale, slug: string): Metadata {
     title: isHome ? { absolute: route.title } : route.title,
     description: route.description,
     alternates: { canonical: pathFor(locale, slug), languages },
+    ...(route.noindex ? { robots: { index: false, follow: true } } : {}),
     openGraph: {
       type: slug.startsWith('guides/') ? 'article' : 'website',
       siteName: 'buddget',

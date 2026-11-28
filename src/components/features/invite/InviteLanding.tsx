@@ -9,14 +9,21 @@ import { MembershipPanel } from '@/components/features/membership/PointsList'
 import { Fine, Sub } from '@/components/features/rewards/pageParts'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useLocale } from '@/lib/i18n'
 import { useRewardsCopy } from '@/lib/i18n/rewardsCopy'
 import { INVITE_TARGET } from '@/lib/native/inviteLinks'
 import { fetchInviterFirstName } from '@/lib/referrals/referralsApi'
+import { STORE_LINKS } from '@/lib/site/config'
+import { waitlistInvitePath } from '@/lib/site/waitlist'
 import { displayLink, saveInviteFromLink } from './inviteCode'
+
+/** Before either store has the app, a newcomer's way in is the waitlist, not web sign-up (STORE_LIVE in the site config). */
+const PRELAUNCH = !STORE_LINKS.appStore && !STORE_LINKS.googlePlay
 
 /** What a friend sees on `/i/<code>`: the guest pass signed by the inviter, what they get, and the way in. The code is saved on open. */
 export function InviteLanding({ code }: { code: string }) {
   const copy = useRewardsCopy()
+  const { locale } = useLocale()
   const c = copy.landing
   const p = copy.invite.pass
   const [saved, setSaved] = useState(false)
@@ -77,10 +84,12 @@ export function InviteLanding({ code }: { code: string }) {
 
         <div className="mt-auto grid gap-2.5">
           {/* Real links: a tap before the page hydrates still goes on to sign-up (a router.push button did nothing then). */}
-          <Button size="cta-block" className="font-bold" nativeButton={false} render={<Link href={INVITE_TARGET} />}>{c.create}</Button>
+          {PRELAUNCH
+            ? <Button size="cta-block" className="font-bold" nativeButton={false} render={<Link href={waitlistInvitePath(locale, code)} />}>{c.waitlist}</Button>
+            : <Button size="cta-block" className="font-bold" nativeButton={false} render={<Link href={INVITE_TARGET} />}>{c.create}</Button>}
           <Button size="cta-block" variant="outline" nativeButton={false} render={<Link href={INVITE_TARGET} />}>{c.signIn}</Button>
         </div>
-        <Fine>{c.foot}</Fine>
+        <Fine>{PRELAUNCH ? c.waitlistFoot : c.foot}</Fine>
       </main>
     </div>
   )

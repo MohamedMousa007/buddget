@@ -6,11 +6,12 @@ import { Input } from '@/components/ui/input'
 import { OptionChip } from '@/components/ui/OptionChip'
 import type { SiteLocale } from '@/lib/site/config'
 import { siteContent } from '@/lib/site/routes'
-import { UTM_KEYS, WAITLIST_COUNTRIES, waitlistShareUrl } from '@/lib/site/waitlist'
+import { UTM_KEYS, WAITLIST_COUNTRIES, firstWord, waitlistShareUrl } from '@/lib/site/waitlist'
+import { MemberPass } from './WaitlistPass'
 import { track } from './track'
 
 type Platform = '' | 'ios' | 'android'
-type Joined = { shareCode?: string; referrals?: number }
+type Joined = { shareCode?: string; referrals?: number; name: string | null }
 
 const FIELD = 'h-12 w-full rounded-xl border border-brand-border bg-brand-elevated px-3.5 text-base text-brand-text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring'
 const camel = (k: string) => k.replace(/_(\w)/g, (_, c: string) => c.toUpperCase())
@@ -55,7 +56,7 @@ export function WaitlistForm({ locale }: { locale: SiteLocale }) {
       const body = (await res.json().catch(() => ({}))) as Joined & { error?: string }
       if (!res.ok) { setState(body.error === 'disposable' ? 'disposable' : 'error'); return }
       track('lead_submit')
-      setJoined(body)
+      setJoined({ ...body, name: firstWord(pick('name')) })
       setState('idle')
     } catch {
       setState('error')
@@ -124,22 +125,24 @@ function WaitlistShare({ locale, joined }: { locale: SiteLocale; joined: Joined 
   }
 
   return (
-    <div role="status" className="grid gap-4">
+    <div role="status" className="grid gap-5">
       <div>
         <p className="font-heading text-2xl font-bold">{d.h}</p>
         <p className="mt-1 text-brand-text-secondary">{d.p}</p>
       </div>
-      {url ? (
-        <div className="grid gap-3 rounded-2xl bg-brand-primary-soft p-5">
-          <p className="font-semibold text-brand-primary-ink">{d.shareH}</p>
-          <p className="text-sm text-brand-text-secondary">{d.shareP}</p>
+      {url && joined.shareCode ? (
+        <>
+          <div>
+            <p className="font-semibold">{d.shareH}</p>
+            <p className="mt-1 text-sm text-brand-text-secondary">{d.shareP}</p>
+          </div>
+          <MemberPass locale={locale} code={joined.shareCode} name={joined.name} />
           <Input size="brand" readOnly value={url} dir="ltr" aria-label={d.shareH} onFocus={(e) => e.currentTarget.select()} />
           <div className="flex flex-wrap gap-3">
             <Button size="cta" className="rounded-full px-6" onClick={() => void share()}>{d.share}</Button>
             <Button size="cta" variant="outline" className="rounded-full px-6" onClick={() => void navigator.clipboard.writeText(url).then(() => setCopied(true))}>{copied ? d.copied : d.copy}</Button>
           </div>
-          {joined.referrals ? <p className="text-sm font-medium">{d.joined.replace('{n}', String(joined.referrals))}</p> : null}
-        </div>
+        </>
       ) : null}
     </div>
   )

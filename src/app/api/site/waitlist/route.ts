@@ -5,16 +5,13 @@ import { memoryGateOk, tooManyRequests } from '@/lib/server/publicApiRateLimit'
 import { isRateLimited } from '@/lib/server/rateLimit'
 import { isDisposableEmail } from '@/lib/referrals/disposable'
 import { createServiceRoleClient } from '@/lib/supabase/service'
-import { WAITLIST_CHOICES } from '@/lib/site/waitlist'
+import { APP_INVITE_CODE as APP_CODE, WAITLIST_CHOICES, WAITLIST_SHARE_CODE as SHARE_CODE } from '@/lib/site/waitlist'
 
 const WINDOW_SECONDS = 60
 const MAX_PER_WINDOW = 5
 const EMAIL_PER_HOUR = 3
 /** Every IP and address together: past this the form answers 429 until tomorrow instead of filling the table. */
 const GLOBAL_PER_DAY = 3000
-
-const SHARE_CODE = /^W[2-9A-HJKMNP-Z]{7}$/
-const APP_CODE = /^[A-Z0-9]{2,8}-[A-Z0-9]{3,5}$/
 
 const utm = z.string().trim().max(100).optional().transform((v) => v || undefined)
 
