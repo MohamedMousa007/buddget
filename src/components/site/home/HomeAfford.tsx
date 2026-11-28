@@ -63,7 +63,7 @@ export function HomeAfford({ locale }: { locale: SiteLocale }) {
             </div>
             <div className="aff-bar" role="img" aria-label={`${Math.round(Math.min(share, 1) * 100)}%`}><i style={{ width: `${Math.min(100, share * 100)}%`, background: color }} /></div>
             <div className="aff-cap"><span>{fill(a.share, { s: Math.round(share * 100) })}</span><span>{fill(a.days, { d: (price / per).toFixed(1) })}</span></div>
-            <Link className="pill pill-p" href={pathFor(locale, 'download')} data-track="cta">{a.cta}</Link>
+            <Link className="pill pill-p" href={pathFor(locale, 'waitlist')} data-track="cta">{a.cta}</Link>
             <p className="calc-note">{a.foot}</p>
           </div>
         </div>

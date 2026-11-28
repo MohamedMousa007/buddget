@@ -34,7 +34,7 @@ export function EmergencyCalculator({ locale }: { locale: SiteLocale }) {
         <div><div className="text-sm text-brand-text-secondary">{c.target}</div><div dir="ltr" className="font-mono text-4xl font-medium text-brand-primary-ink">{fmt(target)} <span className="text-lg">{unit}</span></div></div>
         <div><div className="text-sm text-brand-text-secondary">{c.time}</div><div dir="ltr" className="font-mono text-4xl font-medium text-brand-primary-ink">{time} <span className="text-lg">{c.monthsUnit}</span></div></div>
       </div>
-      <ButtonLink href={pathFor(locale, 'download')} className="justify-self-start">{c.cta}</ButtonLink>
+      <ButtonLink href={pathFor(locale, 'waitlist')} className="justify-self-start">{c.cta}</ButtonLink>
     </Card>
   )
 }

@@ -294,7 +294,7 @@ export const en: SiteContent = {
     perks: [
       { h: 'Your first 30 days are Pro', p: 'Every Pro feature, no card. Then Free, forever.' },
       { h: 'A head start on the Founder Club', p: '100 founder numbers, earned in the first weeks after launch.' },
-      { h: 'Bring friends', p: 'Your own link. In the app, every friend who gets going earns you 7 days of Pro.' },
+      { h: 'Bring friends', p: 'Your own waitlist link. Invite rewards start in the app: 7 days of Pro for each friend who gets going.' },
     ],
     form: {
       title: 'Join the waitlist', email: 'Email', emailPlaceholder: 'you@example.com', name: 'First name', optional: 'optional', country: 'Country',
@@ -397,7 +397,7 @@ export const en: SiteContent = {
     intro: { eyebrow: 'About', h1: 'Month-end should not be a surprise', lede: 'buddget is a budgeting app. It reads the bank texts you already get, so you can see where your money goes and spend with confidence.' },
     pillars: [
       { h: 'Our mission', p: 'Help people see their money clearly, save on purpose and reach the goals they set.' },
-      { h: 'What we believe', p: 'Tracking should take seconds, not hours. Your data is yours. Arabic is a first language, not a translation.' },
+      { h: 'What we believe', p: 'Tracking should take seconds, not hours. Your data is yours. A plan should match how people really pay, installments included.' },
       { h: 'How we work', p: 'Small releases, a reply to every message from users and notes on what changes.' },
     ],
     storyH: 'The short story',
@@ -410,7 +410,7 @@ export const en: SiteContent = {
   press: {
     intro: { eyebrow: 'Press kit', h1: 'Everything you need to write about buddget', lede: 'The facts, the logo and the colours in one place.' },
     aboutH: 'About buddget',
-    boilerplate: 'buddget is a budgeting app. It reads bank text messages to log spending, shows what is safe to spend today and helps people reach savings goals. It works in Arabic and English on iPhone and Android and is free to start.',
+    boilerplate: 'buddget is a budgeting app for iPhone and Android. It shows what is free to spend today, logs spending from bank text messages, and keeps installments, debts and goals, in any currency or gold, in one plan. It is free forever, with an optional Pro plan.',
     facts: [
       { k: 'Platforms', v: 'iPhone and Android' }, { k: 'Languages', v: 'Arabic, English' }, { k: 'Price', v: 'Free forever; buddget Pro is optional' }, { k: 'Contact', v: 'support@buddget.app' },
     ],

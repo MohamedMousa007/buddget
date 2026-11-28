@@ -46,6 +46,7 @@ select cron.schedule('cleanup-trusted-devices', '20 3 * * *', 'SELECT public.cle
 select cron.schedule('push-token-sweep', '45 1 * * *', 'SELECT public.push_token_sweep()');
 select cron.schedule('cron-log-trim', '40 0 * * *', $c$DELETE FROM cron.job_run_details WHERE end_time < now() - interval '7 days'$c$);
 select cron.schedule('site-leads-retention', '55 1 * * *', $c$DELETE FROM public.site_leads WHERE created_at < now() - interval '180 days'$c$);
+select cron.schedule('waitlist-retention', '57 1 * * *', $c$DELETE FROM public.waitlist_signups WHERE created_at < now() - interval '180 days'$c$);
 select cron.schedule('sms-zero-variance', '17 4 * * *', 'SELECT public.sms_zero_variance_sweep()');
 select cron.schedule('sms-tick', '*/15 * * * *', 'SELECT public.sms_tick()');
 select cron.schedule('api-rate-cleanup', '0 * * * *', $c$DELETE FROM public.api_rate_limits WHERE window_start < now() - interval '25 hours'$c$);
