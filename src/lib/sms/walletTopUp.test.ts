@@ -22,7 +22,7 @@ import { resolvePaymentMethodByLast4, type SmsRowData } from './createSmsExpense
 interface FakeState {
   wallets: Array<{ name: string }>
   /** Rows the RPC can pair against, keyed as the log would persist them. */
-  logs: Array<{ id: string; kind: string; amount: number; expense_id: string | null; income_id: string | null; paired: boolean }>
+  logs: Array<{ id: string; kind: string; amount: number; expense_id: string | null; income_id: string | null; paired: boolean; failure_code?: string | null }>
   expenses: Array<{ id: string; category: string; deleted: boolean }>
   incomes: Array<{ id: string; deleted: boolean }>
 }
@@ -114,7 +114,9 @@ function makeService(state: FakeState) {
           }
         },
       )
-    return q([]) // sms_parse_log, subscriptions, debts: accept writes, match nothing
+    // A held top-up's failure_code is what claimSibling reads before keeping an empty sibling.
+    if (table === 'sms_parse_log') return q(state.logs.filter((l) => l.failure_code))
+    return q([]) // subscriptions, debts: accept writes, match nothing
   }
 
   return { from, rpc } as unknown as SupabaseClient
@@ -148,10 +150,11 @@ const walletLeg = (): SmsRowData =>
   leg({ kind: 'income', merchant: 'Apple pay', rawBody: BARQ_CREDIT, last4: null, logId: 'log-wallet' })
 
 // The log row each leg leaves behind, written with the APPLIED kind by the route.
-function persist(state: FakeState, id: string, res: { kind: string | null; expenseId: string | null; incomeId: string | null }) {
+function persist(state: FakeState, id: string, res: { kind: string | null; expenseId: string | null; incomeId: string | null; confirmReason?: string | null }) {
   state.logs.push({
     id, kind: res.kind ?? 'other', amount: 2,
     expense_id: res.expenseId, income_id: res.incomeId, paired: false,
+    failure_code: res.confirmReason === 'top_up_source' ? 'top_up_source' : null,
   })
 }
 
@@ -182,7 +185,8 @@ describe('own-wallet top-up — end state, both arrival orders', () => {
     const svc = makeService(state)
 
     const a = await createSmsTransaction(svc, walletLeg(), opts)
-    expect(a.outcome).toBe('income') // no funding leg yet — correctly provisional income
+    expect(a.outcome).toBe('awaiting_confirmation') // no funding leg yet: "Where did this come from?", never income by default
+    expect(a.confirmReason).toBe('top_up_source')
     expect(a.kind).toBe('instant_transfer_in') // ...but pairable when the funding leg lands
     persist(state, 'log-wallet', a)
 
@@ -196,12 +200,20 @@ describe('own-wallet top-up — end state, both arrival orders', () => {
     expect(state.incomes.filter((i) => !i.deleted)).toHaveLength(0)
   })
 
-  it('a wallet credit with no funding leg stays income (a friend sent it)', async () => {
+  it('a wallet credit with no funding leg waits for "Where did this come from?" and books nothing yet', async () => {
     const svc = makeService(state)
     const res = await createSmsTransaction(svc, walletLeg(), opts)
+    expect(res.outcome).toBe('awaiting_confirmation')
+    expect(res.confirmReason).toBe('top_up_source')
+    expect(state.incomes.filter((i) => !i.deleted)).toHaveLength(0)
+    expect(state.expenses.filter((e) => !e.deleted)).toHaveLength(0)
+  })
+
+  it('answered "It was income" (confirm re-runs with userConfirmed): booked as income (a friend sent it)', async () => {
+    const svc = makeService(state)
+    const res = await createSmsTransaction(svc, walletLeg(), { ...opts, userConfirmed: true })
     expect(res.outcome).toBe('income')
     expect(state.incomes.filter((i) => !i.deleted)).toHaveLength(1)
-    expect(state.expenses.filter((e) => !e.deleted)).toHaveLength(0)
   })
 
   it('spending FROM the wallet stays spend', async () => {
@@ -272,7 +284,7 @@ describe('wallet cash-out — both arrival orders', () => {
 
     const res = await createSmsTransaction(svc, walletLeg(), opts)
 
-    expect(res.outcome).toBe('income') // fell through, as if no sibling existed
+    expect(res.outcome).toBe('awaiting_confirmation') // as if no sibling existed
     expect(state.logs.find((l) => l.id === 'log-payoff')!.paired).toBe(false) // untouched
   })
 
@@ -292,7 +304,7 @@ describe('wallet cash-out — both arrival orders', () => {
 })
 
 // ── Matchers ────────────────────────────────────────────────────────────────────
-function stub(methods: Array<{ name: string; last4?: string }>): SupabaseClient {
+function stub(methods: Array<{ name: string; last4?: string; type?: string }>): SupabaseClient {
   const chain: Record<string, unknown> = {
     select: () => chain,
     eq: () => chain,
@@ -471,5 +483,11 @@ describe('namesOwnStoredValue — lenient, because the name sits inside a senten
 
   it('ignores pass-through rails', async () => {
     expect(await namesOwnStoredValue(stub([{ name: 'Apple Pay' }]), 'u1', BARQ_CREDIT)).toBe(false)
+  })
+
+  it('never name-matches a prepaid card named after its bank: every bank SMS names the bank (matched by last4 instead)', async () => {
+    const prepaid = stub([{ name: 'CIB Prepaid ••1234', last4: '1234', type: 'prepaid_card' }])
+    expect(await namesOwnStoredValue(prepaid, 'u1', 'Your CIB account was debited EGP 500')).toBe(false)
+    expect(await isOwnTopUpTarget(prepaid, 'u1', 'CIB', '')).toBe(false)
   })
 })

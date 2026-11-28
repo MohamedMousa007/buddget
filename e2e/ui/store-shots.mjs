@@ -71,7 +71,11 @@ async function seed(uid) {
   const bank = await pm({ name: 'CIB', type: 'bank_account', last4: '4821', opening_balance: 30000, is_default: true, color: '#1f6feb' })
   const card = await pm({ name: 'CIB Visa', type: 'debit_card', last4: '7302', parent_id: bank, color: '#0e7490' })
   const wallet = await pm({ name: 'Vodafone Cash', type: 'wallet', opening_balance: 2400, color: '#dc2626' })
-  const cash = await pm({ name: 'Cash', type: 'cash', opening_balance: 3200, color: '#16a34a' })
+  // Every account already has its system Cash (fixed id): reuse it rather than adding a second Cash.
+  const sysCash = (await rest(`/rest/v1/payment_methods?user_id=eq.${uid}&type=eq.cash&deleted_at=is.null&select=id&limit=1`))[0]?.id
+  const cash = sysCash
+    ? (await patch('payment_methods', `id=eq.${sysCash}`, { opening_balance: 3200, opening_at: opening + 'T00:00:00Z', currency: 'EGP' }), sysCash)
+    : await pm({ name: 'Cash', type: 'cash', opening_balance: 3200, color: '#16a34a' })
   const pmOf = { bank, card, wallet, cash }
 
   const salarySrc = (await ins('income_sources', { user_id: uid, name: 'Salary', amount: 32000, currency: 'EGP', source_type: 'salary', is_recurring: true, recurring_frequency: 'monthly', day_of_month: 1, effective_start: monthsAgo(6, 1), payment_method_id: bank }))[0].id
@@ -174,6 +178,22 @@ async function countQa() {
   return n
 }
 
+// SEED_EMAIL=<existing account>: fill that account with the persona (store reviewer demo) and stop. No capture, no deletion.
+// Refuses when the account already has payment methods or expenses, so data is never duplicated.
+if (env.SEED_EMAIL) {
+  let target = null
+  for (let page = 1; page < 100 && !target; page++) {
+    const r = await rest(`/auth/v1/admin/users?page=${page}&per_page=200`)
+    target = (r.users ?? []).find((x) => String(x.email ?? '').toLowerCase() === env.SEED_EMAIL.toLowerCase()) ?? null
+    if ((r.users ?? []).length < 200) break
+  }
+  if (!target) throw new Error('no account with that email')
+  const has = async (t) => (await rest(`/rest/v1/${t}?user_id=eq.${target.id}&deleted_at=is.null&select=id&limit=1`)).length
+  const nonCash = (await rest(`/rest/v1/payment_methods?user_id=eq.${target.id}&deleted_at=is.null&type=neq.cash&select=id&limit=1`)).length
+  if (nonCash || (await has('expenses')) || (await has('income_events'))) throw new Error('account already has data; not seeding')
+  console.log('seeded', JSON.stringify(await seed(target.id)))
+  process.exit(0)
+}
 const email = `qa-e2e-shots-${Date.now().toString(36)}${crypto.randomBytes(2).toString('hex')}@buddget-qa.test`
 const u = await rest('/auth/v1/admin/users', { method: 'POST', body: JSON.stringify({ email, password: PW, email_confirm: true }) })
 const uid = u.id

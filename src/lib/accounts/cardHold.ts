@@ -25,15 +25,15 @@ function lastPayer(card: Debt, input: Pick<LedgerInput, 'paymentMethods' | 'debt
 }
 
 /**
- * paysFrom(c) (LOGIC_SPEC §4.1): the card's linked account as it is (an untracked parent shows the hold nowhere, never on
- * another account), else the live account it is set to be paid from, else the live account that last paid it, else the
- * primary account in its currency, else the primary account.
+ * paysFrom(c) (LOGIC_SPEC §4.1): the card's live linked account, else the live account it is set to be paid from, else
+ * the live account that last paid it, else the primary account in its currency, else the primary account. An untracked
+ * payer is skipped, so the hold-back never vanishes from Free to spend (owner round 2026-11-28).
  */
 export function paysFrom(card: Debt, input: Pick<LedgerInput, 'paymentMethods' | 'debtPayments'>): string | null {
   const pms = input.paymentMethods
   const method = pms.find((m) => m.id === card.linkedPaymentMethodId)
   const live = pms.filter((m) => canHoldParts(m))
-  return method?.parentId
+  return liveAccount(method?.parentId, pms)
     ?? liveAccount(method?.paysFromPaymentMethodId, pms)
     ?? lastPayer(card, input)
     ?? pickPrimaryAccountId(live.filter((m) => String(m.currency) === String(card.currency)))

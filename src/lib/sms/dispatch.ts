@@ -46,6 +46,7 @@ import {
   recordOwnTransferEvidence,
   ownTopUpWallet,
   walletsNamedIn,
+  storedValueTails,
   findWalletFeeLeg,
   retagSiblingAsTransfer,
   restoreRetractedSibling,
@@ -104,7 +105,7 @@ export interface SmsTxResult {
   /** Final category applied (for logging/notification copy), when an expense was posted. */
   category: string | null
   /** Set for outcome 'awaiting_confirmation' — why confirmation is needed. */
-  confirmReason: 'cc_ambiguous' | 'salary' | null
+  confirmReason: 'cc_ambiguous' | 'salary' | 'top_up_source' | null
   /** Salary income source the SMS matched/should confirm against. */
   matchedSourceId: string | null
   /** Subscription the expense was linked to, if any. */
@@ -393,7 +394,14 @@ export async function createSmsTransaction(
         }
       }
     }
-    // No sibling: genuine income (inbound) or a real remittance (outbound). Falls through.
+    // No sibling yet. Money added to a wallet or prepaid card is never income by default (owner round 2026-11-28): it
+    // waits for "Where did this come from?". The row keeps kind instant_transfer_in, so a late bank leg still claims it
+    // (reconcileSibling then posts the transfer); confirming it re-runs with userConfirmed and books it as income.
+    // Only the wallet's OWN credit (no tail, or a wallet/prepaid tail): a bank credit that merely names the wallet
+    // ("credited from Barq" on the bank account) stays as it was.
+    const walletsOwnCredit = !outbound && (!row.last4 || (await storedValueTails(service, row.userId)).includes(row.last4))
+    if (walletsOwnCredit && !opts.userConfirmed) return { ...base('awaiting_confirmation', kind), confirmReason: 'top_up_source' }
+    // An outbound leg with no sibling is a real remittance. Falls through.
   }
 
   // 1. Own-account reclassification — an inbound/outbound transfer whose counterparty digits are the user's own
