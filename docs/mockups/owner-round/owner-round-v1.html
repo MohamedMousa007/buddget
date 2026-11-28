@@ -1,0 +1,1145 @@
+<title>Owner Round 1 Mockups</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one column of items; each item is a Today | Proposed pair of phone-width part frames showing only what changes. */
+:root {
+  /* app tokens, light (docs/DESIGN_SYSTEM.md, src/app/globals.css) */
+  --color-brand-primary: #0D8578; --color-brand-primary-bright: #12B0A0; --color-brand-primary-hover: #0B7568;
+  --color-brand-primary-ink: #0B7568; --color-brand-primary-soft: #E3F6F3; --color-brand-on-primary: #FFFFFF;
+  --color-brand-red: #BE343A; --color-brand-red-soft: #FBE7E7; --color-brand-green: #0F7635; --color-brand-green-soft: #E3F5EA;
+  --color-brand-amber: #8C5E0A; --color-brand-amber-soft: #FBF0DA; --color-brand-gold: #896617;
+  --color-brand-bg: #F4F7F6; --color-brand-card: #FFFFFF; --color-brand-elevated: #ECF1F0; --color-brand-sunken: #E2E9E8;
+  --color-brand-border: #DDE6E4; --color-brand-border-strong: #CBD6D3;
+  --color-brand-text-primary: #0D1A18; --color-brand-text-secondary: #566B68; --color-brand-text-muted: #687371;
+  --color-cat-1: #11A596; --color-cat-2: #B68E30; --color-cat-3: #E5684D; --color-cat-4: #6E7BF2; --color-cat-5: #389BD9;
+  --flow-band-a: color-mix(in oklab, var(--color-brand-primary-hover) 80%, black);
+  --flow-band-b: var(--color-brand-primary-hover);
+  --flow-band-fg: var(--color-brand-on-primary);
+  --shadow-sm: 0 1px 2px rgba(13,26,24,.06), 0 1px 3px rgba(13,26,24,.05);
+  --shadow-lg: 0 24px 48px -24px rgba(13,26,24,.35);
+  --skel: #DCE4E2;
+  /* page chrome */
+  --pz-bg: #E9EFED; --pz-ink: #0D1A18; --pz-fg2: #566B68; --pz-line: #CBD6D3; --pz-card: #FFFFFF; --pz-frame: #1B2422;
+  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-ar: 'IBM Plex Sans Arabic', 'Geeza Pro', Tahoma, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --color-brand-primary: #1FC3B2; --color-brand-primary-bright: #1FC3B2; --color-brand-primary-hover: #35D4C3;
+  --color-brand-primary-ink: #7FE6DA; --color-brand-primary-soft: #0F2723; --color-brand-on-primary: #04201C;
+  --color-brand-red: #F2646A; --color-brand-red-soft: #3A1B1D; --color-brand-green: #37C368; --color-brand-green-soft: #123021;
+  --color-brand-amber: #EDB24A; --color-brand-amber-soft: #33280F; --color-brand-gold: #EDC463;
+  --color-brand-bg: #0A100F; --color-brand-card: #111917; --color-brand-elevated: #18211F; --color-brand-sunken: #212C2A;
+  --color-brand-border: #25302E; --color-brand-border-strong: #33403D;
+  --color-brand-text-primary: #EAF2F0; --color-brand-text-secondary: #9BABA8; --color-brand-text-muted: #748380;
+  --color-cat-1: #1FC3B2; --color-cat-2: #EDC463; --color-cat-3: #F27E66; --color-cat-4: #8A94F5; --color-cat-5: #57B2ED;
+  --flow-band-a: color-mix(in oklab, var(--color-brand-primary) 34%, var(--color-brand-bg));
+  --flow-band-b: color-mix(in oklab, var(--color-brand-primary) 50%, var(--color-brand-bg));
+  --flow-band-fg: var(--color-brand-text-primary);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.4); --shadow-lg: 0 24px 48px -24px rgba(0,0,0,.8);
+  --skel: #1E2826;
+  --pz-bg: #050807; --pz-ink: #EAF2F0; --pz-fg2: #9BABA8; --pz-line: #33403D; --pz-card: #111917; --pz-frame: #2A3532;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --color-brand-primary: #1FC3B2; --color-brand-primary-bright: #1FC3B2; --color-brand-primary-hover: #35D4C3;
+  --color-brand-primary-ink: #7FE6DA; --color-brand-primary-soft: #0F2723; --color-brand-on-primary: #04201C;
+  --color-brand-red: #F2646A; --color-brand-red-soft: #3A1B1D; --color-brand-green: #37C368; --color-brand-green-soft: #123021;
+  --color-brand-amber: #EDB24A; --color-brand-amber-soft: #33280F; --color-brand-gold: #EDC463;
+  --color-brand-bg: #0A100F; --color-brand-card: #111917; --color-brand-elevated: #18211F; --color-brand-sunken: #212C2A;
+  --color-brand-border: #25302E; --color-brand-border-strong: #33403D;
+  --color-brand-text-primary: #EAF2F0; --color-brand-text-secondary: #9BABA8; --color-brand-text-muted: #748380;
+  --color-cat-1: #1FC3B2; --color-cat-2: #EDC463; --color-cat-3: #F27E66; --color-cat-4: #8A94F5; --color-cat-5: #57B2ED;
+  --flow-band-a: color-mix(in oklab, var(--color-brand-primary) 34%, var(--color-brand-bg));
+  --flow-band-b: color-mix(in oklab, var(--color-brand-primary) 50%, var(--color-brand-bg));
+  --flow-band-fg: var(--color-brand-text-primary);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.4); --shadow-lg: 0 24px 48px -24px rgba(0,0,0,.8);
+  --skel: #1E2826;
+  --pz-bg: #050807; --pz-ink: #EAF2F0; --pz-fg2: #9BABA8; --pz-line: #33403D; --pz-card: #111917; --pz-frame: #2A3532;
+  color-scheme: dark }
+:root {
+  --band-fg2: color-mix(in oklab, var(--flow-band-fg) 86%, var(--flow-band-b));
+  --band-mix: color-mix(in oklab, var(--flow-band-fg) 22%, transparent);
+  --mark-ink: #FFFFFF;
+}
+
+* { box-sizing: border-box }
+body { background: var(--pz-bg); color: var(--pz-ink); font-family: var(--font-sans); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased }
+svg.i { width: 18px; height: 18px; flex: none; stroke-width: 1.85 }
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; unicode-bidi: isolate; direction: ltr }
+p { margin: 0 }
+
+/* ---------- page chrome ---------- */
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 40px 96px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 64px }
+.intro h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.1; letter-spacing: -0.025em; font-weight: 700; text-wrap: balance; margin: 0 }
+.intro p { margin-top: 10px; color: var(--pz-fg2); max-width: 70ch; font-size: 16px }
+.toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; padding: 0; list-style: none }
+.toc a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--pz-line); background: var(--pz-card); color: var(--pz-ink); text-decoration: none; font-weight: 600; font-size: 14px; gap: 8px }
+.toc a b { font-family: var(--font-mono); color: var(--pz-fg2); font-weight: 600 }
+.toc a:focus-visible, .toc a:hover { outline: 2px solid var(--color-brand-primary-bright); outline-offset: 1px }
+.item { display: flex; flex-direction: column; gap: 24px; scroll-margin-top: 16px }
+.item > header { display: grid; gap: 8px; max-width: 80ch }
+.item h2 { margin: 0; font-size: 25px; letter-spacing: -0.02em; line-height: 1.2; text-wrap: balance; display: flex; gap: 12px; align-items: baseline }
+.item h2 .n { font-family: var(--font-mono); font-size: 15px; color: var(--pz-fg2) }
+.item header p { color: var(--pz-fg2) }
+.reuse { font-size: 13.5px; color: var(--pz-fg2); line-height: 1.9 }
+code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); background: var(--pz-card); border: 1px solid var(--pz-line); border-radius: 6px; padding: 1px 5px; white-space: nowrap }
+.sub { font-size: 17px; font-weight: 700; margin: 8px 0 0; letter-spacing: -0.01em; padding-top: 18px; border-top: 1px solid var(--pz-line) }
+.pairs { display: flex; flex-direction: column; gap: 30px }
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; align-items: start }
+.col { display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 0 }
+.col > h3 { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--pz-fg2); display: flex; gap: 8px; align-items: center; text-align: center }
+.col > h3 .dot { width: 8px; height: 8px; border-radius: 99px; background: var(--pz-line); flex: none }
+.col.after > h3 { color: var(--pz-ink) }
+.col.after > h3 .dot { background: var(--color-brand-primary-bright) }
+.cap { font-size: 13.5px; color: var(--pz-fg2); max-width: 380px; text-align: center; line-height: 1.45; text-wrap: pretty }
+.cap b { color: var(--pz-ink); font-weight: 600 }
+.row-of { display: flex; flex-wrap: wrap; gap: 28px 22px; justify-content: center }
+.row-of > .col { flex: 0 1 360px }
+@media (max-width: 860px) { .pair { grid-template-columns: minmax(0, 1fr) } }
+
+/* ---------- part frame: a phone-width crop of one screen ---------- */
+.frame { width: 360px; max-width: 100%; border-radius: 30px; padding: 7px; background: var(--pz-frame); box-shadow: var(--shadow-lg) }
+.scr { position: relative; border-radius: 24px; overflow: hidden; background: var(--color-brand-bg); color: var(--color-brand-text-primary); font-family: var(--font-sans); font-size: 15px; line-height: 1.4 }
+.scr .pad { padding: 14px 16px 18px; display: flex; flex-direction: column; gap: 14px }
+.crop { font-size: 11px; font-weight: 600; color: var(--color-brand-text-muted); letter-spacing: .05em; text-transform: uppercase }
+.scrim { background: color-mix(in oklab, black 42%, var(--color-brand-bg)); padding-top: 34px }
+
+/* ---------- app parts, named after the component they stand for ---------- */
+/* HeroBand (contained) */
+.band { border-radius: 24px; overflow: hidden; background: linear-gradient(120deg, var(--flow-band-a), var(--flow-band-b)); color: var(--flow-band-fg) }
+.band .in { padding: 10px 18px 12px }
+.band .top { height: 22px; display: flex; align-items: center; justify-content: space-between; gap: 8px }
+.band .lbl { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--band-fg2); white-space: nowrap }
+.band .pill { height: 22px; border-radius: 99px; padding: 0 8px; background: var(--flow-band-fg); color: var(--flow-band-b); font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center }
+.band .nums { margin-top: 6px; height: 34.5px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px }
+.band .big { font-family: var(--font-mono); font-weight: 600; font-size: 32px; line-height: 1; letter-spacing: -0.03em }
+.band .unit { font-size: 13px; color: var(--band-fg2); margin-inline-start: 6px }
+.band .side { text-align: end; font-size: 11.5px; line-height: 1.3; color: var(--band-fg2) }
+.band .side b { display: block; font-family: var(--font-mono); font-size: 15px; color: var(--flow-band-fg) }
+.band .barblk { height: 38.75px; padding-top: 12px }
+.band .barblk.bare { height: auto }
+.band .bar { height: 6px; border-radius: 99px; background: var(--band-mix); display: flex; gap: 3px; overflow: hidden }
+.band .bar span { height: 100%; border-radius: 99px; background: var(--flow-band-fg) }
+.band .scale { margin-top: 5px; height: 15.75px; display: flex; justify-content: space-between; gap: 8px; font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; color: var(--band-fg2); white-space: nowrap; overflow: hidden }
+.band .note { margin-top: 8px; font-size: 12px; line-height: 1.625; color: var(--band-fg2) }
+.band .note b { color: var(--flow-band-fg); font-family: var(--font-mono); font-weight: 600 }
+.band .note b.w { font-family: var(--font-sans); font-weight: 700 }
+.band .note.one { height: 19.5px; white-space: nowrap; overflow: hidden; display: flex; align-items: center }
+.band .more { margin-inline-start: 6px; height: 18px; padding: 0 7px; border-radius: 99px; background: var(--band-mix); color: var(--flow-band-fg); font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; flex: none }
+.hgt { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--color-brand-text-muted); display: flex; justify-content: space-between; gap: 8px; padding: 5px 4px 0 }
+.hgt .bad { color: var(--color-brand-amber) }
+.hgt .ok { color: var(--color-brand-primary-ink) }
+.guide { outline: 1.5px dashed color-mix(in oklab, var(--color-brand-primary-bright) 70%, transparent); outline-offset: 3px }
+
+/* Card + PickerRow / InputRow */
+.card { background: var(--color-brand-card); border: 1px solid var(--color-brand-border); border-radius: 16px; box-shadow: var(--shadow-sm) }
+.list { overflow: hidden }
+.list > * + * { border-top: 1px solid var(--color-brand-border) }
+.r { min-height: 52px; display: flex; align-items: center; gap: 10px; padding: 8px 14px; font-size: 15px }
+.r .k { flex: 1; min-width: 0; color: var(--color-brand-text-primary); font-weight: 500 }
+.r .k small { display: block; font-size: 12.5px; font-weight: 400; color: var(--color-brand-text-muted); line-height: 1.35 }
+.r .v { color: var(--color-brand-text-secondary); display: flex; align-items: center; gap: 6px; text-align: end }
+.r .v.muted { color: var(--color-brand-text-muted) }
+.r .chev { color: var(--color-brand-text-muted); width: 16px; height: 16px }
+.opt { font-size: 12px; font-weight: 400; color: var(--color-brand-text-muted) }
+.r.sel { background: var(--color-brand-primary-soft) }
+.r.ind { padding-inline-start: 44px }
+.radio { width: 20px; height: 20px; border-radius: 99px; border: 2px solid var(--color-brand-border-strong); flex: none; display: grid; place-items: center }
+.radio.on { border-color: var(--color-brand-primary) }
+.radio.on::after { content: ""; width: 10px; height: 10px; border-radius: 99px; background: var(--color-brand-primary) }
+.sec { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--color-brand-text-muted); margin: 2px 4px -6px }
+.hint { font-size: 12px; line-height: 1.45; color: var(--color-brand-text-muted); margin: -6px 4px 0; text-wrap: pretty }
+.l4 { display: flex; gap: 6px }
+.l4 span { width: 30px; height: 38px; border-radius: 10px; background: var(--color-brand-bg); border: 1px solid var(--color-brand-border); display: grid; place-items: center; font-family: var(--font-mono); font-weight: 600; color: var(--color-brand-text-primary) }
+.l4 span.e { color: var(--color-brand-text-muted) }
+.amt { font-family: var(--font-mono); font-weight: 600; color: var(--color-brand-text-primary) }
+.amt.ph { color: var(--color-brand-text-muted); font-weight: 500 }
+.req { font-size: 11px; font-weight: 700; color: var(--color-brand-amber); background: var(--color-brand-amber-soft); border-radius: 99px; padding: 1px 7px; margin-inline-start: 6px; vertical-align: 1px }
+
+/* SegmentedControl, OptionChip */
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 3px; gap: 3px; border-radius: 12px; background: var(--color-brand-elevated); border: 1px solid var(--color-brand-border) }
+.seg span { height: 38px; border-radius: 9px; display: grid; place-items: center; font-size: 14px; font-weight: 600; color: var(--color-brand-text-secondary) }
+.seg span.on { background: var(--color-brand-card); color: var(--color-brand-text-primary); box-shadow: var(--shadow-sm) }
+.chips { display: flex; gap: 6px; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, #000 78%, transparent); mask-image: linear-gradient(90deg, #000 78%, transparent) }
+.chip { height: 38px; padding: 0 13px; border-radius: 99px; border: 1px solid var(--color-brand-border); background: var(--color-brand-elevated); display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: var(--color-brand-text-secondary); white-space: nowrap; flex: none }
+.chip.on { background: var(--color-brand-primary-soft); border-color: color-mix(in oklab, var(--color-brand-primary-bright) 55%, transparent); color: var(--color-brand-primary-ink) }
+.chip svg.i { width: 15px; height: 15px }
+
+/* Button */
+.btn { height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; font-size: 15px; background: var(--color-brand-primary); color: var(--color-brand-on-primary); width: 100% }
+.btn.dis { background: var(--color-brand-sunken); color: var(--color-brand-text-muted) }
+.btn.outline { background: var(--color-brand-card); color: var(--color-brand-text-primary); border: 1px solid var(--color-brand-border-strong) }
+.btn.touch { height: 44px; width: auto; padding: 0 18px }
+.link { color: var(--color-brand-primary-ink); font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 5px; min-height: 44px }
+.link svg.i { width: 16px; height: 16px }
+
+/* ModalShell + V3SheetHeader */
+.sheet { background: var(--color-brand-card); border-radius: 24px 24px 0 0; padding: 8px 16px 18px; display: flex; flex-direction: column; gap: 12px }
+.sheet .card { background: var(--color-brand-elevated); box-shadow: none }
+.grab { width: 38px; height: 5px; border-radius: 9px; background: var(--color-brand-border-strong); margin: 0 auto 2px; flex: none }
+.sh { display: flex; align-items: flex-start; gap: 10px; min-height: 44px }
+.sh .t { flex: 1; min-width: 0 }
+.sh h4 { margin: 0; font-size: 18px; font-weight: 700; line-height: 1.3; letter-spacing: -0.01em }
+.sh .t p { margin-top: 2px; font-size: 13px; color: var(--color-brand-text-secondary) }
+.close { width: 32px; height: 32px; border-radius: 99px; background: var(--color-brand-elevated); display: grid; place-items: center; color: var(--color-brand-text-secondary); flex: none; margin-top: 4px }
+.close svg.i { width: 16px; height: 16px }
+.dlg { background: var(--color-brand-card); border-radius: 24px; padding: 22px 18px 16px; margin: 0 14px; display: flex; flex-direction: column; gap: 12px; box-shadow: var(--shadow-lg); text-align: center }
+.dlg h4 { margin: 0; font-size: 18px; font-weight: 700; line-height: 1.3; text-wrap: balance }
+.dlg p { font-size: 14px; color: var(--color-brand-text-secondary); text-wrap: pretty }
+
+/* CardPreview / CardFaceChip */
+.face { height: 124px; border-radius: 16px; padding: 14px 16px; color: #FFFFFF; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; flex: none;
+  background: radial-gradient(120% 90% at 85% 0%, rgba(255,255,255,.28), transparent 55%), linear-gradient(135deg, var(--fa), var(--fb)) }
+.face .t { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 700; letter-spacing: .02em }
+.face .b { display: flex; justify-content: space-between; align-items: flex-end; font-family: var(--font-mono); font-size: 15px; font-weight: 600 }
+.face .b small { font-family: var(--font-sans); font-size: 11px; font-weight: 600; opacity: .85; letter-spacing: .06em; text-transform: uppercase }
+.face.cib, .mini.cib { --fa: #0F3D6E; --fb: #2565A8 }
+.face.bm, .mini.bm { --fa: #6E1420; --fb: #B23A2E }
+.mini { width: 70px; height: 44px; border-radius: 7px; padding: 5px 6px; flex: none; color: #FFFFFF; display: flex; flex-direction: column; justify-content: flex-end; font-family: var(--font-mono); font-size: 9.5px; font-weight: 600; background: linear-gradient(135deg, var(--fa), var(--fb)) }
+
+/* BrandMark (fills are each bank's own colour, as in the app) */
+.mark { width: 36px; height: 36px; border-radius: 11.5px; display: grid; place-items: center; color: var(--mark-ink); font-weight: 700; font-size: 12.5px; flex: none }
+.mark.s { width: 26px; height: 26px; border-radius: 8.3px; font-size: 9.5px }
+.m-cib { background: #1F4F8A } .m-nbe { background: #0E6B5F } .m-bm { background: #9A2A2A } .m-hsbc { background: #4A5058 }
+/* AccountRow, SectionHeader */
+.acc { min-height: 72px; display: flex; align-items: center; gap: 12px; padding: 10px 14px }
+.acc .t { flex: 1; min-width: 0 }
+.acc .t b { display: block; font-weight: 600; font-size: 15px }
+.acc .t small { display: block; font-size: 12.5px; color: var(--color-brand-text-muted) }
+.acc .bal { text-align: end; font-family: var(--font-mono); font-weight: 600 }
+.acc .bal small { display: block; font-family: var(--font-sans); font-size: 12px; font-weight: 500; color: var(--color-brand-text-muted) }
+.acc .set { font-family: var(--font-sans); font-size: 13.5px; color: var(--color-brand-primary-ink); font-weight: 600 }
+.sechead { display: flex; align-items: center; justify-content: space-between; min-height: 44px; margin-bottom: -8px }
+.sechead b { font-size: 13px; font-weight: 700; color: var(--color-brand-text-secondary) }
+.sechead b i { font-style: normal; font-family: var(--font-mono); font-weight: 600; color: var(--color-brand-text-muted); margin-inline-start: 6px }
+.sechead .acts { display: flex; gap: 16px }
+
+/* EmptyState (variant card, size page | section), PendingRow, SelectableCard */
+.es { display: flex; flex-direction: column; align-items: center; text-align: center; border-radius: 24px; border: 1px solid var(--color-brand-border); background: var(--color-brand-card); padding: 30px 22px }
+.es.sect { padding: 22px 20px }
+.es .tile { width: 56px; height: 56px; border-radius: 18px; display: grid; place-items: center; background: var(--color-brand-primary-soft); color: var(--color-brand-primary-ink) }
+.es .tile svg.i { width: 28px; height: 28px }
+.es.sect .tile { width: 44px; height: 44px; border-radius: 14px }
+.es.sect .tile svg.i { width: 20px; height: 20px }
+.tile.pos { background: var(--color-brand-green-soft) !important; color: var(--color-brand-green) !important }
+.tile.neu { background: var(--color-brand-elevated) !important; color: var(--color-brand-text-secondary) !important }
+.es .tt { margin-top: 16px; font-size: 17px; font-weight: 700; text-wrap: balance }
+.es.sect .tt { font-size: 15px }
+.es .ds { margin-top: 4px; max-width: 30ch; font-size: 13.5px; line-height: 1.4; color: var(--color-brand-text-secondary); text-wrap: pretty }
+.es .acts { margin-top: 18px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 2px }
+.es .acts .btn { max-width: 280px }
+.es .body { margin-top: 18px; width: 100%; text-align: start; display: flex; flex-direction: column; gap: 8px }
+.es.ghost { border: 0; background: none; padding: 26px 8px }
+.old { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 30px 16px; gap: 4px }
+.old .tt { margin-top: 12px; font-size: 18px; font-weight: 700 }
+.old .ds { font-size: 14px; color: var(--color-brand-text-secondary); text-wrap: pretty }
+.mutedp { padding: 36px 0; text-align: center; font-size: 14px; color: var(--color-brand-text-muted) }
+.pend { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 10px 14px; border-radius: 16px; background: var(--color-brand-amber-soft); color: var(--color-brand-text-primary); border: 1px solid color-mix(in oklab, var(--color-brand-amber) 30%, transparent) }
+.pend .t { flex: 1; min-width: 0; font-size: 14px; line-height: 1.35 }
+.pend .t small { display: block; font-size: 12.5px; color: var(--color-brand-amber); font-weight: 600 }
+.pend .ic { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: color-mix(in oklab, var(--color-brand-amber) 18%, transparent); color: var(--color-brand-amber); flex: none }
+.pend.teal { background: var(--color-brand-primary-soft); border-color: color-mix(in oklab, var(--color-brand-primary-bright) 35%, transparent) }
+.pend.teal .t small, .pend.teal > svg { color: var(--color-brand-primary-ink) }
+.pend.teal .ic { background: color-mix(in oklab, var(--color-brand-primary-bright) 18%, transparent); color: var(--color-brand-primary-ink) }
+.selc { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 16px; border: 1px solid var(--color-brand-border); background: var(--color-brand-elevated); min-height: 56px; text-align: start }
+.selc.on { border-color: var(--color-brand-primary); background: var(--color-brand-primary-soft) }
+.selc .t { flex: 1; min-width: 0 }
+.selc .t b { display: block; font-size: 15px; font-weight: 600 }
+.selc .t small { display: block; font-size: 12.5px; color: var(--color-brand-text-secondary); line-height: 1.4 }
+.selc .ic { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; background: var(--color-brand-primary-soft); color: var(--color-brand-primary-ink); flex: none }
+.selc .ic.g { background: var(--color-brand-green-soft); color: var(--color-brand-green) }
+.selc > svg.chev { color: var(--color-brand-text-muted); width: 16px; height: 16px }
+.selc.card-surface { background: var(--color-brand-card) }
+.label10 { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--color-brand-text-muted) }
+.orb { width: 64px; height: 64px; border-radius: 99px; background: radial-gradient(circle at 35% 30%, var(--color-brand-primary-bright), var(--color-brand-primary)); box-shadow: inset 0 -6px 12px rgba(0,0,0,.18) }
+.badge { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 99px; font-size: 11.5px; font-weight: 600; background: var(--color-brand-elevated); color: var(--color-brand-text-secondary); white-space: nowrap }
+.badge.pos { background: var(--color-brand-green-soft); color: var(--color-brand-green) }
+
+/* PlanDeck */
+.deck { display: flex; gap: 10px; overflow: hidden; margin-inline-end: -16px; padding: 2px 0 }
+.plan { flex: none; width: 214px; border-radius: 18px; border: 1px solid var(--color-brand-border); background: var(--color-brand-card); padding: 12px 13px; display: flex; flex-direction: column; gap: 9px; box-shadow: var(--shadow-sm) }
+.plan.on { border-color: var(--color-brand-primary); box-shadow: 0 0 0 1px var(--color-brand-primary), var(--shadow-sm) }
+.plan .h { display: flex; align-items: center; justify-content: space-between; gap: 8px }
+.plan .h b { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.blocks { display: flex; gap: 2px; height: 8px; border-radius: 99px; overflow: hidden }
+.blocks span { height: 100% }
+.plan .st { display: flex; gap: 14px; font-size: 11.5px; color: var(--color-brand-text-muted) }
+.plan .st b { display: block; font-family: var(--font-mono); font-size: 13.5px; color: var(--color-brand-text-primary); font-weight: 600 }
+.plan.new { border-style: dashed; box-shadow: none; background: none; width: 120px; align-items: center; justify-content: center; color: var(--color-brand-primary-ink); font-weight: 600; font-size: 13.5px; gap: 6px }
+.lines .r .k { font-size: 14.5px }
+.prog { height: 4px; border-radius: 99px; background: var(--color-brand-sunken); margin-top: 6px; overflow: hidden }
+.prog span { display: block; height: 100%; background: var(--color-brand-primary-bright); border-radius: 99px }
+.quiet { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 4px; font-size: 14px; font-weight: 600 }
+.quiet .d { width: 8px; height: 8px; border-radius: 99px; background: var(--color-brand-primary-bright) }
+.quiet span.m { color: var(--color-brand-text-muted); font-weight: 500 }
+
+/* desktop skeleton (Sidebar + PageGrid) */
+.desk-scroll { overflow-x: auto; padding-bottom: 6px; width: 100% }
+.desk { min-width: 980px; border-radius: 18px; border: 7px solid var(--pz-frame); background: var(--color-brand-bg); overflow: hidden; box-shadow: var(--shadow-lg); color: var(--color-brand-text-primary) }
+.desk .chrome { height: 28px; background: var(--pz-frame); display: flex; align-items: center; gap: 6px; padding: 0 6px }
+.desk .chrome i { width: 9px; height: 9px; border-radius: 99px; background: color-mix(in oklab, var(--pz-card) 35%, transparent) }
+.desk .chrome span { margin-inline-start: 10px; font-family: var(--font-mono); font-size: 11px; color: color-mix(in oklab, #FFFFFF 70%, transparent) }
+.desk .shell { display: grid; grid-template-columns: 176px minmax(0, 1fr); min-height: 430px }
+.side { border-inline-end: 1px solid var(--color-brand-border); background: var(--color-brand-card); padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; font-size: 13px }
+.side .logo { font-weight: 700; font-size: 15px; padding: 0 8px 12px }
+.side a { display: flex; align-items: center; gap: 9px; height: 34px; padding: 0 8px; border-radius: 9px; color: var(--color-brand-text-secondary); text-decoration: none; font-weight: 500 }
+.side a.on { background: var(--color-brand-primary-soft); color: var(--color-brand-primary-ink); font-weight: 600 }
+.side svg.i { width: 15px; height: 15px }
+.main { padding: 22px 24px 26px; min-width: 0; display: flex; flex-direction: column; gap: 14px }
+.cap640 { max-width: 420px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 12px }
+.sk { background: var(--skel); border-radius: 12px }
+.sk.band2 { height: 88px; border-radius: 18px; background: linear-gradient(120deg, var(--flow-band-a), var(--flow-band-b)) }
+.sk.row { height: 40px; border-radius: 10px }
+.sk.t { height: 10px; border-radius: 5px; width: 30% }
+.sk.pillx { height: 30px; width: 90px; border-radius: 99px }
+.sk.bar6 { height: 6px; border-radius: 99px }
+.gridx { display: grid; gap: 14px }
+.gridx.flow { grid-template-columns: minmax(0, 1fr) 280px }
+.gridx.three { grid-template-columns: repeat(3, minmax(0, 1fr)) }
+.gridx.two { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+.stack { display: flex; flex-direction: column; gap: 14px; min-width: 0 }
+.panel { background: var(--color-brand-card); border: 1px solid var(--color-brand-border); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0 }
+.ttl { font-size: 11.5px; font-weight: 700; color: var(--color-brand-text-secondary); display: flex; justify-content: space-between; gap: 8px }
+.ttl em { font-style: normal; color: var(--color-brand-text-muted); font-weight: 500 }
+.measure { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; color: var(--color-brand-amber); justify-content: center }
+.measure::before, .measure::after { content: ""; flex: 1; border-top: 1px dashed currentColor; max-width: 90px }
+.measure.ok { color: var(--color-brand-primary-ink) }
+.measure.ok::before, .measure.ok::after { max-width: none }
+
+/* Arabic sample: the app keeps an LTR layout and sets Arabic copy (DESIGN_SYSTEM.md, Arabic locale rules) */
+.ar { font-family: var(--font-ar) }
+.ar .num, .ar .amt, .ar .l4 span { font-family: var(--font-mono) }
+
+/* open questions */
+.qs { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; max-width: 86ch; counter-reset: q }
+.qs li { counter-increment: q; background: var(--pz-card); border: 1px solid var(--pz-line); border-radius: 14px; padding: 14px 16px 14px 52px; position: relative; line-height: 1.5 }
+.qs li::before { content: counter(q); position: absolute; left: 16px; top: 14px; font-family: var(--font-mono); font-weight: 600; color: var(--pz-fg2) }
+.qs li b { font-weight: 600 }
+.qs li span { display: block; color: var(--pz-fg2); font-size: 14px; margin-top: 2px }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-landmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18v-7"/><path d="M11.12 2.198a2 2 0 0 1 1.76.006l7.866 3.847c.476.233.31.949-.22.949H3.474c-.53 0-.695-.716-.22-.949z"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="M3 22h18"/><path d="M6 18v-7"/></symbol><symbol id="i-credit-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></symbol><symbol id="i-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></symbol><symbol id="i-shield-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol><symbol id="i-coins" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.744 17.736a6 6 0 1 1-7.48-7.48"/><path d="M15 6h1v4"/><path d="m6.134 14.768.866-.5 2 3.464"/><circle cx="16" cy="8" r="6"/></symbol><symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></symbol><symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></symbol><symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></symbol><symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol><symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol><symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></symbol><symbol id="i-arrow-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></symbol><symbol id="i-arrow-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></symbol><symbol id="i-banknote" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></symbol><symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></symbol><symbol id="i-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol><symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17V7"/><path d="M16 8h-6a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8"/><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z"/></symbol><symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol><symbol id="i-list-checks" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/></symbol><symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol><symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol><symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/></symbol><symbol id="i-circle-question-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></symbol><symbol id="i-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></symbol><symbol id="i-trending-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/></symbol><symbol id="i-layout-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></symbol><symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-hand-coins" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 15h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 17"/><path d="m7 21 1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.75-2.91l-4.2 3.9"/><path d="m2 16 6 6"/><circle cx="16" cy="9" r="2.9"/><circle cx="6" cy="5" r="3"/></symbol><symbol id="i-smartphone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></symbol><symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol><symbol id="i-history" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></symbol><symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/></symbol></svg>
+
+<div class="wrap">
+  <section class="intro">
+    <h1>Owner round 1: what changes, before and after</h1>
+    <p>Only the parts that change, each next to how it looks today. Drawn with the app's own tokens (light or dark follows your system theme) and named after the component each part reuses. Nothing is built yet: approve, change or reject item by item.</p>
+    <ul class="toc">
+      <li><a href="#hero"><b>1</b> Hero height</a></li>
+      <li><a href="#empty"><b>2</b> Empty states</a></li>
+      <li><a href="#card"><b>3</b> Add card flow</a></li>
+      <li><a href="#plans"><b>4</b> Budget plans</a></li>
+      <li><a href="#desktop"><b>5</b> Desktop width</a></li>
+      <li><a href="#arabic"><b>AR</b> Arabic sample</a></li>
+      <li><a href="#questions"><b>?</b> Open questions</a></li>
+    </ul>
+  </section>
+
+  <!-- ===================== 1 HERO ===================== -->
+  <section class="item" id="hero">
+    <header>
+      <h2><span class="n">1</span> One height for every hero</h2>
+      <p>Today the band grows when its note wraps and shrinks when there is no note yet, so the content under it jumps when you switch tabs (worst on narrow iPhones). Proposed: every band is 151px, the note is always one line, and an empty note keeps its line. Heights are computed from <code>HeroBand</code>'s own classes at a 360px-wide phone.</p>
+      <p class="reuse">Reuses <code>HeroBand</code> (contained) with a one-line note slot that is always reserved; <code>BandNoteLine</code> stops wrapping and drops whole parts from the end.</p>
+    </header>
+    <div class="pair">
+      <div class="col">
+        <h3><span class="dot"></span>Today</h3>
+        <div class="frame"><div class="scr"><div class="pad">
+          <div>
+            <div class="band"><div class="in">
+              <div class="top"><span class="lbl">Left this month</span><span class="pill">On track</span></div>
+              <div class="nums"><p><span class="big">18,240</span><span class="unit">EGP</span></p><p class="side"><b>30,000</b>budget</p></div>
+              <div class="barblk"><div class="bar"><span style="width:61%"></span></div><div class="scale"><span>Dec 1</span><span>13 days left</span></div></div>
+              <div class="note"><b>32,000</b> in · <b>13,760</b> out</div>
+            </div></div>
+            <div class="hgt"><span>Flow</span><span>151px</span></div>
+          </div>
+          <div>
+            <div class="band"><div class="in">
+              <div class="top"><span class="lbl">Free to spend</span></div>
+              <div class="nums"><p><span class="big">42,180</span><span class="unit">EGP</span></p><p class="side"><b>118.4k</b>Net worth</p></div>
+              <div class="barblk"><div class="bar"><span style="width:44%"></span><span style="width:31%;opacity:.7"></span><span style="width:25%;opacity:.45"></span></div><div class="scale"><span>CIB 44% &nbsp;NBE 31% &nbsp;Cash 25%</span><span>4 accounts</span></div></div>
+              <div class="note"><b class="w">NBE is short 2,400</b> · <b>15,000</b> set aside · <b>8,420</b> owed on cards</div>
+            </div></div>
+            <div class="hgt"><span>Accounts</span><span class="bad">171px, note wraps</span></div>
+          </div>
+          <div>
+            <div class="band"><div class="in">
+              <div class="top"><span class="lbl">You owe</span></div>
+              <div class="nums"><p><span class="big">86,400</span><span class="unit">EGP</span></p><p class="side"><b>32% cleared</b>41k of 127k</p></div>
+              <div class="barblk"><div class="bar"><span style="width:32%"></span></div></div>
+              <div class="note">Next <b>3,200</b> on Dec 5 · This month <b>1.2k</b> of <b>4.5k</b> paid</div>
+            </div></div>
+            <div class="hgt"><span>Debts</span><span class="bad">171px, note wraps</span></div>
+          </div>
+          <div>
+            <div class="band"><div class="in">
+              <div class="top"><span class="lbl">Saved for goals</span></div>
+              <div class="nums"><p><span class="big">54,000</span><span class="unit">EGP</span></p><p class="side"><b>45% there</b>of 120,000</p></div>
+              <div class="barblk"><div class="bar"><span style="width:45%"></span></div></div>
+              </div></div>
+            <div class="hgt"><span>Goals, first goal just added</span><span class="bad">123px, no note yet</span></div>
+          </div>
+        </div></div></div>
+        <p class="cap">Three heights across four tabs. The tab bar stays put while everything under the hero moves by up to 48px.</p>
+      </div>
+      <div class="col after">
+        <h3><span class="dot"></span>Proposed</h3>
+        <div class="frame"><div class="scr"><div class="pad">
+          <div>
+            <div class="band guide"><div class="in">
+              <div class="top"><span class="lbl">Left this month</span><span class="pill">On track</span></div>
+              <div class="nums"><p><span class="big">18,240</span><span class="unit">EGP</span></p><p class="side"><b>30,000</b>budget</p></div>
+              <div class="barblk"><div class="bar"><span style="width:61%"></span></div><div class="scale"><span>Dec 1</span><span>13 days left</span></div></div>
+              <div class="note one"><span><b>32,000</b> in · <b>13,760</b> out</span></div>
+            </div></div>
+            <div class="hgt"><span>Flow</span><span class="ok">151px</span></div>
+          </div>
+          <div>
+            <div class="band guide"><div class="in">
+              <div class="top"><span class="lbl">Free to spend</span></div>
+              <div class="nums"><p><span class="big">42,180</span><span class="unit">EGP</span></p><p class="side"><b>118.4k</b>Net worth</p></div>
+              <div class="barblk"><div class="bar"><span style="width:44%"></span><span style="width:31%;opacity:.7"></span><span style="width:25%;opacity:.45"></span></div><div class="scale"><span>CIB 44% &nbsp;NBE 31% &nbsp;Cash 25%</span><span>4 accounts</span></div></div>
+              <div class="note one"><span><b class="w">NBE is short 2,400</b> · <b>15,000</b> set aside</span><span class="more">+1</span></div>
+            </div></div>
+            <div class="hgt"><span>Accounts</span><span class="ok">151px, "owed on cards" behind +1</span></div>
+          </div>
+          <div>
+            <div class="band guide"><div class="in">
+              <div class="top"><span class="lbl">You owe</span></div>
+              <div class="nums"><p><span class="big">86,400</span><span class="unit">EGP</span></p><p class="side"><b>32% cleared</b>41k of 127k</p></div>
+              <div class="barblk"><div class="bar"><span style="width:32%"></span></div></div>
+              <div class="note one"><span>Next <b>3,200</b> on Dec 5 · This month <b>1.2k</b> of <b>4.5k</b></span></div>
+            </div></div>
+            <div class="hgt"><span>Debts</span><span class="ok">151px</span></div>
+          </div>
+          <div>
+            <div class="band guide"><div class="in">
+              <div class="top"><span class="lbl">Saved for goals</span></div>
+              <div class="nums"><p><span class="big">54,000</span><span class="unit">EGP</span></p><p class="side"><b>45% there</b>of 120,000</p></div>
+              <div class="barblk"><div class="bar"><span style="width:45%"></span></div></div>
+              <div class="note one"></div>
+            </div></div>
+            <div class="hgt"><span>Goals, first goal just added</span><span class="ok">151px, empty note line kept</span></div>
+          </div>
+        </div></div></div>
+        <p class="cap">Same height on every tab and every phone width. A note part that does not fit goes behind a <b>+1</b> chip (tap shows the full note); a figure is never cut.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 2 EMPTY STATES ===================== -->
+  <section class="item" id="empty">
+    <header>
+      <h2><span class="n">2</span> One empty-state system</h2>
+      <p>Today some screens use the shared empty state, others hand-roll a grey line or a bell, and the sizes differ. Proposed: every empty screen, section and picker uses <code>EmptyState</code> in its light-touch sizes, with one tone rule and one copy rule.</p>
+      <p class="reuse">Reuses <code>EmptyState variant="card"</code> with <code>size="page"</code> (a screen) or <code>size="section"</code> (a block or a sheet), <code>iconTone</code> brand / positive / neutral, <code>children</code> for choice cards (<code>SelectableCard as="action"</code>), <code>PendingRow</code>. No new component.</p>
+    </header>
+
+    <div class="pairs">
+      <h3 class="sub">2a. The system</h3>
+      <div class="row-of">
+        <div class="col after">
+          <h3><span class="dot"></span>Page: a first step</h3>
+          <div class="frame"><div class="scr"><div class="pad">
+            <div class="es"><span class="tile"><svg class="i"><use href="#i-hand-coins"/></svg></span><p class="tt">Title says what will be here</p><p class="ds">One line on how it fills: by hand, from bank messages, or both.</p><div class="acts"><div class="btn">One primary action</div><span class="link">Optional quiet link</span></div></div>
+          </div></div></div>
+          <p class="cap"><b>size="page"</b>: 56px tile, 17px title. Brand tone: something to set up.</p>
+        </div>
+        <div class="col after">
+          <h3><span class="dot"></span>Section: inside a screen or sheet</h3>
+          <div class="frame"><div class="scr"><div class="pad">
+            <div class="es sect"><span class="tile pos"><svg class="i"><use href="#i-check"/></svg></span><p class="tt">You're all caught up</p><p class="ds">Positive tone: nothing to do, and that is good.</p></div>
+            <div class="es sect"><span class="tile neu"><svg class="i"><use href="#i-search"/></svg></span><p class="tt">No bank called "Banq"</p><p class="ds">Neutral tone: nothing matches.</p><div class="acts"><div class="btn outline touch">Add "Banq"</div></div></div>
+          </div></div></div>
+          <p class="cap"><b>size="section"</b>: 44px tile, 15px title, one outline button at most.</p>
+        </div>
+        <div class="col after">
+          <h3><span class="dot"></span>Rules</h3>
+          <div class="frame"><div class="scr"><div class="pad" style="gap:10px">
+            <div class="card list">
+              <div class="r"><span class="k">Title<small>Says what will be here, never "Nothing here yet"</small></span></div>
+              <div class="r"><span class="k">One line<small>How it fills: by hand, from bank messages, or both</small></span></div>
+              <div class="r"><span class="k">Actions<small>One primary at most; a page may add one quiet link</small></span></div>
+              <div class="r"><span class="k">Tone<small>Brand = set up · positive = all clear · neutral = no match</small></span></div>
+              <div class="r"><span class="k">No emoji<small>Buddgy only as a page illustration, never in a section</small></span></div>
+            </div>
+          </div></div></div>
+          <p class="cap">Moves the hand-rolled ones over: bank page, Wealth lists, Activity, Notifications, Budget chooser, pickers, currency list, settings search.</p>
+        </div>
+      </div>
+
+      <h3 class="sub">2b. Accounts: the first account</h3>
+      <div class="pair">
+        <div class="col">
+          <h3><span class="dot"></span>Today</h3>
+          <div class="frame"><div class="scr"><div class="pad">
+            <div class="old" style="min-height:430px;justify-content:center">
+              <p class="tt">See what you can really spend</p>
+              <p class="ds">Add your accounts and buddget keeps every balance up to date from your bank messages.</p>
+              <div style="display:flex;flex-direction:column;gap:8px;width:100%;max-width:280px;margin-top:18px"><div class="btn">Find my accounts</div><div class="btn outline">Add one myself</div></div>
+            </div>
+          </div></div></div>
+          <p class="cap">No icon, two equal buttons. <b>Find my accounts</b> opens Detected accounts, which has nothing in it until bank messages arrive.</p>
+        </div>
+        <div class="col after">
+          <h3><span class="dot"></span>Proposed</h3>
+          <div class="frame"><div class="scr"><div class="pad">
+            <div class="es">
+              <span class="tile"><svg class="i"><use href="#i-landmark"/></svg></span>
+              <p class="tt">See what you can really spend</p>
+              <p class="ds">Start with the account your salary lands in. buddget keeps it up to date from your bank messages.</p>
+              <div class="body">
+                <div class="selc card-surface"><span class="ic"><svg class="i"><use href="#i-landmark"/></svg></span><span class="t"><b>Bank account</b><small>Current or savings, with its cards</small></span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+                <div class="selc card-surface"><span class="ic"><svg class="i"><use href="#i-credit-card"/></svg></span><span class="t"><b>Card</b><small>Debit, credit or prepaid</small></span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+                <div class="selc card-surface"><span class="ic g"><svg class="i"><use href="#i-wallet"/></svg></span><span class="t"><b>Wallet or cash</b><small>InstaPay, Vodafone Cash, cash on hand</small></span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+              </div>
+            </div>
+            <div class="pend teal"><span class="ic"><svg class="i"><use href="#i-inbox"/></svg></span><span class="t">2 accounts in your bank messages<small>Review and add them</small></span><svg class="i"><use href="#i-chevron-right"/></svg></div>
+          </div></div></div>
+          <p class="cap">A guide with three choice cards, each opening its own setup sheet (Card opens item 3). Accounts found in messages appear as a <b>PendingRow</b>, and only once there are some.</p>
+        </div>
+      </div>
+
+      <h3 class="sub">2c. A bank with a card but no account</h3>
+      <div class="pair">
+        <div class="col">
+          <h3><span class="dot"></span>Today</h3>
+          <div class="frame"><div class="scr"><div class="pad">
+            <div class="crop">CIB bank page, under its hero</div>
+            <div class="sechead"><b>Accounts<i>0</i></b><span class="link"><svg class="i"><use href="#i-plus"/></svg>Add account</span></div>
+            <div style="height:8px"></div>
+            <div class="sechead"><b>Credit cards<i>1</i></b></div>
+            <div class="card list"><div class="acc"><span class="mini cib">6019</span><span class="t"><b>CIB Credit</b><small>8,420 owed</small></span></div></div>
+          </div></div></div>
+          <p class="cap">"Accounts 0" with nothing under it.</p>
+        </div>
+        <div class="col after">
+          <h3><span class="dot"></span>Proposed</h3>
+          <div class="frame"><div class="scr"><div class="pad">
+            <div class="crop">CIB bank page, under its hero</div>
+            <div class="sechead"><b>Accounts<i>0</i></b></div>
+            <div class="es sect"><span class="tile neu"><svg class="i"><use href="#i-landmark"/></svg></span><p class="tt">No CIB account yet</p><p class="ds">Only needed if your money is at CIB too. A credit card works without one.</p><div class="acts"><div class="btn outline touch">Add CIB account</div></div></div>
+            <div class="sechead"><b>Credit cards<i>1</i></b></div>
+            <div class="card list"><div class="acc"><span class="mini cib">6019</span><span class="t"><b>CIB Credit</b><small>8,420 owed</small></span></div></div>
+          </div></div></div>
+          <p class="cap">A neutral <b>section</b> empty state: nothing is wrong. The header's "+ Add account" moves into it.</p>
+        </div>
+      </div>
+
+      <h3 class="sub">2d. Debts, Income, Savings</h3>
+      <div class="pair">
+        <div class="col">
+          <h3><span class="dot"></span>Today</h3>
+          <div class="frame"><div class="scr"><div class="pad">
+            <div class="crop">Debts</div>
+            <div class="es" style="padding:20px"><span class="tile pos" style="border-radius:16px"><svg class="i"><use href="#i-shield-check"/></svg></span><p class="tt" style="font-size:18px">No debts to track</p><p class="ds" style="font-size:14px;max-width:none">Staying at zero is the goal. Add one if you borrow, pay in installments or carry a card balance.</p><div class="acts"><div class="btn" style="max-width:none">Add a debt</div></div></div>
+            <div class="crop">Paydays</div>
+            <div class="es" style="padding:20px"><p class="tt" style="margin:0;font-size:18px">Tell buddget when you get paid</p><p class="ds" style="font-size:14px;max-width:none">Add your salary, rent or dividends. buddget expects each one, flags a late salary and matches bank SMS to them for you.</p><div class="acts"><div class="btn" style="max-width:none">Add income</div></div></div>
+            <p class="label10" style="margin:0 4px -6px">Start with one</p>
+            <div class="selc card-surface"><span class="ic g"><svg class="i"><use href="#i-banknote"/></svg></span><span class="t"><b>Salary</b><small>Monthly or twice a month</small></span></div>
+            <div class="crop">Wealth · Investments</div>
+            <div class="sechead"><b>Investments<i>0</i></b><span class="link"><svg class="i"><use href="#i-plus"/></svg>Add</span></div>
+            <p class="mutedp">Nothing here yet</p>
+          </div></div></div>
+          <p class="cap">Debts uses the older card size; Paydays has no icon and a second hand-rolled list (cut to one row here); Wealth shows a grey line.</p>
+        </div>
+        <div class="col after">
+          <h3><span class="dot"></span>Proposed</h3>
+          <div class="frame"><div class="scr"><div class="pad">
+            <div class="crop">Debts</div>
+            <div class="es"><span class="tile pos"><svg class="i"><use href="#i-shield-check"/></svg></span><p class="tt">No debts to track</p><p class="ds">Staying at zero is the goal. Add one if you borrow, pay in installments or carry a card balance.</p><div class="acts"><div class="btn">Add a debt</div></div></div>
+            <div class="crop">Paydays</div>
+            <div class="es">
+              <span class="tile"><svg class="i"><use href="#i-hand-coins"/></svg></span><p class="tt">Tell buddget when you get paid</p><p class="ds">buddget expects each payday, flags a late salary and matches bank messages to it.</p>
+              <div class="body">
+                <div class="selc"><span class="ic g"><svg class="i"><use href="#i-banknote"/></svg></span><span class="t"><b>Salary</b><small>Monthly or twice a month</small></span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+                <div class="selc"><span class="ic g"><svg class="i"><use href="#i-landmark"/></svg></span><span class="t"><b>Rental income</b><small>From a tenant, usually monthly</small></span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+                <div class="selc"><span class="ic g"><svg class="i"><use href="#i-trending-up"/></svg></span><span class="t"><b>Dividends</b><small>Quarterly or yearly payouts</small></span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+              </div>
+              <div class="acts"><span class="link">Something else</span></div>
+            </div>
+            <div class="crop">Wealth · Investments</div>
+            <div class="sechead"><b>Investments<i>0</i></b></div>
+            <div class="es sect"><span class="tile neu"><svg class="i"><use href="#i-trending-up"/></svg></span><p class="tt">No investments yet</p><p class="ds">Gold, certificates, funds or stocks you hold.</p><div class="acts"><div class="btn outline touch">Add investment</div></div></div>
+          </div></div></div>
+          <p class="cap">Debts moves to <b>size="page"</b>. Paydays puts its three starters inside the card as the choices, and the separate button goes. Wealth lists get a <b>section</b> state. The Savings tab keeps its hero and shows these section states (see open questions).</p>
+        </div>
+      </div>
+
+      <h3 class="sub">2e. Budget, Notifications, pickers</h3>
+      <div class="pair">
+        <div class="col">
+          <h3><span class="dot"></span>Today</h3>
+          <div class="frame"><div class="scr"><div class="pad">
+            <div class="crop">Budget, no plan</div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
+              <span class="badge">About 3 minutes</span><span class="orb"></span>
+              <span class="label10">Budget builder</span><p style="font-size:20px;font-weight:700">Build your budget</p>
+              <p style="font-size:13.5px;color:var(--color-brand-text-secondary)">Choose a starting point. Buddgy asks a few questions, then turns your answers into a monthly plan.</p>
+            </div>
+            <div class="selc card-surface"><span class="ic"><svg class="i"><use href="#i-coins"/></svg></span><span class="t"><b>Save more</b></span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+            <p class="label10" style="text-align:center">or build it yourself</p>
+            <div style="display:flex;gap:6px"><div class="btn outline" style="font-size:13px">Blank</div><div class="btn outline" style="font-size:13px">Template</div><div class="btn outline dis" style="font-size:13px">Copy a plan</div></div>
+            <div class="crop">Notifications</div>
+            <div class="card" style="padding:40px 16px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--color-brand-text-muted)"><svg class="i" style="width:28px;height:28px"><use href="#i-bell"/></svg><span style="font-size:14px">You’re all caught up 🎉</span></div>
+            <div class="crop">Paid from picker, no accounts</div>
+            <div class="card list"><div class="r"><span class="k">Paid from</span><span class="v muted"></span><svg class="i chev"><use href="#i-chevron-down"/></svg></div></div>
+          </div></div></div>
+          <p class="cap">Budget has its own chooser with six choices (two intents cut here); Notifications is a bell and an emoji; an empty picker shows a blank value and a blank list.</p>
+        </div>
+        <div class="col after">
+          <h3><span class="dot"></span>Proposed</h3>
+          <div class="frame"><div class="scr"><div class="pad">
+            <div class="crop">Budget, no plan</div>
+            <div class="es">
+              <span class="orb" style="width:56px;height:56px"></span>
+              <p class="tt">Build your budget</p><p class="ds">Pick a starting point. Buddgy asks a few questions, about 3 minutes.</p>
+              <div class="body">
+                <div class="selc"><span class="ic"><svg class="i"><use href="#i-coins"/></svg></span><span class="t"><b>Save more</b></span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+                <div class="selc"><span class="ic"><svg class="i"><use href="#i-target"/></svg></span><span class="t"><b>Plan a big goal</b></span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+                <div class="selc"><span class="ic"><svg class="i"><use href="#i-landmark"/></svg></span><span class="t"><b>Get out of debt</b></span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+              </div>
+              <div class="acts"><span class="link">Build it myself: blank or template</span></div>
+            </div>
+            <div class="crop">Notifications</div>
+            <div class="es sect"><span class="tile pos"><svg class="i"><use href="#i-check"/></svg></span><p class="tt">You're all caught up</p><p class="ds">Due dates, held messages and alerts show up here.</p></div>
+            <div class="crop">Paid from picker, no accounts</div>
+            <div class="sheet" style="border-radius:18px">
+              <div class="sh"><div class="t"><h4>Paid from</h4></div><span class="close"><svg class="i"><use href="#i-x"/></svg></span></div>
+              <div class="es sect ghost"><span class="tile neu"><svg class="i"><use href="#i-wallet"/></svg></span><p class="tt">No accounts yet</p><p class="ds">Add one here and it is picked for this expense.</p><div class="acts"><div class="btn outline touch">Add account</div></div></div>
+            </div>
+          </div></div></div>
+          <p class="cap">Budget keeps Buddgy as the page <b>illustration</b> and its three intents; blank, template and copy move behind one link. Notifications and pickers get <b>section</b> states.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 3 ADD CARD ===================== -->
+  <section class="item" id="card">
+    <header>
+      <h2><span class="n">3</span> Add card: one sheet, type first</h2>
+      <p>Every entry (the new Accounts "Add card" action, the bank page's add slot, the + menu) opens the same sheet. The card type comes first and decides the rest: a debit card says which account it spends from, a credit card who pays it, a prepaid card what is on it.</p>
+      <p class="reuse">Reuses <code>PaymentMethodSetupSheet</code> in <code>ModalShell</code> + <code>V3SheetHeader</code>, <code>SegmentedControl</code> (type bar), <code>PickerRow</code>, <code>Last4Tiles</code>, <code>AccountPicker</code> (Spends from, Paid from), <code>AmountField</code>, <code>SelectableCard</code> (top-up source), <code>PendingRow</code>, <code>V3SheetHeader.DialogTitle</code> (merge prompt), <code>SectionHeader</code>, <code>InlineBalanceEdit</code>.</p>
+    </header>
+
+    <div class="pairs">
+      <h3 class="sub">3a. Type bar first, Debit with its account found</h3>
+      <div class="pair">
+        <div class="col">
+          <h3><span class="dot"></span>Today</h3>
+          <div class="frame"><div class="scr scrim">
+            <div class="sheet">
+              <div class="grab"></div>
+              <div class="sh"><div class="t"><h4>Add a card</h4></div><span class="close"><svg class="i"><use href="#i-x"/></svg></span></div>
+              <div class="face cib"><div class="t"><span>CIB</span><span>DEBIT</span></div><div class="b"><span>•••• 4417</span><small>Visa</small></div></div>
+              <div class="seg"><span class="on">Debit</span><span>Credit</span><span>Prepaid</span></div>
+              <div class="card list">
+                <div class="r"><span class="k">Bank or wallet</span><span class="v"><span class="mark s m-cib">CIB</span>CIB</span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+                <div class="r"><span class="k">Last 4 <span class="opt">optional</span></span><span class="l4"><span>4</span><span>4</span><span>1</span><span>7</span></span></div>
+                <div class="r"><span class="k">Name</span><span class="v muted">CIB Debit</span></div>
+                <div class="r"><span class="k">Linked account</span><span class="v">CIB Current</span><svg class="i chev"><use href="#i-chevron-down"/></svg></div>
+                <div class="r"><span class="k">Currency</span><span class="v num">EGP</span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+              </div>
+              <p class="hint">None is fine for a store card, a prepaid card or a card from a bank where you have no account.</p>
+              <div class="btn">Add card</div>
+            </div>
+          </div></div>
+          <p class="cap">The type control sits under the preview, and is a scrolling chip row (six kinds) until a bank is picked. "Linked account" is a dropdown that also offers <b>None</b>; with no CIB account it stays None, so the card is saved detached.</p>
+        </div>
+        <div class="col after">
+          <h3><span class="dot"></span>Proposed</h3>
+          <div class="frame"><div class="scr scrim">
+            <div class="sheet">
+              <div class="grab"></div>
+              <div class="sh"><div class="t"><h4>Add a card</h4></div><span class="close"><svg class="i"><use href="#i-x"/></svg></span></div>
+              <div class="seg"><span class="on">Debit</span><span>Credit</span><span>Prepaid</span></div>
+              <div class="face cib"><div class="t"><span>CIB</span><span>DEBIT</span></div><div class="b"><span>•••• 4417</span><small>Visa</small></div></div>
+              <div class="card list">
+                <div class="r"><span class="k">Bank or wallet</span><span class="v"><span class="mark s m-cib">CIB</span>CIB</span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+                <div class="r"><span class="k">Card last 4 <span class="opt">optional</span></span><span class="l4"><span>4</span><span>4</span><span>1</span><span>7</span></span></div>
+                <div class="r"><span class="k">Name</span><span class="v muted">CIB Debit</span></div>
+                <div class="r"><span class="k">Currency</span><span class="v num">EGP</span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+              </div>
+              <p class="sec">Spends from</p>
+              <div class="card list">
+                <div class="r sel"><span class="radio on"></span><span class="mark s m-cib">CIB</span><span class="k">CIB Current <span class="opt num">••5521</span></span><span class="v amt">24,300</span></div>
+                <div class="r"><span class="radio"></span><span class="k">New CIB account <small>We'll create it</small></span></div>
+              </div>
+              <p class="hint">Picked for you: your only CIB account in EGP.</p>
+              <div class="btn">Add card</div>
+            </div>
+          </div></div>
+          <p class="cap">The <b>SegmentedControl</b> moves to the top and is always Debit, Credit, Prepaid. "Spends from" becomes a visible list with no None: the matching account is preselected and says why, and "New CIB account" takes None's place.</p>
+        </div>
+      </div>
+
+      <h3 class="sub">3b. Debit when the account is not there yet, or there are two <span style="font-weight:500;color:var(--pz-fg2);font-size:14px">(Name, card face and Default rows unchanged, cut from these frames)</span></h3>
+      <div class="row-of">
+        <div class="col after">
+          <h3><span class="dot"></span>No HSBC account yet</h3>
+          <div class="frame"><div class="scr scrim">
+            <div class="sheet">
+              <div class="seg"><span class="on">Debit</span><span>Credit</span><span>Prepaid</span></div>
+              <div class="card list">
+                <div class="r"><span class="k">Bank or wallet</span><span class="v"><span class="mark s m-hsbc">HS</span>HSBC</span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+                <div class="r"><span class="k">Card last 4 <span class="opt">optional</span></span><span class="l4"><span>9</span><span>0</span><span>3</span><span>2</span></span></div>
+              </div>
+              <p class="sec">Spends from</p>
+              <div class="card list">
+                <div class="r sel"><span class="radio on"></span><span class="k">New HSBC account <small>We'll create it</small></span></div>
+                <div class="r ind"><span class="k">Balance now <span class="opt">optional</span></span><span class="v amt ph">0.00</span></div>
+                <div class="r ind"><span class="k">Account last 4 <span class="opt">optional</span><small>HSBC messages show the account number</small></span><span class="l4"><span class="e">·</span><span class="e">·</span><span class="e">·</span><span class="e">·</span></span></div>
+              </div>
+              <div class="btn">Add card and account</div>
+            </div>
+          </div></div>
+          <p class="cap">The new account is real and confirmed. "Account last 4" is asked only for banks whose purchase messages carry the account number (HSBC, generic).</p>
+        </div>
+        <div class="col after">
+          <h3><span class="dot"></span>Two NBE accounts</h3>
+          <div class="frame"><div class="scr scrim">
+            <div class="sheet">
+              <div class="seg"><span class="on">Debit</span><span>Credit</span><span>Prepaid</span></div>
+              <div class="card list">
+                <div class="r"><span class="k">Bank or wallet</span><span class="v"><span class="mark s m-nbe">NBE</span>NBE</span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+                <div class="r"><span class="k">Card last 4 <span class="opt">optional</span></span><span class="l4"><span>1</span><span>1</span><span>0</span><span>8</span></span></div>
+              </div>
+              <p class="sec">Spends from</p>
+              <div class="card list">
+                <div class="r"><span class="radio"></span><span class="mark s m-nbe">NBE</span><span class="k">NBE Current <span class="opt num">••2290</span></span><span class="v amt">8,120</span></div>
+                <div class="r"><span class="radio"></span><span class="mark s m-nbe">NBE</span><span class="k">NBE Payroll <span class="opt num">••7713</span></span><span class="v amt">31,400</span></div>
+                <div class="r"><span class="radio"></span><span class="k">New NBE account <small>We'll create it</small></span></div>
+              </div>
+              <p class="hint">You have two NBE accounts. Pick the one this card spends from.</p>
+              <div class="btn dis">Pick an account</div>
+            </div>
+          </div></div>
+          <p class="cap">Two candidates: nothing preselected (today this silently stays None), and the button names what is missing. A second card at the same bank reuses the account you pick.</p>
+        </div>
+        <div class="col after">
+          <h3><span class="dot"></span>After save: the new account</h3>
+          <div class="frame"><div class="scr"><div class="pad">
+            <div class="crop">HSBC bank page</div>
+            <div class="sechead"><b>Accounts<i>1</i></b></div>
+            <div class="card list">
+              <div class="acc"><span class="mark m-hsbc">HS</span><span class="t"><b>HSBC Current</b><small>1 card · ••9032</small></span><span class="bal"><span class="set">Set balance</span></span></div>
+            </div>
+          </div></div></div>
+          <p class="cap">Created without a balance, the row shows <b>Set balance</b>, which opens <b>InlineBalanceEdit</b>.</p>
+        </div>
+      </div>
+
+      <h3 class="sub">3c. Credit, Prepaid, and the bank page's entry</h3>
+      <div class="row-of">
+        <div class="col after">
+          <h3><span class="dot"></span>Credit</h3>
+          <div class="frame"><div class="scr scrim">
+            <div class="sheet">
+              <div class="seg"><span>Debit</span><span class="on">Credit</span><span>Prepaid</span></div>
+              <div class="card list">
+                <div class="r"><span class="k">Bank or wallet</span><span class="v"><span class="mark s m-cib">CIB</span>CIB</span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+                <div class="r"><span class="k">Card last 4 <span class="opt">optional</span></span><span class="l4"><span>6</span><span>0</span><span>1</span><span>9</span></span></div>
+                <div class="r"><span class="k">Limit</span><span class="v amt">30,000</span></div>
+                <div class="r"><span class="k">Owed now</span><span class="v amt">8,420</span></div>
+                <div class="r"><span class="k">Due day</span><span class="v">25th</span></div>
+              </div>
+              <p class="sec">Paid from</p>
+              <div class="card list">
+                <div class="r"><span class="radio"></span><span class="mark s m-nbe">NBE</span><span class="k">NBE Payroll</span></div>
+                <div class="r"><span class="radio"></span><span class="mark s m-cib">CIB</span><span class="k">CIB Current</span></div>
+                <div class="r sel"><span class="radio on"></span><span class="k">Decide later</span></div>
+              </div>
+              <p class="hint">Until you pick, what you owe on this card is still held back from Free to spend.</p>
+              <div class="btn">Add credit card</div>
+            </div>
+          </div></div>
+          <p class="cap">No account is created: the issuing bank is often not where the money is. <b>Decide later</b> is allowed and the hold-back stays.</p>
+        </div>
+        <div class="col after">
+          <h3><span class="dot"></span>Prepaid</h3>
+          <div class="frame"><div class="scr scrim">
+            <div class="sheet">
+              <div class="seg"><span>Debit</span><span>Credit</span><span class="on">Prepaid</span></div>
+              <div class="face bm"><div class="t"><span>Banque Misr Prepaid</span><span>PREPAID</span></div><div class="b"><span>•••• 1234</span><small>Meeza</small></div></div>
+              <div class="card list">
+                <div class="r"><span class="k">Bank or wallet</span><span class="v"><span class="mark s m-bm">BM</span>Banque Misr</span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+                <div class="r"><span class="k">Card last 4 <span class="opt">optional</span></span><span class="l4"><span>1</span><span>2</span><span>3</span><span>4</span></span></div>
+                <div class="r"><span class="k">Name</span><span class="v muted">Banque Misr Prepaid ••1234</span></div>
+                <div class="r"><span class="k">Balance on card now<span class="req">Required</span><small>0 is fine</small></span><span class="v amt">1,250.00</span></div>
+              </div>
+              <p class="hint">A prepaid card holds its own money. It is not linked to an account.</p>
+              <div class="btn">Add prepaid card</div>
+            </div>
+          </div></div>
+          <p class="cap">Balance is required (0 allowed). The default name keeps "Prepaid" and the digits, so top-up messages match the card and not the bank.</p>
+        </div>
+        <div class="col">
+          <h3><span class="dot"></span>Bank page entry, bank preselected</h3>
+          <div class="frame"><div class="scr scrim">
+            <div class="sheet">
+              <div class="grab"></div>
+              <div class="sh"><div class="t"><h4>Add a card</h4><p>CIB</p></div><span class="close"><svg class="i"><use href="#i-x"/></svg></span></div>
+              <div class="seg"><span class="on">Debit</span><span>Credit</span></div>
+              <div class="card list">
+                <div class="r"><span class="k">Bank</span><span class="v"><span class="mark s m-cib">CIB</span>CIB <svg class="i" style="width:14px;height:14px"><use href="#i-lock"/></svg></span></div>
+                <div class="r"><span class="k">Card last 4 <span class="opt">optional</span></span><span class="l4"><span class="e">·</span><span class="e">·</span><span class="e">·</span><span class="e">·</span></span></div>
+              </div>
+              <p class="sec">Spends from</p>
+              <div class="card list"><div class="r sel"><span class="radio on"></span><span class="mark s m-cib">CIB</span><span class="k">CIB Current</span></div></div>
+              <div class="btn">Add card</div>
+            </div>
+          </div></div>
+          <p class="cap">Same sheet, bank locked. <b>No Prepaid</b> here: today picking it silently detaches the card from the bank.</p>
+        </div>
+      </div>
+
+      <h3 class="sub">3d. Top up a prepaid card or wallet</h3>
+      <div class="pair">
+        <div class="col">
+          <h3><span class="dot"></span>Today</h3>
+          <div class="frame"><div class="scr"><div class="pad">
+            <div class="crop">Flow, after a "money loaded" message with no matching debit</div>
+            <div class="card list">
+              <div class="acc"><span class="mark m-bm">BM</span><span class="t"><b>Banque Misr</b><small>Income · from SMS</small></span><span class="bal" style="color:var(--color-brand-green)">+1,500</span></div>
+            </div>
+            <p class="hint" style="margin-top:0">The load is booked as income, so Income and Free to spend both rise by money that was already yours.</p>
+          </div></div></div>
+          <p class="cap">No question is asked. A top-up from your own account counts twice.</p>
+        </div>
+        <div class="col after">
+          <h3><span class="dot"></span>Proposed</h3>
+          <div class="frame"><div class="scr scrim" style="padding-top:12px">
+            <div style="padding:0 14px 12px"><div class="pend"><span class="ic"><svg class="i"><use href="#i-wallet"/></svg></span><span class="t">1,500 loaded on Banque Misr Prepaid<small>Where did it come from?</small></span><svg class="i" style="color:var(--color-brand-amber)"><use href="#i-chevron-right"/></svg></div></div>
+            <div class="sheet">
+              <div class="grab"></div>
+              <div class="sh"><div class="t"><h4>Top up <span class="num">1,500</span> EGP</h4><p>Banque Misr Prepaid ••1234</p></div><span class="close"><svg class="i"><use href="#i-x"/></svg></span></div>
+              <p class="sec">Where did the money come from?</p>
+              <div class="selc on"><span class="radio on"></span><span class="t"><b>My account</b><small>CIB Current goes down by 1,500. Net worth stays the same.</small></span><span style="font-size:13px;color:var(--color-brand-primary-ink);font-weight:600;white-space:nowrap">CIB <svg class="i" style="width:13px;height:13px;vertical-align:-2px"><use href="#i-chevron-down"/></svg></span></div>
+              <div class="selc"><span class="radio"></span><span class="t"><b>Cash</b><small>Cash on hand goes down by 1,500.</small></span></div>
+              <div class="selc"><span class="radio"></span><span class="t"><b>Somewhere else</b><small>New money in buddget: net worth goes up. Not income.</small></span></div>
+              <div class="selc"><span class="radio"></span><span class="t"><b>It was income</b><small>Counted in this month's income.</small></span></div>
+              <div class="btn">Save top up</div>
+            </div>
+          </div></div>
+          <p class="cap">One <b>Top up</b> row: never spending, and never income unless you say so. A pending load waits as a <b>PendingRow</b>; a late bank message takes it over instead of adding a second credit.</p>
+        </div>
+      </div>
+
+      <h3 class="sub">3e. "Is this your account?" merge prompt</h3>
+      <div class="pair">
+        <div class="col">
+          <h3><span class="dot"></span>Today</h3>
+          <div class="frame"><div class="scr"><div class="pad">
+            <div class="crop">CIB bank page</div>
+            <div class="sechead"><b>Accounts<i>2</i></b></div>
+            <div class="card list">
+              <div class="acc"><span class="mark m-cib">CIB</span><span class="t"><b>CIB Current</b><small>2 cards</small></span><span class="bal">24,300<small>18,100 free</small></span></div>
+              <div class="acc"><span class="mark m-cib">CIB</span><span class="t"><b>CIB <span class="num">••5521</span></b><small>From a bank message · 3 transactions</small></span><span class="bal" style="color:var(--color-brand-amber)">-2,150</span></div>
+            </div>
+          </div></div></div>
+          <p class="cap">A message with an account number creates a second, provisional CIB account beside the real one, which has no number yet.</p>
+        </div>
+        <div class="col after">
+          <h3><span class="dot"></span>Proposed</h3>
+          <div class="frame"><div class="scr scrim" style="padding-block:40px 30px">
+            <div class="dlg">
+              <span class="mark m-cib" style="margin:0 auto">CIB</span>
+              <h4>Is this your CIB account <span class="num">••5521</span>?</h4>
+              <p>A bank message used CIB <span class="num">••5521</span>. You have one CIB account with no number: CIB Current.</p>
+              <div class="card list" style="text-align:start;background:var(--color-brand-elevated);box-shadow:none">
+                <div class="r"><span class="k">CIB <span class="num">••5521</span><small>3 transactions move to CIB Current</small></span><svg class="i" style="color:var(--color-brand-text-muted)"><use href="#i-arrow-down"/></svg></div>
+                <div class="r"><span class="mark s m-cib">CIB</span><span class="k">CIB Current<small>Learns the number ••5521</small></span></div>
+              </div>
+              <div class="btn">Yes, it's CIB Current</div>
+              <div class="btn outline">No, keep them apart</div>
+            </div>
+          </div></div>
+          <p class="cap">One tap teaches the digits and moves the history. Asked only when exactly one same-bank account has no number; otherwise the account waits in Detected accounts.</p>
+        </div>
+      </div>
+
+      <h3 class="sub">3f. "Add card" on the main Accounts page</h3>
+      <div class="pair">
+        <div class="col">
+          <h3><span class="dot"></span>Today</h3>
+          <div class="frame"><div class="scr"><div class="pad">
+            <div class="sechead"><b>Banks<i>2</i></b><span class="link"><svg class="i"><use href="#i-plus"/></svg>Add account</span></div>
+            <div class="card list">
+              <div class="acc"><span class="mark m-cib">CIB</span><span class="t"><b>CIB</b><small>1 account · 2 cards</small></span><span class="bal">24,300</span></div>
+              <div class="acc"><span class="mark m-nbe">NBE</span><span class="t"><b>NBE</b><small>2 accounts</small></span><span class="bal">39,520</span></div>
+            </div>
+            <div class="sechead"><b>Wallets and cash<i>1</i></b></div>
+          </div></div></div>
+          <p class="cap">A card is added from inside a bank or through the + menu. A credit card from a bank where you have no account has no obvious way in.</p>
+        </div>
+        <div class="col after">
+          <h3><span class="dot"></span>Proposed</h3>
+          <div class="frame"><div class="scr"><div class="pad">
+            <div class="sechead"><b>Banks<i>2</i></b><span class="acts"><span class="link"><svg class="i"><use href="#i-plus"/></svg>Add account</span><span class="link"><svg class="i"><use href="#i-credit-card"/></svg>Add card</span></span></div>
+            <div class="card list">
+              <div class="acc"><span class="mark m-cib">CIB</span><span class="t"><b>CIB</b><small>1 account · 2 cards</small></span><span class="bal">24,300</span></div>
+              <div class="acc"><span class="mark m-nbe">NBE</span><span class="t"><b>NBE</b><small>2 accounts</small></span><span class="bal">39,520</span></div>
+            </div>
+            <div class="sechead"><b>Wallets and cash<i>1</i></b></div>
+          </div></div></div>
+          <p class="cap">"Add card" joins "Add account" on the Banks header and opens the same sheet with no bank chosen.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 4 PLANS ===================== -->
+  <section class="item" id="plans">
+    <header>
+      <h2><span class="n">4</span> Budget plans back at the top</h2>
+      <p>Until Nov 26 (621c848e) the plan name sat in the bar at the top; since then the plans sit in a quiet row at the end of the Budget page, so switching or comparing plans is easy to miss. Proposed: a compact deck right under the hero with the active plan first. The full deck sheet stays for actions.</p>
+      <p class="reuse">Reuses <code>PlanDeck</code> as an additive <code>look="strip"</code> (the sheet look stays the default): <code>SelectableCard</code> radio cards, the block bar (<code>blockColor</code> to <code>--color-cat-N</code>), <code>Badge</code>, and the deck's own dashed "New plan" card.</p>
+    </header>
+    <div class="pair">
+      <div class="col">
+        <h3><span class="dot"></span>Today</h3>
+        <div class="frame"><div class="scr"><div class="pad">
+          <div class="band"><div class="in">
+            <div class="top"><span class="lbl">December budget</span></div>
+            <div class="nums"><p><span class="big">21,600</span><span class="unit">EGP</span></p><p class="side"><b>72%</b>of 30,000 used</p></div>
+            <div class="barblk"><div class="bar"><span style="width:72%"></span></div></div>
+          </div></div>
+          <div class="card list lines">
+            <div class="r"><span class="k">Rent and bills<div class="prog"><span style="width:100%"></span></div></span><span class="v amt">9,000</span></div>
+            <div class="r"><span class="k">Groceries<div class="prog"><span style="width:64%"></span></div></span><span class="v amt">4,500</span></div>
+            <div class="r"><span class="k">Transport<div class="prog"><span style="width:40%"></span></div></span><span class="v amt">2,000</span></div>
+            <div class="r"><span class="k">Savings<div class="prog"><span style="width:100%"></span></div></span><span class="v amt">5,400</span></div>
+          </div>
+          <div class="quiet"><span class="d"></span>Balanced <span class="m">· Active</span><svg class="i" style="width:16px;height:16px;color:var(--color-brand-text-muted)"><use href="#i-chevron-down"/></svg></div>
+        </div></div></div>
+        <p class="cap">One line after the budget lines, below the fold on most phones. The other plans only appear in the sheet it opens.</p>
+      </div>
+      <div class="col after">
+        <h3><span class="dot"></span>Proposed</h3>
+        <div class="frame"><div class="scr"><div class="pad">
+          <div class="band"><div class="in">
+            <div class="top"><span class="lbl">December budget</span></div>
+            <div class="nums"><p><span class="big">21,600</span><span class="unit">EGP</span></p><p class="side"><b>72%</b>of 30,000 used</p></div>
+            <div class="barblk"><div class="bar"><span style="width:72%"></span></div></div>
+          </div></div>
+          <div class="sechead" style="margin-bottom:-10px"><b>Plans<i>3</i></b><span class="link">All plans</span></div>
+          <div class="deck">
+            <div class="plan on">
+              <div class="h"><b>Balanced</b><span class="badge pos">Active</span></div>
+              <div class="blocks"><span style="width:30%;background:var(--color-cat-1)"></span><span style="width:15%;background:var(--color-cat-2)"></span><span style="width:7%;background:var(--color-cat-3)"></span><span style="width:18%;background:var(--color-cat-4)"></span><span style="width:30%;background:var(--color-cat-5)"></span></div>
+              <div class="st"><span>Income<b>30,000</b></span><span>Saves<b>18%</b></span></div>
+            </div>
+            <div class="plan">
+              <div class="h"><b>Ramadan</b><span class="badge">Ready</span></div>
+              <div class="blocks"><span style="width:34%;background:var(--color-cat-1)"></span><span style="width:26%;background:var(--color-cat-2)"></span><span style="width:10%;background:var(--color-cat-3)"></span><span style="width:18%;background:var(--color-cat-4)"></span><span style="width:12%;background:var(--color-cat-5)"></span></div>
+              <div class="st"><span>Income<b>30,000</b></span><span>Saves<b>10%</b></span></div>
+            </div>
+            <div class="plan new"><svg class="i"><use href="#i-plus"/></svg>New plan</div>
+          </div>
+          <div class="card list lines">
+            <div class="r"><span class="k">Rent and bills<div class="prog"><span style="width:100%"></span></div></span><span class="v amt">9,000</span></div>
+            <div class="r"><span class="k">Groceries<div class="prog"><span style="width:64%"></span></div></span><span class="v amt">4,500</span></div>
+          </div>
+        </div></div></div>
+        <p class="cap">Cards 214px wide and about 96px tall: name, state, the plan's shape as a colour bar, two figures. The live plan has the teal ring. <b>All plans</b> opens today's deck sheet (Set active, Duplicate, Compare).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 5 DESKTOP ===================== -->
+  <section class="item" id="desktop">
+    <header>
+      <h2><span class="n">5</span> Desktop: use the width</h2>
+      <p>On a laptop, Flow, Accounts and Debts sit in one 640px column (<code>PageGrid stack</code>), leaving most of the screen empty. Proposed: the page fills the window beside the sidebar, with no 640px or 1152px cap, and splits into a main column and a rail, like a dashboard. Phone and tablet layouts do not change.</p>
+      <p class="reuse">Reuses <code>Sidebar</code> (176px, unchanged), <code>PageContainer wide</code>, <code>PageGrid</code> with its <code>secondary</code> rail, <code>HeroBand</code>, and the phone's existing cards and rows. These are skeletons: each block holds what the phone already shows.</p>
+    </header>
+    <div class="pairs">
+      <div class="col">
+        <h3><span class="dot"></span>Today: Flow, Accounts and Debts all look like this at 1440px</h3>
+        <div class="desk-scroll"><div class="desk">
+          <div class="chrome"><i></i><i></i><i></i><span>buddget · Accounts</span></div>
+          <div class="shell">
+            <nav class="side"><span class="logo">buddget</span><a><svg class="i"><use href="#i-layout-dashboard"/></svg>Flow</a><a><svg class="i"><use href="#i-list-checks"/></svg>Budget</a><a class="on"><svg class="i"><use href="#i-landmark"/></svg>Accounts</a><a><svg class="i"><use href="#i-coins"/></svg>Savings</a><a><svg class="i"><use href="#i-credit-card"/></svg>Debts</a><a><svg class="i"><use href="#i-trending-up"/></svg>Reports</a></nav>
+            <div class="main">
+              <div class="cap640">
+                <div class="sk band2"></div>
+                <div class="sk t"></div>
+                <div class="panel"><div class="sk row"></div><div class="sk row"></div><div class="sk row"></div></div>
+                <div class="sk t"></div>
+                <div class="panel"><div class="sk row"></div><div class="sk row"></div></div>
+              </div>
+              <div class="measure">one 640px column, wide empty margins on both sides</div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+      <div class="col after">
+        <h3><span class="dot"></span>Proposed: Flow</h3>
+        <div class="desk-scroll"><div class="desk">
+          <div class="chrome"><i></i><i></i><i></i><span>buddget · Flow</span></div>
+          <div class="shell">
+            <nav class="side"><span class="logo">buddget</span><a class="on"><svg class="i"><use href="#i-layout-dashboard"/></svg>Flow</a><a><svg class="i"><use href="#i-list-checks"/></svg>Budget</a><a><svg class="i"><use href="#i-landmark"/></svg>Accounts</a><a><svg class="i"><use href="#i-coins"/></svg>Savings</a><a><svg class="i"><use href="#i-credit-card"/></svg>Debts</a><a><svg class="i"><use href="#i-trending-up"/></svg>Reports</a></nav>
+            <div class="main">
+              <div class="sk band2"></div>
+              <div class="gridx flow">
+                <div class="panel"><div class="ttl">Transactions <em>filters · search · day groups</em></div><div class="sk t" style="width:18%"></div><div class="sk row"></div><div class="sk row"></div><div class="sk row"></div><div class="sk t" style="width:18%"></div><div class="sk row"></div><div class="sk row"></div></div>
+                <div class="stack">
+                  <div class="panel"><div class="ttl">Needs you <em>PendingRow</em></div><div class="sk row"></div></div>
+                  <div class="panel"><div class="ttl">Coming up <em>paydays, bills</em></div><div class="sk row"></div><div class="sk row"></div></div>
+                  <div class="panel"><div class="ttl">Budget lines <em>top 4</em></div><div class="sk row" style="height:28px"></div><div class="sk row" style="height:28px"></div></div>
+                </div>
+              </div>
+              <div class="measure ok">fills the window beside the sidebar</div>
+            </div>
+          </div>
+        </div></div>
+        <p class="cap" style="max-width:640px">The transaction list takes the wide column; what you check at a glance (pending items, what is coming, budget lines) sits in the rail.</p>
+      </div>
+      <div class="col after">
+        <h3><span class="dot"></span>Proposed: Accounts</h3>
+        <div class="desk-scroll"><div class="desk">
+          <div class="chrome"><i></i><i></i><i></i><span>buddget · Accounts</span></div>
+          <div class="shell">
+            <nav class="side"><span class="logo">buddget</span><a><svg class="i"><use href="#i-layout-dashboard"/></svg>Flow</a><a><svg class="i"><use href="#i-list-checks"/></svg>Budget</a><a class="on"><svg class="i"><use href="#i-landmark"/></svg>Accounts</a><a><svg class="i"><use href="#i-coins"/></svg>Savings</a><a><svg class="i"><use href="#i-credit-card"/></svg>Debts</a><a><svg class="i"><use href="#i-trending-up"/></svg>Reports</a></nav>
+            <div class="main">
+              <div class="sk band2"></div>
+              <div class="gridx flow">
+                <div class="stack" style="gap:10px">
+                  <div class="ttl">Banks · Wallets and cash</div>
+                  <div class="gridx three">
+                    <div class="panel"><div class="sk row"></div><div class="sk t" style="width:60%"></div><div class="sk row" style="height:30px;width:60%"></div></div>
+                    <div class="panel"><div class="sk row"></div><div class="sk t" style="width:60%"></div><div class="sk row" style="height:30px;width:60%"></div></div>
+                    <div class="panel"><div class="sk row"></div><div class="sk t" style="width:60%"></div><div class="sk row" style="height:30px;width:60%"></div></div>
+                    <div class="panel"><div class="sk row"></div><div class="sk t" style="width:60%"></div></div>
+                    <div class="panel"><div class="sk row"></div><div class="sk t" style="width:60%"></div></div>
+                  </div>
+                </div>
+                <div class="stack">
+                  <div class="panel"><div class="ttl">Set aside <em>pockets, goals</em></div><div class="sk row"></div><div class="sk row"></div></div>
+                  <div class="panel"><div class="ttl">Credit cards <em>owed, due</em></div><div class="sk row"></div></div>
+                  <div class="panel"><div class="ttl">Other cards</div><div class="sk row"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div></div>
+        <p class="cap" style="max-width:640px">Each bank or wallet becomes a tile in a three-column grid (the phone's provider card, unchanged inside). Money that is not free to spend sits in the rail. A bank opens as a page with the same split.</p>
+      </div>
+      <div class="col after">
+        <h3><span class="dot"></span>Proposed: Debts</h3>
+        <div class="desk-scroll"><div class="desk">
+          <div class="chrome"><i></i><i></i><i></i><span>buddget · Debts</span></div>
+          <div class="shell">
+            <nav class="side"><span class="logo">buddget</span><a><svg class="i"><use href="#i-layout-dashboard"/></svg>Flow</a><a><svg class="i"><use href="#i-list-checks"/></svg>Budget</a><a><svg class="i"><use href="#i-landmark"/></svg>Accounts</a><a><svg class="i"><use href="#i-coins"/></svg>Savings</a><a class="on"><svg class="i"><use href="#i-credit-card"/></svg>Debts</a><a><svg class="i"><use href="#i-trending-up"/></svg>Reports</a></nav>
+            <div class="main">
+              <div class="sk band2"></div>
+              <div class="gridx flow">
+                <div class="stack" style="gap:10px">
+                  <div style="display:flex;gap:8px"><div class="sk pillx"></div><div class="sk pillx"></div><div class="sk pillx"></div></div>
+                  <div class="gridx two">
+                    <div class="panel"><div class="sk row"></div><div class="sk bar6"></div><div class="sk t" style="width:50%"></div></div>
+                    <div class="panel"><div class="sk row"></div><div class="sk bar6"></div><div class="sk t" style="width:50%"></div></div>
+                    <div class="panel"><div class="sk row"></div><div class="sk bar6"></div><div class="sk t" style="width:50%"></div></div>
+                    <div class="panel"><div class="sk row"></div><div class="sk bar6"></div><div class="sk t" style="width:50%"></div></div>
+                  </div>
+                </div>
+                <div class="stack">
+                  <div class="panel"><div class="ttl">Next payments <em>by date</em></div><div class="sk row"></div><div class="sk row"></div><div class="sk row"></div></div>
+                  <div class="panel"><div class="ttl">Cleared</div><div class="sk row"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div></div>
+        <p class="cap" style="max-width:640px">The family tabs stay on top, debt cards go two per row, and the payment schedule moves into the rail.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ARABIC ===================== -->
+  <section class="item" id="arabic">
+    <header>
+      <h2><span class="n">AR</span> Arabic sample: Add card, Debit</h2>
+      <p>Item 3a in Arabic, drawn the way the app renders Arabic today: <code>&lt;html dir="ltr"&gt;</code> for every locale (<code>src/app/(app)/layout.tsx</code>), so rows keep their left-to-right order and Arabic text starts at the left edge, in IBM Plex Sans Arabic, with figures left to right. New strings are listed and need a native speaker's review.</p>
+    </header>
+    <div class="pair">
+      <div class="col after">
+        <h3><span class="dot"></span>Proposed, Arabic</h3>
+        <div class="frame"><div class="scr scrim ar">
+          <div class="sheet">
+            <div class="grab"></div>
+            <div class="sh"><div class="t"><h4>أضف بطاقة</h4></div><span class="close"><svg class="i"><use href="#i-x"/></svg></span></div>
+            <div class="seg"><span class="on">خصم</span><span>ائتمان</span><span>مسبقة الدفع</span></div>
+            <div class="face cib"><div class="t"><span>CIB</span><span>DEBIT</span></div><div class="b"><span>•••• 4417</span><small>Visa</small></div></div>
+            <div class="card list">
+              <div class="r"><span class="k">البنك أو المحفظة</span><span class="v"><span class="mark s m-cib">CIB</span>CIB</span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+              <div class="r"><span class="k">آخر 4 أرقام للبطاقة <span class="opt">اختياري</span></span><span class="l4"><span>4</span><span>4</span><span>1</span><span>7</span></span></div>
+              <div class="r"><span class="k">الاسم</span><span class="v muted">CIB Debit</span></div>
+              <div class="r"><span class="k">العملة</span><span class="v num">EGP</span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+            </div>
+            <p class="sec">تسحب من</p>
+            <div class="card list">
+              <div class="r sel"><span class="radio on"></span><span class="mark s m-cib">CIB</span><span class="k">الحساب الجاري CIB <span class="opt num">••5521</span></span><span class="v amt">24,300</span></div>
+              <div class="r"><span class="radio"></span><span class="k">حساب جديد في CIB <small>سننشئه لك</small></span></div>
+            </div>
+            <p class="hint">اخترناه لك: حسابك الوحيد في CIB بالجنيه.</p>
+            <div class="btn">أضف البطاقة</div>
+          </div>
+        </div></div>
+        <p class="cap">Existing copy: the title, the type names, "البنك أو المحفظة", "تسحب من", "العملة" and the button. <b>New copy</b>: "آخر 4 أرقام للبطاقة", "اختياري", "حساب جديد في CIB", "سننشئه لك" and the hint.</p>
+      </div>
+      <div class="col">
+        <h3><span class="dot"></span>Same sheet in English</h3>
+        <div class="frame"><div class="scr scrim">
+          <div class="sheet">
+            <div class="grab"></div>
+            <div class="sh"><div class="t"><h4>Add a card</h4></div><span class="close"><svg class="i"><use href="#i-x"/></svg></span></div>
+            <div class="seg"><span class="on">Debit</span><span>Credit</span><span>Prepaid</span></div>
+            <div class="face cib"><div class="t"><span>CIB</span><span>DEBIT</span></div><div class="b"><span>•••• 4417</span><small>Visa</small></div></div>
+            <div class="card list">
+              <div class="r"><span class="k">Bank or wallet</span><span class="v"><span class="mark s m-cib">CIB</span>CIB</span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+              <div class="r"><span class="k">Card last 4 <span class="opt">optional</span></span><span class="l4"><span>4</span><span>4</span><span>1</span><span>7</span></span></div>
+              <div class="r"><span class="k">Name</span><span class="v muted">CIB Debit</span></div>
+              <div class="r"><span class="k">Currency</span><span class="v num">EGP</span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+            </div>
+            <p class="sec">Spends from</p>
+            <div class="card list">
+              <div class="r sel"><span class="radio on"></span><span class="mark s m-cib">CIB</span><span class="k">CIB Current <span class="opt num">••5521</span></span><span class="v amt">24,300</span></div>
+              <div class="r"><span class="radio"></span><span class="k">New CIB account <small>We'll create it</small></span></div>
+            </div>
+            <p class="hint">Picked for you: your only CIB account in EGP.</p>
+            <div class="btn">Add card</div>
+          </div>
+        </div></div>
+        <p class="cap">For comparison: item 3a, unchanged.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== QUESTIONS ===================== -->
+  <section class="item" id="questions">
+    <header>
+      <h2><span class="n">?</span> Open design questions</h2>
+      <p>These need your call before the build starts. Everything else follows the plan and the council's card-flow decisions.</p>
+    </header>
+    <ol class="qs">
+      <li><b>Hero note overflow.</b><span>When the note does not fit on one line, should the rest go behind a "+1" chip that shows the full note, or be dropped silently? And should the "exactly …" pill that appears on tap stay inside the fixed 151px as an overlay?</span></li>
+      <li><b>First-account guide.</b><span>Are three choice cards (Bank account, Card, Wallet or cash) right? Accounts found in bank messages would show only as a row once some exist, and the "Find my accounts" button goes.</span></li>
+      <li><b>Virtual and store cards.</b><span>The type bar keeps only Debit, Credit and Prepaid. Should Virtual and Store card move to the + menu's card list, or sit under Debit as a "Kind" row?</span></li>
+      <li><b>Top-up choices.</b><span>Four equal choices (My account, Cash, Somewhere else, It was income) as drawn, or three choices with an "It was income" switch under "Somewhere else", as the plan words it?</span></li>
+      <li><b>The Accounts "Card" entry.</b><span>Two text actions on the Banks header as drawn, or a dashed "Add a card" row under the bank list?</span></li>
+      <li><b>Where the merge prompt appears.</b><span>A dialog when Accounts opens, a PendingRow on Accounts that opens it, or both?</span></li>
+      <li><b>Budget empty state.</b><span>Keep Buddgy as the illustration as drawn, or use the plain tile like every other page?</span></li>
+      <li><b>Plans strip.</b><span>Should a tap on another plan card preview it on the page, or open the deck sheet straight away? And should "New plan" stay in the strip or only in the sheet?</span></li>
+      <li><b>Desktop width and rails.</b><span>Fully fluid as drawn, or stop growing on very wide screens (for example at 1600px)? Which blocks belong in each page's rail?</span></li>
+      <li><b>Savings with nothing saved.</b><span>The Savings tab has no page-level empty state today (its sections just disappear). Give it a page-size state, or keep the hero plus the section states drawn in 2d?</span></li>
+      <li><b>Arabic layout.</b><span>The app keeps a left-to-right layout for Arabic today. Keep that for this round, or plan full right-to-left mirroring as its own piece of work?</span></li>
+    </ol>
+  </section>
+</div>
