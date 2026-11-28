@@ -1,5 +1,28 @@
 # Store text: live record and Play drafts (2026-11-28)
 
+## Update 2026-11-28 (owner decisions applied, live in both consoles)
+
+The text sections below show the state before this update. The table here is the current state.
+
+**Name (council: Arabic keeps an Arabic name; Latin-only would drop Arabic search):**
+
+| | English (App Store U.S./U.K., Play) | Arabic (App Store) | Arabic (Play) |
+|---|---|---|---|
+| Name | buddget: AI Budget Tracker | بادجت: مصاريف وميزانية | بادجت: مصاريف وميزانية وأقساط |
+| Subtitle (App Store) | Expenses, Installments & Debts | أقساط وديون من رسائل البنك | n/a |
+
+- **Keywords:**
+  - U.S.: `spending,money,bills,savings,goals,income,salary,wallet,receipt,cash,gold,planner,sms,bnpl,finance`
+  - U.K.: `egp,sms,bnpl,salary,savings,spending,goal,gold,bill,money,receipt,cash,aed,sar,kwd,qar,instalment`
+  - Arabic: `مصروفات,ادخار,تقسيط,راتب,محفظة,إيصالات,أهداف,مدخرات,فواتير,نقود,تتبع,استثمار,أموال,ذكاء,اصطناعي` (ASCII commas)
+  - Nothing repeats a name or subtitle word.
+- **U.K. text:** the promotional text and description are now identical to the U.S. version (opening question, privacy line).
+- **Arabic Pro subscriptions:** "أضعاف" fixed (monthly and annual).
+- **Terms:** the store's Arabic terms win. The app now says سبارك (Sparks) and المساعد (the Advisor), PR #62.
+- **Play:** the English and Arabic name, short description and full description are applied from the drafts below, with the store terms (سبارك، المساعد). Tag: "Personal finance", the only finance tag in Google's list.
+- **App Accessibility:** not declared. It isn't required for submission, and a wrong claim is worse than none. Declare it after a VoiceOver and Larger Text pass.
+
+
 Read from App Store Connect (version 1.1.0, Prepare for Submission) and Play Console on 2026-11-28. The App Store text below is exactly what is live there, including the promotional texts the owner added. The Play section is a DRAFT waiting for the owner's OK; nothing on Play was changed.
 
 ## Copy style (from the owner's edits)
