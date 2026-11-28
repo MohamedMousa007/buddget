@@ -6176,6 +6176,69 @@ export type Database = {
         }
         Relationships: []
       }
+      waitlist_signups: {
+        Row: {
+          app_invite_code: string | null
+          country: string | null
+          created_at: string
+          email: string
+          heard_from: string | null
+          id: string
+          locale: string
+          name: string | null
+          platform: string | null
+          referred_by: string | null
+          share_code: string
+          tracking_now: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          want_most: string | null
+        }
+        Insert: {
+          app_invite_code?: string | null
+          country?: string | null
+          created_at?: string
+          email: string
+          heard_from?: string | null
+          id?: string
+          locale: string
+          name?: string | null
+          platform?: string | null
+          referred_by?: string | null
+          share_code: string
+          tracking_now?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          want_most?: string | null
+        }
+        Update: {
+          app_invite_code?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string
+          heard_from?: string | null
+          id?: string
+          locale?: string
+          name?: string | null
+          platform?: string | null
+          referred_by?: string | null
+          share_code?: string
+          tracking_now?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          want_most?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       app_activity_days: {
@@ -7333,6 +7396,31 @@ export type Database = {
       }
       usage_resets_seen: { Args: { p_user: string }; Returns: undefined }
       user_id_by_email: { Args: { p_email: string }; Returns: string }
+      waitlist_join: {
+        Args: {
+          p_app_invite_code?: string
+          p_country?: string
+          p_email: string
+          p_heard_from?: string
+          p_locale: string
+          p_name?: string
+          p_platform?: string
+          p_referred_by?: string
+          p_tracking_now?: string
+          p_utm_campaign?: string
+          p_utm_content?: string
+          p_utm_medium?: string
+          p_utm_source?: string
+          p_utm_term?: string
+          p_want_most?: string
+        }
+        Returns: {
+          is_new: boolean
+          referrals: number
+          share_code: string
+        }[]
+      }
+      waitlist_share_code: { Args: never; Returns: string }
       withdraw_from_savings: {
         Args: {
           p_account_id: string

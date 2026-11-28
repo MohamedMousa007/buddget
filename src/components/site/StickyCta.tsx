@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { WEB_APP_URL, type SiteLocale } from '@/lib/site/config'
+import type { SiteLocale } from '@/lib/site/config'
 import { pathFor, siteContent } from '@/lib/site/routes'
 
-/** Mobile-only bar with the two main asks, shown once the visitor has scrolled past the first screen. */
+/** Mobile-only bar with the main ask, shown once the visitor has scrolled past the first screen. */
 export function StickyCta({ locale }: { locale: SiteLocale }) {
   const n = siteContent[locale].nav
   const [show, setShow] = useState(false)
@@ -25,8 +25,7 @@ export function StickyCta({ locale }: { locale: SiteLocale }) {
 
   return (
     <div className={`sticky-cta${show ? ' show' : ''}`} aria-hidden={!show}>
-      <Link className="pill pill-p" href={pathFor(locale, 'download')} data-track="cta" tabIndex={show ? 0 : -1}>{n.getAppShort}</Link>
-      <a className="pill pill-g" href={WEB_APP_URL} data-track="cta" tabIndex={show ? 0 : -1}>{n.tryShort}</a>
+      <Link className="pill pill-p" href={pathFor(locale, 'waitlist')} data-track="cta" tabIndex={show ? 0 : -1}>{n.getAppShort}</Link>
     </div>
   )
 }

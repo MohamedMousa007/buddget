@@ -8,7 +8,7 @@ vi.mock('@/lib/server/rateLimit', () => ({ isRateLimited: (...a: unknown[]) => l
 import { POST } from './route'
 
 const req = (body: unknown) => new Request('http://x/api/site/lead', { method: 'POST', headers: { 'x-forwarded-for': '1.2.3.4' }, body: JSON.stringify(body) })
-const ok = { kind: 'waitlist', locale: 'en', email: 'a@b.co' }
+const ok = { kind: 'contact', locale: 'en', email: 'a@b.co', name: 'A', message: 'Hello' }
 
 beforeEach(() => { insert.mockReset().mockResolvedValue({ error: null }); limited.mockReset().mockResolvedValue(false) })
 
@@ -25,9 +25,9 @@ describe('POST /api/site/lead', () => {
     expect(res.status).toBe(429)
     expect(insert).not.toHaveBeenCalled()
   })
-  it('treats a repeat sign-up as success', async () => {
-    insert.mockResolvedValue({ error: { code: '23505' } })
-    expect((await POST(req(ok))).status).toBe(200)
+  it('refuses the old waitlist kind, which moved to /api/site/waitlist', async () => {
+    expect((await POST(req({ ...ok, kind: 'waitlist' }))).status).toBe(400)
+    expect(insert).not.toHaveBeenCalled()
   })
 
   it('ADS-5 caps one address per hour and every sign-up per day', async () => {

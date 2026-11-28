@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { STORE_LINKS, SUPPORT_EMAIL, WEB_APP_URL, type SiteLocale } from '@/lib/site/config'
+import { STORE_LINKS, SUPPORT_EMAIL, type SiteLocale } from '@/lib/site/config'
 import { pathFor, siteContent } from '@/lib/site/routes'
 import { legalPath } from '@/lib/legal/paths'
 import type { ScreenKey } from '@/lib/site/screens'
@@ -15,8 +15,9 @@ import { HomeHero } from './home/HomeHero'
 import { HomeInside } from './home/HomeInside'
 import { HomeStatement } from './home/HomeStatement'
 import { HomeStory } from './home/HomeStory'
-import { HomeClose, HomeCompare, HomeFaq, HomePricing, HomeProof, HomeTrust } from './home/HomeSections'
-import { BottomCta, FaqList, PageHero, Reviews, Split, StoreBadges } from './sections'
+import { HomeClose, HomeCompare, HomeFaq, HomePricing, HomeProof } from './home/HomeSections'
+import { BottomCta, FaqList, PageHero, PlanCards, Reviews, Split, StoreBadges } from './sections'
+import { WaitlistForm } from './WaitlistForm'
 import { ButtonLink, Card, Container, Eyebrow, H2, H3, Lede, Section, SectionHead, TextLink, Ticks } from './ui'
 
 type P = { locale: SiteLocale }
@@ -32,7 +33,6 @@ export function HomePage({ locale }: P) {
       <HomeStory locale={locale} />
       <HomeAfford locale={locale} />
       <HomeInside locale={locale} />
-      <HomeTrust locale={locale} />
       <HomeCompare locale={locale} />
       <HomePricing locale={locale} />
       <Reviews locale={locale} />
@@ -77,7 +77,7 @@ export function FeaturePage({ locale, slug }: P & { slug: string }) {
   return (
     <>
       <PageHero locale={locale} trail={[{ label: c.footer.links.features, slug: 'features' }, { label: it.name }]} eyebrow={c.features.intro.eyebrow} h1={it.h1} lede={it.lede}>
-        <div className="flex flex-wrap gap-3"><ButtonLink href={pathFor(locale, 'download')} size="lg">{c.common.getApp}</ButtonLink><ButtonLink href={pathFor(locale, 'features')} variant="outline" size="lg">{c.footer.links.features}</ButtonLink></div>
+        <div className="flex flex-wrap gap-3"><ButtonLink href={pathFor(locale, 'waitlist')} size="lg">{c.common.getApp}</ButtonLink><ButtonLink href={pathFor(locale, 'features')} variant="outline" size="lg">{c.footer.links.features}</ButtonLink></div>
       </PageHero>
       <Section pad="lg">
         <Container>
@@ -135,25 +135,7 @@ export function PricingPage({ locale }: P) {
   return (
     <>
       <PageHero locale={locale} trail={[{ label: c.footer.links.pricing }]} eyebrow={p.intro.eyebrow} h1={p.intro.h1} lede={p.intro.lede} />
-      <Section pad="md">
-        <Container>
-          <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2">
-            <Card className="flex flex-col gap-5">
-              <div><H3 as="h2" className="text-2xl">{p.free.name}</H3><p className="mt-1 text-brand-text-secondary">{p.free.tag}</p></div>
-              <div dir="auto" className="font-mono text-5xl font-medium">{p.free.price}</div>
-              <Ticks items={p.free.items} />
-              <div className="mt-auto grid gap-2"><ButtonLink href={pathFor(locale, 'download')} variant="outline">{p.free.cta}</ButtonLink><ButtonLink href={WEB_APP_URL} variant="ghost" external>{c.common.tryBrowser}</ButtonLink></div>
-            </Card>
-            <Card className="flex flex-col gap-5 border-brand-primary">
-              <div><H3 as="h2" className="text-2xl">{p.pro.name}</H3><p className="mt-1 text-brand-text-secondary">{p.pro.tag}</p></div>
-              <div><div dir="auto" className="font-mono text-4xl font-medium">{p.pro.price}</div><p dir="auto" className="mt-1 text-sm text-brand-text-secondary">{p.pro.perMonth}</p></div>
-              <Ticks items={p.pro.items} />
-              <ButtonLink href={pathFor(locale, 'download')} className="mt-auto">{p.pro.cta}</ButtonLink>
-            </Card>
-          </div>
-          <p className="mx-auto mt-6 max-w-4xl text-sm text-brand-text-secondary">{p.note}</p>
-        </Container>
-      </Section>
+      <Section pad="md"><Container><PlanCards locale={locale} /></Container></Section>
       <Section pad="md" tone="card">
         <Container narrow>
           <H3 as="h2" className="text-2xl">{p.trial.h2}</H3>
@@ -184,8 +166,14 @@ export function PricingPage({ locale }: P) {
       </Section>
       <Section pad="md" tone="card">
         <Container narrow>
+          <H3 as="h2" className="text-2xl">{p.sparks.h2}</H3>
+          <p className="mt-2 text-brand-text-secondary">{p.sparks.p}</p>
+        </Container>
+      </Section>
+      <Section pad="md">
+        <Container narrow>
           <H3 as="h2" className="text-2xl">{p.soon.h2}</H3>
-          <Ticks items={p.soon.items} />
+          <div className="mt-3"><Ticks items={p.soon.items} /></div>
           <p className="mt-3 text-sm text-brand-text-secondary">{p.soon.note}</p>
         </Container>
       </Section>
@@ -198,20 +186,18 @@ export function PricingPage({ locale }: P) {
 export function DownloadPage({ locale }: P) {
   const c = siteContent[locale]
   const d = c.download
-  const storesLive = Boolean(STORE_LINKS.appStore || STORE_LINKS.googlePlay)
+  const allLive = Boolean(STORE_LINKS.appStore && STORE_LINKS.googlePlay)
   return (
     <>
       <PageHero locale={locale} trail={[{ label: c.footer.links.download }]} eyebrow={d.intro.eyebrow} h1={d.intro.h1} lede={d.intro.lede}>
         <StoreBadges locale={locale} />
-        <div className="flex flex-wrap items-center gap-3"><ButtonLink href={WEB_APP_URL} variant="outline" external>{c.common.tryBrowser}</ButtonLink><span className="text-sm text-brand-text-secondary">{c.common.noInstall} {c.common.haveAccount} <a href={WEB_APP_URL} className="inline-flex min-h-11 items-center font-semibold text-brand-primary-ink hover:underline">{c.common.logIn}</a></span></div>
       </PageHero>
-      {!storesLive ? (
-        <Section pad="md" id="beta">
+      {!allLive ? (
+        <Section pad="md">
           <Container narrow>
-            <Card className="grid gap-5 bg-brand-primary-soft sm:p-9">
-              <div><H2 className="text-3xl">{d.betaH}</H2><p className="mt-2 text-brand-text-secondary">{d.betaP}</p></div>
-              <LeadForm kind="waitlist" locale={locale} inline labels={{ email: d.emailLabel, placeholder: d.emailPlaceholder, submit: d.submit, sent: d.sent, error: d.error }} />
-              <SocialLinks label={c.footer.follow} />
+            <Card className="flex flex-wrap items-center justify-between gap-5 bg-brand-primary-soft sm:p-9">
+              <div><H2 className="text-3xl">{d.waitH}</H2><p className="mt-2 text-brand-text-secondary">{d.waitP}</p></div>
+              <ButtonLink href={pathFor(locale, 'waitlist')} size="lg">{c.common.getApp}</ButtonLink>
             </Card>
           </Container>
         </Section>
@@ -228,6 +214,64 @@ export function DownloadPage({ locale }: P) {
             ))}
           </ol>
         </Container>
+      </Section>
+    </>
+  )
+}
+
+/* ───────── Waitlist ───────── */
+export function WaitlistPage({ locale }: P) {
+  const c = siteContent[locale]
+  const w = c.waitlist
+  return (
+    <>
+      <Section pad="md">
+        <Container>
+          <div className="grid items-start gap-10 lg:grid-cols-[1fr_minmax(0,460px)] lg:gap-16">
+            <div className="flex flex-col gap-6">
+              <Eyebrow>{w.intro.eyebrow}</Eyebrow>
+              <H2 as="h1" className="sm:text-5xl">{w.intro.h1}</H2>
+              <Lede>{w.intro.lede}</Lede>
+              <ul className="grid gap-4">
+                {w.perks.map((k) => (
+                  <li key={k.h} className="rounded-2xl border border-brand-border bg-brand-card p-5">
+                    <p className="font-semibold">{k.h}</p>
+                    <p className="mt-1 text-brand-text-secondary">{k.p}</p>
+                  </li>
+                ))}
+              </ul>
+              <StoreBadges locale={locale} />
+            </div>
+            <Card className="sm:p-8">
+              <H3 className="mb-5 text-2xl">{w.form.title}</H3>
+              <WaitlistForm locale={locale} />
+            </Card>
+          </div>
+        </Container>
+      </Section>
+      <Section pad="md" tone="card">
+        <Container>
+          <Split visual={<PhoneShot screen="today" locale={locale} size="sm" />}>
+            <Eyebrow>{w.founder.eyebrow}</Eyebrow>
+            <H2>{w.founder.h2}</H2>
+            <Lede>{w.founder.p}</Lede>
+            <Ticks items={w.founder.points} />
+          </Split>
+        </Container>
+      </Section>
+      <Section pad="md">
+        <Container>
+          <Split reverse visual={<PhoneShot screen="goals" locale={locale} size="sm" />}>
+            <Eyebrow>{w.invites.eyebrow}</Eyebrow>
+            <H2>{w.invites.h2}</H2>
+            <Lede>{w.invites.p}</Lede>
+            <Ticks items={w.invites.points} />
+            <p className="text-sm text-brand-text-secondary">{w.invites.note}</p>
+          </Split>
+        </Container>
+      </Section>
+      <Section pad="md" tone="card">
+        <Container narrow><div className="mb-6"><H2>{c.home.faq.h2}</H2></div><FaqList items={w.faq} /></Container>
       </Section>
     </>
   )
@@ -295,7 +339,7 @@ export function ContactPage({ locale }: P) {
           <div className="flex flex-col gap-10 md:flex-row">
             <Card className="md:flex-1 md:basis-[460px]">
               <H3 className="mb-5">{t.formH}</H3>
-              <LeadForm kind="contact" locale={locale} labels={{ name: t.name, email: t.email, message: t.message, submit: t.send, sent: t.sent, error: t.error }} />
+              <LeadForm locale={locale} labels={{ name: t.name, email: t.email, message: t.message, submit: t.send, sent: t.sent, error: t.error }} />
               <p className="mt-4 text-sm text-brand-text-secondary">{t.responseNote}</p>
             </Card>
             <div className="grid content-start gap-5 md:flex-1 md:basis-[320px]">
@@ -337,7 +381,7 @@ export function AboutPage({ locale }: P) {
 export function PressPage({ locale }: P) {
   const c = siteContent[locale]
   const p = c.press
-  const shots: ScreenKey[] = locale === 'ar' ? ['flow-ar', 'goals-ar', 'buddgy-ar', 'accounts-ar'] : ['flow', 'goals', 'buddgy-2', 'accounts']
+  const shots: ScreenKey[] = ['today', 'accounts', 'installments', 'goals']
   return (
     <>
       <PageHero locale={locale} trail={[{ label: c.footer.links.press }]} eyebrow={p.intro.eyebrow} h1={p.intro.h1} lede={p.intro.lede} />
@@ -430,7 +474,7 @@ export function GuidePage({ locale, slug }: P & { slug: string }) {
               <div key={s.h} className="grid gap-3"><H2 className="mt-4 text-2xl sm:text-2xl">{s.h}</H2>{s.p.map((p) => <p key={p} className="text-brand-text-secondary">{p}</p>)}</div>
             ))}
           </article>
-          <div className="mt-12 flex flex-wrap gap-3"><ButtonLink href={pathFor(locale, toolSlug)}>{g.cta}</ButtonLink><ButtonLink href={pathFor(locale, 'download')} variant="outline">{c.common.getApp}</ButtonLink></div>
+          <div className="mt-12 flex flex-wrap gap-3"><ButtonLink href={pathFor(locale, toolSlug)}>{g.cta}</ButtonLink><ButtonLink href={pathFor(locale, 'waitlist')} variant="outline">{c.common.getApp}</ButtonLink></div>
         </Container>
       </Section>
       <Section pad="sm" tone="card">
@@ -473,7 +517,7 @@ function ToolFrame({ locale, name, intro, explainH, explain, cta, children }: P 
         <Container narrow>
           <H2 className="mb-4 text-2xl sm:text-2xl">{explainH}</H2>
           <div className="grid gap-3 text-lg leading-relaxed text-brand-text-secondary">{explain.map((p) => <p key={p}>{p}</p>)}</div>
-          <div className="mt-8"><ButtonLink href={pathFor(locale, 'download')}>{cta}</ButtonLink></div>
+          <div className="mt-8"><ButtonLink href={pathFor(locale, 'waitlist')}>{cta}</ButtonLink></div>
         </Container>
       </Section>
     </>

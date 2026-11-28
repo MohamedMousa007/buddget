@@ -19,6 +19,7 @@ Rules: nothing runs more often than every 15 minutes unless the migration says w
 | `crash_retention` | daily 01:40 | Deletes client crash rows older than 120 days | Low |
 | `push-token-sweep` | daily 01:45 | Retires dead push tokens | Low |
 | `site-leads-retention` | daily 01:55 | Deletes website leads older than 180 days | Low |
+| `waitlist-retention` | daily 01:57 | Deletes waitlist sign-ups (`waitlist_signups`, 0368) older than 180 days | Low |
 | `db-retention` | daily 02:10 | Deletes analytics rows older than 400 days and unlinked rejected SMS log rows older than 365 days | Low: exits when nothing is due |
 | `cleanup-trusted-devices` | daily 03:20 | Deletes expired trusted devices | Low |
 | `sms-zero-variance` | daily 04:17 | Quarantines SMS templates whose amount never varies (90-day scan, index `sms_parse_log_zero_variance_idx`) | Low, index-only |

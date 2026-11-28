@@ -14,7 +14,7 @@ export type RouteMeta = {
   modified: string
 }
 
-const MODIFIED = '2026-10-28'
+const MODIFIED = '2026-11-28'
 
 function clip(text: string, max = 155): string {
   if (text.length <= max) return text
@@ -34,6 +34,7 @@ export function listRoutes(locale: SiteLocale): RouteMeta[] {
     ...c.features.items.map((f) => intro(`features/${f.slug}`, { h1: f.h1, lede: f.lede }, 0.8)),
     intro('how-it-works', c.how.intro, 0.8),
     intro('pricing', c.pricing.intro, 0.8),
+    intro('waitlist', c.waitlist.intro, 1),
     intro('download', c.download.intro, 0.9),
     intro('security', c.security.intro, 0.7),
     intro('support', c.support.intro, 0.7),

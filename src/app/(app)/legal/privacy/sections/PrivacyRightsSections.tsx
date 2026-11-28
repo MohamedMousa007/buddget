@@ -30,7 +30,8 @@ export function PrivacyRightsSections() {
         </p>
         <p>
           <strong className="text-[var(--color-brand-text-primary)]">Website messages and waitlist
-          emails:</strong> Contact messages and waitlist sign-ups sent from our website are deleted
+          emails:</strong> Contact messages and waitlist sign-ups sent from our website, including
+          the answers you give when you join (such as country and phone type), are deleted
           automatically after 180 days.
         </p>
         <p>

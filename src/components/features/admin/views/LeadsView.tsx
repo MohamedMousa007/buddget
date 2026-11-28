@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { useActionToast } from '@/components/ui/ActionToast'
+import { packToCsv } from '@/lib/admin/patternReview'
 import { adminFetch, errorMessage, useAdminQuery } from '../adminClient'
 import { ago, dateTime } from '../format'
 import { AdminSheet } from '../ui/AdminSheet'
@@ -12,15 +13,44 @@ import { Pill } from '../ui/Pill'
 
 interface Lead { id: string; kind: 'waitlist' | 'contact'; email: string | null; name: string | null; message: string | null; locale: string; created_at: string }
 
-const KIND_FILTERS = [{ value: '', label: 'All' }, { value: 'contact', label: 'Messages' }, { value: 'waitlist', label: 'Waitlist' }]
+/** Pages through /api/admin/waitlist (1000 a page) and saves every row as one CSV. */
+async function waitlistCsv(): Promise<string> {
+  const all: Record<string, unknown>[] = []
+  let cursor: string | null = ''
+  while (cursor !== null) {
+    const res: { rows: Record<string, unknown>[]; nextCursor: string | null } = await adminFetch(`/api/admin/waitlist${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`)
+    all.push(...res.rows)
+    cursor = res.nextCursor
+  }
+  return packToCsv(all)
+}
 
-/** Website contact messages and waitlist sign-ups, read-only. Built from DataTable, AdminSheet, Panel and SegmentedControl; rows are deleted after 180 days. */
+function save(name: string, text: string) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/csv' }))
+  Object.assign(document.createElement('a'), { href: url, download: name }).click()
+  URL.revokeObjectURL(url)
+}
+
+/** Website contact messages (list) and the waitlist (CSV export), read-only. Built from DataTable, AdminSheet, Panel and SegmentedControl; rows are deleted after 180 days. */
 export default function LeadsView() {
-  const [kind, setKind] = useState('')
+  const toast = useActionToast()
+  const [exporting, setExporting] = useState(false)
+  const exportWaitlist = async () => {
+    setExporting(true)
+    try {
+      const csv = await waitlistCsv()
+      if (csv) save(`buddget-waitlist-${new Date().toISOString().slice(0, 10)}.csv`, csv)
+      else toast('The waitlist is empty')
+    } catch (e) {
+      toast(errorMessage(e))
+    } finally {
+      setExporting(false)
+    }
+  }
   const [open, setOpen] = useState<Lead | null>(null)
-  const { data, error, loading } = useAdminQuery<{ rows: Lead[]; nextCursor: string | null }>(`/api/admin/leads${kind ? `?kind=${kind}` : ''}`)
-  const [more, setMore] = useState<{ kind: string; rows: Lead[]; next: string | null; error: string | null } | null>(null)
-  const extra = more?.kind === kind ? more : null
+  const { data, error, loading } = useAdminQuery<{ rows: Lead[]; nextCursor: string | null }>('/api/admin/leads')
+  const [more, setMore] = useState<{ rows: Lead[]; next: string | null; error: string | null } | null>(null)
+  const extra = more
   const rows = [...(data?.rows ?? []), ...(extra?.rows ?? [])]
   const next = extra ? extra.next : (data?.nextCursor ?? null)
   const [paging, setPaging] = useState(false)
@@ -29,10 +59,10 @@ export default function LeadsView() {
     if (next === null || paging) return
     setPaging(true)
     try {
-      const res = await adminFetch<{ rows: Lead[]; nextCursor: string | null }>(`/api/admin/leads?cursor=${encodeURIComponent(next)}${kind ? `&kind=${kind}` : ''}`)
-      setMore({ kind, rows: [...(extra?.rows ?? []), ...res.rows], next: res.nextCursor, error: null })
+      const res = await adminFetch<{ rows: Lead[]; nextCursor: string | null }>(`/api/admin/leads?cursor=${encodeURIComponent(next)}`)
+      setMore({ rows: [...(extra?.rows ?? []), ...res.rows], next: res.nextCursor, error: null })
     } catch (e) {
-      setMore({ kind, rows: extra?.rows ?? [], next, error: errorMessage(e) })
+      setMore({ rows: extra?.rows ?? [], next, error: errorMessage(e) })
     } finally {
       setPaging(false)
     }
@@ -50,8 +80,8 @@ export default function LeadsView() {
 
   return (
     <>
-      <PageHeader title="Website leads" description="Contact messages and waitlist sign-ups from the website. Each is deleted automatically after 180 days." />
-      <Panel flush title="Leads" actions={<SegmentedControl ariaLabel="Lead type" fill={false} options={KIND_FILTERS} value={kind} onChange={setKind} />}>
+      <PageHeader title="Website leads" description="Contact messages and the waitlist from the website. Each is deleted automatically after 180 days." />
+      <Panel flush title="Messages" actions={<Button size="touch" variant="outline" loading={exporting} loadingText="Exporting…" onClick={() => void exportWaitlist()}>Waitlist CSV</Button>}>
         {!data && loading ? <div className="p-5"><Loading /></div> : (
           <DataTable rows={rows} columns={columns} rowKey={(l) => l.id} onRowClick={setOpen}
             empty={<div className="px-5 py-12 text-center text-sm text-[var(--color-brand-text-muted)]">No website leads in the last 180 days.</div>} />

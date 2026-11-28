@@ -71,24 +71,23 @@ export type Landing = {
     h2: string; p: string; learn: string
     tabs: { key: 'acc' | 'sub' | 'inst' | 'rep' | 'bud'; name: string; h: string; p: string; bullets: string[]; slug: string }[]
   }
-  trust: { h2: string; items: { icon: 'lock' | 'sms' | 'eye' | 'trash'; h: string; p: string }[]; link: Link }
   compare: { h2: string; cols: [string, string, string, string]; rows: [string, string, string, string][]; note: string }
-  pricing: { h2: string; p: string; plans: { name: string; price: string; tag: string; items: string[]; cta: string; main?: boolean }[] }
-  close: { h2: string; lede: string; qr: string; soon: string }
+  pricing: { h2: string; p: string; link: Link }
+  close: { h2: string; lede: string }
 }
 
 export type SiteContent = {
   locale: 'en' | 'ar'
   name: string
   meta: { homeTitle: string; homeDescription: string }
-  nav: { login: string; features: string; how: string; afford: string; pricing: string; security: string; help: string; menuTitle: string; megaTools: string; themeToLight: string; themeToDark: string; megaAfford: string; getAppShort: string; tryShort: string; menu: string; close: string; cta: string; skip: string; switchLabel: string; switchTo: string }
+  nav: { features: string; how: string; afford: string; pricing: string; security: string; help: string; menuTitle: string; megaTools: string; themeToLight: string; themeToDark: string; megaAfford: string; getAppShort: string; menu: string; close: string; cta: string; skip: string; switchLabel: string; switchTo: string }
   footer: {
     tag: string; follow: string
     product: string; learn: string; company: string; legal: string
     links: Record<string, string>
     copy: string; legalNote: string
   }
-  common: { tryBrowser: string; logIn: string; noInstall: string; haveAccount: string; getApp: string; seeHow: string; joinBeta: string; readMore: string; home: string; breadcrumb: string; contactUs: string; example: string; free: string; share: string }
+  common: { getApp: string; seeHow: string; readMore: string; home: string; breadcrumb: string; contactUs: string; example: string; free: string; share: string }
   landing: Landing
   home: {
     calc: { eyebrow: string; h2: string; lede: string; link: Link; income: string; bills: string; save: string; result: string; cta: string; note: string; currency: string }
@@ -99,15 +98,34 @@ export type SiteContent = {
   how: { intro: PageIntro; steps: { n: string; h: string; p: string; screen: ScreenKey }[]; ctaH: string; ctaP: string }
   pricing: {
     intro: PageIntro
-    free: { name: string; tag: string; price: string; items: string[]; cta: string }
-    pro: { name: string; tag: string; price: string; perMonth: string; items: string[]; cta: string }
+    free: { name: string; tag: string; price: string; items: string[] }
+    pro: { name: string; tag: string; items: string[]; month: string; year: string }
+    /** Market rows: Egypt, UAE/Saudi/Qatar, everywhere else. Prices come from PRO_ANCHORS. */
+    markets: { eg: string; gulf: string; other: string; otherNote: string }
+    planned: string
+    sparks: { h2: string; p: string }
     compare: { h2: string; head: [string, string, string]; rows: [string, string, string][]; foot: string }
     soon: { h2: string; items: string[]; note: string }
     trial: { h2: string; p: string }
-    note: string
     faq: Faq[]
   }
-  download: { intro: PageIntro; betaH: string; betaP: string; emailLabel: string; emailPlaceholder: string; submit: string; sent: string; error: string; soonApple: string; soonGoogle: string; badge: string; storeGet: string; webApp: string; steps: { h: string; p: string }[] }
+  download: { intro: PageIntro; soonApple: string; soonGoogle: string; badge: string; storeGet: string; waitH: string; waitP: string; steps: { h: string; p: string }[] }
+  waitlist: {
+    intro: PageIntro
+    perks: { h: string; p: string }[]
+    form: {
+      title: string; email: string; emailPlaceholder: string; name: string; optional: string; country: string; countries: Record<string, string>
+      platform: string; ios: string; android: string
+      trackingNow: string; trackingOptions: Record<string, string>
+      wantMost: string; wantOptions: Record<string, string>
+      heardFrom: string; heardOptions: Record<string, string>
+      choose: string; submit: string; fine: string; error: string; disposable: string; busy: string
+    }
+    done: { h: string; p: string; shareH: string; shareP: string; copy: string; copied: string; share: string; joined: string; shareText: string }
+    founder: { eyebrow: string; h2: string; p: string; points: string[] }
+    invites: { eyebrow: string; h2: string; p: string; points: string[]; note: string }
+    faq: Faq[]
+  }
   security: { intro: PageIntro; cards: { h: string; p: string }[]; dataH: string; data: { k: string; v: string }[]; policyCta: string; faq: Faq[] }
   support: { intro: PageIntro; groups: { h: string; items: Faq[] }[]; stillH: string; stillP: string; inApp: string }
   contact: { intro: PageIntro; emailH: string; emailP: string; appH: string; appP: string; followH: string; responseNote: string; formH: string; name: string; email: string; message: string; send: string; sent: string; error: string }

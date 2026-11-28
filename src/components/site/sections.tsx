@@ -1,13 +1,14 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
-import { STORE_LINKS, WEB_APP_URL, type SiteLocale } from '@/lib/site/config'
+import { PRO_ANCHORS } from '@/components/features/billing/planBilling'
+import { STORE_LINKS, type SiteLocale } from '@/lib/site/config'
 import { reviewsFor } from '@/lib/site/content/reviews'
 import type { Faq } from '@/lib/site/content/types'
 import { pathFor, siteContent } from '@/lib/site/routes'
 import type { ScreenKey } from '@/lib/site/screens'
 import { PhoneShot } from './PhoneShot'
-import { ButtonLink, Container, Eyebrow, H1, H3, Lede, Section } from './ui'
+import { ButtonLink, Card, Container, Eyebrow, H1, H3, Lede, Section, Ticks } from './ui'
 
 export function Crumbs({ locale, trail }: { locale: SiteLocale; trail: { label: string; slug?: string }[] }) {
   const c = siteContent[locale].common
@@ -137,9 +138,51 @@ export function BottomCta({ locale, title, text }: { locale: SiteLocale; title: 
       <Container>
         <div className="flex flex-wrap items-center justify-between gap-6 rounded-3xl bg-brand-primary-soft p-8 sm:p-10">
           <div><H3 className="text-2xl">{title}</H3>{text ? <p className="mt-1 text-brand-text-secondary">{text}</p> : null}</div>
-          <div className="flex flex-wrap gap-3"><ButtonLink href={pathFor(locale, 'download')} size="lg">{c.getApp}</ButtonLink><ButtonLink href={WEB_APP_URL} variant="outline" size="lg" external>{c.tryBrowser}</ButtonLink></div>
+          <ButtonLink href={pathFor(locale, 'waitlist')} size="lg">{c.getApp}</ButtonLink>
         </div>
       </Container>
     </Section>
+  )
+}
+
+const money = (currency: string, n: number) => <span dir="ltr" className="whitespace-nowrap font-mono tabular-nums">{currency} {n.toFixed(2)}</span>
+
+/**
+ * Free and Pro cards with the planned launch prices for the three anchor markets (PRO_ANCHORS, the app's own price
+ * anchors). Shown, not teased, per docs/launch/SITE_PRICING_COUNCIL.md; the store's price wins at purchase.
+ */
+export function PlanCards({ locale, heading = 'h2' }: { locale: SiteLocale; heading?: 'h2' | 'h3' }) {
+  const c = siteContent[locale]
+  const p = c.pricing
+  const markets = [
+    { label: p.markets.eg, currency: 'EGP', a: PRO_ANCHORS.EG },
+    { label: p.markets.gulf, currency: 'AED / SAR / QAR', a: PRO_ANCHORS.AE },
+    { label: p.markets.other, currency: 'USD', a: PRO_ANCHORS.US },
+  ]
+  return (
+    <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2">
+      <Card className="flex flex-col gap-5">
+        <div><H3 as={heading} className="text-2xl">{p.free.name}</H3><p className="mt-1 text-brand-text-secondary">{p.free.tag}</p></div>
+        <p className="font-heading text-4xl font-bold">{p.free.price}</p>
+        <Ticks items={p.free.items} />
+      </Card>
+      <Card className="flex flex-col gap-5 border-brand-primary">
+        <div><H3 as={heading} className="text-2xl">{p.pro.name}</H3><p className="mt-1 text-brand-text-secondary">{p.pro.tag}</p></div>
+        <dl className="grid gap-3">
+          {markets.map((m) => (
+            <div key={m.label} className="grid gap-0.5 border-b border-brand-border pb-3 last:border-0 last:pb-0">
+              <dt className="text-sm text-brand-text-secondary">{m.label}</dt>
+              <dd className="flex flex-wrap gap-x-3 text-base">
+                <span>{money(m.currency, m.a.monthly)} {p.pro.month}</span>
+                <span className="text-brand-text-secondary">{money(m.currency, m.a.yearly)} {p.pro.year}</span>
+              </dd>
+            </div>
+          ))}
+        </dl>
+        <Ticks items={p.pro.items} />
+      </Card>
+      <p className="text-sm text-brand-text-secondary md:col-span-2">{p.planned} {p.markets.otherNote}</p>
+      <div className="md:col-span-2"><ButtonLink href={pathFor(locale, 'waitlist')} size="lg">{c.common.getApp}</ButtonLink></div>
+    </div>
   )
 }

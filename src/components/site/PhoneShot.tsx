@@ -9,7 +9,7 @@ export function PhoneShot({ screen, locale, size = 'md', priority, className }: 
   const width = size === 'sm' ? 216 : 284
   return (
     <div className={`site-phone ${className ?? ''}`} data-size={size}>
-      <Image src={screenSrc(screen)} alt={screenAlt(screen, locale)} width={780} height={1688} sizes={`${width}px`} priority={priority} unoptimized />
+      <Image src={screenSrc(screen, locale)} alt={screenAlt(screen, locale)} width={1206} height={2460} sizes={`${width}px`} priority={priority} unoptimized />
     </div>
   )
 }

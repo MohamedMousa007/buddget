@@ -5,7 +5,7 @@ import { articleLd, breadcrumbLd, faqLd, glossaryLd, graph, homeLd, howToLd, too
 import {
   AboutPage, AiPage, ComparePage, ContactPage, CookiesPage, DailyToolPage, DeleteAccountPage, DownloadPage,
   EmergencyToolPage, FeaturePage, FeaturesHub, GlossaryPage, GuidePage, GuidesIndex, HomePage, HowPage,
-  PressPage, PricingPage, SecurityPage, SupportPage, ToolsHub,
+  PressPage, PricingPage, SecurityPage, SupportPage, ToolsHub, WaitlistPage,
 } from './pages'
 
 export type Rendered = { node: ReactNode; ld: object }
@@ -16,7 +16,7 @@ function breadcrumbLabels(locale: SiteLocale, slug: string): string[] {
   const sectionLabel: Record<string, string> = {
     features: c.footer.links.features, guides: c.footer.links.guides, tools: c.footer.links.tools,
     compare: c.footer.links.compare, 'how-it-works': c.footer.links.how, pricing: c.footer.links.pricing,
-    download: c.footer.links.download, security: c.footer.links.security, support: c.footer.links.support,
+    download: c.footer.links.download, waitlist: c.footer.links.waitlist, security: c.footer.links.security, support: c.footer.links.support,
     contact: c.footer.links.contact, about: c.footer.links.about, press: c.footer.links.press, ai: c.footer.links.ai,
     glossary: c.footer.links.glossary, cookies: c.footer.links.cookies, 'delete-account': c.footer.links.delete,
   }
@@ -46,6 +46,8 @@ export function renderRoute(locale: SiteLocale, slug: string): Rendered | null {
       return { node: <HowPage locale={locale} />, ld: graph([crumbs, howToLd(locale)]) }
     case 'pricing':
       return { node: <PricingPage locale={locale} />, ld: graph([crumbs, faqLd(c.pricing.faq)]) }
+    case 'waitlist':
+      return { node: <WaitlistPage locale={locale} />, ld: graph([crumbs, faqLd(c.waitlist.faq)]) }
     case 'download':
       return { node: <DownloadPage locale={locale} />, ld: graph([crumbs]) }
     case 'security':

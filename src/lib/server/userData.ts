@@ -126,8 +126,9 @@ export async function scrubPersonalText(admin: ServiceClient, uid: string, email
     await eraseSupportText(db, null, email, run)
     await run('email_log(email)', db.from('email_log').update({ to_email: ERASED_ADDRESS }).eq('to_email', email))
     await run('support_tickets(email)', db.from('support_tickets').update({ requester_email: null, context: {} }).eq('requester_email', email))
-    // Website contact messages and waitlist sign-ups are keyed by the (lower-cased) address they were sent from.
+    // Website contact messages (site_leads) and waitlist sign-ups (waitlist_signups) are keyed by the lower-cased address.
     await run('site_leads(email)', db.from('site_leads').delete().eq('email', email.toLowerCase()))
+    await run('waitlist_signups(email)', db.from('waitlist_signups').delete().eq('email', email.toLowerCase()))
   }
   return errors
 }
@@ -203,6 +204,9 @@ export async function exportUserData(admin: ServiceClient, uid: string, rowsPerT
     const { rows, complete } = await readTable(db, 'site_leads', (q) => q.eq('email', email.toLowerCase()), rowsPerTable)
     if (!complete) failed.push('site_leads')
     if (rows.length) tables.site_leads = rows
+    const wl = await readTable(db, 'waitlist_signups', (q) => q.eq('email', email.toLowerCase()), rowsPerTable)
+    if (!wl.complete) failed.push('waitlist_signups')
+    if (wl.rows.length) tables.waitlist_signups = wl.rows
   }
   const ticketIds = ((tables.support_tickets ?? []) as { id: string }[]).map((t) => t.id)
   if (ticketIds.length) {
