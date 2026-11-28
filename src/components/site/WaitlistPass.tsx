@@ -65,17 +65,20 @@ export function InvitedPass({ locale, code }: { locale: SiteLocale; code: string
         </h1>
         <p className="max-w-[46ch] text-lg text-brand-text-secondary">{v.sub}</p>
       </div>
-      <CardSpotlight hint={v.tap}>
-        <GuestPassCard
-          flipLabel={v.flip}
-          front={{
-            mark: p.mark, title: p.title, subtitle: p.sub,
-            from: name ? fill(p.from, { name }) : undefined,
-            facts: [{ label: p.code, value: code, code: true }, { label: v.youGet, value: p.friendValue }, { label: name ? fill(v.inviterGets, { name }) : v.inviterGetsNoName, value: p.youWeek }],
-          }}
-          back={{ mark: v.backMark, benefits: v.benefits, footer: [fill(p.codeLine, { code }), p.sameEmail] }}
-        />
-      </CardSpotlight>
+      {/* The app draws the pass at phone size (322px); the landing's hero shows it larger on wide screens. */}
+      <div className="lg:mb-24 lg:mt-4 lg:origin-top lg:scale-[1.4]">
+        <CardSpotlight hint={v.tap}>
+          <GuestPassCard
+            flipLabel={v.flip}
+            front={{
+              mark: p.mark, title: p.title, subtitle: p.sub,
+              from: name ? fill(p.from, { name }) : undefined,
+              facts: [{ label: p.code, value: code, code: true }, { label: v.youGet, value: p.friendValue }, { label: name ? fill(v.inviterGets, { name }) : v.inviterGetsNoName, value: p.youWeek }],
+            }}
+            back={{ mark: v.backMark, benefits: v.benefits, footer: [fill(p.codeLine, { code }), p.sameEmail] }}
+          />
+        </CardSpotlight>
+      </div>
       <p className="text-sm text-brand-text-secondary">{v.terms}</p>
     </div>
   )
