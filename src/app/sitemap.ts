@@ -9,7 +9,7 @@ import { listRoutes, urlFor } from '@/lib/site/routes'
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   const pages: MetadataRoute.Sitemap = SITE_LOCALES.flatMap((locale) =>
-    listRoutes(locale).map((r) => ({
+    listRoutes(locale).filter((r) => !r.noindex).map((r) => ({
       url: urlFor(locale, r.slug),
       lastModified: r.modified,
       changeFrequency: r.slug === '' || r.slug.startsWith('guides') ? ('weekly' as const) : ('monthly' as const),

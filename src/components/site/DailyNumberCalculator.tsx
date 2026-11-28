@@ -39,7 +39,7 @@ export function DailyNumberCalculator({ locale }: { locale: SiteLocale }) {
           <div className="text-sm text-brand-text-secondary">{c.result}</div>
           <div dir="ltr" aria-live="polite" className="font-mono text-6xl font-medium leading-none tracking-tight text-brand-primary-ink sm:text-7xl">{fmt(daily)}</div>
         </div>
-        <ButtonLink href={pathFor(locale, 'download')}>{c.cta}</ButtonLink>
+        <ButtonLink href={pathFor(locale, 'waitlist')}>{c.cta}</ButtonLink>
       </div>
       <p className="text-sm text-brand-text-secondary">{c.note}</p>
     </Card>

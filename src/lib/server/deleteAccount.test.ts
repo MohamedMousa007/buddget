@@ -24,6 +24,9 @@ function fakeAdmin(staffRole: string | null, opts: { deleteUserError?: string; f
   return { admin: { from, auth: { admin: { deleteUser, getUserById } } } as unknown as ServiceClient, calls, deleteUser }
 }
 
+/** Email-keyed website rows, cleared before the sign-in is deleted. */
+const WEBSITE_LEADS = ['site_leads', 'waitlist_signups']
+
 describe('deleteUserCompletely', () => {
   it('removes a regular user entirely, including the sign-in', async () => {
     const { admin, calls, deleteUser } = fakeAdmin(null)
@@ -36,7 +39,7 @@ describe('deleteUserCompletely', () => {
   it('scrubs personal text, then deletes the sign-in first, then sweeps account tables', async () => {
     const { admin, calls, deleteUser } = fakeAdmin(null)
     await deleteUserCompletely(admin, 'u1', { keepStaffAccess: true })
-    const firstWipe = calls.findIndex((c) => c.op === 'delete' && c.table !== 'site_leads')
+    const firstWipe = calls.findIndex((c) => c.op === 'delete' && !WEBSITE_LEADS.includes(c.table))
     expect(calls.findIndex((c) => c.table === 'email_log' && c.op === 'update')).toBeLessThan(firstWipe)
     expect(calls.find((c) => c.table === 'email_log')?.payload).toEqual({ to_email: '[erased]' })
     expect(calls.find((c) => c.table === 'support_tickets')?.payload).toMatchObject({ requester_email: null })
@@ -45,10 +48,11 @@ describe('deleteUserCompletely', () => {
     for (const { table } of [...ACCOUNT_TABLES, ...SIGN_IN_TABLES]) expect(deleted).toContain(table)
   })
 
-  it('ADS-7: removes the website leads sent from the account address (self-service and admin delete share this path)', async () => {
+  it('ADS-7: removes the website leads and waitlist sign-up sent from the account address (self-service and admin delete share this path)', async () => {
     const { admin, calls } = fakeAdmin(null)
     await deleteUserCompletely(admin, 'u1')
     expect(calls.filter((c) => c.table === 'site_leads' && c.op === 'delete')).toHaveLength(1)
+    expect(calls.filter((c) => c.table === 'waitlist_signups' && c.op === 'delete')).toHaveLength(1)
     const staff = fakeAdmin('admin')
     await deleteUserCompletely(staff.admin, 'u1', { keepStaffAccess: true })
     expect(staff.calls.some((c) => c.table === 'site_leads' && c.op === 'delete')).toBe(true)
@@ -68,7 +72,7 @@ describe('deleteUserCompletely', () => {
     const { admin, calls } = fakeAdmin(null, { deleteUserError: 'nope' })
     const r = await deleteUserCompletely(admin, 'u1')
     expect(r).toMatchObject({ ok: false, error: 'Failed to delete auth user' })
-    expect(calls.some((c) => c.op === 'delete' && c.table !== 'site_leads')).toBe(false)
+    expect(calls.some((c) => c.op === 'delete' && !WEBSITE_LEADS.includes(c.table))).toBe(false)
   })
 
   it('reports rows the sweep could not remove instead of hiding them', async () => {

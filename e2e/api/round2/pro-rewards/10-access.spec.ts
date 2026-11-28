@@ -110,6 +110,8 @@ test('I1 /i/<code>: a valid code serves the noindex guest pass page (the page sa
     expect.soft(r.headers.get('set-cookie') ?? '', bad).not.toContain('buddget_invite')
     // A redirect under the (app) loading boundary may stream as a 200 with a refresh to "/" instead of a 307.
     if (r.status === 307) expect.soft(new URL(r.headers.get('location') ?? '/', 'http://x').pathname, bad).toBe('/')
+    // On a Vercel deployment the edge refuses an encoded path traversal (400) before the app sees it: never the page either.
+    else if (r.status === 400) expect.soft(r.text, bad).toMatch(/BAD_REQUEST/)
     else expect.soft(r.text, bad).toMatch(/NEXT_REDIRECT|http-equiv="refresh"/)
     expect.soft(r.text, bad).not.toContain('Code saved for sign-up')
   }

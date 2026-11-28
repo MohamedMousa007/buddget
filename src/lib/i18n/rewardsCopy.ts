@@ -280,6 +280,9 @@ export interface RewardsCopy {
     create: string
     signIn: string
     foot: string
+    /** Before the stores have the app: the way in is the waitlist (the code goes with it). */
+    waitlist: string
+    waitlistFoot: string
   }
   profile: { proTag: string; free: string; trial: string; pro: string; founder: (n: string) => string }
   signup: { haveCode: string; label: string; placeholder: string; hint: string; saved: string; invalid: string }
@@ -614,6 +617,8 @@ const en: RewardsCopy = {
     create: 'Create your account',
     signIn: 'I already have buddget',
     foot: 'Works on iPhone, Android and the web. A friend who joins on the web counts once they sign in on a phone.',
+    waitlist: 'Join the waitlist',
+    waitlistFoot: 'buddget is in App Store and Google Play review. Join the waitlist with this pass, then sign up in the app with the same email and your 37 days start.',
   },
   profile: { proTag: 'PRO', free: 'Free', trial: 'Pro trial', pro: 'buddget Pro', founder: (n) => `Founder ${n}` },
   signup: {
@@ -955,6 +960,8 @@ const ar: RewardsCopy = {
     create: 'أنشئ حسابك',
     signIn: 'لدي بادجت بالفعل',
     foot: 'يعمل على iPhone وAndroid والويب. الصديق الذي ينضم من الويب يُحتسب بعد تسجيل دخوله من هاتف.',
+    waitlist: 'انضم إلى قائمة الانتظار',
+    waitlistFoot: 'بادجت قيد المراجعة في App Store وGoogle Play. انضم إلى قائمة الانتظار بهذه البطاقة، ثم سجّل في التطبيق بالبريد نفسه لتبدأ أيامك الـ37.',
   },
   profile: { proTag: 'PRO', free: 'المجاني', trial: 'تجربة برو', pro: 'بادجت برو', founder: (n) => `المؤسس رقم ${String(n).replace('#', '')}` },
   signup: {

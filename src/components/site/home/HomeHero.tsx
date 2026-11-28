@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { WEB_APP_URL, type SiteLocale } from '@/lib/site/config'
+import type { SiteLocale } from '@/lib/site/config'
 import { pathFor, siteContent } from '@/lib/site/routes'
 import type { DemoCat } from '@/lib/site/content/types'
 import { BuddgyFace, type FaceMood } from './BuddgyFace'
@@ -103,8 +103,8 @@ export function HomeHero({ locale }: { locale: SiteLocale }) {
           <h1 className="h1" id="home-h1">{h.h1}</h1>
           <p className="lede">{h.lede}</p>
           <div className="cta-row">
-            <Link className="pill pill-p pill-lg" href={pathFor(locale, 'download')} data-track="cta">{c.common.getApp}</Link>
-            <a className="pill pill-g pill-lg" href={WEB_APP_URL} data-track="cta">{c.common.tryBrowser}</a>
+            <Link className="pill pill-p pill-lg" href={pathFor(locale, 'waitlist')} data-track="cta">{c.common.getApp}</Link>
+            <Link className="pill pill-g pill-lg" href={pathFor(locale, 'pricing')}>{c.nav.pricing}</Link>
           </div>
           <ul className="assure">
             {h.assure.map((a) => (
@@ -114,7 +114,6 @@ export function HomeHero({ locale }: { locale: SiteLocale }) {
               </li>
             ))}
           </ul>
-          <p className="fine">{c.common.haveAccount} <a href={WEB_APP_URL} data-track="cta">{c.common.logIn}</a></p>
         </div>
         <div className="stage">
           <div className="ring-wrap">
@@ -135,7 +134,7 @@ export function HomeHero({ locale }: { locale: SiteLocale }) {
               <div><BuddgyFace mood={mood} size={84} /></div>
               <div className="say">{say}</div>
             </div>
-            <a className="coin-cta" href={WEB_APP_URL} data-track="cta" aria-label={c.common.tryBrowser}>
+            <Link className="coin-cta" href={pathFor(locale, 'waitlist')} data-track="cta" aria-label={c.common.getApp}>
               <svg viewBox="0 0 132 132" aria-hidden="true">
                 <defs><path id="hm-circ" d="M66,66 m-48,0 a48,48 0 1,1 96,0 a48,48 0 1,1 -96,0" /></defs>
                 <circle cx="66" cy="66" r="64" fill="#1FC3B2" />
@@ -143,7 +142,7 @@ export function HomeHero({ locale }: { locale: SiteLocale }) {
                 <circle cx="66" cy="66" r="25" fill="#04201C" />
                 <path d="M58 74 L74 58 M62 58 H74 V70" fill="none" stroke="#1FC3B2" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-            </a>
+            </Link>
           </div>
           <div className="feed" aria-live="polite">
             {last ? (
@@ -166,7 +165,7 @@ export function HomeHero({ locale }: { locale: SiteLocale }) {
           <p className="nudge">
             {spends.length >= 2 ? (
               <>
-                {h.nudge} <a href={WEB_APP_URL} data-track="cta">{h.nudgeCta}</a>{' '}
+                {h.nudge} <Link href={pathFor(locale, 'waitlist')} data-track="cta">{h.nudgeCta}</Link>{' '}
                 <button type="button" className="reset" onClick={reset}>{h.again}</button>
               </>
             ) : null}

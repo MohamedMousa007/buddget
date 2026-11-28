@@ -29,7 +29,7 @@ describe('the /i/<code> landing page (BDG-005)', () => {
     expect(out).toContain('buddget.app/i/MOHAME-7K2')
     expect(out).toContain('Tap the pass to see what you get')
     expect(out).toContain('About 10x the AI, and the Advisor')
-    expect(out).toContain('Create your account')
+    expect(out).toContain('Join the waitlist')
     expect(out).toContain('I already have buddget')
   })
 
@@ -40,14 +40,16 @@ describe('the /i/<code> landing page (BDG-005)', () => {
     for (const c of [rewardsCopy.en.landing, rewardsCopy.ar.landing]) expect(JSON.stringify(c)).not.toMatch(NO_EXPIRY)
   })
 
-  it('both ways in are real links to the sign-up target, so a tap before hydration still leaves /i/<code> (QA R11)', () => {
+  it('before launch, a newcomer goes to the waitlist invite landing with the code, never to web sign-up; both are real links (QA R11)', () => {
     const out = renderToStaticMarkup(createElement(InviteLanding, { code: 'MOHAME-7K2' }))
     const links = out.match(/<a [^>]*>[^<]*<\/a>/g) ?? []
-    const create = links.find((a) => a.includes('Create your account'))
+    const join = links.find((a) => a.includes('Join the waitlist'))
     const signIn = links.find((a) => a.includes('I already have buddget'))
-    expect(create).toContain('href="/flow?next=%2Fflow"')
+    expect(join).toContain('href="/en/waitlist/invite?ref=MOHAME-7K2"')
     expect(signIn).toContain('href="/flow?next=%2Fflow"')
-    expect(out).not.toMatch(/<button[^>]*>Create your account<\/button>/)
+    expect(out).not.toContain('Create your account')
+    locale.current = 'ar'
+    expect(renderToStaticMarkup(createElement(InviteLanding, { code: 'MOHAME-7K2' }))).toContain('href="/ar/waitlist/invite?ref=MOHAME-7K2"')
   })
 
   it('the pass is unsigned until the inviter name arrives (never a guessed name)', () => {

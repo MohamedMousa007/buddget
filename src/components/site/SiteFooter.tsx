@@ -15,6 +15,7 @@ export function SiteFooter({ locale }: { locale: SiteLocale }) {
         { label: l.features, href: pathFor(locale, 'features') },
         { label: l.how, href: pathFor(locale, 'how-it-works') },
         { label: l.pricing, href: pathFor(locale, 'pricing') },
+        { label: l.waitlist, href: pathFor(locale, 'waitlist') },
         { label: l.download, href: pathFor(locale, 'download') },
         { label: l.tools, href: pathFor(locale, 'tools') },
       ],

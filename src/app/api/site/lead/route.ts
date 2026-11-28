@@ -13,7 +13,7 @@ const EMAIL_PER_HOUR = 3
 const GLOBAL_PER_DAY = 3000
 
 const bodySchema = z.object({
-  kind: z.enum(['waitlist', 'contact']),
+  kind: z.literal('contact'),
   locale: z.enum(['en', 'ar']),
   email: z.string().trim().toLowerCase().email().max(254),
   name: z.string().trim().min(1).max(120).optional(),
@@ -37,11 +37,10 @@ export async function POST(request: Request) {
   const { kind, locale, email, name, message } = parsed.data
   if (await isRateLimited(service, `site-lead-email:${email}`, 3600, EMAIL_PER_HOUR, true)) return tooManyRequests(3600)
   if (await isRateLimited(service, 'site-lead-day', 86_400, GLOBAL_PER_DAY, true)) return tooManyRequests(86_400)
-  if (kind === 'contact' && !message) return NextResponse.json({ error: 'Message required' }, { status: 400 })
+  if (!message) return NextResponse.json({ error: 'Message required' }, { status: 400 })
 
-  const { error } = await service.from('site_leads').insert({ kind, locale, email, name: name ?? null, message: message ?? null })
-  // A repeat waitlist sign-up hits the unique index; the person is already on the list, so that is a success.
-  if (error && error.code !== '23505') {
+  const { error } = await service.from('site_leads').insert({ kind, locale, email, name: name ?? null, message })
+  if (error) {
     console.error('[site/lead] insert failed', error.code)
     return NextResponse.json({ error: 'Could not save' }, { status: 500 })
   }

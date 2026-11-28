@@ -79,7 +79,8 @@ test('J5 @desktop invite: Copy link copies the link and says Copied; Share hands
   // Deep link first, signed out: the code waits in a cookie until the account exists.
   await page.goto(`/i/${code.toLowerCase()}`)
   await expect(page.getByText('Code saved for sign-up')).toBeVisible()
-  await page.getByRole('button', { name: 'Create your account' }).click()
+  // Before launch the main button goes to the waitlist; the sign-in way keeps the cookie path to /flow.
+  await page.getByRole('button', { name: 'I already have buddget' }).click()
   await expect(page).toHaveURL(/\/flow/)
   await signInUi(page, friend.email)
   await expect.poll(async () => (await svc(`referrals?invitee_id=eq.${friend.id}&select=inviter_id`)).json?.[0]?.inviter_id ?? null, { timeout: 60_000 }).toBe(inviter.id)

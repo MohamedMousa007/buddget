@@ -12,9 +12,11 @@ export type RouteMeta = {
   priority: number
   /** ISO date of the last content change, for the sitemap. */
   modified: string
+  /** Personal landing (a shared invite link): kept out of search and the sitemap. */
+  noindex?: boolean
 }
 
-const MODIFIED = '2026-10-28'
+const MODIFIED = '2026-11-28'
 
 function clip(text: string, max = 155): string {
   if (text.length <= max) return text
@@ -34,6 +36,8 @@ export function listRoutes(locale: SiteLocale): RouteMeta[] {
     ...c.features.items.map((f) => intro(`features/${f.slug}`, { h1: f.h1, lede: f.lede }, 0.8)),
     intro('how-it-works', c.how.intro, 0.8),
     intro('pricing', c.pricing.intro, 0.8),
+    intro('waitlist', c.waitlist.intro, 1),
+    { ...intro('waitlist/invite', c.waitlist.invite.intro, 0.1), noindex: true },
     intro('download', c.download.intro, 0.9),
     intro('security', c.security.intro, 0.7),
     intro('support', c.support.intro, 0.7),

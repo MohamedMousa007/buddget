@@ -28,6 +28,10 @@
       "schedule": "0 5 * * *"
     },
     {
+      "path": "/api/cron/waitlist-referrals",
+      "schedule": "10 5 * * *"
+    },
+    {
       "path": "/api/cron/loyalty",
       "schedule": "20 5 * * *"
     }

@@ -19,6 +19,7 @@ Rules: nothing runs more often than every 15 minutes unless the migration says w
 | `crash_retention` | daily 01:40 | Deletes client crash rows older than 120 days | Low |
 | `push-token-sweep` | daily 01:45 | Retires dead push tokens | Low |
 | `site-leads-retention` | daily 01:55 | Deletes website leads older than 180 days | Low |
+| `waitlist-retention` | daily 01:57 | Deletes waitlist sign-ups (`waitlist_signups`, 0368) older than 180 days | Low |
 | `db-retention` | daily 02:10 | Deletes analytics rows older than 400 days and unlinked rejected SMS log rows older than 365 days | Low: exits when nothing is due |
 | `cleanup-trusted-devices` | daily 03:20 | Deletes expired trusted devices | Low |
 | `sms-zero-variance` | daily 04:17 | Quarantines SMS templates whose amount never varies (90-day scan, index `sms_parse_log_zero_variance_idx`) | Low, index-only |
@@ -35,6 +36,7 @@ Removed in database load phase A: `admin-metrics` (refreshed on admin view inste
 | `/api/cron/sms-harvest` | 04:10 | Harvests SMS knowledge into the corpus | Batched |
 | `/api/cron/data-retention` | 04:40 | Application-level retention | Low |
 | `/api/cron/month-end` | 05:00 | Month-end card: auto-applies cards past 72 h (25 per run), proposes for users whose cycle ended (keyset, 25 per page, one `month_end_ledger` call each); writes only with `MONTH_END_WRITES=on` | Medium, bounded pages, 50 s budget |
+| `/api/cron/waitlist-referrals` | 05:10 | Records in-app referrals for waitlist invites once both people have accounts (0369, `waitlist_referral_candidates`, at most 200 a run, 40 s budget) | Low |
 | `/api/cron/loyalty` | 05:20 | Loyalty week roll-up | Low |
 | `/api/cron/integrations` | not scheduled | Drains the integration outbox. Unscheduled on purpose since QA-57 (Linear escalation postponed); call it by hand if rows ever queue | None |
 | `/api/cron/sms-canary` | 06:50 | Daily SMS parsing canary | Low |
