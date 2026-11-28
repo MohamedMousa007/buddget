@@ -104,7 +104,7 @@ code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); b
 .scr { position: relative; border-radius: 24px; overflow: hidden; background: var(--color-brand-bg); color: var(--color-brand-text-primary); font-family: var(--font-sans); font-size: 15px; line-height: 1.4 }
 .scr .pad { padding: 14px 16px 18px; display: flex; flex-direction: column; gap: 14px }
 .crop { font-size: 11px; font-weight: 600; color: var(--color-brand-text-muted); letter-spacing: .05em; text-transform: uppercase }
-.scrim { background: color-mix(in oklab, var(--color-brand-text-primary) 38%, var(--color-brand-bg)); padding-top: 34px }
+.scrim { background: color-mix(in oklab, black 42%, var(--color-brand-bg)); padding-top: 34px }
 
 /* ---------- app parts, named after the component they stand for ---------- */
 /* HeroBand (contained) */
@@ -308,7 +308,7 @@ code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); b
 .measure.ok { color: var(--color-brand-primary-ink) }
 .measure.ok::before, .measure.ok::after { max-width: none }
 
-/* Arabic sample: the app keeps an LTR layout and sets Arabic copy dir="auto" (DESIGN_SYSTEM.md, Arabic locale rules) */
+/* Arabic sample: the app keeps an LTR layout and sets Arabic copy (DESIGN_SYSTEM.md, Arabic locale rules) */
 .ar { font-family: var(--font-ar) }
 .ar .num, .ar .amt, .ar .l4 span { font-family: var(--font-mono) }
 
@@ -342,8 +342,8 @@ code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); b
   <section class="item" id="hero">
     <header>
       <h2><span class="n">1</span> One height for every hero</h2>
-      <p>Today the band grows when its note wraps or when it has no scale row, so the content under it jumps when you switch tabs (worst on narrow iPhones). Proposed: every band is 151px, the note is always one line, and a band with no scale row keeps that row's space.</p>
-      <p class="reuse">Reuses <code>HeroBand</code> (contained) with the bar block always 38.75px and a one-line note slot; <code>BandNoteLine</code> drops whole parts from the end instead of wrapping.</p>
+      <p>Today the band grows when its note wraps and shrinks when there is no note yet, so the content under it jumps when you switch tabs (worst on narrow iPhones). Proposed: every band is 151px, the note is always one line, and an empty note keeps its line. Heights are computed from <code>HeroBand</code>'s own classes at a 360px-wide phone.</p>
+      <p class="reuse">Reuses <code>HeroBand</code> (contained) with a one-line note slot that is always reserved; <code>BandNoteLine</code> stops wrapping and drops whole parts from the end.</p>
     </header>
     <div class="pair">
       <div class="col">
@@ -371,22 +371,21 @@ code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); b
             <div class="band"><div class="in">
               <div class="top"><span class="lbl">You owe</span></div>
               <div class="nums"><p><span class="big">86,400</span><span class="unit">EGP</span></p><p class="side"><b>32% cleared</b>41k of 127k</p></div>
-              <div class="barblk bare"><div class="bar"><span style="width:32%"></span></div></div>
+              <div class="barblk"><div class="bar"><span style="width:32%"></span></div></div>
               <div class="note">Next <b>3,200</b> on Dec 5 · This month <b>1.2k</b> of <b>4.5k</b> paid</div>
             </div></div>
-            <div class="hgt"><span>Debts</span><span class="bad">150px, no scale row, note wraps</span></div>
+            <div class="hgt"><span>Debts</span><span class="bad">171px, note wraps</span></div>
           </div>
           <div>
             <div class="band"><div class="in">
               <div class="top"><span class="lbl">Saved for goals</span></div>
               <div class="nums"><p><span class="big">54,000</span><span class="unit">EGP</span></p><p class="side"><b>45% there</b>of 120,000</p></div>
               <div class="barblk"><div class="bar"><span style="width:45%"></span></div></div>
-              <div class="note"><b>4,500 a month</b> &nbsp; Next finish Mar 2027</div>
-            </div></div>
-            <div class="hgt"><span>Goals</span><span>151px</span></div>
+              </div></div>
+            <div class="hgt"><span>Goals, first goal just added</span><span class="bad">123px, no note yet</span></div>
           </div>
         </div></div></div>
-        <p class="cap">Three heights across four tabs. The tab bar stays put while everything under the hero moves by up to 20px.</p>
+        <p class="cap">Three heights across four tabs. The tab bar stays put while everything under the hero moves by up to 48px.</p>
       </div>
       <div class="col after">
         <h3><span class="dot"></span>Proposed</h3>
@@ -416,16 +415,16 @@ code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); b
               <div class="barblk"><div class="bar"><span style="width:32%"></span></div></div>
               <div class="note one"><span>Next <b>3,200</b> on Dec 5 · This month <b>1.2k</b> of <b>4.5k</b></span></div>
             </div></div>
-            <div class="hgt"><span>Debts</span><span class="ok">151px, empty scale row kept</span></div>
+            <div class="hgt"><span>Debts</span><span class="ok">151px</span></div>
           </div>
           <div>
             <div class="band guide"><div class="in">
               <div class="top"><span class="lbl">Saved for goals</span></div>
               <div class="nums"><p><span class="big">54,000</span><span class="unit">EGP</span></p><p class="side"><b>45% there</b>of 120,000</p></div>
               <div class="barblk"><div class="bar"><span style="width:45%"></span></div></div>
-              <div class="note one"><span><b>4,500 a month</b> · Next finish Mar 2027</span></div>
+              <div class="note one"></div>
             </div></div>
-            <div class="hgt"><span>Goals</span><span class="ok">151px</span></div>
+            <div class="hgt"><span>Goals, first goal just added</span><span class="ok">151px, empty note line kept</span></div>
           </div>
         </div></div></div>
         <p class="cap">Same height on every tab and every phone width. A note part that does not fit goes behind a <b>+1</b> chip (tap shows the full note); a figure is never cut.</p>
@@ -485,7 +484,7 @@ code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); b
               <div style="display:flex;flex-direction:column;gap:8px;width:100%;max-width:280px;margin-top:18px"><div class="btn">Find my accounts</div><div class="btn outline">Add one myself</div></div>
             </div>
           </div></div></div>
-          <p class="cap">No icon, two equal buttons. <b>Find my accounts</b> opens a list that is empty for a new user, who has no bank messages yet.</p>
+          <p class="cap">No icon, two equal buttons. <b>Find my accounts</b> opens Detected accounts, which has nothing in it until bank messages arrive.</p>
         </div>
         <div class="col after">
           <h3><span class="dot"></span>Proposed</h3>
@@ -568,7 +567,7 @@ code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); b
             <div class="sechead"><b>Investments<i>0</i></b></div>
             <div class="es sect"><span class="tile neu"><svg class="i"><use href="#i-trending-up"/></svg></span><p class="tt">No investments yet</p><p class="ds">Gold, certificates, funds or stocks you hold.</p><div class="acts"><div class="btn outline touch">Add investment</div></div></div>
           </div></div></div>
-          <p class="cap">Debts moves to <b>size="page"</b>. Paydays puts its three starters inside the card as the choices, and the separate button goes. Wealth lists get a <b>section</b> state.</p>
+          <p class="cap">Debts moves to <b>size="page"</b>. Paydays puts its three starters inside the card as the choices, and the separate button goes. Wealth lists get a <b>section</b> state. The Savings tab keeps its hero and shows these section states (see open questions).</p>
         </div>
       </div>
 
@@ -625,7 +624,7 @@ code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); b
   <section class="item" id="card">
     <header>
       <h2><span class="n">3</span> Add card: one sheet, type first</h2>
-      <p>Every entry (the new Accounts "Card" action, the bank page's add slot, the + menu) opens the same sheet. The card type comes first and decides the rest: a debit card says which account it spends from, a credit card who pays it, a prepaid card what is on it.</p>
+      <p>Every entry (the new Accounts "Add card" action, the bank page's add slot, the + menu) opens the same sheet. The card type comes first and decides the rest: a debit card says which account it spends from, a credit card who pays it, a prepaid card what is on it.</p>
       <p class="reuse">Reuses <code>PaymentMethodSetupSheet</code> in <code>ModalShell</code> + <code>V3SheetHeader</code>, <code>SegmentedControl</code> (type bar), <code>PickerRow</code>, <code>Last4Tiles</code>, <code>AccountPicker</code> (Spends from, Paid from), <code>AmountField</code>, <code>SelectableCard</code> (top-up source), <code>PendingRow</code>, <code>V3SheetHeader.DialogTitle</code> (merge prompt), <code>SectionHeader</code>, <code>InlineBalanceEdit</code>.</p>
     </header>
 
@@ -639,25 +638,19 @@ code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); b
               <div class="grab"></div>
               <div class="sh"><div class="t"><h4>Add a card</h4></div><span class="close"><svg class="i"><use href="#i-x"/></svg></span></div>
               <div class="face cib"><div class="t"><span>CIB</span><span>DEBIT</span></div><div class="b"><span>•••• 4417</span><small>Visa</small></div></div>
-              <div class="chips">
-                <span class="chip on"><svg class="i"><use href="#i-credit-card"/></svg>Debit</span>
-                <span class="chip"><svg class="i"><use href="#i-credit-card"/></svg>Credit</span>
-                <span class="chip"><svg class="i"><use href="#i-wallet"/></svg>Prepaid</span>
-                <span class="chip"><svg class="i"><use href="#i-smartphone"/></svg>Virtual</span>
-                <span class="chip"><svg class="i"><use href="#i-receipt"/></svg>Store card</span>
-              </div>
+              <div class="seg"><span class="on">Debit</span><span>Credit</span><span>Prepaid</span></div>
               <div class="card list">
                 <div class="r"><span class="k">Bank or wallet</span><span class="v"><span class="mark s m-cib">CIB</span>CIB</span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
                 <div class="r"><span class="k">Last 4 <span class="opt">optional</span></span><span class="l4"><span>4</span><span>4</span><span>1</span><span>7</span></span></div>
                 <div class="r"><span class="k">Name</span><span class="v muted">CIB Debit</span></div>
-                <div class="r"><span class="k">Linked account</span><span class="v">None</span><svg class="i chev"><use href="#i-chevron-down"/></svg></div>
+                <div class="r"><span class="k">Linked account</span><span class="v">CIB Current</span><svg class="i chev"><use href="#i-chevron-down"/></svg></div>
                 <div class="r"><span class="k">Currency</span><span class="v num">EGP</span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
               </div>
               <p class="hint">None is fine for a store card, a prepaid card or a card from a bank where you have no account.</p>
               <div class="btn">Add card</div>
             </div>
           </div></div>
-          <p class="cap">Five types in a scrolling chip row under the preview. "Linked account" starts at <b>None</b> even with exactly one CIB account, so many debit cards are saved detached.</p>
+          <p class="cap">The type control sits under the preview, and is a scrolling chip row (six kinds) until a bank is picked. "Linked account" is a dropdown that also offers <b>None</b>; with no CIB account it stays None, so the card is saved detached.</p>
         </div>
         <div class="col after">
           <h3><span class="dot"></span>Proposed</h3>
@@ -670,6 +663,7 @@ code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); b
               <div class="card list">
                 <div class="r"><span class="k">Bank or wallet</span><span class="v"><span class="mark s m-cib">CIB</span>CIB</span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
                 <div class="r"><span class="k">Card last 4 <span class="opt">optional</span></span><span class="l4"><span>4</span><span>4</span><span>1</span><span>7</span></span></div>
+                <div class="r"><span class="k">Name</span><span class="v muted">CIB Debit</span></div>
                 <div class="r"><span class="k">Currency</span><span class="v num">EGP</span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
               </div>
               <p class="sec">Spends from</p>
@@ -681,11 +675,11 @@ code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); b
               <div class="btn">Add card</div>
             </div>
           </div></div>
-          <p class="cap">Three types in a <b>SegmentedControl</b>, above everything. With exactly one same-bank, same-currency account, it is preselected and the sheet says why.</p>
+          <p class="cap">The <b>SegmentedControl</b> moves to the top and is always Debit, Credit, Prepaid. "Spends from" becomes a visible list with no None: the matching account is preselected and says why, and "New CIB account" takes None's place.</p>
         </div>
       </div>
 
-      <h3 class="sub">3b. Debit when the account is not there yet, or there are two</h3>
+      <h3 class="sub">3b. Debit when the account is not there yet, or there are two <span style="font-weight:500;color:var(--pz-fg2);font-size:14px">(Name, card face and Default rows unchanged, cut from these frames)</span></h3>
       <div class="row-of">
         <div class="col after">
           <h3><span class="dot"></span>No HSBC account yet</h3>
@@ -701,7 +695,6 @@ code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); b
                 <div class="r sel"><span class="radio on"></span><span class="k">New HSBC account <small>We'll create it</small></span></div>
                 <div class="r ind"><span class="k">Balance now <span class="opt">optional</span></span><span class="v amt ph">0.00</span></div>
                 <div class="r ind"><span class="k">Account last 4 <span class="opt">optional</span><small>HSBC messages show the account number</small></span><span class="l4"><span class="e">·</span><span class="e">·</span><span class="e">·</span><span class="e">·</span></span></div>
-                <div class="r"><span class="radio"></span><span class="k">Another account <small>Pick from all your accounts</small></span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
               </div>
               <div class="btn">Add card and account</div>
             </div>
@@ -727,7 +720,7 @@ code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); b
               <div class="btn dis">Pick an account</div>
             </div>
           </div></div>
-          <p class="cap">Two candidates: nothing preselected, and the button names what is missing. A second card at the same bank reuses the account you pick.</p>
+          <p class="cap">Two candidates: nothing preselected (today this silently stays None), and the button names what is missing. A second card at the same bank reuses the account you pick.</p>
         </div>
         <div class="col after">
           <h3><span class="dot"></span>After save: the new account</h3>
@@ -737,7 +730,6 @@ code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); b
             <div class="card list">
               <div class="acc"><span class="mark m-hsbc">HS</span><span class="t"><b>HSBC Current</b><small>1 card · ••9032</small></span><span class="bal"><span class="set">Set balance</span></span></div>
             </div>
-            <p class="hint" style="margin-top:0">Until a balance is set, it counts as unknown, never as zero.</p>
           </div></div></div>
           <p class="cap">Created without a balance, the row shows <b>Set balance</b>, which opens <b>InlineBalanceEdit</b>.</p>
         </div>
@@ -889,14 +881,14 @@ code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); b
         <div class="col after">
           <h3><span class="dot"></span>Proposed</h3>
           <div class="frame"><div class="scr"><div class="pad">
-            <div class="sechead"><b>Banks<i>2</i></b><span class="acts"><span class="link"><svg class="i"><use href="#i-plus"/></svg>Account</span><span class="link"><svg class="i"><use href="#i-credit-card"/></svg>Card</span></span></div>
+            <div class="sechead"><b>Banks<i>2</i></b><span class="acts"><span class="link"><svg class="i"><use href="#i-plus"/></svg>Add account</span><span class="link"><svg class="i"><use href="#i-credit-card"/></svg>Add card</span></span></div>
             <div class="card list">
               <div class="acc"><span class="mark m-cib">CIB</span><span class="t"><b>CIB</b><small>1 account · 2 cards</small></span><span class="bal">24,300</span></div>
               <div class="acc"><span class="mark m-nbe">NBE</span><span class="t"><b>NBE</b><small>2 accounts</small></span><span class="bal">39,520</span></div>
             </div>
             <div class="sechead"><b>Wallets and cash<i>1</i></b></div>
           </div></div></div>
-          <p class="cap">Two text actions on the Banks header. <b>Card</b> opens the same sheet with no bank chosen.</p>
+          <p class="cap">"Add card" joins "Add account" on the Banks header and opens the same sheet with no bank chosen.</p>
         </div>
       </div>
     </div>
@@ -906,7 +898,7 @@ code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); b
   <section class="item" id="plans">
     <header>
       <h2><span class="n">4</span> Budget plans back at the top</h2>
-      <p>Since the last round, the plans sit in a quiet row at the end of the Budget page, so switching or comparing plans is easy to miss. Proposed: a compact deck right under the hero with the active plan first. The full deck sheet stays for actions.</p>
+      <p>Until Nov 26 (621c848e) the plan name sat in the bar at the top; since then the plans sit in a quiet row at the end of the Budget page, so switching or comparing plans is easy to miss. Proposed: a compact deck right under the hero with the active plan first. The full deck sheet stays for actions.</p>
       <p class="reuse">Reuses <code>PlanDeck</code> as an additive <code>look="strip"</code> (the sheet look stays the default): <code>SelectableCard</code> radio cards, the block bar (<code>blockColor</code> to <code>--color-cat-N</code>), <code>Badge</code>, and the deck's own dashed "New plan" card.</p>
     </header>
     <div class="pair">
@@ -964,7 +956,7 @@ code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); b
   <section class="item" id="desktop">
     <header>
       <h2><span class="n">5</span> Desktop: use the width</h2>
-      <p>On a laptop, Flow, Accounts and Debts sit in one 640px column (<code>PageGrid stack</code>), leaving most of the screen empty. Proposed: the hero spans the content width (up to 1152px, the existing wide cap) and each page splits into a main column and a rail, like a dashboard. Phone and tablet layouts do not change.</p>
+      <p>On a laptop, Flow, Accounts and Debts sit in one 640px column (<code>PageGrid stack</code>), leaving most of the screen empty. Proposed: the page fills the window beside the sidebar, with no 640px or 1152px cap, and splits into a main column and a rail, like a dashboard. Phone and tablet layouts do not change.</p>
       <p class="reuse">Reuses <code>Sidebar</code> (176px, unchanged), <code>PageContainer wide</code>, <code>PageGrid</code> with its <code>secondary</code> rail, <code>HeroBand</code>, and the phone's existing cards and rows. These are skeletons: each block holds what the phone already shows.</p>
     </header>
     <div class="pairs">
@@ -1003,7 +995,7 @@ code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); b
                   <div class="panel"><div class="ttl">Budget lines <em>top 4</em></div><div class="sk row" style="height:28px"></div><div class="sk row" style="height:28px"></div></div>
                 </div>
               </div>
-              <div class="measure ok">full content width, up to 1152px</div>
+              <div class="measure ok">fills the window beside the sidebar</div>
             </div>
           </div>
         </div></div>
@@ -1074,7 +1066,7 @@ code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); b
   <section class="item" id="arabic">
     <header>
       <h2><span class="n">AR</span> Arabic sample: Add card, Debit</h2>
-      <p>Item 3a in Arabic, drawn the way the app renders Arabic today: Arabic copy in IBM Plex Sans Arabic, each string set to <code>dir="auto"</code>, figures kept left to right, and the screen layout itself left to right (the app's rule in <code>DESIGN_SYSTEM.md</code>). New strings are listed and need a native speaker's review.</p>
+      <p>Item 3a in Arabic, drawn the way the app renders Arabic today: <code>&lt;html dir="ltr"&gt;</code> for every locale (<code>src/app/(app)/layout.tsx</code>), so rows keep their left-to-right order and Arabic text starts at the left edge, in IBM Plex Sans Arabic, with figures left to right. New strings are listed and need a native speaker's review.</p>
     </header>
     <div class="pair">
       <div class="col after">
@@ -1082,20 +1074,21 @@ code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); b
         <div class="frame"><div class="scr scrim ar">
           <div class="sheet">
             <div class="grab"></div>
-            <div class="sh"><div class="t"><h4 dir="auto">أضف بطاقة</h4></div><span class="close"><svg class="i"><use href="#i-x"/></svg></span></div>
+            <div class="sh"><div class="t"><h4>أضف بطاقة</h4></div><span class="close"><svg class="i"><use href="#i-x"/></svg></span></div>
             <div class="seg"><span class="on">خصم</span><span>ائتمان</span><span>مسبقة الدفع</span></div>
             <div class="face cib"><div class="t"><span>CIB</span><span>DEBIT</span></div><div class="b"><span>•••• 4417</span><small>Visa</small></div></div>
             <div class="card list">
-              <div class="r"><span class="k" dir="auto">البنك أو المحفظة</span><span class="v"><span class="mark s m-cib">CIB</span>CIB</span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
-              <div class="r"><span class="k" dir="auto">آخر 4 أرقام للبطاقة <span class="opt">اختياري</span></span><span class="l4"><span>4</span><span>4</span><span>1</span><span>7</span></span></div>
-              <div class="r"><span class="k" dir="auto">العملة</span><span class="v num">EGP</span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+              <div class="r"><span class="k">البنك أو المحفظة</span><span class="v"><span class="mark s m-cib">CIB</span>CIB</span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
+              <div class="r"><span class="k">آخر 4 أرقام للبطاقة <span class="opt">اختياري</span></span><span class="l4"><span>4</span><span>4</span><span>1</span><span>7</span></span></div>
+              <div class="r"><span class="k">الاسم</span><span class="v muted">CIB Debit</span></div>
+              <div class="r"><span class="k">العملة</span><span class="v num">EGP</span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
             </div>
-            <p class="sec" dir="auto">تسحب من</p>
+            <p class="sec">تسحب من</p>
             <div class="card list">
-              <div class="r sel"><span class="radio on"></span><span class="mark s m-cib">CIB</span><span class="k" dir="auto">الحساب الجاري CIB <span class="opt num">••5521</span></span><span class="v amt">24,300</span></div>
-              <div class="r"><span class="radio"></span><span class="k" dir="auto">حساب جديد في CIB <small>سننشئه لك</small></span></div>
+              <div class="r sel"><span class="radio on"></span><span class="mark s m-cib">CIB</span><span class="k">الحساب الجاري CIB <span class="opt num">••5521</span></span><span class="v amt">24,300</span></div>
+              <div class="r"><span class="radio"></span><span class="k">حساب جديد في CIB <small>سننشئه لك</small></span></div>
             </div>
-            <p class="hint" dir="auto">اخترناه لك: حسابك الوحيد في CIB بالجنيه.</p>
+            <p class="hint">اخترناه لك: حسابك الوحيد في CIB بالجنيه.</p>
             <div class="btn">أضف البطاقة</div>
           </div>
         </div></div>
@@ -1112,6 +1105,7 @@ code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); b
             <div class="card list">
               <div class="r"><span class="k">Bank or wallet</span><span class="v"><span class="mark s m-cib">CIB</span>CIB</span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
               <div class="r"><span class="k">Card last 4 <span class="opt">optional</span></span><span class="l4"><span>4</span><span>4</span><span>1</span><span>7</span></span></div>
+              <div class="r"><span class="k">Name</span><span class="v muted">CIB Debit</span></div>
               <div class="r"><span class="k">Currency</span><span class="v num">EGP</span><svg class="i chev"><use href="#i-chevron-right"/></svg></div>
             </div>
             <p class="sec">Spends from</p>
@@ -1143,7 +1137,8 @@ code { font-family: var(--font-mono); font-size: 12.5px; color: var(--pz-ink); b
       <li><b>Where the merge prompt appears.</b><span>A dialog when Accounts opens, a PendingRow on Accounts that opens it, or both?</span></li>
       <li><b>Budget empty state.</b><span>Keep Buddgy as the illustration as drawn, or use the plain tile like every other page?</span></li>
       <li><b>Plans strip.</b><span>Should a tap on another plan card preview it on the page, or open the deck sheet straight away? And should "New plan" stay in the strip or only in the sheet?</span></li>
-      <li><b>Desktop width and rails.</b><span>Is the existing 1152px cap the limit, or should content go wider on large screens? Which blocks belong in each page's rail?</span></li>
+      <li><b>Desktop width and rails.</b><span>Fully fluid as drawn, or stop growing on very wide screens (for example at 1600px)? Which blocks belong in each page's rail?</span></li>
+      <li><b>Savings with nothing saved.</b><span>The Savings tab has no page-level empty state today (its sections just disappear). Give it a page-size state, or keep the hero plus the section states drawn in 2d?</span></li>
       <li><b>Arabic layout.</b><span>The app keeps a left-to-right layout for Arabic today. Keep that for this round, or plan full right-to-left mirroring as its own piece of work?</span></li>
     </ol>
   </section>
