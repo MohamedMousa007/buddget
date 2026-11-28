@@ -73,6 +73,18 @@ describe('AuthProvider.signOut — source invariants', () => {
   })
 })
 
+describe('AuthProvider.signOut — lands on the root route', () => {
+  const code = src('components/auth/AuthProvider.tsx')
+  const start = code.indexOf('const signOut = useCallback')
+  const body = stripLineComments(code.slice(start, code.indexOf('}, [configured, session])', start)))
+
+  it("navigates to '/' once the user chose to sign out, so the next account does not inherit the route", () => {
+    const navPos = body.indexOf("navigate('/', { replace: true })")
+    expect(navPos).toBeGreaterThan(body.indexOf('if (!wipe) return'))
+    expect(navPos).toBeLessThan(body.indexOf("supabase.auth.signOut({ scope: 'local' })"))
+  })
+})
+
 describe('useSettingsPage.signOutAndHome — caller invariants', () => {
   const code = src('hooks/useSettingsPage.ts')
 

@@ -57,6 +57,26 @@ describe('A11-3 OTP inputs have names', () => {
   })
 })
 
+describe('OTP digits stay visible', () => {
+  const html = renderToStaticMarkup(h(AuthOtpRow, { value: '12', onChange: () => {} }))
+
+  it('every box sets its own text, caret and autofill colours (the dark auth card inherits light-theme ink)', () => {
+    for (const el of all(html, 'input')) {
+      const cls = el.getAttribute('class')!.split(' ')
+      expect(cls).toEqual(expect.arrayContaining([
+        'text-[var(--color-brand-text-primary)]',
+        'caret-[var(--color-brand-text-primary)]',
+        '[-webkit-text-fill-color:var(--color-brand-text-primary)]',
+        'autofill:shadow-[inset_0_0_0_100px_var(--color-brand-elevated)]',
+      ]))
+    }
+  })
+
+  it('the admin code input reuses the same row', () => {
+    expect(read('components/features/admin/auth/EmailCodeInput.tsx')).toContain('<AuthOtpRow ')
+  })
+})
+
 describe('A11-4 Zakat and amount inputs have names', () => {
   it('the trade-goods amount and every per-holding and per-debt switch have a name', () => {
     const src = read('components/features/savings-v3/ZakatSheet.tsx')

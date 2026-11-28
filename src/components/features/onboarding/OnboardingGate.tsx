@@ -9,7 +9,7 @@ import { useOnboardingState } from './useOnboardingState'
 /** Accounts already offered the journey in this session; leaving or finishing never brings it back on its own. */
 const offered = new Set<string>()
 
-/** Sends a new account (or one mid-journey) to `/start` once, from the landing screens only. */
+/** Sends a new account (or one mid-journey) to `/start` once, from whichever app screen it is on. */
 export function OnboardingGate() {
   const { user } = useAuth()
   const path = useNavPath()
@@ -17,9 +17,9 @@ export function OnboardingGate() {
 
   useEffect(() => {
     if (!user || !ready || state === 'hidden' || offered.has(user.id)) return
-    if (path !== '/' && path !== '/flow') return
     offered.add(user.id)
-    navigate('/start', { replace: true })
+    // Already there: it still counts as offered, so leaving the journey does not bring it back.
+    if (path !== '/start') navigate('/start', { replace: true })
   }, [user, ready, state, path])
 
   return null
