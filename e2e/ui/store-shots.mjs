@@ -132,11 +132,12 @@ async function seed(uid) {
 
 // ---- devices ----
 const DEVICES = {
-  'iphone-6.9': { viewport: { width: 440, height: 956 }, dsf: 3, shots: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17], touch: true },
-  'ipad-13': { viewport: { width: 1032, height: 1376 }, dsf: 2, shots: [1, 3, 4, 5, 6, 8, 9, 10], touch: true },
-  'play-phone': { viewport: { width: 414, height: 736 }, dsf: 3, shots: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17], touch: true },
-  'play-7in': { viewport: { width: 600, height: 960 }, dsf: 2, shots: [1, 3, 4, 8, 9], touch: true },
-  'play-10in': { viewport: { width: 800, height: 1280 }, dsf: 2, shots: [1, 3, 4, 8, 9], touch: true },
+  // App area only: the composer draws the status bar and device frame. Heights = screen minus status bar.
+  'ios-phone': { viewport: { width: 402, height: 820 }, dsf: 3, shots: [1, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17], touch: true }, // iPhone Pro 6.3": 402x874, 54pt status bar
+  'android-phone': { viewport: { width: 360, height: 756 }, dsf: 3, shots: [1, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17], touch: true }, // Galaxy S 6.2": 360x780, 24dp status bar
+  'ipad-13': { viewport: { width: 1032, height: 1352 }, dsf: 2, shots: [1, 3, 4, 5, 6, 8, 9, 10], touch: true }, // 1032x1376, 24pt status bar
+  'play-7in': { viewport: { width: 600, height: 936 }, dsf: 2, shots: [1, 3, 4, 8, 9], touch: true },
+  'play-10in': { viewport: { width: 800, height: 1256 }, dsf: 2, shots: [1, 3, 4, 8, 9], touch: true },
 }
 const SHOT = {
   1: { name: 'today', route: '/', loc: 'en' },

@@ -1,5 +1,7 @@
 # Store copy v4 (2026-11-28)
 
+Revision 2 (owner): "in Arabic or English" is no longer used as a selling point; promo text, the description opener and Play short descriptions lead with real differentiators (bank texts that log themselves, installments and debts in the budget, any currency plus gold). Arabic stays as a feature bullet.
+
 Replaces `STORE_COPY_V3.md`. Written with the `copywriting` skill. Diagnosis A for the lead (V3 opens on what buddget does not do, so the argument is rebuilt around outcomes) and B for the facts (V3's accurate wording, Arabic-only Arabic, "Your first 30 days are Pro, no card", no prices). Follows `ASO_RESEARCH_2026-11.md` except where noted under Owner notes. Every count below is Unicode characters of the exact text inside the block, produced by a script from the same source as the text.
 
 ## Positioning
@@ -27,10 +29,10 @@ buddget: Budget & Expenses
 Spending Tracker, Installments
 ```
 
-**Promotional text** (157 / 170)
+**Promotional text** (151 / 170)
 
 ```text
-Know what's free to spend today, across every account. Installments, debts, goals and gold sit in one plan, in Arabic or English. Your first 30 days are Pro.
+Know what's free to spend today. Your bank texts log spending for you, and every installment, debt and goal, in any currency or gold, sits in one plan.
 ```
 
 **Keywords** (100 / 100)
@@ -39,12 +41,12 @@ Know what's free to spend today, across every account. Installments, debts, goal
 egp,sms,bnpl,salary,savings,debt,goal,gold,bill,money,receipt,arabic,cash,aed,sar,kwd,qar,instalment
 ```
 
-**Description** (3420 / 4000)
+**Description** (3411 / 4000)
 
 ```text
 Know what you can spend today, with rent, bills and goals already set aside.
 
-buddget shows one figure you can act on, Free to spend, worked out from your accounts, cards, installments, debts and goals. Set money aside inside the account where it actually sits, and the figure moves with every expense. Use it in Arabic or English, in more than ten currencies from Egyptian pounds to riyals and dirhams, plus gold.
+buddget shows one figure you can act on, Free to spend, worked out from your accounts, cards, installments, debts and goals. Set money aside inside the account where it actually sits, and the figure moves with every expense. It works in more than ten currencies, from Egyptian pounds to riyals and dirhams, and counts gold too.
 
 It runs on what you add and the bank texts you choose to share. Your bank login stays with your bank.
 
@@ -122,10 +124,10 @@ buddget: Budget & Expenses
 Spending Tracker, Installments
 ```
 
-**Promotional text** (157 / 170)
+**Promotional text** (151 / 170)
 
 ```text
-Know what's free to spend today, across every account. Installments, debts, goals and gold sit in one plan, in Arabic or English. Your first 30 days are Pro.
+Know what's free to spend today. Your bank texts log spending for you, and every installment, debt and goal, in any currency or gold, sits in one plan.
 ```
 
 **Keywords** (96 / 100)
@@ -134,12 +136,12 @@ Know what's free to spend today, across every account. Installments, debts, goal
 planner,manager,payday,income,loan,lend,pocket,voice,scan,zakat,dirham,riyal,pound,egypt,uae,owe
 ```
 
-**Description** (3420 / 4000)
+**Description** (3411 / 4000)
 
 ```text
 Know what you can spend today, with rent, bills and goals already set aside.
 
-buddget shows one figure you can act on, Free to spend, worked out from your accounts, cards, installments, debts and goals. Set money aside inside the account where it actually sits, and the figure moves with every expense. Use it in Arabic or English, in more than ten currencies from Egyptian pounds to riyals and dirhams, plus gold.
+buddget shows one figure you can act on, Free to spend, worked out from your accounts, cards, installments, debts and goals. Set money aside inside the account where it actually sits, and the figure moves with every expense. It works in more than ten currencies, from Egyptian pounds to riyals and dirhams, and counts gold too.
 
 It runs on what you add and the bank texts you choose to share. Your bank login stays with your bank.
 
@@ -219,10 +221,10 @@ Name, subtitle, promotional text, description and What's New match English (U.K.
 مصاريف وأقساط من رسائل البنك
 ```
 
-**Promotional text** (130 / 170)
+**Promotional text** (122 / 170)
 
 ```text
-اعرف المتاح لك للإنفاق اليوم في كل حساباتك. أقساطك وديونك وأهدافك وذهبك في خطة واحدة، بالعربية أو الإنجليزية. أول 30 يومًا لك برو.
+اعرف المتاح لك للإنفاق اليوم. رسائل البنك تسجّل مصروفاتك تلقائيًا، وأقساطك وديونك وأهدافك بأي عملة أو بالذهب في خطة واحدة.
 ```
 
 **Keywords** (100 / 100)
@@ -231,12 +233,12 @@ Name, subtitle, promotional text, description and What's New match English (U.K.
 مصروف,جنيه,ريال,درهم,تقسيط,قسط,ادخار,ديون,أهداف,فواتير,فلوس,راتب,ذهب,دخل,حسابات,إيصال,شهري,زكاة,سلفة
 ```
 
-**Description** (2935 / 4000)
+**Description** (2921 / 4000)
 
 ```text
 اعرف كم يمكنك أن تنفق اليوم، بعد أن يُخصَّص نصيب الإيجار والفواتير والأهداف.
 
-يعرض لك بادجت رقمًا واحدًا تعتمد عليه، هو المتاح للإنفاق، محسوبًا من حساباتك وبطاقاتك وأقساطك وديونك وأهدافك. خصّص المال داخل الحساب الذي يوجد فيه فعلًا، ويتغيّر الرقم مع كل مصروف. بالعربية أو الإنجليزية، وبأكثر من عشر عملات من الجنيه المصري إلى الريال والدرهم، والذهب أيضًا.
+يعرض لك بادجت رقمًا واحدًا تعتمد عليه، هو المتاح للإنفاق، محسوبًا من حساباتك وبطاقاتك وأقساطك وديونك وأهدافك. خصّص المال داخل الحساب الذي يوجد فيه فعلًا، ويتغيّر الرقم مع كل مصروف. ويعمل بأكثر من عشر عملات من الجنيه المصري إلى الريال والدرهم، ويحسب الذهب أيضًا.
 
 يعمل بادجت بما تضيفه أنت وبرسائل البنك التي تختار مشاركتها، وتبقى بيانات دخولك إلى البنك عند بنكك.
 
@@ -308,18 +310,18 @@ Name, subtitle, promotional text, description and What's New match English (U.K.
 buddget: Budget & Expenses
 ```
 
-**Short description** (80 / 80)
+**Short description** (78 / 80)
 
 ```text
-Know what's free to spend today. Bank SMS tracking, installments, goals, Arabic.
+Know what's free to spend today. Bank SMS logs itself. Installments and goals.
 ```
 
-**Full description** (3449 / 4000)
+**Full description** (3440 / 4000)
 
 ```text
 Know what you can spend today, with rent, bills and goals already set aside.
 
-buddget shows one figure you can act on, Free to spend, worked out from your accounts, cards, installments, debts and goals. Set money aside inside the account where it actually sits, and the figure moves with every expense. Use it in Arabic or English, in more than ten currencies from Egyptian pounds to riyals and dirhams, plus gold.
+buddget shows one figure you can act on, Free to spend, worked out from your accounts, cards, installments, debts and goals. Set money aside inside the account where it actually sits, and the figure moves with every expense. It works in more than ten currencies, from Egyptian pounds to riyals and dirhams, and counts gold too.
 
 It runs on what you add and the bank SMS you choose to share. Your bank login stays with your bank.
 
@@ -391,18 +393,18 @@ Plus many fixes.
 بادجت: مصاريف وميزانية وأقساط
 ```
 
-**Short description** (74 / 80)
+**Short description** (79 / 80)
 
 ```text
-اعرف المتاح لك اليوم. تتبع تلقائي من رسائل البنك، وأقساط وأهداف، بالعربية.
+اعرف المتاح لك اليوم. رسائل البنك تُسجَّل تلقائيًا، وأقساطك وأهدافك بخطة واحدة.
 ```
 
-**Full description** (2985 / 4000)
+**Full description** (2971 / 4000)
 
 ```text
 اعرف كم يمكنك أن تنفق اليوم، بعد أن يُخصَّص نصيب الإيجار والفواتير والأهداف.
 
-يعرض لك بادجت رقمًا واحدًا تعتمد عليه، هو المتاح للإنفاق، محسوبًا من حساباتك وبطاقاتك وأقساطك وديونك وأهدافك. خصّص المال داخل الحساب الذي يوجد فيه فعلًا، ويتغيّر الرقم مع كل مصروف. بالعربية أو الإنجليزية، وبأكثر من عشر عملات من الجنيه المصري إلى الريال والدرهم، والذهب أيضًا.
+يعرض لك بادجت رقمًا واحدًا تعتمد عليه، هو المتاح للإنفاق، محسوبًا من حساباتك وبطاقاتك وأقساطك وديونك وأهدافك. خصّص المال داخل الحساب الذي يوجد فيه فعلًا، ويتغيّر الرقم مع كل مصروف. ويعمل بأكثر من عشر عملات من الجنيه المصري إلى الريال والدرهم، ويحسب الذهب أيضًا.
 
 يعمل بادجت بما تضيفه أنت وبرسائل البنك التي تختار مشاركتها، وتبقى بيانات دخولك إلى البنك عند بنكك.
 
