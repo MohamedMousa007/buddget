@@ -9,7 +9,7 @@ describe('chat quota copy', () => {
     const e = { kind: 'quota', layer: 'sparks', resetAt: '2026-12-01T00:00:00Z' } as const
     expect(buddgyChatCopy.en.error(e)).toContain('Sparks')
     expect(buddgyChatCopy.en.error(e)).not.toContain('around')
-    expect(buddgyChatCopy.ar.error(e)).toContain('شرارات')
+    expect(buddgyChatCopy.ar.error(e)).toContain('سبارك')
   })
 })
 

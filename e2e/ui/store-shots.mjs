@@ -273,7 +273,7 @@ async function chat(p) {
 // Trial and feature prompts (PromptBanner) cover the hero; close them the way a person would (their snooze/close button).
 async function dismissNotices(p) {
   let any = false
-  for (const text of ['Try the Advisor', 'جرّب المستشار']) {
+  for (const text of ['Try the Advisor', 'جرّب المساعد']) {
     const closed = await p.evaluate((t) => {
       const hit = [...document.querySelectorAll('body *')].find((e) => e.childElementCount === 0 && e.textContent?.trim() === t && e.getBoundingClientRect().height > 0)
       for (let el = hit; el; el = el.parentElement) { const btn = el.querySelector('button[aria-label]'); if (btn) { btn.click(); return true } }
