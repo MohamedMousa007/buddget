@@ -22,6 +22,7 @@ import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server
 import { usageFromGemini, type TokenUsage } from '@/lib/server/ai/units'
 import { TIER_MODELS, configFor, geminiUrl } from '@/lib/server/ai/gemini'
 import { AI_QUOTA_HOLD } from '@/lib/sms/heldReview'
+import { TOP_UP_SOURCE_HOLD } from '@/lib/sms/pairing'
 import type { Database, Json } from '@/lib/supabase/database.types'
 import { SMS_PARSER_SYSTEM_PROMPT, MASKED_ACCOUNT_CLASS } from '@/lib/sms/aiParserPrompt'
 import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNativePush'
@@ -1339,7 +1340,7 @@ async function ingestOne(input: IngestBase & { rawMessage: string; identity: str
       status: addFailed ? 'add_failed' : tx.outcome === 'transfer_paired' ? 'paired' : preAck ? 'confirmed' : 'logged',
       ...(preAck && tx.outcome !== 'transfer_paired' ? { acked_at: new Date().toISOString(), confirmed_at: new Date().toISOString() } : {}),
       harvested_at: new Date().toISOString(),
-      failure_code: senderHeld ? 'sender_mismatch' : capHeld ? 'sms_account_cap' : aiCreditHeld ? 'ai_credit_new_sender' : addFailed ? 'insert_failed' : provisionalConfirm ? 'currency_provisional' : debtAwaitingUser ? 'debt_unassigned' : null,
+      failure_code: senderHeld ? 'sender_mismatch' : capHeld ? 'sms_account_cap' : aiCreditHeld ? 'ai_credit_new_sender' : addFailed ? 'insert_failed' : provisionalConfirm ? 'currency_provisional' : debtAwaitingUser ? (tx.confirmReason === 'top_up_source' ? TOP_UP_SOURCE_HOLD : 'debt_unassigned') : null,
       confidence: parsed.confidence,
       amount: parsed.amount,
       currency: parsed.currency,

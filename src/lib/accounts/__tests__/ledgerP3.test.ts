@@ -199,11 +199,13 @@ describe('T9: no linked account', () => {
     expect(paysFrom(CARD, { ...ledgerOf(w), paymentMethods: noParent.map((m) => (m.id === 'card' ? { ...m, paysFromPaymentMethodId: 'Cash' } : m)) })).toBe('Cash')
     expect(paysFrom(CARD, { ...ledgerOf(w), paymentMethods: noParent, debtPayments: [] })).toBe('CIB')
   })
-  it('a card under an untracked account keeps its hold there: no other account is charged', () => {
+  it('a card under an untracked account never loses its hold: the next live payer in the chain carries it', () => {
     const w = fixtureF()
     w.paymentMethods = w.paymentMethods.map((m) => (m.id === 'CIB' ? { ...m, openingBalance: undefined, openingAt: undefined } : m))
-    expect(paysFrom(CARD, ledgerOf(w))).toBe('CIB')
-    for (const [, b] of balancesAt(w, NOV30)) expect(b.cardHold).toBe(0)
+    const payer = paysFrom(CARD, ledgerOf(w))
+    expect(payer).not.toBe('CIB')
+    expect(payer).toBeTruthy()
+    expect(balancesAt(w, NOV30).get(payer!)?.cardHold).toBe(6000)
   })
   it('Add card asks "pays this card from" only for a credit card with no linked account', () => {
     expect(asksPaysFrom({ type: 'credit_card', parentId: undefined })).toBe(true)

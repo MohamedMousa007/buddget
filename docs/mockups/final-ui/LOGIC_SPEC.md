@@ -235,6 +235,7 @@ walkLegs (savings_transactions): rule 0 = t.source ∈ LABEL_SOURCES → skip; r
   (legacy 'transfer' pairs → rule 3; 'carry' → rule 5; declare → rule 4; legless withdrawal → rule 8)
 cardHold(A) = Σ_{credit cards c, paysFrom(c)=A} max(0, owed(c) − unbilledPlan(c)) → A.currency (live rate; none → cap(A)=0)
   paysFrom(c) = c.parent_id ?? c.pays_from_payment_method_id ?? lastPayer(c) ?? primary(c.currency) ?? primary()
+  (each step only if that account is live; an untracked payer is skipped so the hold never vanishes, owner round 2026-11-28)
   owed(c) = start + charges − payments to the card − payments to its plans          // plan purchase = one full-price charge
   unbilledPlan(c) = Σ_P min(scheduleUnbilled(P), P.total − Σ payments to P)
      scheduleUnbilled(P) = P.amount × max(0, P.count − #(bill dates ≤ c's next statement close))

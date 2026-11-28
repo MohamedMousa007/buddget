@@ -44,11 +44,13 @@ export function removePaymentMethod(
   if (!target || target.type === 'cash') return null
   if (holdsSetAside(state.savingsAccounts, id)) return 'needs_answer'
   const now = new Date().toISOString()
-  const closed = mode === 'close' || isPaymentMethodReferenced(state, id)
+  // A child card's rows move this account's balance (resolveAccountId), so they count as this account's history.
+  const cardsWithHistory = new Set(state.paymentMethods.filter((m) => m.parentId === id && hasAccountHistory(state, m.id)).map((m) => m.id))
+  const closed = mode === 'close' || cardsWithHistory.size > 0 || isPaymentMethodReferenced(state, id)
   const heir = target.isDefault ? getOpenDefaultCandidate(state.paymentMethods, id) : undefined
   const paymentMethods = state.paymentMethods.flatMap((m): PaymentMethod[] => {
     if (m.id === id) return closed ? [{ ...m, closedAt: now, isDefault: false, updatedAt: now }] : []
-    const detach = m.parentId === id
+    const detach = m.parentId === id && !cardsWithHistory.has(m.id)
     const promote = m.id === heir?.id
     return detach || promote ? [{ ...m, ...(detach ? { parentId: undefined } : {}), ...(promote ? { isDefault: true } : {}), updatedAt: now }] : [m]
   })

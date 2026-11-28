@@ -218,6 +218,9 @@ export async function recordOwnTransferEvidence(
  * come from ADNOC, and only this tells them apart. Deliberately excludes a bare "load",
  * which shows up in unrelated wording too often to be a signal.
  */
+/** failure_code of a wallet/prepaid credit held for "Where did this come from?" (never income by default). */
+export const TOP_UP_SOURCE_HOLD = 'top_up_source'
+
 const TOP_UP_WORDING = /\btop[\s-]?up\b|\btopup\b|\breload\b|\brecharge\b|شحن|تعبئة/i
 
 interface StoredValueMethod {
@@ -257,11 +260,13 @@ async function ownStoredValueMethods(
 ): Promise<StoredValueMethod[]> {
   const { data } = await service
     .from('payment_methods')
-    .select('name, last4')
+    .select('name, last4, type')
     .eq('user_id', userId)
     .in('type', ['wallet', 'prepaid_card'])
     .is('deleted_at', null)
   return (data ?? [])
+    // A bank-issued prepaid card ("CIB Prepaid ••1234") would name-match every SMS of its bank; its last4 identifies it.
+    .filter((m) => !(m.type === 'prepaid_card' && PAYMENT_BRANDS[resolvePaymentBrandKey((m.name as string | null) ?? '') ?? '']?.type === 'bank_account'))
     .map((m) => {
       const raw = (m.name as string | null)?.trim() ?? ''
       const provider = decomposePaymentMethodName(raw, (m.last4 as string | null) ?? undefined).provider
@@ -336,6 +341,17 @@ export async function walletsNamedIn(service: ServiceClient, userId: string, tex
     .map((m) => normalizeBrandToken(m.provider))
 }
 
+/** The card digits of the user's own wallets and prepaid cards: a credit carrying one is that method's own SMS. */
+export async function storedValueTails(service: ServiceClient, userId: string): Promise<string[]> {
+  const { data } = await service
+    .from('payment_methods')
+    .select('last4')
+    .eq('user_id', userId)
+    .in('type', ['wallet', 'prepaid_card'])
+    .is('deleted_at', null)
+  return (data ?? []).map((m) => m.last4 as string | null).filter((t): t is string => !!t)
+}
+
 export async function namesOwnStoredValue(
   service: ServiceClient,
   userId: string,
@@ -375,7 +391,7 @@ export async function findWalletFeeLeg(
   const tolerance = transferFeeTolerance(p.amount)
   const { data } = await service
     .from('sms_parse_log')
-    .select('id, kind, amount, account_last4, merchant, merchant_normalized, clean_title, raw_body, received_at, status, is_duplicate, awaiting_confirmation')
+    .select('id, kind, amount, account_last4, merchant, merchant_normalized, clean_title, raw_body, received_at, status, is_duplicate, awaiting_confirmation, failure_code')
     .eq('user_id', p.userId)
     .in('kind', p.side === 'credit' ? ['own_transfer'] : ['instant_transfer_in', 'income'])
     .eq('parsed_ok', true)
@@ -385,7 +401,7 @@ export async function findWalletFeeLeg(
     .gte('amount', p.side === 'credit' ? p.amount : p.amount - tolerance)
     .lte('amount', p.side === 'credit' ? p.amount + tolerance : p.amount)
   const candidates = (data ?? [])
-    .filter((c) => c.id !== p.logId && c.amount != null && !c.is_duplicate && !c.awaiting_confirmation && c.status !== 'failed' && c.status !== 'rejected')
+    .filter((c) => c.id !== p.logId && c.amount != null && !c.is_duplicate && (!c.awaiting_confirmation || c.failure_code === TOP_UP_SOURCE_HOLD) && c.status !== 'failed' && c.status !== 'rejected')
     .filter((c) => (p.side === 'credit' ? (c.amount as number) > p.amount : (c.amount as number) < p.amount))
     .sort((x, y) => Math.abs(Date.parse(x.received_at as string) - at) - Math.abs(Date.parse(y.received_at as string) - at))
   for (const c of candidates) {
@@ -424,6 +440,8 @@ export interface PairSibling {
   siblingExpenseId: string | null
   siblingIncomeId: string | null
   siblingStatus: string
+  /** A wallet credit held for "Where did this come from?": it posted nothing on purpose, and this leg answers it. */
+  heldTopUp?: boolean
 }
 
 /** The facts of one leg that the pairing guards read (the columns migration 0271 reads off sms_parse_log). */
@@ -666,6 +684,8 @@ export async function claimSibling(service: ServiceClient, params: Parameters<ty
   const sibling = await tryPairLeg(service, params)
   if (!sibling) return null
   if (sibling.siblingExpenseId || sibling.siblingIncomeId) return sibling
+  const { data: held } = await service.from('sms_parse_log').select('failure_code').eq('id', sibling.siblingId).maybeSingle()
+  if (held?.failure_code === TOP_UP_SOURCE_HOLD) return { ...sibling, heldTopUp: true }
   await unpairLegs(service, params.logId, sibling.siblingId)
   return null
 }
@@ -888,6 +908,15 @@ export async function reconcileSibling(
     await service
       .from('sms_parse_log')
       .update({ status: 'paired', income_id: null })
+      .eq('id', sibling.siblingId)
+    await clearOpenQuestion(service, sibling.siblingId)
+    return { needsPost: true }
+  }
+  if (sibling.heldTopUp) {
+    // A wallet credit held for "Where did this come from?" carries no row: this leg answers it and posts the transfer.
+    await service
+      .from('sms_parse_log')
+      .update({ status: 'paired', awaiting_confirmation: false, failure_code: null })
       .eq('id', sibling.siblingId)
     await clearOpenQuestion(service, sibling.siblingId)
     return { needsPost: true }

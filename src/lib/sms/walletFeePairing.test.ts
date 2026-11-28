@@ -113,7 +113,9 @@ async function book(input: SmsRowData, logRow: Row = {}) {
   const person = PERSON_KINDS.includes(kind)
   Object.assign(log(input.logId as string), {
     parsed_ok: true,
-    status: tx.outcome === 'transfer_paired' ? 'paired' : 'confirmed',
+    status: tx.outcome === 'transfer_paired' ? 'paired' : tx.outcome === 'awaiting_confirmation' ? 'logged' : 'confirmed',
+    awaiting_confirmation: tx.outcome === 'awaiting_confirmation',
+    failure_code: tx.confirmReason === 'top_up_source' ? 'top_up_source' : null,
     kind,
     amount: input.amount,
     account_last4: input.last4 ?? null,
@@ -139,48 +141,48 @@ describe('N9 (I3, I7): a wallet top-up with a fee pairs on the wallet and the fe
     expect(live('expenses').filter((e) => e.description === 'Transfer fee')).toEqual([expect.objectContaining({ amount: 5, category: 'Other' })])
   })
 
-  it('the wallet credit first, the bank debit second: the income row is retracted with the marker and one transfer remains', async () => {
+  it('the wallet credit first (held, no income), the bank debit second: it answers the hold and one transfer remains', async () => {
     await book(walletCredit({ logId: 'c1' }))
-    expect(live('income_events')).toHaveLength(1)
-    expect(log('c1').kind).toBe('instant_transfer_in')
+    expect(live('income_events')).toHaveLength(0)
+    expect(log('c1')).toMatchObject({ kind: 'instant_transfer_in', failure_code: 'top_up_source', awaiting_confirmation: true })
     const tx = await book(row({ logId: 'b1' }))
     expect(tx.outcome).toBe('transfer_paired')
-    expect(db.income_events[0]).toMatchObject({ retracted_by_sms_log_id: 'b1' })
-    expect(db.income_events[0].deleted_at).toEqual(expect.any(String))
+    expect(log('c1')).toMatchObject({ status: 'paired', awaiting_confirmation: false, failure_code: null })
+    expect(live('income_events')).toHaveLength(0)
     const main = live('expenses').filter((e) => e.description !== 'Transfer fee')
     expect(main).toHaveLength(1)
     expect(main[0]).toMatchObject({ category: 'Transfer', amount: 105 })
     expect(live('expenses').filter((e) => e.description === 'Transfer fee')).toHaveLength(1)
   })
 
-  it('a debit that names a different wallet is not paired: the credit stays income', async () => {
+  it('a debit that names a different wallet is not paired: the credit waits for its source', async () => {
     await book(row({ logId: 'b1', merchant: 'Telda', rawBody: 'Online purchase EGP 105 at Telda' }))
     const tx = await book(walletCredit({ logId: 'c1' }))
-    expect(tx.outcome).not.toBe('transfer_paired')
-    expect(live('income_events')).toHaveLength(1)
+    expect(tx.outcome).toBe('awaiting_confirmation')
+    expect(live('income_events')).toHaveLength(0)
     expect(log('c1').paired_log_id).toBeNull()
   }, 15_000)
 
-  it('a debit that is not a purchase at the wallet is not paired: the credit stays income', async () => {
+  it('a debit that is not a purchase at the wallet is not paired: the credit waits for its source', async () => {
     await book(row({ logId: 'b1', merchant: 'ACME STORE', rawBody: 'Online purchase EGP 105 at ACME STORE' }))
     const tx = await book(walletCredit({ logId: 'c1' }))
-    expect(tx.outcome).not.toBe('transfer_paired')
-    expect(live('income_events')).toHaveLength(1)
+    expect(tx.outcome).toBe('awaiting_confirmation')
+    expect(live('income_events')).toHaveLength(0)
   }, 15_000)
 
   it('amounts further apart than the fee tolerance are not paired', async () => {
     const debit = 100 + transferFeeTolerance(100) + 10
     await book(row({ logId: 'b1', amount: debit }))
     const tx = await book(walletCredit({ logId: 'c1' }))
-    expect(tx.outcome).not.toBe('transfer_paired')
-    expect(live('income_events')).toHaveLength(1)
+    expect(tx.outcome).toBe('awaiting_confirmation')
+    expect(live('income_events')).toHaveLength(0)
   }, 15_000)
 
   it('a credit larger than the debit is not paired', async () => {
     await book(row({ logId: 'b1', amount: 95 }))
     const tx = await book(walletCredit({ logId: 'c1' }))
-    expect(tx.outcome).not.toBe('transfer_paired')
-    expect(live('income_events')).toHaveLength(1)
+    expect(tx.outcome).toBe('awaiting_confirmation')
+    expect(live('income_events')).toHaveLength(0)
   }, 15_000)
 })
 
@@ -192,8 +194,9 @@ describe('N9 second half and the lone leg', () => {
     expect(live('income_events')[0].sms_flags).toEqual(['wallet_unregistered'])
   })
 
-  it('N9: a credit naming a registered wallet does not carry the flag', async () => {
-    await book(walletCredit({ logId: 'c1' }))
+  it('N9: a credit naming a registered wallet, once answered "It was income", does not carry the flag', async () => {
+    seedLog('c1', { raw_body: 'Money added to your Barq wallet: EGP 100', received_at: plus(20_000) })
+    await createSmsTransaction(svc, walletCredit({ logId: 'c1' }), { exchangeRates: {}, userConfirmed: true })
     expect(live('income_events')[0].sms_flags ?? null).toBeNull()
   }, 15_000)
 
